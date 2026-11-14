@@ -28,19 +28,27 @@ import SwiftUI
 struct TouchGuideOverlay: View {
     let press: KeyPressRegistry
     let keys: [String: KeyDefinition]
+    /// The grid's size, which the card is placed and clamped within. Computed
+    /// by the grid from its metrics rather than measured with a
+    /// `GeometryReader`: the overlay then costs no layout pass of its own, and
+    /// nothing at all while no finger is down.
+    let gridSize: CGSize
     /// Whether to fade in the full map when the finger lingers.
     var revealsMapOnPause = true
 
     var body: some View {
-        GeometryReader { proxy in
+        ZStack(alignment: .topLeading) {
             if let guide = press.guide, let key = keys[guide.keyId] {
                 TouchGuideCard(
-                    guide: guide, key: key, bounds: proxy.size, revealsMapOnPause: revealsMapOnPause
+                    guide: guide, key: key, bounds: gridSize, revealsMapOnPause: revealsMapOnPause
                 )
                 // A new touch is a new card, which restarts the reveal delay.
                 .id(guide.touchID)
             }
         }
+        // The card positions itself in the grid's coordinate space, so the
+        // container must span the grid exactly.
+        .frame(width: gridSize.width, height: gridSize.height, alignment: .topLeading)
         .allowsHitTesting(false)
         // Echoes the gesture under the user's finger; VoiceOver users get the
         // keys' own custom actions instead.

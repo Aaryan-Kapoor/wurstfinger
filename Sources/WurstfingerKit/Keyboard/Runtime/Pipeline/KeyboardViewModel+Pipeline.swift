@@ -3,7 +3,7 @@
 //  Wurstfinger
 //
 //  Extension that handles the data-driven gesture pipeline:
-//  definition loading, resolver chain, pipeline assembly,
+//  definition loading, compiled gesture tables, pipeline assembly,
 //  gesture dispatch, mode switching, and slide handling.
 //
 
@@ -13,7 +13,7 @@ extension KeyboardViewModel {
     // MARK: - Data-Driven Loading & Pipeline
 
     /// Loads a keyboard definition by ID from the registry and sets up the
-    /// resolver chain and action pipeline.
+    /// compiled gesture tables and action pipeline.
     func loadDefinition(for id: String) {
         // Fall back to English if the requested language can't be resolved (e.g.
         // a stale stored id for a language removed in a later version) so the
@@ -26,13 +26,22 @@ extension KeyboardViewModel {
         // Record the signature of what was actually loaded (the id may differ
         // from the requested one after the English fallback) so the controller
         // can skip redundant rebuilds on the next appearance.
+        let numpadType = sharedDefaults.string(forKey: SettingsKey.numpadStyle.rawValue)
         loadedDefinitionSignature = Self.definitionSignature(
             languageId: definition.id,
-            numpadType: sharedDefaults.string(forKey: SettingsKey.numpadStyle.rawValue)
+            numpadType: numpadType
         )
         activeModeName = definition.defaultMode
         pipelineLocale = definition.locale
-        rebuildResolverChain()
+        // The gesture tables come from the registry's cache: a prewarmed
+        // language (phone numpad) finds them ready, anything else compiles here
+        // once and every later switch back is a hit.
+        compiledDefinition = KeyboardRegistry.compiled(
+            for: definition,
+            signature: KeyboardRegistry.compiledSignature(
+                languageId: definition.id, numpadType: numpadType
+            )
+        )
         rebuildPipeline()
         startPrewarmIfNeeded()
     }
@@ -75,22 +84,17 @@ extension KeyboardViewModel {
         rebuildPipeline()
     }
 
-    /// Standard chain: primary → ghost (numeric fallback).
-    /// Return-swipe chain: returnSwipe → primary → ghost.
+    /// Recompiles the gesture tables from `currentDefinition`, bypassing the
+    /// registry cache.
+    ///
+    /// `loadDefinition` takes the cached tables instead; this is for a
+    /// definition that was assigned to `currentDefinition` directly (a
+    /// fixture, a custom layout) and so has no registry signature to cache
+    /// under. The policy compiled in is the resolvers': standard is primary →
+    /// ghost (numeric fallback), a return swipe is returnSwipe → primary →
+    /// ghost.
     func rebuildResolverChain() {
-        guard let definition = currentDefinition else {
-            resolverChain = nil
-            returnSwipeResolverChain = nil
-            return
-        }
-        var baseResolvers: [GestureResolver] = [PrimaryResolver()]
-        if let numericMode = definition.mode(ModeNames.numeric) {
-            baseResolvers.append(GhostKeyResolver(fallbackMode: numericMode))
-        }
-        resolverChain = GestureResolverChain(resolvers: baseResolvers)
-        returnSwipeResolverChain = GestureResolverChain(
-            resolvers: [ReturnSwipeResolver()] + baseResolvers
-        )
+        compiledDefinition = currentDefinition.map(CompiledDefinition.init)
     }
 
     /// Assembles the full action pipeline with all middlewares.
@@ -374,16 +378,20 @@ extension KeyboardViewModel {
     }
 
     private func performGesture(_ gesture: GestureType, keyId: String, isReturn: Bool) -> Bool {
-        guard let mode = activeModeFromDefinition else { return false }
+        guard let compiled = compiledDefinition?.mode(activeModeName) else { return false }
 
-        // Circular gestures: try requested direction, fall back to opposite.
-        if gesture == .circularClockwise || gesture == .circularCounterclockwise {
-            handleCircular(keyId: keyId, in: mode, gesture: gesture)
+        // Circular gestures: always "handled", even on a key with nothing to
+        // type, as before (a circle never falls through to the tap on release).
+        if gesture.isCircular {
+            if let slot = compiled.slot(for: keyId) {
+                handleCircular(compiled.circular(slot: slot, clockwise: gesture == .circularClockwise), in: compiled)
+            }
             return true
         }
 
-        let chain = isReturn ? returnSwipeResolverChain : resolverChain
-        guard let binding = chain?.resolve(keyId: keyId, gesture: gesture, in: mode) else { return false }
+        guard let slot = compiled.slot(for: keyId),
+              let binding = compiled.binding(slot: slot, gesture: gesture, isReturn: isReturn)
+        else { return false }
 
         // Mode and language switches bypass the pipeline, so their
         // confirmation tick fires here instead of in the haptic middleware —
@@ -397,7 +405,6 @@ extension KeyboardViewModel {
             }
             return true
         }
-
         if case .switchToNextLanguage = binding.action {
             let previousLanguage = currentDefinition?.id
             switchToNextLanguage()
@@ -416,44 +423,19 @@ extension KeyboardViewModel {
         return true
     }
 
-    /// Handles a circular gesture. Checks for an explicit binding first
-    /// (e.g. superscripts in numeric mode), then falls back to
-    /// inserting the uppercase center character, then tries the opposite
-    /// direction's binding.
-    private func handleCircular(keyId: String, in mode: KeyboardMode, gesture: GestureType) {
-        guard let key = mode.key(for: keyId) else { return }
-        let opposite: GestureType = gesture == .circularClockwise
-            ? .circularCounterclockwise : .circularClockwise
-
-        // 1. Explicit binding for this direction
-        if let binding = key.bindings[gesture] {
-            dispatchBinding(binding)
-            return
+    /// Performs a circular gesture's compiled outcome: an explicit binding
+    /// (e.g. superscripts in numeric mode), the uppercase centre character, or
+    /// the opposite direction's binding. The order was decided at compile time
+    /// (`CompiledMode.circular(slot:clockwise:)`).
+    private func handleCircular(_ outcome: CircularOutcome, in compiled: CompiledMode) {
+        switch outcome {
+        case let .binding(index):
+            dispatchBinding(compiled.binding(at: index))
+        case let .commitUppercase(text):
+            dispatchAction(.commitText(text))
+        case .none:
+            break
         }
-        // 2. Uppercase of center character (letter keys)
-        if tryCircularUppercase(key: key) {
-            return
-        }
-        // 3. Fallback to opposite direction's binding
-        if let binding = key.bindings[opposite] {
-            dispatchBinding(binding)
-        }
-    }
-
-    /// Tries to insert the uppercase center character.
-    @discardableResult
-    private func tryCircularUppercase(key: KeyDefinition) -> Bool {
-        guard let tapBinding = key.bindings[.tap],
-              case let .commitText(text) = tapBinding.action,
-              text.first?.isLetter == true
-        else { return false }
-        let locale = pipelineLocale ?? Locale.current
-        // keyboardUppercased (not plain uppercased) keeps ß → ẞ as a single
-        // character, matching the shifted-mode generation in the definition
-        // layer — a layout with ß on a tap position must not expand to "SS".
-        let uppercased = text.keyboardUppercased(with: locale)
-        dispatchAction(.commitText(uppercased))
-        return true
     }
 
     /// Handles `.switchMode` actions.

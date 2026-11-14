@@ -7,21 +7,38 @@
 
 import Foundation
 
+/// A fixed-capacity circular buffer: appending past `capacity` overwrites the
+/// oldest element.
+///
+/// Storage is a plain `ContiguousArray<T>` that is reserved to `capacity` once,
+/// in `init`, and grows by `append` until it is full; from then on every
+/// append overwrites a slot in place. There is no optional per slot (a
+/// `[T?]` doubles the stride of a `CGPoint` and forces an unwrap on every
+/// read), and after the first full touch — and across `removeAll`, which only
+/// rewinds the indices — appending never allocates.
 struct RingBuffer<T> {
-    private var array: [T?]
+    private var storage: ContiguousArray<T>
     private var writeIndex = 0
-    private var count = 0
+
+    /// Number of elements currently held, `0 ... capacity`.
+    private(set) var count = 0
 
     let capacity: Int
 
     init(capacity: Int) {
         precondition(capacity > 0, "RingBuffer capacity must be greater than 0")
         self.capacity = capacity
-        array = Array(repeating: nil, count: capacity)
+        storage = []
+        storage.reserveCapacity(capacity)
     }
 
     mutating func append(_ element: T) {
-        array[writeIndex] = element
+        if writeIndex < storage.count {
+            storage[writeIndex] = element
+        } else {
+            // Still filling for the first time: `writeIndex == storage.count`.
+            storage.append(element)
+        }
         writeIndex = (writeIndex + 1) % capacity
         if count < capacity {
             count += 1
@@ -31,35 +48,52 @@ struct RingBuffer<T> {
     mutating func removeAll() {
         writeIndex = 0
         count = 0
-        // No need to actually clear the array, just resetting indices is enough
-        // for value types. For reference types, we might want to nil them out
-        // to avoid leaks, but CGPoint is a value type.
+        // The stale elements stay in `storage` to be overwritten in place; the
+        // buffer only ever holds value types here, so nothing leaks.
     }
 
     var isEmpty: Bool {
         count == 0
     }
 
-    /// Returns the elements in order, from oldest to newest.
-    /// This is O(N) where N is the number of elements.
-    var elements: [T] {
-        if count < capacity {
-            return Array(array[0 ..< count].compactMap(\.self))
-        } else {
-            // Buffer is full, start from writeIndex (oldest)
-            // Example: Cap 5, Write 2. [3, 4, 0, 1, 2]
-            // Indices: 2, 3, 4, 0, 1
-            var result = [T]()
-            result.reserveCapacity(capacity)
+    /// Index in `storage` of the oldest element.
+    private var oldestIndex: Int {
+        count < capacity ? 0 : writeIndex
+    }
 
-            for i in 0 ..< capacity {
-                let index = (writeIndex + i) % capacity
-                if let element = array[index] {
-                    result.append(element)
-                }
-            }
-            return result
+    /// Returns the elements in order, from oldest to newest.
+    /// This is O(N) where N is the number of elements, and allocates the
+    /// returned array; the input path uses `copyOrdered(into:)` instead.
+    var elements: [T] {
+        guard count > 0 else { return [] }
+        var result = [T]()
+        result.reserveCapacity(count)
+        let start = oldestIndex
+        for i in 0 ..< count {
+            result.append(storage[(start + i) % capacity])
         }
+        return result
+    }
+
+    /// Copies the elements, oldest to newest, into `buffer` and returns how
+    /// many were written; `buffer.count` must be at least `count`.
+    ///
+    /// The ring can have wrapped, so its storage is not in path order, and a
+    /// reader can't be handed a pointer into it without a copy. The
+    /// classifier wants one contiguous, origin-anchored path, so the copy
+    /// goes straight into caller-owned scratch (see `ClassificationScratch`)
+    /// instead of into a fresh array the way `elements` does. The destination
+    /// must be initialized memory: the elements are assigned, not initialised.
+    func copyOrdered(into buffer: UnsafeMutableBufferPointer<T>) -> Int {
+        precondition(buffer.count >= count, "RingBuffer.copyOrdered: destination too small")
+        guard count > 0 else { return 0 }
+        let start = oldestIndex
+        for i in 0 ..< count {
+            var index = start + i
+            if index >= capacity { index -= capacity }
+            buffer[i] = storage[index]
+        }
+        return count
     }
 }
 

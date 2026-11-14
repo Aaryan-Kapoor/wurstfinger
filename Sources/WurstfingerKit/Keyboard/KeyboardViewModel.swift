@@ -120,8 +120,12 @@ final class KeyboardViewModel {
     /// — not the controller — so in-keyboard language switches, which load a
     /// new definition directly, keep it in sync.
     @ObservationIgnored var loadedDefinitionSignature: String?
-    @ObservationIgnored var resolverChain: GestureResolverChain?
-    @ObservationIgnored var returnSwipeResolverChain: GestureResolverChain?
+    /// The gesture policy of `currentDefinition`, compiled into lookup tables
+    /// (see `CompiledMode`). Replaces the per-load resolver chains: a gesture
+    /// resolves by indexing into it. Filled by `loadDefinition` from the
+    /// registry's cache and by `rebuildResolverChain()` for a definition set
+    /// directly; `nil` until a definition is loaded.
+    @ObservationIgnored var compiledDefinition: CompiledDefinition?
     @ObservationIgnored var pipeline: ActionPipeline?
     /// Whether the current `shifted` mode was engaged by auto-capitalization
     /// (as opposed to a manual shift tap). Only auto-engaged shift may be

@@ -12,6 +12,8 @@ import Foundation
 /// `swipeMode` is consulted only for swipe gestures so that taps, long
 /// presses and circular gestures aren't accidentally filtered out by a key
 /// that declares e.g. `.twoWayHorizontal` for its drag behavior.
+///
+/// Part of the policy `CompiledMode` is compiled from; not called per keystroke.
 struct PrimaryResolver: GestureResolver {
     func resolve(keyId: String, gesture: GestureType, in mode: KeyboardMode) -> KeyBinding? {
         guard let key = mode.key(for: keyId) else { return nil }

@@ -29,6 +29,68 @@ struct KeyRenderSettings: Equatable, Sendable {
     static let stock = KeyRenderSettings()
 }
 
+/// The fonts and hint paddings every key of one grid draws with, resolved
+/// once per grid from the layout metrics.
+///
+/// A `Font` is a boxed descriptor, so building one is a heap allocation. A
+/// key used to build nine per body (its label and up to eight hints), ~40
+/// keys per mode: a few hundred allocations per mode switch for values that
+/// depend only on the metrics. The grid builds this once and hands it down;
+/// a key picks from it.
+struct KeyTypography: Equatable {
+    /// The centre label, per key style (the base size differs by style).
+    private let labels: [Font]
+    /// Text hints at regular, medium (letters) and bold (the one targeted).
+    let hintRegular: Font
+    let hintMedium: Font
+    let hintBold: Font
+    /// The language code on the globe key.
+    let languageLabel: Font
+    /// Globe / dismiss icons, larger for discoverability.
+    let globeIcon: Font
+    /// Copy / paste / cut icons, lighter to avoid clutter.
+    let symbolIcon: Font
+    /// Hint padding from the key edge, scaled with the hint font.
+    let hintHorizontalPadding: CGFloat
+    let hintVerticalPadding: CGFloat
+
+    init(metrics: KeyboardLayoutMetrics) {
+        labels = KeyStyle.allCases.map { style in
+            Font.system(
+                size: KeyView.clampedFontSize(
+                    base: KeyView.baseFontSize(for: style),
+                    metrics: metrics,
+                    minimum: KeyboardConstants.FontSizes.mainLabelMinSize,
+                    maximum: KeyboardConstants.FontSizes.mainLabelMaxSize,
+                    cellFraction: KeyboardConstants.FontSizes.mainLabelMaxCellFraction
+                ),
+                weight: .semibold, design: .rounded
+            )
+        }
+        let hintSize = KeyView.clampedFontSize(
+            base: KeyboardConstants.FontSizes.hintBaseSize,
+            metrics: metrics,
+            minimum: KeyboardConstants.FontSizes.hintMinSize,
+            maximum: KeyboardConstants.FontSizes.hintMaxSize,
+            cellFraction: KeyboardConstants.FontSizes.hintMaxCellFraction
+        )
+        hintRegular = .system(size: hintSize, weight: .regular, design: .rounded)
+        hintMedium = .system(size: hintSize, weight: .medium, design: .rounded)
+        hintBold = .system(size: hintSize, weight: .bold, design: .rounded)
+        languageLabel = .system(size: hintSize * 0.75, weight: .semibold, design: .rounded)
+        globeIcon = .system(size: hintSize * 0.75, weight: .medium)
+        symbolIcon = .system(size: hintSize * 0.6, weight: .regular)
+        // Scale padding proportionally with font size.
+        let fontRatio = hintSize / KeyboardConstants.FontSizes.hintReferenceFontSize
+        hintHorizontalPadding = KeyboardConstants.FontSizes.hintBaseHorizontalPadding * fontRatio
+        hintVerticalPadding = KeyboardConstants.FontSizes.hintBaseVerticalPadding * fontRatio
+    }
+
+    func label(for style: KeyStyle) -> Font {
+        labels[KeyStyle.allCases.firstIndex(of: style) ?? 0]
+    }
+}
+
 #if DEBUG
 /// Counts `KeyView.body` evaluations so the benchmark can report how many keys
 /// a keystroke re-renders. Debug-only: release builds carry no counter at all.
@@ -48,7 +110,14 @@ enum KeyViewBodyCounter {
 /// its own `KeyPressCell` — pressed, and the gesture the finger is heading for,
 /// whose hint it emphasizes. Reading only its own cell is what keeps a touch
 /// from re-rendering any other key.
-struct KeyView: View {
+///
+/// `Equatable`, and installed with `.equatable()` by the grid: when the root
+/// re-evaluates for a reason that changes nothing a key draws (a gesture
+/// tuning slider, a language-list change), SwiftUI compares the inputs and
+/// skips the body. The `onGesture` callback is left out of the comparison on
+/// purpose — it is a new closure per root body with the same meaning every
+/// time (it forwards to the view model).
+struct KeyView: View, Equatable {
     let key: KeyDefinition
     /// Performs a gesture on this key; used by the VoiceOver custom actions.
     let onGesture: (KeyDefinition, GestureType, Bool) -> Void
@@ -77,17 +146,15 @@ struct KeyView: View {
 
     /// Resolved layout metrics injected by `KeyboardGridView` (same reasoning
     /// as there: an `@AppStorage` read desynchronizes from the width path
-    /// when the view model is configured programmatically). Feeds the gesture
-    /// classification geometry and the font scaling. No default: every caller
-    /// must pass the resolved metrics explicitly so a `.reference` fallback can
-    /// never silently mask a wiring gap (production sites already do).
+    /// when the view model is configured programmatically). No default: every
+    /// caller must pass the resolved metrics explicitly so a `.reference`
+    /// fallback can never silently mask a wiring gap (production sites already
+    /// do).
     var metrics: KeyboardLayoutMetrics
 
-    /// The user's resolved gesture settings, passed down from the view model
-    /// by `KeyboardGridView`. No default, same reasoning as `metrics`: a
-    /// defaulted snapshot would let a missing injection compile and silently
-    /// classify with stock thresholds instead of the user's.
-    let tuning: GestureTuning
+    /// The fonts for this grid, built once by `KeyboardGridView` from the
+    /// same metrics (see `KeyTypography`).
+    let typography: KeyTypography
 
     /// Short language label (e.g. "DE") shown on the switch key, and whether to
     /// show it. Driven by the active keyboard locale via `KeyboardViewModel`
@@ -96,6 +163,39 @@ struct KeyView: View {
     /// language whose id differs from the stored selection.
     var languageLabel: String = ""
     var isLanguageLabelShown: Bool = false
+
+    init(
+        key: KeyDefinition,
+        onGesture: @escaping (KeyDefinition, GestureType, Bool) -> Void,
+        pressCell: KeyPressCell? = nil,
+        visualInset: EdgeInsets = .init(),
+        settings: KeyRenderSettings,
+        metrics: KeyboardLayoutMetrics,
+        typography: KeyTypography? = nil,
+        languageLabel: String = "",
+        isLanguageLabelShown: Bool = false
+    ) {
+        self.key = key
+        self.onGesture = onGesture
+        self.pressCell = pressCell
+        self.visualInset = visualInset
+        self.settings = settings
+        self.metrics = metrics
+        self.typography = typography ?? KeyTypography(metrics: metrics)
+        self.languageLabel = languageLabel
+        self.isLanguageLabelShown = isLanguageLabelShown
+    }
+
+    nonisolated static func == (lhs: KeyView, rhs: KeyView) -> Bool {
+        lhs.pressCell === rhs.pressCell
+            && lhs.visualInset == rhs.visualInset
+            && lhs.settings == rhs.settings
+            && lhs.metrics == rhs.metrics
+            && lhs.languageLabel == rhs.languageLabel
+            && lhs.isLanguageLabelShown == rhs.isLanguageLabelShown
+            && lhs.typography == rhs.typography
+            && lhs.key == rhs.key
+    }
 
     /// Whether the label of `binding` should be drawn, honouring the user's
     /// label-visibility toggles (numbers and functional keys always show).
@@ -175,7 +275,7 @@ struct KeyView: View {
     }
 
     /// Base font size derived from the visual style.
-    static func baseFontSize(for style: KeyStyle) -> CGFloat {
+    nonisolated static func baseFontSize(for style: KeyStyle) -> CGFloat {
         switch style {
         case .primary:
             KeyboardConstants.FontSizes.mainLabelBaseSize
@@ -194,7 +294,7 @@ struct KeyView: View {
     /// rendered cell and clamped both for readability and against the cell.
     /// Pure and `internal` so the "never wider than its key" relationship can
     /// be locked by a test.
-    static func clampedFontSize(
+    nonisolated static func clampedFontSize(
         base: CGFloat,
         metrics: KeyboardLayoutMetrics,
         minimum: CGFloat,
@@ -205,33 +305,15 @@ struct KeyView: View {
         return min(scaled, metrics.cellWidth * cellFraction)
     }
 
-    /// Scaled font size proportional to the rendered cell height
-    /// (`metrics.fontScale` is cell height over the reference key height).
-    private var scaledFontSize: CGFloat {
-        Self.clampedFontSize(
-            base: Self.baseFontSize(for: key.style),
-            metrics: metrics,
-            minimum: KeyboardConstants.FontSizes.mainLabelMinSize,
-            maximum: KeyboardConstants.FontSizes.mainLabelMaxSize,
-            cellFraction: KeyboardConstants.FontSizes.mainLabelMaxCellFraction
-        )
-    }
-
-    /// Scaled hint font size proportional to the rendered cell height.
-    private var scaledHintFontSize: CGFloat {
-        Self.clampedFontSize(
-            base: KeyboardConstants.FontSizes.hintBaseSize,
-            metrics: metrics,
-            minimum: KeyboardConstants.FontSizes.hintMinSize,
-            maximum: KeyboardConstants.FontSizes.hintMaxSize,
-            cellFraction: KeyboardConstants.FontSizes.hintMaxCellFraction
-        )
-    }
-
     /// Whether the key should be rendered as an icon-only key (no text label).
     static func isIconOnly(style: KeyStyle) -> Bool {
         style == .utility
     }
+
+    /// The idle and pressed fills, resolved once: bridging a `UIColor` into a
+    /// `Color` per body was a small allocation on every key of every render.
+    private static let idleFill = Color(.secondarySystemBackground)
+    private static let pressedFill = Color(.systemGray4)
 
     /// Background fill for the key.
     /// An opaque step up from the idle fill in both appearances. (The pressed
@@ -239,10 +321,7 @@ struct KeyView: View {
     /// black keyboard background landed within a few percent of the idle key
     /// in dark mode — the press was all but invisible.)
     static func backgroundColor(for style: KeyStyle, active: Bool = false) -> Color {
-        if active {
-            return Color(.systemGray4)
-        }
-        return Color(.secondarySystemBackground)
+        active ? pressedFill : idleFill
     }
 
     /// Whether the key is drawn pressed: a finger is on it, or a headless host
@@ -277,7 +356,7 @@ struct KeyView: View {
             // The centre label is hidden by the label-visibility setting.
             EmptyView()
         } else {
-            let font = Font.system(size: scaledFontSize, weight: .semibold, design: .rounded)
+            let font = typography.label(for: key.style)
             Group {
                 if let sfName = Self.sfSymbolMap[primaryLabel] {
                     Image(systemName: sfName)
@@ -400,15 +479,14 @@ struct KeyView: View {
     /// flick's direction settles.
     static let guidanceAnimation = Animation.easeOut(duration: 0.08)
 
-    private var centerStyle: AnyShapeStyle {
-        guidance == .circle ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(Color.primary)
+    /// Both branches are a `Color`, so no type-erased style box is needed.
+    private var centerStyle: Color {
+        guidance == .circle ? Color.accentColor : Color.primary
     }
 
     private var hintOverlay: some View {
-        // Scale padding proportionally with font size
-        let fontRatio = scaledHintFontSize / KeyboardConstants.FontSizes.hintReferenceFontSize
-        let hPad = KeyboardConstants.FontSizes.hintBaseHorizontalPadding * fontRatio
-        let vPad = KeyboardConstants.FontSizes.hintBaseVerticalPadding * fontRatio
+        let hPad = typography.hintHorizontalPadding
+        let vPad = typography.hintVerticalPadding
 
         // Each hint fills the cell via an infinity frame and pins to its
         // directional alignment, so the overlay needs no size measurement —
@@ -425,7 +503,7 @@ struct KeyView: View {
                     if binding.action == .switchToNextLanguage {
                         if isLanguageLabelShown {
                             Text(languageLabel)
-                                .font(.system(size: scaledHintFontSize * 0.75, weight: .semibold, design: .rounded))
+                                .font(typography.languageLabel)
                                 .foregroundStyle(Color.primary.opacity(0.5))
                                 .fixedSize()
                                 .padding(Self.hintEdgePadding(for: gesture, horizontal: hPad, vertical: vPad))
@@ -482,23 +560,19 @@ struct KeyView: View {
             if Self.isGlobeStyleIcon(for: binding.action) {
                 // Globe / dismiss: larger, bolder for discoverability
                 Image(systemName: iconName)
-                    .font(.system(size: scaledHintFontSize * 0.75, weight: .medium))
+                    .font(typography.globeIcon)
                     .foregroundStyle(isTarget ? Color.accentColor : Color.primary.opacity(0.5))
             } else {
                 // Copy / paste / cut: smaller, lighter to avoid visual clutter
                 Image(systemName: iconName)
-                    .font(.system(size: scaledHintFontSize * 0.6, weight: .regular))
+                    .font(typography.symbolIcon)
                     .foregroundStyle(isTarget ? Color.accentColor : Color.secondary.opacity(0.45))
             }
         } else {
             // Text hint — letters get higher prominence than symbols
             let isLetter = binding.label.first?.isLetter ?? false
             Text(binding.label)
-                .font(.system(
-                    size: scaledHintFontSize,
-                    weight: isTarget ? .bold : isLetter ? .medium : .regular,
-                    design: .rounded
-                ))
+                .font(isTarget ? typography.hintBold : isLetter ? typography.hintMedium : typography.hintRegular)
                 .foregroundStyle(
                     isTarget ? Color.accentColor
                         : isLetter ? Color.primary.opacity(0.65)

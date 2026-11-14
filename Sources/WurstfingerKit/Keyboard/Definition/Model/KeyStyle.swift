@@ -8,7 +8,7 @@
 import Foundation
 
 /// Visual appearance of a key.
-enum KeyStyle: String, Codable, Sendable {
+enum KeyStyle: String, Codable, CaseIterable, Sendable {
     case primary // Main keys (letters) — large font, full background
     case secondary // Helper keys (swipe symbols) — smaller font
     case utility // Function keys (delete, return, globe) — icon instead of text

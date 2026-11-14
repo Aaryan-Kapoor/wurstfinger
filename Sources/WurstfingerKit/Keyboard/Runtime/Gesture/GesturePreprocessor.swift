@@ -233,32 +233,70 @@ struct GesturePreprocessor {
         return normalizeAspectRatio(filtered)
     }
 
+    /// Runs a buffer step over an array: `body` reads the input, writes at
+    /// most `points.count` elements to the output and returns how many.
+    /// The array entry points are wrappers over the buffer ones, so there is
+    /// exactly one implementation of every step.
+    private func transform(
+        _ points: [CGPoint],
+        _ body: (UnsafeBufferPointer<CGPoint>, UnsafeMutableBufferPointer<CGPoint>) -> Int
+    ) -> [CGPoint] {
+        points.withUnsafeBufferPointer { input in
+            [CGPoint](unsafeUninitializedCapacity: input.count) { output, count in
+                count = body(input, output)
+            }
+        }
+    }
+
+    /// Copies `input` to `output` unchanged — what every step does with a
+    /// path too short to filter. Returns the count.
+    @inline(__always)
+    private func passThrough(
+        _ input: UnsafeBufferPointer<CGPoint>, into output: UnsafeMutableBufferPointer<CGPoint>
+    ) -> Int {
+        for i in 0 ..< input.count {
+            output[i] = input[i]
+        }
+        return input.count
+    }
+
     // MARK: - Step 1: Jitter Filter
 
     /// Removes points that are too close to the previous point
     func filterJitter(_ points: [CGPoint]) -> [CGPoint] {
         guard points.count >= 2 else { return points }
+        return transform(points) { filterJitter($0, into: $1) }
+    }
 
-        var filtered: [CGPoint] = [points[0]]
+    /// Buffer form of `filterJitter(_:)`: writes the kept points to `output`
+    /// (at least `input.count` slots, which the filter can never exceed) and
+    /// returns how many. `input` and `output` must not overlap.
+    func filterJitter(
+        _ points: UnsafeBufferPointer<CGPoint>, into output: UnsafeMutableBufferPointer<CGPoint>
+    ) -> Int {
+        guard points.count >= 2 else { return passThrough(points, into: output) }
+
+        output[0] = points[0]
+        var kept = 1
+        var last = points[0]
 
         for i in 1 ..< points.count {
-            // Safe: filtered always has at least one element (initialized with points[0])
-            guard let last = filtered.last else { continue }
             let current = points[i]
-
             if current.distance(to: last) >= config.jitterThreshold {
-                filtered.append(current)
+                output[kept] = current
+                kept += 1
+                last = current
             }
         }
 
         // Always include the last point if different from current last
-        if let lastInput = points.last,
-           let lastFiltered = filtered.last,
-           lastInput.distance(to: lastFiltered) >= 0.1 {
-            filtered.append(lastInput)
+        let lastInput = points[points.count - 1]
+        if lastInput.distance(to: last) >= 0.1 {
+            output[kept] = lastInput
+            kept += 1
         }
 
-        return filtered
+        return kept
     }
 
     // MARK: - Step 2: Outlier Filter
@@ -306,16 +344,28 @@ struct GesturePreprocessor {
     /// finding 3 and is not attempted here.
     func filterOutliers(_ points: [CGPoint]) -> [CGPoint] {
         guard points.count >= 2 else { return points }
+        return transform(points) { filterOutliers($0, into: $1) }
+    }
 
-        var filtered: [CGPoint] = [points[0]]
+    /// Buffer form of `filterOutliers(_:)`: `points` is the raw (dejittered)
+    /// path the neighbour tests read, `output` receives the accepted points
+    /// (at least `points.count` slots) and the return value says how many.
+    /// The two must not overlap — the filter keeps reading raw neighbours
+    /// after it has written accepted ones.
+    func filterOutliers(
+        _ points: UnsafeBufferPointer<CGPoint>, into output: UnsafeMutableBufferPointer<CGPoint>
+    ) -> Int {
+        guard points.count >= 2 else { return passThrough(points, into: output) }
+
+        output[0] = points[0]
+        var kept = 1
         // Step between the two most recently accepted samples — the velocity
         // the accepted path has established so far. Nil while the origin is
         // the entire accepted path.
         var acceptedStep: CGVector?
 
         for i in 1 ..< points.count {
-            // Safe: filtered always has at least one element (initialized with points[0])
-            guard let lastAccepted = filtered.last else { continue }
+            let lastAccepted = output[kept - 1]
             let current = points[i]
 
             let step = CGVector(dx: current.x - lastAccepted.x, dy: current.y - lastAccepted.y)
@@ -339,7 +389,8 @@ struct GesturePreprocessor {
             if nearAccepted
                 || ((nearRawPrevious || nearRawNext) && supportIsPlausible)
                 || continuesEstablishedMotion(step, after: acceptedStep, in: points, at: i) {
-                filtered.append(current)
+                output[kept] = current
+                kept += 1
                 acceptedStep = step
             }
             // Isolated or clustered outlier: skip — and leave `acceptedStep`
@@ -348,7 +399,7 @@ struct GesturePreprocessor {
             // reference is capped in `isSameMovement`.
         }
 
-        return filtered
+        return kept
     }
 
     /// Raw-neighbor support only counts within this multiple of
@@ -362,7 +413,7 @@ struct GesturePreprocessor {
 
     /// Length of the run of mutually consistent raw samples containing
     /// index `i` (consecutive neighbors within `maxJumpDistance`).
-    private func consistentRunLength(in points: [CGPoint], at i: Int) -> Int {
+    private func consistentRunLength(in points: UnsafeBufferPointer<CGPoint>, at i: Int) -> Int {
         var length = 1
         var backward = i
         while backward > 0,
@@ -468,7 +519,7 @@ struct GesturePreprocessor {
     private func continuesEstablishedMotion(
         _ step: CGVector,
         after previousStep: CGVector?,
-        in points: [CGPoint],
+        in points: UnsafeBufferPointer<CGPoint>,
         at i: Int
     ) -> Bool {
         guard let reference = longerStep(previousStep, followingRawStep(in: points, at: i)) else {
@@ -488,7 +539,7 @@ struct GesturePreprocessor {
 
     /// The raw step leading away from `points[i]`, or nil when it is the last
     /// sample.
-    private func followingRawStep(in points: [CGPoint], at i: Int) -> CGVector? {
+    private func followingRawStep(in points: UnsafeBufferPointer<CGPoint>, at i: Int) -> CGVector? {
         guard i + 1 < points.count else { return nil }
         return CGVector(dx: points[i + 1].x - points[i].x, dy: points[i + 1].y - points[i].y)
     }
@@ -537,8 +588,17 @@ struct GesturePreprocessor {
     /// Divides X by aspect ratio so horizontal movement equals vertical movement
     func normalizeAspectRatio(_ points: [CGPoint]) -> [CGPoint] {
         guard config.aspectRatio != 1.0 else { return points }
-        return points.map { point in
-            CGPoint(x: point.x / config.aspectRatio, y: point.y)
+        var normalized = points
+        normalized.withUnsafeMutableBufferPointer { normalizeAspectRatio($0) }
+        return normalized
+    }
+
+    /// In-place form of `normalizeAspectRatio(_:)`: the pipeline normalises the
+    /// outlier filter's output where it lies instead of copying it.
+    func normalizeAspectRatio(_ points: UnsafeMutableBufferPointer<CGPoint>) {
+        guard config.aspectRatio != 1.0 else { return }
+        for i in 0 ..< points.count {
+            points[i].x /= config.aspectRatio
         }
     }
 
@@ -547,50 +607,80 @@ struct GesturePreprocessor {
     /// Applies Savitzky-Golay filter to smooth the path while preserving shape
     func smoothSavitzkyGolay(_ points: [CGPoint]) -> [CGPoint] {
         guard points.count >= config.smoothingWindow else { return points }
-
-        let coefficients = savitzkyGolayCoefficients(
-            windowSize: config.smoothingWindow,
-            polyOrder: config.smoothingOrder
-        )
-
-        let halfWindow = config.smoothingWindow / 2
-        var smoothed: [CGPoint] = []
-
-        for i in 0 ..< points.count {
-            var sumX: CGFloat = 0
-            var sumY: CGFloat = 0
-
-            for j in 0 ..< config.smoothingWindow {
-                let idx = i - halfWindow + j
-                let clampedIdx = max(0, min(points.count - 1, idx))
-                sumX += coefficients[j] * points[clampedIdx].x
-                sumY += coefficients[j] * points[clampedIdx].y
-            }
-
-            smoothed.append(CGPoint(x: sumX, y: sumY))
-        }
-
-        return smoothed
+        return transform(points) { smoothSavitzkyGolay($0, into: $1) }
     }
 
-    /// Calculates Savitzky-Golay convolution coefficients
-    private func savitzkyGolayCoefficients(windowSize: Int, polyOrder: Int) -> [CGFloat] {
-        // Pre-computed coefficients for common cases
-        // Window=5, Order=2: [-3, 12, 17, 12, -3] / 35
-        // Window=7, Order=2: [-2, 3, 6, 7, 6, 3, -2] / 21
+    /// Buffer form of `smoothSavitzkyGolay(_:)`: writes the smoothed path to
+    /// `output` (at least `points.count` slots, not overlapping `points`)
+    /// and returns the count, which equals the input's. A path shorter than
+    /// the window is copied through unsmoothed.
+    func smoothSavitzkyGolay(
+        _ points: UnsafeBufferPointer<CGPoint>, into output: UnsafeMutableBufferPointer<CGPoint>
+    ) -> Int {
+        guard points.count >= config.smoothingWindow else { return passThrough(points, into: output) }
 
-        if windowSize == 5 && polyOrder <= 3 {
-            return [-3, 12, 17, 12, -3].map { CGFloat($0) / 35.0 }
-        } else if windowSize == 7 && polyOrder <= 3 {
-            return [-2, 3, 6, 7, 6, 3, -2].map { CGFloat($0) / 21.0 }
-        } else if windowSize == 9 && polyOrder <= 3 {
-            return [-21, 14, 39, 54, 59, 54, 39, 14, -21].map { CGFloat($0) / 231.0 }
-        } else if windowSize == 11 && polyOrder <= 3 {
-            return [-36, 9, 44, 69, 84, 89, 84, 69, 44, 9, -36].map { CGFloat($0) / 429.0 }
+        let window = config.smoothingWindow
+        let halfWindow = window / 2
+        let last = points.count - 1
+
+        // The kernels are constants (`SavitzkyGolayKernel`), never rebuilt;
+        // a window without one averages uniformly.
+        @inline(__always)
+        func convolve(weight: (Int) -> CGFloat) {
+            for i in 0 ..< points.count {
+                var sumX: CGFloat = 0
+                var sumY: CGFloat = 0
+
+                for j in 0 ..< window {
+                    let idx = i - halfWindow + j
+                    let clampedIdx = max(0, min(last, idx))
+                    let w = weight(j)
+                    sumX += w * points[clampedIdx].x
+                    sumY += w * points[clampedIdx].y
+                }
+
+                output[i] = CGPoint(x: sumX, y: sumY)
+            }
         }
 
-        // Fallback: uniform weights (simple moving average)
-        return Array(repeating: CGFloat(1.0 / Double(windowSize)), count: windowSize)
+        if let kernel = SavitzkyGolayKernel.coefficients(windowSize: window, polyOrder: config.smoothingOrder) {
+            kernel.withUnsafeBufferPointer { coefficients in
+                convolve { coefficients[$0] }
+            }
+        } else {
+            let uniform = CGFloat(1.0 / Double(window))
+            convolve { _ in uniform }
+        }
+        return points.count
+    }
+}
+
+/// Savitzky-Golay convolution coefficients, computed once.
+///
+/// The classifier runs on every drag event, so the kernels are `static let`
+/// constants: looking one up is a retain, not an allocation, where the code
+/// this replaced rebuilt the array with `.map` on every call. The arrays are
+/// immutable and `Sendable`, so sharing them needs no isolation.
+private enum SavitzkyGolayKernel {
+    // Window=5, Order=2: [-3, 12, 17, 12, -3] / 35
+    private static let window5: [CGFloat] = [-3, 12, 17, 12, -3].map { CGFloat($0) / 35.0 }
+    // Window=7, Order=2: [-2, 3, 6, 7, 6, 3, -2] / 21
+    private static let window7: [CGFloat] = [-2, 3, 6, 7, 6, 3, -2].map { CGFloat($0) / 21.0 }
+    private static let window9: [CGFloat] = [-21, 14, 39, 54, 59, 54, 39, 14, -21].map { CGFloat($0) / 231.0 }
+    private static let window11: [CGFloat] = [-36, 9, 44, 69, 84, 89, 84, 69, 44, 9, -36].map { CGFloat($0) / 429.0 }
+
+    /// The pre-computed kernel for a window, or nil where there is none (any
+    /// other window, or a polynomial order above 3) and the caller falls back
+    /// to uniform weights — a plain moving average.
+    static func coefficients(windowSize: Int, polyOrder: Int) -> [CGFloat]? {
+        guard polyOrder <= 3 else { return nil }
+        switch windowSize {
+        case 5: return window5
+        case 7: return window7
+        case 9: return window9
+        case 11: return window11
+        default: return nil
+        }
     }
 }
 
@@ -792,7 +882,13 @@ struct GestureFeatures: Sendable {
 
     /// Extracts features from preprocessed points.
     /// Uses GestureCalculations helper functions for cleaner, testable code.
-    static func extract(from points: [CGPoint], thresholds: GestureClassificationThresholds = .default) -> GestureFeatures {
+    ///
+    /// Generic over the path's storage so the engine can hand it a scratch
+    /// buffer and tests an array; same-module generics are specialised, so
+    /// neither pays for the abstraction.
+    static func extract<C: RandomAccessCollection<CGPoint>>(
+        from points: C, thresholds: GestureClassificationThresholds = .default
+    ) -> GestureFeatures where C.Index == Int {
         guard points.count >= 2 else {
             return GestureFeatures.empty(thresholds: thresholds)
         }

@@ -167,8 +167,7 @@ struct KeyViewStyleTests {
             key: key,
             onGesture: { _, _, _ in },
             settings: KeyRenderSettings(),
-            metrics: .reference,
-            tuning: .default
+            metrics: .reference
         )
         #expect(view.primaryLabel == "midLeft")
     }
@@ -192,8 +191,7 @@ struct KeyViewStyleTests {
             key: key,
             onGesture: { _, _, _ in },
             settings: KeyRenderSettings(),
-            metrics: .reference,
-            tuning: .default
+            metrics: .reference
         )
         #expect(view.primaryLabel == "d")
     }
@@ -217,8 +215,7 @@ struct KeyViewStyleTests {
             key: key,
             onGesture: { _, _, _ in },
             settings: KeyRenderSettings(),
-            metrics: .reference,
-            tuning: .default
+            metrics: .reference
         )
         #expect(view.accessibilityLabel == "Löschen")
     }

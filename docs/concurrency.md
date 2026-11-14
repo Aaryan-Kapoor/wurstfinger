@@ -14,11 +14,15 @@ Measured effects of all of this are in [performance.md](performance.md).
 A keystroke is a chain of plain synchronous main-actor calls:
 
 ```
-SwiftUI gesture (onChanged / onEnded)
-  -> KeyGestureSequence.handleEnded(... tuning:)      classify, arithmetic only
-  -> KeyboardViewModel.handleGesture(...)             resolve the binding
-  -> ActionPipeline.process(...)                      middlewares, in order
-  -> TextInputTarget.insertText(...)                  UITextDocumentProxy
+TouchSurfaceView.touchesBegan / Moved / Ended           one native view, all fingers
+  -> TouchEngine.began / moved / ended                  hit map, per-finger PointerTrack
+       moved: KeyGestureRecognizer.classify(path:…scratch:)   speculation, zero allocations
+       ended: KeyGestureSequence.handleEnded(… scratch:)      classify, arithmetic only
+       -> CommitQueue, flushed in press order            bounded rollover hold
+  -> TouchEngineActions.gesture                         closure into the view model
+  -> KeyboardViewModel.handleClassification(...)        CompiledMode table: one hash, one index
+  -> ActionPipeline.process(...)                        middlewares, in order
+  -> TextInputTarget.insertText(...)                    UITextDocumentProxy
 ```
 
 There is no `await`, no `DispatchQueue.main.sync`, no semaphore, no
@@ -49,7 +53,17 @@ what makes everything else cheap to reason about.
   `Sendable`).
 - Pure engines: `GesturePreprocessor`, the classification statics on
   `KeyGestureRecognizer` (marked `nonisolated`), `ComposeEngine`,
-  `HangulComposer`, `GridLayoutSolver`'s math, `GestureResolver`s.
+  `HangulComposer`, `GridLayoutSolver`'s math, `GestureResolver`s, and the
+  tables compiled from them (`CompiledMode`, `CompiledDefinition`: built once
+  per definition, immutable, `Sendable`).
+- The one deliberately non-`Sendable` helper on the touch path:
+  `ClassificationScratch`, the classifier's working memory (one buffer,
+  allocated once). It is owned by the `@MainActor` `TouchEngine` and handed
+  to the `nonisolated` classifier by reference for the duration of one call;
+  the array-based `classify(positions:)` entry points (tests, tools) make a
+  temporary one. It is never stored in a value type and never crosses an
+  isolation boundary, which is what lets the per-sample classification run
+  without a single heap allocation.
 
 Prefer a real `Sendable` conformance. `@unchecked Sendable` needs a comment that
 proves it (the two that exist are listed at the bottom).
@@ -81,7 +95,7 @@ writes free of observation bookkeeping.
 | Piece | What it is | Why it is off the main thread |
 | --- | --- | --- |
 | `KeyboardRegistry` cache (`LockedCache`) | `Sendable` cache over `OSAllocatedUnfairLock`; the dictionary lock covers only get/insert, the build runs under a per-key lock | a prewarm can build language B while the main thread hits language A |
-| `KeyboardRegistry.prewarm(_:)` | `withDiscardingTaskGroup`, one child per enabled language, `.utility` | turns a language switch into a cache hit |
+| `KeyboardRegistry.prewarm(_:)` | `withDiscardingTaskGroup`, one child per enabled language, `.utility`; each child also compiles the language's `CompiledDefinition` (phone numpad) | turns a language switch — definition *and* resolution tables — into a cache hit |
 | `KeyboardHealthLog` | `actor` on a utility-QoS `DispatchSerialQueue`; callers `yield` into an `AsyncStream(.bufferingNewest(256))` and never await | file I/O must not sit in the launch or typing path |
 | `DarwinNotificationCenter` | `notify_register_dispatch` wrapped as `AsyncStream<Void>` | cross-process "settings changed" signal |
 
@@ -102,9 +116,12 @@ is never made to wait for a background result.
 | Haptic intensities | `HapticSettings` | `HapticFeedbackPlayer` |
 | Language selection | `LanguageSettings` (host app and extension each hold one) | `KeyboardViewModel.enabledLanguageIds` |
 | Built definitions | `KeyboardRegistry` cache | `KeyboardRegistry.load(id:)`, synchronous |
+| Compiled resolution tables | `KeyboardRegistry`'s second `LockedCache`, keyed by `compiledSignature(languageId:numpadType:)` | `KeyboardViewModel.compiledDefinition`, a value read directly |
 | Solved grid layouts | `GridLayoutSolver` cache | `GridLayoutSolver.solve`, synchronous |
+| Per-finger state (phase, sample ring, slide state, trail token, long-press timer) | pooled `PointerTrack`s inside `TouchEngine` | the engine itself; never leaves it |
+| Held-back commits | `TouchEngine`'s `CommitQueue` (press order, bounded by `maxPointers`) | flushed synchronously by the event that unblocks them, or by the hold timer |
 | Health log | file in the app group, owned by `KeyboardHealthLog` | not at all (write-only from the keyboard) |
-| Long-press timer, trail fade | main-actor `Task`s | n/a |
+| Long-press timer, rollover-hold flush, trail fade | main-actor `Task`s | n/a |
 
 ## Settings: snapshot, then signal
 
@@ -153,6 +170,14 @@ is never made to wait for a background result.
   `Task` and cancel the task to cancel the timer. Re-check `Task.isCancelled`
   after the sleep, on the actor, so a cancel that lands between wake-up and
   action cannot fire a stale timer.
+- **Timers never decide order.** Two main-actor timers (the rollover-hold
+  flush and a long press) may wake in either order on a busy main thread, so
+  the engine does not rely on the flush running first: a long press that
+  fires flushes the commit queue itself and then checks whether an earlier
+  finger still holds its place, deferring to that finger's deadline if so.
+  Press order is a property of the queue, not of timer scheduling. The
+  randomized `TouchEngineFuzzTests` drive timers at arbitrary moments to keep
+  it that way.
 - **Cancellable observation tied to ownership.** Hold long-lived tasks in a
   `TaskHandle` (cancels on deinit) and notification observers in an
   `ObserverToken` (removes on deinit). A non-isolated `deinit` cannot touch

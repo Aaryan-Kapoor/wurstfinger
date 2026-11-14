@@ -46,21 +46,19 @@ extension KeyboardViewModel {
     /// dispatching anything. Drives the preview bubble while a finger is
     /// still moving, so it must stay a pure lookup.
     func previewLabel(for gesture: GestureType, keyId: String, isReturn: Bool) -> String? {
-        guard let mode = activeModeFromDefinition else { return nil }
-        if gesture == .circularClockwise || gesture == .circularCounterclockwise {
-            guard let key = mode.key(for: keyId) else { return nil }
-            let opposite: GestureType = gesture == .circularClockwise
-                ? .circularCounterclockwise : .circularClockwise
-            // Same order as `handleCircular`: explicit binding, the uppercase
-            // centre letter, then the opposite direction.
-            if let binding = key.bindings[gesture] { return binding.label }
-            if let tap = key.bindings[.tap], case let .commitText(text) = tap.action, text.first?.isLetter == true {
-                return text.keyboardUppercased(with: pipelineLocale ?? Locale.current)
+        guard let compiled = compiledDefinition?.mode(activeModeName),
+              let slot = compiled.slot(for: keyId)
+        else { return nil }
+        if gesture.isCircular {
+            // Same outcome `performGesture` would dispatch: explicit binding,
+            // the uppercase centre letter, then the opposite direction.
+            switch compiled.circular(slot: slot, clockwise: gesture == .circularClockwise) {
+            case let .binding(index): return compiled.binding(at: index).label
+            case let .commitUppercase(text): return text
+            case .none: return nil
             }
-            return key.bindings[opposite]?.label
         }
-        let chain = isReturn ? returnSwipeResolverChain : resolverChain
-        guard let binding = chain?.resolve(keyId: keyId, gesture: gesture, in: mode) else { return nil }
+        guard let binding = compiled.binding(slot: slot, gesture: gesture, isReturn: isReturn) else { return nil }
         // Text bindings preview the text they commit, which for a return swipe
         // (and the shifted forms the resolvers produce) can differ from the
         // label the key's hint shows.
