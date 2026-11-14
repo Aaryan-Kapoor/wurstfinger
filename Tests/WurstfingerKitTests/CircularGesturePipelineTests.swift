@@ -131,13 +131,34 @@ struct CircularGesturePipelineTests {
 
 // MARK: - Cut-all
 
-/// The clipboard key's circular bindings, asserted on the definition rather
-/// than by circling it end-to-end: dispatching cut-all writes to the
-/// process-wide `UIPasteboard.general`, which would race the serialized
-/// clipboard suite in `AdvancedTextMiddlewareTests`. The cut itself is covered
-/// there; what matters here is that both directions reach it.
+/// The clipboard key's circular bindings, asserted on the definition and then
+/// end to end. The end-to-end circle runs against a view model holding its own
+/// in-memory clipboard, so it can never touch the developer's pasteboard; the
+/// cut's edge cases are covered in `AdvancedTextMiddlewareTests`.
 @MainActor
 struct CircularCutAllBindingTests {
+    /// Circling the clipboard key with cut-all on moves the whole field to
+    /// the clipboard and empties the field.
+    @Test(arguments: [GestureType.circularClockwise, .circularCounterclockwise])
+    func circlingTheClipboardKeyCutsEverything(direction: GestureType) {
+        let defaults = InMemoryUserDefaults()
+        defaults.set(true, forKey: SettingsKey.cutAllEnabled.rawValue)
+        let clipboard = MemoryClipboard()
+        let vm = KeyboardViewModel(userDefaults: defaults, shouldPersistSettings: false, clipboard: clipboard)
+        let target = MockTextTarget()
+        target.hasFullAccess = true
+        target.documentContextBeforeInput = "hallo "
+        target.documentContextAfterInput = "welt"
+        vm.bindTextInputTarget(target)
+        vm.loadDefinition(for: "de_DE")
+
+        vm.handleGesture(direction, keyId: UtilitySlot.symbols, isReturn: false)
+
+        #expect(clipboard.string == "hallo welt")
+        #expect(target.documentContextBeforeInput ?? "" == "")
+        #expect(target.documentContextAfterInput ?? "" == "")
+    }
+
     private func symbolsKey(_ vm: KeyboardViewModel) -> KeyDefinition? {
         vm.activeModeFromDefinition?.key(for: UtilitySlot.symbols)
     }

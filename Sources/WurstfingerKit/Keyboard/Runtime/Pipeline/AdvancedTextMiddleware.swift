@@ -6,11 +6,7 @@
 //  delete-forward, capitalize-word, word-cursor movement, and clipboard.
 //
 
-#if canImport(UIKit)
-import UIKit
-#elseif canImport(AppKit)
-import AppKit
-#endif
+import Foundation
 
 /// Handles advanced text-input actions that `TextInputMiddleware` leaves
 /// as pass-through: delete-forward, capitalize-word, word-boundary cursor
@@ -24,17 +20,20 @@ struct AdvancedTextMiddleware: ActionMiddleware {
     private let localeProvider: () -> Locale
     private let onClipboardSuccess: () -> Void
     private let isCutAllEnabled: () -> Bool
+    private let clipboard: any Clipboard
 
     init(
         target: @escaping () -> TextInputTarget?,
         locale: @escaping () -> Locale,
         onClipboardSuccess: @escaping () -> Void = {},
-        isCutAllEnabled: @escaping () -> Bool = { true }
+        isCutAllEnabled: @escaping () -> Bool = { true },
+        clipboard: any Clipboard = ClipboardStore.shared
     ) {
         targetProvider = target
         localeProvider = locale
         self.onClipboardSuccess = onClipboardSuccess
         self.isCutAllEnabled = isCutAllEnabled
+        self.clipboard = clipboard
     }
 
     func process(_ context: ActionContext, next: (ActionContext) -> Void) {
@@ -131,7 +130,7 @@ struct AdvancedTextMiddleware: ActionMiddleware {
     private func handleCopy(target: TextInputTarget) {
         guard target.hasFullAccess else { return }
         if let selected = target.selectedText, !selected.isEmpty {
-            UIPasteboard.general.string = selected
+            clipboard.string = selected
             onClipboardSuccess()
         }
     }
@@ -156,7 +155,7 @@ struct AdvancedTextMiddleware: ActionMiddleware {
         // and drop the result if the gesture that asked for it is no longer the
         // current one — by then the cursor may have moved or the keyboard may
         // have been torn down.
-        if let text = UIPasteboard.general.string, !text.isEmpty {
+        if let text = clipboard.string, !text.isEmpty {
             // Cap pasted text so a multi-MB pasteboard cannot blow the
             // keyboard extension's jetsam memory budget. Truncates silently.
             target.insertText(Self.cappedForInsertion(text))
@@ -167,7 +166,7 @@ struct AdvancedTextMiddleware: ActionMiddleware {
     private func handleCut(target: TextInputTarget) {
         guard target.hasFullAccess else { return }
         if let selected = target.selectedText, !selected.isEmpty {
-            UIPasteboard.general.string = selected
+            clipboard.string = selected
             target.deleteBackward()
             onClipboardSuccess()
         }
@@ -205,7 +204,7 @@ struct AdvancedTextMiddleware: ActionMiddleware {
         // a silent no-op like the guards above.
         guard !Self.exceedsCutLimit(all) else { return }
 
-        UIPasteboard.general.string = all
+        clipboard.string = all
 
         if !selected.isEmpty {
             target.deleteBackward()

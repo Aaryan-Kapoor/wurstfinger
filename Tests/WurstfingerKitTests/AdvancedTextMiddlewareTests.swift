@@ -26,6 +26,7 @@ private enum AdvancedTextFixtures {
     /// the app's default uppercasing behaviour, e.g. `ß → SS`).
     static func middleware(
         target: MockTextTarget,
+        clipboard: MemoryClipboard = MemoryClipboard(),
         localeId: String = "de_DE",
         cutAllEnabled: Bool = true,
         onClipboardSuccess: @escaping () -> Void = {}
@@ -34,7 +35,8 @@ private enum AdvancedTextFixtures {
             target: { target },
             locale: { Locale(identifier: localeId) },
             onClipboardSuccess: onClipboardSuccess,
-            isCutAllEnabled: { cutAllEnabled }
+            isCutAllEnabled: { cutAllEnabled },
+            clipboard: clipboard
         )
     }
 }
@@ -300,180 +302,12 @@ struct AdvancedTextCapitalizeWordTests {
 
 // MARK: - Clipboard
 
-/// One-time probe for the process-global pasteboard, so a wedged daemon costs
-/// this suite a bounded wait instead of the whole run.
-///
-/// `UIPasteboard.general` talks to a system service, and on a cold simulator the
-/// first call can block for a very long time before returning perfectly normal
-/// data: one review run measured `copyWritesSelectionToPasteboardWithFullAccess`
-/// at 2268 s (~38 min) — and then green — where a healthy run takes 1.4 s. The
-/// call is not cancellable, so the probe hands it to a background thread and
-/// waits with a deadline; the answer decides whether the suite runs at all.
-///
-/// The environment-dependent tests in this target, worth knowing before chasing
-/// a slow or oddly-failing run:
-///
-/// - `LongPressSchedulerTests` — the only wall-clock unit tests: 20–50 ms timers
-///   awaited with 200–300 ms sleeps. Tightest budget in the suite; its negative
-///   tests can false-pass under load, not flake.
-/// - This suite — process-global pasteboard, serialized and capture/restore-ed;
-///   cross-suite safety rests on nothing else touching `UIPasteboard.general`.
-/// - `KeyboardHealthLogTests` — permission-dependent cases; false-fail as root.
-/// - `SettingsReloadObserverTests` — drains the runloop against wall-clock time.
-private enum PasteboardWarmUp {
-    /// Far above a healthy cold start (single-digit seconds), far below the
-    /// pathology (tens of minutes). Nothing legitimate lives in between.
-    static let deadline: TimeInterval = 30
-
-    /// Whether a full write/read/restore round-trip came back inside
-    /// `deadline`. Resolved once per process — later reads are free, so every
-    /// test can ask.
-    ///
-    /// The probe **writes**, and that is the whole point. A read of an empty
-    /// pasteboard can answer instantly on a host whose write path is wedged:
-    /// measured on one such machine, a read-only probe passed while
-    /// `copyWritesSelectionToPasteboardWithFullAccess` — the first test to
-    /// *assign* `UIPasteboard.general.string` — then took 59 minutes and
-    /// passed. A read-only probe therefore certifies an environment it never
-    /// exercised. Since `xcodebuild` runs the target in parallel clones and
-    /// each clone is its own process resolving this on its own, one clone
-    /// gating correctly does nothing for the next one; the probe has to test
-    /// the operation that actually stalls.
-    ///
-    /// The restore is inside the probe because nothing else can do it: the
-    /// suite's own capture/restore only runs once this has resolved.
-    ///
-    /// The probe's own write resolves during trait evaluation, outside the
-    /// serialized suite and therefore possibly while other suites run — it is
-    /// covered by the same invariant as the tests below: nothing else in the
-    /// target touches `UIPasteboard.general`.
-    static let didAnswer: Bool = {
-        let answered = DispatchSemaphore(value: 0)
-        // `UIPasteboard` is `@MainActor`, so the round-trip has to run on the
-        // main queue; this thread — the one resolving the trait, which is not
-        // the main thread — waits for it with the deadline. (Before the
-        // Swift 6 port the call ran on a background thread, which kept the
-        // stall off *every* test thread; now a truly wedged service holds the
-        // main thread until it replies, so the other suites of the run wait
-        // with it. The deadline still decides whether *this* suite runs.)
-        // When already on the main thread there is nobody to hand off to: the
-        // round-trip runs inline, with no deadline.
-        let roundTrip: @MainActor () -> Void = {
-            // `items`, not `string`: assigning `string` replaces every item, so
-            // capturing only the string would drop an image or a URL a
-            // developer had on their clipboard when the suite ran.
-            let original = UIPasteboard.general.items
-            UIPasteboard.general.string = "warm-up-\(UUID().uuidString)"
-            _ = UIPasteboard.general.string
-            UIPasteboard.general.items = original
-        }
-        if Thread.isMainThread {
-            MainActor.assumeIsolated(roundTrip)
-            return true
-        }
-        DispatchQueue.main.async {
-            MainActor.assumeIsolated(roundTrip)
-            answered.signal()
-        }
-        return answered.wait(timeout: .now() + deadline) == .success
-    }()
-}
-
-/// Reports the wedged daemon as a failure of its own. Skipping the clipboard
-/// suite keeps the run bounded, and this keeps the run *loud*: without it, a
-/// stuck pasteboard would read as a green build with twenty quietly skipped
-/// tests.
-@MainActor
-struct PasteboardEnvironmentTests {
-    @Test func pasteboardAnswersWithinTheWarmUpDeadline() {
-        #expect(
-            PasteboardWarmUp.didAnswer,
-            """
-            UIPasteboard.general did not answer within \(Int(PasteboardWarmUp.deadline)) s — the known \
-            cold-simulator pasteboard stall. AdvancedTextMiddlewareClipboardTests was skipped for this \
-            run, so clipboard behaviour is unverified; re-run against a warm simulator (or reboot it).
-            """
-        )
-    }
-}
-
-/// The whole pasteboard, captured on the main actor.
-///
-/// `@MainActor` (like `UIPasteboard` itself), which also makes the class
-/// `Sendable`, so the snapshot can travel through the trait's async scope.
-@MainActor
-private final class PasteboardSnapshot {
-    /// The whole pasteboard, not just its string: the tests assign `string`,
-    /// which replaces every item, so restoring a `String?` would leave a
-    /// developer's image or URL destroyed by a test run.
-    private let items = UIPasteboard.general.items
-
-    func restore() {
-        UIPasteboard.general.items = items
-    }
-}
-
-/// Reverts the clipboard writes the suite's tests make, once the suite is done.
-///
-/// This used to be `init`/`deinit` capture and restore on the suite class, i.e.
-/// once per test. Under Swift 6 a non-isolated `deinit` cannot touch
-/// `UIPasteboard` (it is `@MainActor`), and `isolated deinit` needs a newer
-/// runtime than the deployment target, so the restore moved into a
-/// `TestScoping` trait. It wraps the *suite* (a recursive trait that wrapped
-/// each test trapped inside Swift Testing 6.1's plan builder), runs on the main
-/// actor, and also restores when a test fails — what the `deinit` guaranteed.
-/// The one thing that changed is granularity: the tests are `.serialized`, and
-/// each one that reads the pasteboard writes its own marker first, so no test
-/// relies on the previous one having been rolled back. What matters — the
-/// developer's clipboard, whole items included — is back after the run.
-private struct RestoresPasteboard: SuiteTrait, TestScoping {
-    func provideScope(
-        for test: Test,
-        testCase: Test.Case?,
-        performing function: @Sendable () async throws -> Void
-    ) async throws {
-        let saved = await MainActor.run { PasteboardSnapshot() }
-        do {
-            try await function()
-        } catch {
-            await MainActor.run { saved.restore() }
-            throw error
-        }
-        await MainActor.run { saved.restore() }
-    }
-}
-
-// Serialized: these tests share the process-wide `UIPasteboard.general`
-// singleton, so they must not run concurrently with one another. The
-// `RestoresPasteboard` trait captures the pasteboard before each test and
-// restores it afterwards, which reverts the clipboard writes and prevents
-// leaking process-global state into other suites.
-//
-// `.serialized` only orders this suite against itself, so the capture/restore
-// holds exactly as long as this stays the **only** place in the target that
-// touches `UIPasteboard.general` — every other suite runs in parallel with it
-// and would read or clobber a value mid-test. The invariant holds today:
-// `CircularCutAllBindingTests` is the one other suite that could dispatch
-// cut-all, and it deliberately asserts on the definition instead of running the
-// action (see the comment on that struct). Re-verify with
-// `grep -rn UIPasteboard wurstfingerTests --exclude=AdvancedTextMiddlewareTests.swift`
-// — this file is excluded because it is the one place allowed to match, and the
-// only remaining hit must be that comment in `CircularGesturePipelineTests.swift`.
-// A new test that needs the real pasteboard belongs in this suite, not beside it.
-//
-// Gated on the warm-up rather than warmed up inside `init`, because a condition
-// trait is the only hook that can still *decline* to run: once the daemon has
-// gone quiet, every test body would otherwise pay the same unbounded block.
-@Suite(
-    .serialized,
-    .enabled(
-        if: PasteboardWarmUp.didAnswer,
-        "The pasteboard did not answer within the warm-up deadline — see PasteboardEnvironmentTests"
-    ),
-    RestoresPasteboard()
-)
+// Every test gets its own in-memory clipboard (Swift Testing builds a fresh
+// suite value per test), so these run in parallel with each other and with
+// every other suite, and never touch the developer's real pasteboard.
 @MainActor
 struct AdvancedTextMiddlewareClipboardTests {
+    let clipboard = MemoryClipboard()
 
     @Test func copyWritesSelectionToPasteboardWithFullAccess() {
         let target = MockTextTarget()
@@ -481,55 +315,55 @@ struct AdvancedTextMiddlewareClipboardTests {
         target.selectedText = "copied-\(UUID().uuidString)"
         let expected = target.selectedText
         var successTicks = 0
-        let middleware = AdvancedTextFixtures.middleware(target: target) { successTicks += 1 }
+        let middleware = AdvancedTextFixtures.middleware(target: target, clipboard: clipboard) { successTicks += 1 }
 
         middleware.process(AdvancedTextFixtures.context(.copy)) { _ in }
 
-        #expect(UIPasteboard.general.string == expected)
+        #expect(clipboard.string == expected)
         #expect(target.events.isEmpty) // copy must not mutate the document
         #expect(successTicks == 1)
     }
 
     @Test func copyIsNoopWithoutFullAccess() {
         let marker = "untouched-\(UUID().uuidString)"
-        UIPasteboard.general.string = marker
+        clipboard.string = marker
 
         let target = MockTextTarget()
         target.hasFullAccess = false
         target.selectedText = "secret"
         var successTicks = 0
-        let middleware = AdvancedTextFixtures.middleware(target: target) { successTicks += 1 }
+        let middleware = AdvancedTextFixtures.middleware(target: target, clipboard: clipboard) { successTicks += 1 }
 
         middleware.process(AdvancedTextFixtures.context(.copy)) { _ in }
 
-        #expect(UIPasteboard.general.string == marker) // unchanged
+        #expect(clipboard.string == marker) // unchanged
         #expect(successTicks == 0, "A guarded no-op must not fire a success tick")
     }
 
     @Test func copyIsNoopWhenNothingSelected() {
         let marker = "untouched-\(UUID().uuidString)"
-        UIPasteboard.general.string = marker
+        clipboard.string = marker
 
         let target = MockTextTarget()
         target.hasFullAccess = true
         target.selectedText = nil
         var successTicks = 0
-        let middleware = AdvancedTextFixtures.middleware(target: target) { successTicks += 1 }
+        let middleware = AdvancedTextFixtures.middleware(target: target, clipboard: clipboard) { successTicks += 1 }
 
         middleware.process(AdvancedTextFixtures.context(.copy)) { _ in }
 
-        #expect(UIPasteboard.general.string == marker) // unchanged
+        #expect(clipboard.string == marker) // unchanged
         #expect(successTicks == 0, "A guarded no-op must not fire a success tick")
     }
 
     @Test func pasteInsertsClipboardTextWithFullAccess() {
         let text = "pasted-\(UUID().uuidString)"
-        UIPasteboard.general.string = text
+        clipboard.string = text
 
         let target = MockTextTarget()
         target.hasFullAccess = true
         var successTicks = 0
-        let middleware = AdvancedTextFixtures.middleware(target: target) { successTicks += 1 }
+        let middleware = AdvancedTextFixtures.middleware(target: target, clipboard: clipboard) { successTicks += 1 }
 
         middleware.process(AdvancedTextFixtures.context(.paste)) { _ in }
 
@@ -538,12 +372,12 @@ struct AdvancedTextMiddlewareClipboardTests {
     }
 
     @Test func pasteIsNoopWithoutFullAccess() {
-        UIPasteboard.general.string = "anything"
+        clipboard.string = "anything"
 
         let target = MockTextTarget()
         target.hasFullAccess = false
         var successTicks = 0
-        let middleware = AdvancedTextFixtures.middleware(target: target) { successTicks += 1 }
+        let middleware = AdvancedTextFixtures.middleware(target: target, clipboard: clipboard) { successTicks += 1 }
 
         middleware.process(AdvancedTextFixtures.context(.paste)) { _ in }
 
@@ -552,12 +386,12 @@ struct AdvancedTextMiddlewareClipboardTests {
     }
 
     @Test func pasteIsNoopWhenPasteboardEmpty() {
-        UIPasteboard.general.items = []
+        clipboard.string = nil
 
         let target = MockTextTarget()
         target.hasFullAccess = true
         var successTicks = 0
-        let middleware = AdvancedTextFixtures.middleware(target: target) { successTicks += 1 }
+        let middleware = AdvancedTextFixtures.middleware(target: target, clipboard: clipboard) { successTicks += 1 }
 
         middleware.process(AdvancedTextFixtures.context(.paste)) { _ in }
 
@@ -568,12 +402,12 @@ struct AdvancedTextMiddlewareClipboardTests {
     @Test func pasteTruncatesOversizedPasteboardText() {
         // 250k UTF-16 units — above the 200k cap. ASCII, so units == Characters.
         let oversized = String(repeating: "a", count: 250_000)
-        UIPasteboard.general.string = oversized
+        clipboard.string = oversized
 
         let target = MockTextTarget()
         target.hasFullAccess = true
         var successTicks = 0
-        let middleware = AdvancedTextFixtures.middleware(target: target) { successTicks += 1 }
+        let middleware = AdvancedTextFixtures.middleware(target: target, clipboard: clipboard) { successTicks += 1 }
 
         middleware.process(AdvancedTextFixtures.context(.paste)) { _ in }
 
@@ -588,46 +422,46 @@ struct AdvancedTextMiddlewareClipboardTests {
         target.selectedText = "cut-\(UUID().uuidString)"
         let expected = target.selectedText
         var successTicks = 0
-        let middleware = AdvancedTextFixtures.middleware(target: target) { successTicks += 1 }
+        let middleware = AdvancedTextFixtures.middleware(target: target, clipboard: clipboard) { successTicks += 1 }
 
         middleware.process(AdvancedTextFixtures.context(.cut)) { _ in }
 
-        #expect(UIPasteboard.general.string == expected)
+        #expect(clipboard.string == expected)
         #expect(target.events == [.deleteBackward])
         #expect(successTicks == 1)
     }
 
     @Test func cutIsNoopWithoutFullAccess() {
         let marker = "untouched-\(UUID().uuidString)"
-        UIPasteboard.general.string = marker
+        clipboard.string = marker
 
         let target = MockTextTarget()
         target.hasFullAccess = false
         target.selectedText = "secret"
         var successTicks = 0
-        let middleware = AdvancedTextFixtures.middleware(target: target) { successTicks += 1 }
+        let middleware = AdvancedTextFixtures.middleware(target: target, clipboard: clipboard) { successTicks += 1 }
 
         middleware.process(AdvancedTextFixtures.context(.cut)) { _ in }
 
         #expect(target.events.isEmpty)
-        #expect(UIPasteboard.general.string == marker) // pasteboard untouched
+        #expect(clipboard.string == marker) // pasteboard untouched
         #expect(successTicks == 0, "A guarded no-op must not fire a success tick")
     }
 
     @Test func cutIsNoopWhenNothingSelected() {
         let marker = "untouched-\(UUID().uuidString)"
-        UIPasteboard.general.string = marker
+        clipboard.string = marker
 
         let target = MockTextTarget()
         target.hasFullAccess = true
         target.selectedText = nil
         var successTicks = 0
-        let middleware = AdvancedTextFixtures.middleware(target: target) { successTicks += 1 }
+        let middleware = AdvancedTextFixtures.middleware(target: target, clipboard: clipboard) { successTicks += 1 }
 
         middleware.process(AdvancedTextFixtures.context(.cut)) { _ in }
 
         #expect(target.events.isEmpty)
-        #expect(UIPasteboard.general.string == marker) // pasteboard untouched
+        #expect(clipboard.string == marker) // pasteboard untouched
         #expect(successTicks == 0, "A guarded no-op must not fire a success tick")
     }
 
@@ -639,11 +473,11 @@ struct AdvancedTextMiddlewareClipboardTests {
         target.documentContextBeforeInput = "hallo "
         target.documentContextAfterInput = "welt"
         var successTicks = 0
-        let middleware = AdvancedTextFixtures.middleware(target: target) { successTicks += 1 }
+        let middleware = AdvancedTextFixtures.middleware(target: target, clipboard: clipboard) { successTicks += 1 }
 
         middleware.process(AdvancedTextFixtures.context(.cutAll)) { _ in }
 
-        #expect(UIPasteboard.general.string == "hallo welt")
+        #expect(clipboard.string == "hallo welt")
         // Cursor parked past "welt" (4 UTF-16 units), then all 10 characters deleted.
         #expect(target.events == [.adjustCursor(4)] + Array(repeating: .deleteBackward, count: 10))
         #expect(target.documentContextBeforeInput == "")
@@ -656,11 +490,11 @@ struct AdvancedTextMiddlewareClipboardTests {
         target.hasFullAccess = true
         target.documentContextBeforeInput = "hallo"
         target.documentContextAfterInput = ""
-        let middleware = AdvancedTextFixtures.middleware(target: target)
+        let middleware = AdvancedTextFixtures.middleware(target: target, clipboard: clipboard)
 
         middleware.process(AdvancedTextFixtures.context(.cutAll)) { _ in }
 
-        #expect(UIPasteboard.general.string == "hallo")
+        #expect(clipboard.string == "hallo")
         #expect(target.events == Array(repeating: .deleteBackward, count: 5))
     }
 
@@ -671,11 +505,11 @@ struct AdvancedTextMiddlewareClipboardTests {
         // which join into the single cluster "é" — one deleteBackward, not two.
         target.documentContextBeforeInput = "e"
         target.documentContextAfterInput = "\u{0301}"
-        let middleware = AdvancedTextFixtures.middleware(target: target)
+        let middleware = AdvancedTextFixtures.middleware(target: target, clipboard: clipboard)
 
         middleware.process(AdvancedTextFixtures.context(.cutAll)) { _ in }
 
-        #expect(UIPasteboard.general.string == "e\u{0301}")
+        #expect(clipboard.string == "e\u{0301}")
         #expect(target.events == [.adjustCursor(1), .deleteBackward])
     }
 
@@ -685,11 +519,11 @@ struct AdvancedTextMiddlewareClipboardTests {
         target.documentContextBeforeInput = ""
         // ZWJ family: 11 UTF-16 units, one grapheme cluster.
         target.documentContextAfterInput = "👨‍👩‍👧‍👦"
-        let middleware = AdvancedTextFixtures.middleware(target: target)
+        let middleware = AdvancedTextFixtures.middleware(target: target, clipboard: clipboard)
 
         middleware.process(AdvancedTextFixtures.context(.cutAll)) { _ in }
 
-        #expect(UIPasteboard.general.string == "👨‍👩‍👧‍👦")
+        #expect(clipboard.string == "👨‍👩‍👧‍👦")
         #expect(target.events == [.adjustCursor(11), .deleteBackward])
     }
 
@@ -699,11 +533,11 @@ struct AdvancedTextMiddlewareClipboardTests {
         target.documentContextBeforeInput = "abc"
         target.selectedText = "xyz"
         target.documentContextAfterInput = "def"
-        let middleware = AdvancedTextFixtures.middleware(target: target)
+        let middleware = AdvancedTextFixtures.middleware(target: target, clipboard: clipboard)
 
         middleware.process(AdvancedTextFixtures.context(.cutAll)) { _ in }
 
-        #expect(UIPasteboard.general.string == "abcxyzdef")
+        #expect(clipboard.string == "abcxyzdef")
         // The selection is consumed by its own deleteBackward first; only then
         // is the cursor parked past "def" and the remaining six characters
         // deleted — otherwise the first backward delete would swallow the
@@ -722,17 +556,17 @@ struct AdvancedTextMiddlewareClipboardTests {
         target.documentContextBeforeInput = ""
         target.selectedText = "everything"
         target.documentContextAfterInput = ""
-        let middleware = AdvancedTextFixtures.middleware(target: target)
+        let middleware = AdvancedTextFixtures.middleware(target: target, clipboard: clipboard)
 
         middleware.process(AdvancedTextFixtures.context(.cutAll)) { _ in }
 
-        #expect(UIPasteboard.general.string == "everything")
+        #expect(clipboard.string == "everything")
         #expect(target.events == [.deleteBackward])
     }
 
     @Test func cutAllIsNoopWhenDisabledInSettings() {
         let marker = "untouched-\(UUID().uuidString)"
-        UIPasteboard.general.string = marker
+        clipboard.string = marker
 
         let target = MockTextTarget()
         target.hasFullAccess = true
@@ -740,13 +574,14 @@ struct AdvancedTextMiddlewareClipboardTests {
         var successTicks = 0
         let middleware = AdvancedTextFixtures.middleware(
             target: target,
+            clipboard: clipboard,
             cutAllEnabled: false
         ) { successTicks += 1 }
 
         middleware.process(AdvancedTextFixtures.context(.cutAll)) { _ in }
 
         #expect(target.events.isEmpty)
-        #expect(UIPasteboard.general.string == marker) // pasteboard untouched
+        #expect(clipboard.string == marker) // pasteboard untouched
         #expect(successTicks == 0, "A guarded no-op must not fire a success tick")
     }
 
@@ -756,52 +591,52 @@ struct AdvancedTextMiddlewareClipboardTests {
         let target = MockTextTarget()
         target.hasFullAccess = true
         target.selectedText = "picked"
-        let middleware = AdvancedTextFixtures.middleware(target: target, cutAllEnabled: false)
+        let middleware = AdvancedTextFixtures.middleware(target: target, clipboard: clipboard, cutAllEnabled: false)
 
         middleware.process(AdvancedTextFixtures.context(.cut)) { _ in }
 
-        #expect(UIPasteboard.general.string == "picked")
+        #expect(clipboard.string == "picked")
         #expect(target.events == [.deleteBackward])
     }
 
     @Test func cutAllIsNoopWithoutFullAccess() {
         let marker = "untouched-\(UUID().uuidString)"
-        UIPasteboard.general.string = marker
+        clipboard.string = marker
 
         let target = MockTextTarget()
         target.hasFullAccess = false
         target.documentContextBeforeInput = "secret"
         var successTicks = 0
-        let middleware = AdvancedTextFixtures.middleware(target: target) { successTicks += 1 }
+        let middleware = AdvancedTextFixtures.middleware(target: target, clipboard: clipboard) { successTicks += 1 }
 
         middleware.process(AdvancedTextFixtures.context(.cutAll)) { _ in }
 
         #expect(target.events.isEmpty)
-        #expect(UIPasteboard.general.string == marker) // pasteboard untouched
+        #expect(clipboard.string == marker) // pasteboard untouched
         #expect(successTicks == 0, "A guarded no-op must not fire a success tick")
     }
 
     @Test func cutAllIsNoopWhenDocumentIsEmpty() {
         let marker = "untouched-\(UUID().uuidString)"
-        UIPasteboard.general.string = marker
+        clipboard.string = marker
 
         let target = MockTextTarget()
         target.hasFullAccess = true
         target.documentContextBeforeInput = nil
         target.documentContextAfterInput = nil
         var successTicks = 0
-        let middleware = AdvancedTextFixtures.middleware(target: target) { successTicks += 1 }
+        let middleware = AdvancedTextFixtures.middleware(target: target, clipboard: clipboard) { successTicks += 1 }
 
         middleware.process(AdvancedTextFixtures.context(.cutAll)) { _ in }
 
         #expect(target.events.isEmpty)
-        #expect(UIPasteboard.general.string == marker) // pasteboard untouched
+        #expect(clipboard.string == marker) // pasteboard untouched
         #expect(successTicks == 0, "A guarded no-op must not fire a success tick")
     }
 
     @Test func cutAllRefusesAnOversizedDocument() {
         let marker = "untouched-\(UUID().uuidString)"
-        UIPasteboard.general.string = marker
+        clipboard.string = marker
 
         let target = MockTextTarget()
         target.hasFullAccess = true
@@ -811,12 +646,12 @@ struct AdvancedTextMiddlewareClipboardTests {
             repeating: "a", count: KeyboardConstants.TextInput.maxPasteUTF16Length + 1
         )
         var successTicks = 0
-        let middleware = AdvancedTextFixtures.middleware(target: target) { successTicks += 1 }
+        let middleware = AdvancedTextFixtures.middleware(target: target, clipboard: clipboard) { successTicks += 1 }
 
         middleware.process(AdvancedTextFixtures.context(.cutAll)) { _ in }
 
         #expect(target.events.isEmpty)
-        #expect(UIPasteboard.general.string == marker) // pasteboard untouched
+        #expect(clipboard.string == marker) // pasteboard untouched
         #expect(successTicks == 0, "A guarded no-op must not fire a success tick")
     }
 }

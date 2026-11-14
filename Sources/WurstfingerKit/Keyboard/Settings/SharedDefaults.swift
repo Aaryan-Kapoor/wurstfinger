@@ -60,6 +60,10 @@ enum SharedDefaults {
     /// must never happen in production (app and extension would stop sharing
     /// settings silently), so flag it loudly in debug builds.
     private static let storeHandle: DefaultsHandle = {
+        // Under `swift test` the app group is the Mac app's real settings
+        // plist, shared with every other test process: hand out a private
+        // in-memory store instead (see `UnitTestHost`).
+        if UnitTestHost.isActive { return DefaultsHandle(EphemeralDefaults()) }
         let name = resolvedSuiteName(arguments: ProcessInfo.processInfo.arguments)
         guard let shared = UserDefaults(suiteName: name) else {
             assertionFailure("Defaults suite '\(name)' unavailable — settings will not sync between app and keyboard extension")

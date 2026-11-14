@@ -200,6 +200,8 @@ final class KeyboardViewModel {
 
     @ObservationIgnored let sharedDefaults: UserDefaults
     @ObservationIgnored let shouldPersistSettings: Bool
+    /// Where copy, cut and paste go (see `Clipboard`).
+    @ObservationIgnored let clipboard: any Clipboard
     @ObservationIgnored var isSpaceDragging = false
     @ObservationIgnored var spaceDragResidual: CGFloat = 0
     /// Peak signed displacement during the current space drag. Used by the
@@ -226,15 +228,20 @@ final class KeyboardViewModel {
     /// extension asks for it; previews, tests and screenshots do not).
     @ObservationIgnored let prewarmsLanguages: Bool
 
-    /// - Parameter prewarmsLanguages: Build every enabled language's
-    ///   definition on a background task when a definition loads, so the globe
-    ///   key hits a warm cache. Only the real keyboard wants that; previews and
-    ///   tests construct view models by the dozen and must not spawn builds.
+    /// - Parameters:
+    ///   - prewarmsLanguages: Build every enabled language's definition on a
+    ///     background task when a definition loads, so the globe key hits a
+    ///     warm cache. Only the real keyboard wants that; previews and tests
+    ///     construct view models by the dozen and must not spawn builds.
+    ///   - clipboard: Where clipboard actions read and write; defaults to
+    ///     `ClipboardStore.shared`.
     init(
         userDefaults: UserDefaults? = nil,
         shouldPersistSettings: Bool = true,
-        prewarmsLanguages: Bool = false
+        prewarmsLanguages: Bool = false,
+        clipboard: (any Clipboard)? = nil
     ) {
+        self.clipboard = clipboard ?? ClipboardStore.shared
         // Initialize UserDefaults once
         let defaults = userDefaults ?? SharedDefaults.store
         sharedDefaults = defaults

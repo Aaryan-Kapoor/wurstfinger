@@ -39,8 +39,12 @@ enum OnboardingProgress {
         storeHandle.defaults
     }
 
+    /// In memory under `swift test`, like `SharedDefaults.store`: the plain
+    /// branch would otherwise be the test runner's real standard domain.
     private static let storeHandle = DefaultsHandle(
-        resolvedStore(arguments: ProcessInfo.processInfo.arguments)
+        UnitTestHost.isActive
+            ? EphemeralDefaults()
+            : resolvedStore(arguments: ProcessInfo.processInfo.arguments)
     )
 
     /// Moves checklist state written by earlier versions out of the shared

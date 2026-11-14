@@ -187,7 +187,8 @@ extension KeyboardViewModel {
             // once per deliberate circle, so the read is off the hot path.
             isCutAllEnabled: { [weak self] in
                 self?.typingBehavior.cutAllEnabled ?? false
-            }
+            },
+            clipboard: clipboard
         ))
 
         // 4c. Double-space → sentence terminator (the iOS "." Shortcut). Runs
