@@ -12,7 +12,7 @@ import SwiftUI
 
 /// Result of classifying a completed gesture.
 struct GestureClassification: Sendable {
-    let gesture: GestureType
+    var gesture: GestureType
     let isReturn: Bool
 
     /// Where the finger ended, relative to where it landed, in key sizes:
@@ -35,6 +35,12 @@ struct KeyGestureSequence: Sendable {
     /// ring-buffer eviction and out-and-back paths; used to cancel a pending
     /// long press once the finger has clearly left its resting position.
     private(set) var maxDisplacement: CGFloat = 0
+
+    /// How long after touch-down the finger reached `maxDisplacement`, seconds
+    /// (0 when the caller gave no times). The stroke's speed is its reach over
+    /// this, not over the whole touch, which may end in a rest: a fast flick
+    /// followed by a held thumb is still a fast flick.
+    private(set) var peakElapsed: TimeInterval = 0
 
     init(capacity: Int = KeyboardConstants.Gesture.positionBufferSize) {
         positions = RingBuffer<CGPoint>(capacity: capacity)
@@ -80,14 +86,21 @@ struct KeyGestureSequence: Sendable {
 
     /// Records one `onChanged` sample. Returns true when this sample is the
     /// first contact of a new sequence (touch down).
-    mutating func handleChanged(translation: CGSize) -> Bool {
+    mutating func handleChanged(translation: CGSize, elapsed: TimeInterval = 0) -> Bool {
         let isTouchDown = positions.isEmpty
         if isTouchDown {
             positions.append(.zero)
         }
         positions.append(CGPoint(x: translation.width, y: translation.height))
-        maxDisplacement = max(maxDisplacement, hypot(translation.width, translation.height))
+        notePeak(hypot(translation.width, translation.height), at: elapsed)
         return isTouchDown
+    }
+
+    private mutating func notePeak(_ distance: CGFloat, at elapsed: TimeInterval) {
+        if distance > maxDisplacement {
+            maxDisplacement = distance
+            peakElapsed = elapsed
+        }
     }
 
     /// Records the final sample and classifies the completed sequence against
@@ -118,22 +131,28 @@ struct KeyGestureSequence: Sendable {
         aspectRatio: CGFloat,
         tuning: GestureTuning,
         keySize: CGSize = .zero,
+        elapsed: TimeInterval = 0,
         scratch: ClassificationScratch
     ) -> GestureClassification {
         defer {
             positions.removeAll()
             maxDisplacement = 0
+            peakElapsed = 0
         }
         if positions.isEmpty {
             positions.append(.zero)
         }
         positions.append(CGPoint(x: translation.width, y: translation.height))
+        // The release sample may itself be the farthest.
+        notePeak(hypot(translation.width, translation.height), at: elapsed)
+        let peakTime = peakElapsed
         return withOriginAnchoredPath(scratch: scratch) { path in
             KeyGestureRecognizer.classify(
                 path: path,
                 config: tuning.config.with(aspectRatio: aspectRatio),
                 thresholds: tuning.thresholds,
                 keySize: keySize,
+                peakTime: peakTime,
                 scratch: scratch
             )
         }
@@ -153,6 +172,7 @@ struct KeyGestureSequence: Sendable {
         defer {
             positions.removeAll()
             maxDisplacement = 0
+            peakElapsed = 0
         }
         if positions.isEmpty {
             positions.append(.zero)
@@ -168,6 +188,7 @@ struct KeyGestureSequence: Sendable {
     mutating func handleCancelled() {
         positions.removeAll()
         maxDisplacement = 0
+        peakElapsed = 0
     }
 }
 
@@ -208,13 +229,15 @@ enum KeyGestureRecognizer {
         positions: [CGPoint],
         aspectRatio: CGFloat = 1.0,
         tuning: GestureTuning,
-        keySize: CGSize = .zero
+        keySize: CGSize = .zero,
+        peakTime: TimeInterval = 0
     ) -> GestureClassification {
         classify(
             positions: positions,
             config: tuning.config.with(aspectRatio: aspectRatio),
             thresholds: tuning.thresholds,
-            keySize: keySize
+            keySize: keySize,
+            peakTime: peakTime
         )
     }
 
@@ -240,14 +263,15 @@ enum KeyGestureRecognizer {
         positions: [CGPoint],
         config: GesturePreprocessorConfiguration,
         thresholds: GestureClassificationThresholds,
-        keySize: CGSize = .zero
+        keySize: CGSize = .zero,
+        peakTime: TimeInterval = 0
     ) -> GestureClassification {
         // The array entry point is a wrapper over the buffer pipeline, so
         // there is exactly one implementation of it. The scratch it allocates
         // here is the cost of convenience; the engine passes its own.
         let scratch = ClassificationScratch(capacity: positions.count)
         return positions.withUnsafeBufferPointer { path in
-            classify(path: path, config: config, thresholds: thresholds, keySize: keySize, scratch: scratch)
+            classify(path: path, config: config, thresholds: thresholds, keySize: keySize, peakTime: peakTime, scratch: scratch)
         }
     }
 
@@ -257,7 +281,7 @@ enum KeyGestureRecognizer {
     /// Data flow, with the buffer each step reads and writes:
     /// jitter filter `path → a`; outlier filter `a → b` (it needs the raw,
     /// dejittered neighbours in `a` while it writes the accepted points to
-    /// `b`); aspect normalisation in place on `b`; displacement in keys read
+    /// `b`); spike filter and aspect normalisation in place on `b`; displacement in keys read
     /// from `b`; Savitzky-Golay `b → a`; feature extraction over `a`.
     ///
     /// `path` must be origin-anchored (see `anchoringOrigin`) and no longer
@@ -268,6 +292,7 @@ enum KeyGestureRecognizer {
         config: GesturePreprocessorConfiguration,
         thresholds: GestureClassificationThresholds,
         keySize: CGSize = .zero,
+        peakTime: TimeInterval = 0,
         scratch: ClassificationScratch
     ) -> GestureClassification {
         precondition(path.count <= scratch.pathCapacity, "path is longer than the scratch it is classified in")
@@ -275,7 +300,7 @@ enum KeyGestureRecognizer {
 
         // Too short to filter: the preprocessor passes it through untouched.
         guard path.count >= 2 else {
-            return finish(processed: path, cleaned: path, config: config, thresholds: thresholds, keySize: keySize)
+            return finish(processed: path, cleaned: path, config: config, thresholds: thresholds, keySize: keySize, peakTime: peakTime)
         }
 
         let a = scratch.a
@@ -284,18 +309,22 @@ enum KeyGestureRecognizer {
         // Steps 1-3: jitter, outliers, aspect ratio.
         let dejitteredCount = preprocessor.filterJitter(path, into: a)
         let dejittered = UnsafeBufferPointer(start: a.baseAddress, count: dejitteredCount)
-        let cleanedCount = preprocessor.filterOutliers(dejittered, into: b)
+        let outlierFreeCount = preprocessor.filterOutliers(dejittered, into: b)
+        // Lone sideways spikes, cut from `b` in place.
+        let cleanedCount = preprocessor.filterSpikes(
+            UnsafeMutableBufferPointer(start: b.baseAddress, count: outlierFreeCount)
+        )
         let cleanedPath = UnsafeMutableBufferPointer(start: b.baseAddress, count: cleanedCount)
         preprocessor.normalizeAspectRatio(cleanedPath)
         let cleaned = UnsafeBufferPointer(start: b.baseAddress, count: cleanedCount)
 
         // Step 4: smoothing, only for a path with something to smooth.
         guard cleanedCount >= 2 else {
-            return finish(processed: cleaned, cleaned: cleaned, config: config, thresholds: thresholds, keySize: keySize)
+            return finish(processed: cleaned, cleaned: cleaned, config: config, thresholds: thresholds, keySize: keySize, peakTime: peakTime)
         }
         let smoothedCount = preprocessor.smoothSavitzkyGolay(cleaned, into: a)
         let smoothed = UnsafeBufferPointer(start: a.baseAddress, count: smoothedCount)
-        return finish(processed: smoothed, cleaned: cleaned, config: config, thresholds: thresholds, keySize: keySize)
+        return finish(processed: smoothed, cleaned: cleaned, config: config, thresholds: thresholds, keySize: keySize, peakTime: peakTime)
     }
 
     /// Features, verdict and displacement from a processed path and its
@@ -306,10 +335,23 @@ enum KeyGestureRecognizer {
         cleaned: UnsafeBufferPointer<CGPoint>,
         config: GesturePreprocessorConfiguration,
         thresholds: GestureClassificationThresholds,
-        keySize: CGSize
+        keySize: CGSize,
+        peakTime: TimeInterval
     ) -> GestureClassification {
-        let features = GestureFeatures.extract(from: processed, thresholds: thresholds)
+        let features = GestureFeatures.extract(
+            from: processed, thresholds: thresholds,
+            keyScale: GestureFeatures.keyScale(for: keySize), peakTime: peakTime
+        )
         var classification = classify(features: features)
+        // A swipe's direction is read from the body of the stroke rather than its
+        // farthest point (`GestureCalculations.robustDirection`); taps and
+        // circles never pay for it.
+        if classification.gesture.isSwipe, processed.count >= 3 {
+            let farthest = Int((features.maxDisplacementProgress * CGFloat(processed.count - 1)).rounded())
+            if let angle = GestureCalculations.robustDirection(of: processed, farthest: farthest) {
+                classification.gesture = angleToGestureType(angle)
+            }
+        }
         classification.displacementInKeys = displacementInKeys(
             of: cleaned, aspectRatio: config.aspectRatio, keySize: keySize
         )
