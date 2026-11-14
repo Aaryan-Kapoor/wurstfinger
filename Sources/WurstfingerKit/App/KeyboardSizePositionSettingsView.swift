@@ -16,6 +16,17 @@ struct KeyboardSizePositionSettingsView: View {
     @AppStorage(SettingsKey.keyAspectRatio.rawValue, store: SharedDefaults.store)
     private var keyAspectRatio = DeviceLayout.defaultKeyAspectRatio
 
+    /// The gap between keys in points (`SettingsKey.keySpacing`).
+    @AppStorage(SettingsKey.keySpacing.rawValue, store: SharedDefaults.store)
+    private var keySpacing = Double(KeyboardConstants.Layout.defaultKeySpacing)
+
+    /// A `NumpadColumnPlacement` raw value (`SettingsKey.numpadColumn`).
+    @AppStorage(SettingsKey.numpadColumn.rawValue, store: SharedDefaults.store)
+    private var numpadColumnRaw = NumpadColumnPlacement.off.rawValue
+
+    @AppStorage(SettingsKey.isSplitLayoutEnabled.rawValue, store: SharedDefaults.store)
+    private var isSplitLayoutEnabled = false
+
     /// Slider range as percent of the device default (270 pt on iPhone):
     /// 35 % ≈ 95 pt keeps the old 25 %-of-screen minimum reachable, 145 %
     /// ≈ 392 pt covers a full iPhone width. Round values on purpose.
@@ -33,7 +44,10 @@ struct KeyboardSizePositionSettingsView: View {
     var body: some View {
         VStack(spacing: 20) {
             // Keyboard Preview
-            InteractiveKeyboardPreview(aspectRatio: $keyAspectRatio, width: $width, position: $position)
+            InteractiveKeyboardPreview(
+                aspectRatio: $keyAspectRatio, width: $width, position: $position,
+                keySpacing: $keySpacing, numpadColumn: $numpadColumnRaw, isSplit: $isSplitLayoutEnabled
+            )
                 .padding(.horizontal, 16)
 
             // The controls scroll below the pinned preview, like the other
@@ -48,7 +62,10 @@ struct KeyboardSizePositionSettingsView: View {
             ScrollView {
                 VStack(spacing: 20) {
                     sizeControls
+                    spacingControls
                     positionControls
+                    numpadColumnControls
+                    splitControls
                 }
                 .padding(.vertical, 8)
             }
@@ -61,6 +78,7 @@ struct KeyboardSizePositionSettingsView: View {
                 Button("Reset") {
                     width = DeviceLayout.defaultKeyboardWidth
                     position = DeviceLayout.defaultKeyboardPosition
+                    keySpacing = Double(KeyboardConstants.Layout.defaultKeySpacing)
                 }
             }
         }
@@ -112,6 +130,91 @@ struct KeyboardSizePositionSettingsView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 // Take the full wrapped height even when the proposal is
                 // tight, so the sentence can never be cut to one line again.
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.horizontal, 16)
+    }
+
+    private var spacingControls: some View {
+        VStack(spacing: 16) {
+            HStack {
+                Text("Key Spacing")
+                    .font(.headline)
+                Spacer()
+                Text(verbatim: "\(Int(keySpacing.rounded())) pt")
+                    .monospacedDigit()
+                    .foregroundColor(.secondary)
+            }
+
+            VStack(spacing: 8) {
+                Slider(
+                    value: $keySpacing,
+                    in: Double(KeyboardConstants.Layout.minKeySpacing) ... Double(KeyboardConstants.Layout.maxKeySpacing),
+                    step: 1
+                )
+
+                HStack {
+                    Text(verbatim: "\(Int(KeyboardConstants.Layout.minKeySpacing)) pt")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Text(verbatim: "\(Int(KeyboardConstants.Layout.defaultKeySpacing)) pt")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Text(verbatim: "\(Int(KeyboardConstants.Layout.maxKeySpacing)) pt")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+
+            Text("Space between the keys. Tighter gaps make the keys bigger; wider ones make them easier to tell apart.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.horizontal, 16)
+    }
+
+    private var numpadColumnControls: some View {
+        VStack(spacing: 12) {
+            HStack {
+                Text("Numpad Column")
+                    .font(.headline)
+                Spacer()
+            }
+
+            // "Left" / "Right" because the keyboard is pinned to left-to-right:
+            // the column is on that physical side of the letters.
+            Picker("Numpad Column", selection: $numpadColumnRaw) {
+                Text("Off").tag(NumpadColumnPlacement.off.rawValue)
+                Text("Left").tag(NumpadColumnPlacement.leading.rawValue)
+                Text("Right").tag(NumpadColumnPlacement.trailing.rawValue)
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+
+            Text("A column of numbers beside the letters: tap for the middle digit, swipe left or right for the others, swipe the other ways for symbols. Not shown in number mode.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.horizontal, 16)
+    }
+
+    private var splitControls: some View {
+        VStack(spacing: 12) {
+            Toggle(isOn: $isSplitLayoutEnabled) {
+                Text("Split on Wide Screens")
+                    .font(.headline)
+            }
+
+            Text("On a wide screen held sideways (an iPad, or a large iPhone), the letters go to one side and the utility and numpad keys to the other, leaving the middle free.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.horizontal, 16)

@@ -147,6 +147,7 @@ struct LongPressRingView: View {
     let onFinish: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.keyGridSpacing) private var keySpacing
     /// A headless pose: the fill at this fraction (or mid-flash once fired).
     @Environment(\.feelStillFrame) private var stillProgress
     @State private var progress: CGFloat = 0
@@ -154,7 +155,7 @@ struct LongPressRingView: View {
     @State private var flash: CGFloat = 0
 
     var body: some View {
-        let key = FeelGeometry.visibleKeyRect(touchFrame: ring.keyFrame, in: bounds)
+        let key = FeelGeometry.visibleKeyRect(touchFrame: ring.keyFrame, in: bounds, spacing: keySpacing)
         let shape = KeyOutline(cornerRadius: KeyboardConstants.KeyDimensions.cornerRadius)
         let shown = stillProgress != nil || isShown
         // A still of a fired ring shows its flash at the posed fraction.
@@ -251,6 +252,7 @@ struct SlideRatchetView: View {
     let bounds: CGSize
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.keyGridSpacing) private var keySpacing
 
     /// Distance between two notches, in points.
     static let pitch: CGFloat = 7
@@ -258,7 +260,7 @@ struct SlideRatchetView: View {
     static let reach = 7
 
     var body: some View {
-        let key = FeelGeometry.visibleKeyRect(touchFrame: ratchet.keyFrame, in: bounds)
+        let key = FeelGeometry.visibleKeyRect(touchFrame: ratchet.keyFrame, in: bounds, spacing: keySpacing)
         let width = min(key.width * 0.7, CGFloat(Self.reach * 2) * Self.pitch)
         let tint = ratchet.slideType == .delete ? Color.red : Color.accentColor
         let direction = CGFloat(ratchet.lastDirection)

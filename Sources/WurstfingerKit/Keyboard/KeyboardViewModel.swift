@@ -58,9 +58,17 @@ struct DeviceLayout {
     /// never consults screen bounds: the previous screen-relative default
     /// was orientation-dependent and halved the keyboard on a fresh install
     /// opened in landscape (review finding H1).
+    ///
+    /// iPad: 380 pt. An iPad point is physically larger than an iPhone's
+    /// (132 ppi on the 12.9" and 11" models against ~163 pt/in on a phone), and
+    /// two thumbs rest on a much larger glass, so the 270 pt block would leave
+    /// keys under 0.5 in wide; 380 gives ~85 pt cells (0.6-0.65 in) — the same
+    /// proportion of the thumb that the iPhone default has — and with the numpad
+    /// column on still fits the narrowest iPad portrait (744 pt) with room to
+    /// spare. A floating iPad keyboard (~320 pt) or a Split View pane shrinks it
+    /// to fit through the usual width fit-clamp.
     static var defaultKeyboardWidth: Double {
-        // 320 pt on iPad is a provisional constant pending real iPad tuning.
-        UIDevice.current.userInterfaceIdiom == .pad ? 320.0 : 270.0
+        UIDevice.current.userInterfaceIdiom == .pad ? 380.0 : 270.0
     }
 
     static let defaultKeyAspectRatio: Double = 1.0
@@ -107,6 +115,10 @@ final class KeyboardViewModel {
     private(set) var keyboardWidthCap: CGFloat = min(
         DeviceLayout.screenBounds.width, DeviceLayout.screenBounds.height
     )
+    /// A screen size to lay out against instead of the device's, so a test can
+    /// put the keyboard on a landscape iPad without touching the process-wide
+    /// simulated screen the other suites read. Nil in the app.
+    @ObservationIgnored var screenSizeOverride: CGSize?
     /// Name of the currently active mode in the data-driven definition.
     var activeModeName: String = ModeNames.main
 
@@ -201,6 +213,21 @@ final class KeyboardViewModel {
     var keyboardHorizontalPosition: Double {
         get { layoutSettings.keyboardHorizontalPosition }
         set { layoutSettings.keyboardHorizontalPosition = newValue }
+    }
+
+    var keySpacing: Double {
+        get { layoutSettings.keySpacing }
+        set { layoutSettings.keySpacing = newValue }
+    }
+
+    var numpadColumn: NumpadColumnPlacement {
+        get { layoutSettings.numpadColumn }
+        set { layoutSettings.numpadColumn = newValue }
+    }
+
+    var isSplitLayoutEnabled: Bool {
+        get { layoutSettings.isSplitLayoutEnabled }
+        set { layoutSettings.isSplitLayoutEnabled = newValue }
     }
 
     // MARK: - Private State
@@ -344,10 +371,11 @@ final class KeyboardViewModel {
         layoutSettings.utilityColumnLeading ? .portraitUtilityLeft : .portrait
     }
 
-    /// The grid arrangement for the active mode and `currentContext`.
-    /// Returns `nil` if no definition is loaded.
+    /// The arrangement the active mode is drawn with at the tracked view width
+    /// (see `layoutPlan(forContainerWidth:)`). Returns `nil` if no definition is
+    /// loaded.
     var currentArrangement: GridArrangement? {
-        activeModeFromDefinition?.arrangement(for: currentContext)
+        layoutPlan(forContainerWidth: viewWidth)?.arrangement
     }
 
     /// The active mode resolved from the current definition and mode name.
@@ -374,12 +402,40 @@ final class KeyboardViewModel {
     /// extension's own window is only keyboard-sized and carries no usable
     /// height information (see `updateWindowBounds`).
     func layoutMetrics(forContainerWidth width: CGFloat) -> KeyboardLayoutMetrics {
-        layoutSettings.resolveMetrics(
-            columns: currentArrangement?.columns ?? 4,
-            rows: currentArrangement?.rows.count ?? KeyboardConstants.KeyDimensions.totalRows,
+        layoutPlan(forContainerWidth: width)?.metrics ?? layoutSettings.resolveMetrics(
+            columns: 4,
             availableWidth: width > 0 ? min(width, keyboardWidthCap) : keyboardWidthCap,
-            screenHeight: DeviceLayout.screenBounds.height
+            screenHeight: (screenSizeOverride ?? DeviceLayout.screenBounds.size).height
         )
+    }
+
+    /// The arrangement the active mode is drawn with, and the metrics resolved
+    /// for it, at `width`: the mode's arrangement for the utility-column side,
+    /// with the numpad column and the split applied as the settings ask
+    /// (`KeyboardLayoutPlan`). `nil` if no definition is loaded.
+    ///
+    /// The keyboard intentionally keeps the portrait arrangement in **all**
+    /// orientations so the key positions stay constant when the device rotates
+    /// (muscle memory); the split is the one orientation-dependent decision, and
+    /// it is the user's opt-in.
+    func layoutPlan(forContainerWidth width: CGFloat) -> KeyboardLayoutPlan? {
+        guard let mode = activeModeFromDefinition,
+              let base = mode.arrangement(for: currentContext)
+        else { return nil }
+        let screen = screenSizeOverride ?? DeviceLayout.screenBounds.size
+        return KeyboardLayoutPlan.resolve(KeyboardLayoutPlan.Inputs(
+            base: base,
+            hasNumpadKeys: mode.keys[NumpadColumn.keyIds[0]] != nil,
+            numpadColumn: layoutSettings.numpadColumn,
+            isUtilityLeading: layoutSettings.utilityColumnLeading,
+            isSplitEnabled: layoutSettings.isSplitLayoutEnabled,
+            wishWidth: CGFloat(layoutSettings.keyboardWidth),
+            aspectRatio: CGFloat(layoutSettings.keyAspectRatio),
+            spacing: CGFloat(layoutSettings.keySpacing),
+            containerWidth: width,
+            widthCap: keyboardWidthCap,
+            screen: screen
+        ))
     }
 
     /// Pipeline hook: fires a confirmation for state-changing actions.
@@ -423,6 +479,9 @@ final class KeyboardViewModel {
         if let active = currentDefinition?.id, staleLayouts.contains(active) {
             loadDefinition(for: active)
         }
+        // The numpad column was switched on or off in the host app: its keys
+        // belong to the definition, so the definition follows.
+        reloadDefinitionIfNumpadColumnChanged()
     }
 
     func switchToNextLanguage() {

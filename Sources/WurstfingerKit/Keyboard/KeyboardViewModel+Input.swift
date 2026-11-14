@@ -85,24 +85,11 @@ extension KeyboardViewModel {
     /// snapshot tool) configure the engine from this; the keyboard itself gets
     /// the size from the surface's own bounds.
     func gridGeometry(forContainerWidth containerWidth: CGFloat) -> (geometry: GridGeometry, size: CGSize)? {
-        guard let arrangement = currentArrangement else { return nil }
-        let metrics = layoutMetrics(forContainerWidth: containerWidth)
-        let cells = GridLayoutSolver.solve(arrangement)
+        guard let plan = layoutPlan(forContainerWidth: containerWidth) else { return nil }
+        let cells = GridLayoutSolver.solve(plan.arrangement)
         let rows = cells.map { $0.row + $0.rowSpan }.max() ?? 0
-        let geometry = GridGeometry(
-            cells: cells,
-            columns: arrangement.columns,
-            rowHeight: metrics.rowHeight,
-            horizontalSpacing: KeyboardConstants.Layout.gridHorizontalSpacing,
-            verticalSpacing: KeyboardConstants.Layout.gridVerticalSpacing,
-            cellAspectRatio: metrics.cellAspectRatio
-        )
-        let size = CGSize(
-            width: metrics.keyboardWidth - 2 * KeyboardConstants.Layout.horizontalPadding,
-            height: CGFloat(rows) * metrics.rowHeight
-                + CGFloat(max(rows - 1, 0)) * KeyboardConstants.Layout.gridVerticalSpacing
-        )
-        return (geometry, size)
+        let geometry = GridGeometry(cells: cells, columns: plan.arrangement.columns, metrics: plan.metrics)
+        return (geometry, plan.metrics.gridSize(rows: rows))
     }
 
     /// Configures the engine for the active mode without a touch surface (see

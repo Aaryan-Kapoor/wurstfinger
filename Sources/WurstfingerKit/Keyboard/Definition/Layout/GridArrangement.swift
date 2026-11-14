@@ -59,3 +59,80 @@ extension GridArrangement {
         )
     }
 }
+
+// MARK: - Numpad column and split
+
+extension GridArrangement {
+    /// Splits each row into its letter-region placements (the 3×3 grid, the
+    /// space bar, the numeric zero) and its utility placements (globe, symbols,
+    /// delete, return), keeping each group's order.
+    private func regions(of row: [KeyPlacement]) -> (letters: [KeyPlacement], utility: [KeyPlacement]) {
+        let utility = StandardArrangements.leadingUtilityKeys
+        return (row.filter { !utility.contains($0.keyId) }, row.filter { utility.contains($0.keyId) })
+    }
+
+    /// The numpad column's placement in `row` number `index`: the key, or a
+    /// one-column gap where the mode carries no numpad keys (see
+    /// `addingNumpadColumn`). `nil` for a row beyond the column's four.
+    private static func numpadPlacement(row index: Int, keyIds: [String]?) -> KeyPlacement? {
+        guard index < NumpadColumn.keyIds.count else { return nil }
+        guard let keyIds else { return .gap(columns: 1) }
+        return KeyPlacement(keyId: keyIds[index])
+    }
+
+    /// Adds one column of numpad keys immediately beside the letter grid, on its
+    /// leading or trailing side, one key per row (the bottom one beside the
+    /// space bar). The utility column keeps the outer edge on its own side, so
+    /// with utility keys trailing a trailing numpad sits *between* the letters
+    /// and the utility keys, and a leading one is the keyboard's left edge.
+    ///
+    /// - Parameter keyIds: The numpad keys, top to bottom (`NumpadColumn.keyIds`),
+    ///   or `nil` to reserve the column with a gap instead. A mode without numpad
+    ///   keys (the numeric one: it is all digits already) takes the gap, so the
+    ///   keyboard keeps its width and every key its place when the mode changes.
+    /// - Precondition: a standard portrait-shaped arrangement, whose rows are
+    ///   side by side with no row-spanning key (the runtime selects only
+    ///   portrait arrangements). Rows past the fourth get no numpad key.
+    func addingNumpadColumn(_ placement: NumpadColumnPlacement, keyIds: [String]?) -> GridArrangement {
+        guard placement != .off else { return self }
+        let newRows = rows.enumerated().map { index, row -> [KeyPlacement] in
+            guard let numpad = Self.numpadPlacement(row: index, keyIds: keyIds),
+                  let edge = placement == .leading
+                  ? row.firstIndex(where: { !StandardArrangements.leadingUtilityKeys.contains($0.keyId) })
+                  : row.lastIndex(where: { !StandardArrangements.leadingUtilityKeys.contains($0.keyId) })
+            else { return row }
+            var updated = row
+            updated.insert(numpad, at: placement == .leading ? edge : edge + 1)
+            return updated
+        }
+        return GridArrangement(columns: columns + 1, rows: newRows)
+    }
+
+    /// The split layout: the letter grid on one side, the utility column (and
+    /// the numpad column, when there is one) on the other, and `gapColumns`
+    /// empty columns between them. The utility side follows `utilityLeading`; the
+    /// numpad column joins the utility keys, on the inner side of them, because
+    /// that is the cluster the other thumb rests on.
+    ///
+    /// - Parameter numpadKeyIds: As in `addingNumpadColumn`; pass `nil` to
+    ///   reserve a gap instead of keys, or leave `includesNumpad` false for no
+    ///   column at all.
+    func splitting(
+        gapColumns: Int,
+        utilityLeading: Bool,
+        includesNumpad: Bool,
+        numpadKeyIds: [String]?
+    ) -> GridArrangement {
+        let gap = KeyPlacement.gap(columns: max(gapColumns, 1))
+        let newRows = rows.enumerated().map { index, row -> [KeyPlacement] in
+            let (letters, utility) = regions(of: row)
+            let numpad = includesNumpad
+                ? Self.numpadPlacement(row: index, keyIds: numpadKeyIds).map { [$0] } ?? []
+                : []
+            return utilityLeading
+                ? utility + numpad + [gap] + letters
+                : letters + [gap] + numpad + utility
+        }
+        return GridArrangement(columns: columns + (includesNumpad ? 1 : 0) + max(gapColumns, 1), rows: newRows)
+    }
+}

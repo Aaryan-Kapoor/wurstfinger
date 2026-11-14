@@ -31,11 +31,12 @@ enum KeyboardGeometry {
 
     /// Lays the view model's active mode out against `containerWidth`.
     static func layout(of viewModel: KeyboardViewModel, containerWidth: CGFloat) -> Layout? {
-        guard let arrangement = viewModel.currentArrangement else { return nil }
-        let metrics = viewModel.layoutMetrics(forContainerWidth: containerWidth)
+        guard let plan = viewModel.layoutPlan(forContainerWidth: containerWidth) else { return nil }
+        let arrangement = plan.arrangement
+        let metrics = plan.metrics
         let padding = KeyboardConstants.Layout.horizontalPadding
-        let hSpacing = KeyboardConstants.Layout.gridHorizontalSpacing
-        let vSpacing = KeyboardConstants.Layout.gridVerticalSpacing
+        let hSpacing = metrics.keySpacing
+        let vSpacing = metrics.keySpacing
 
         let cells = GridLayoutSolver.solve(arrangement)
         let gridWidth = metrics.keyboardWidth - 2 * padding

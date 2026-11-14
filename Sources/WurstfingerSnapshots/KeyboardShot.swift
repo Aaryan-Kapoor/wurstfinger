@@ -95,6 +95,14 @@ struct KeyboardSpec {
     var slide: (keyId: String, steps: Int)?
     /// The "Key Animations" setting.
     var keyAnimations = true
+    /// The "Numpad Column" setting.
+    var numpadColumn = NumpadColumnPlacement.off
+    /// The "Numpad Style" setting.
+    var numpadStyle = NumpadType.phone
+    /// The "Key Spacing" setting in points; nil keeps the shipped spacing.
+    var keySpacing: Double?
+    /// The "Split on wide screens" setting.
+    var isSplit = false
 }
 
 @MainActor
@@ -123,6 +131,10 @@ enum KeyboardShot {
         // A finger on the keyboard draws its trail, as with the setting on.
         if spec.finger != nil, spec.showsTrail { settings[.gestureTrailEnabled] = true }
         if spec.longPressDigits { settings[.isLongPressDigitEnabled] = true }
+        settings[.numpadColumn] = spec.numpadColumn.rawValue
+        settings[.numpadStyle] = spec.numpadStyle.rawValue
+        if let spacing = spec.keySpacing { settings[.keySpacing] = spacing }
+        if spec.isSplit { settings[.isSplitLayoutEnabled] = true }
         if spec.finger?.longSwipes == true {
             settings[.expertModeEnabled] = true
             settings[.isLongSwipeEnabled] = true

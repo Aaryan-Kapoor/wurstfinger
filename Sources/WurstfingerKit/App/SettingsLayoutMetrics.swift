@@ -11,9 +11,11 @@ import CoreGraphics
 /// without a render context, so the numbers are device- and
 /// orientation-independent — exactly what the size slider edits.
 ///
-/// Every arrangement the runtime selects is four columns wide (the portrait
+/// The wish is a statement about the standard four-column block (the portrait
 /// grid is kept in all orientations, see `KeyboardViewModel.currentContext`),
-/// so the cell this resolves is the cell the keyboard renders.
+/// so the cell this resolves is the cell the keyboard renders — with or without
+/// the numpad column, which adds a column to the width and leaves the cell as
+/// it is (`KeyboardLayoutMetrics.resolve`'s `wishColumns`).
 enum SettingsLayoutMetrics {
     private static let gridColumns = 4
 
