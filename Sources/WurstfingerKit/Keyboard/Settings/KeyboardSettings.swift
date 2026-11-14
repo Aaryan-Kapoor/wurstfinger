@@ -77,6 +77,14 @@ enum SettingsKey: String, CaseIterable, Sendable {
     /// The user's text-replacement shortcuts, a JSON array of
     /// `{shortcut, phrase}` objects (see `TextReplacementTable`).
     case textReplacements
+    /// Core Haptics patterns (a distinct feel per gesture, direction detents,
+    /// the long-press swell) instead of the plain UIKit clicks. On by default;
+    /// the switch is the escape hatch for a device or process where Core
+    /// Haptics starts but stays silent.
+    case detailedHapticsEnabled
+    /// The keys' press, release and commit animations and the light effects
+    /// on them. On by default; Reduce Motion is honoured either way.
+    case keyAnimationsEnabled
 }
 
 // MARK: - Haptic Settings
@@ -125,9 +133,15 @@ final class HapticSettings {
         }
     }
 
+    /// Core Haptics patterns on (see `SettingsKey.detailedHapticsEnabled`).
+    var isDetailedEnabled: Bool {
+        didSet { persistIfNeeded(isDetailedEnabled, forKey: .detailedHapticsEnabled) }
+    }
+
     init(defaults: UserDefaults = SharedDefaults.store, shouldPersist: Bool = true) {
         self.defaults = defaults
         self.shouldPersist = shouldPersist
+        isDetailedEnabled = Self.loadDetailed(from: defaults)
 
         // Load values with clamping
         tapIntensity = Self.loadIntensity(from: defaults, key: .hapticIntensityTap, default: Self.defaultTapIntensity)
@@ -156,6 +170,21 @@ final class HapticSettings {
 
         let newDrag = Self.loadIntensity(from: defaults, key: .hapticIntensityDrag, default: Self.defaultDragIntensity)
         if abs(dragIntensity - newDrag) > 0.0001 { dragIntensity = newDrag }
+
+        let newDetailed = Self.loadDetailed(from: defaults)
+        if isDetailedEnabled != newDetailed { isDetailedEnabled = newDetailed }
+    }
+
+    /// The slider a haptic cue follows (see `HapticCue.channel`).
+    func intensity(for channel: HapticChannel) -> CGFloat {
+        switch channel {
+        case .touch: tapIntensity
+        case .slide: dragIntensity
+        }
+    }
+
+    private static func loadDetailed(from defaults: UserDefaults) -> Bool {
+        defaults.object(forKey: SettingsKey.detailedHapticsEnabled.rawValue) as? Bool ?? true
     }
 
     /// Returns the intensity for a given haptic event type

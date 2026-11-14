@@ -20,6 +20,9 @@ struct KeyRenderSettings: Equatable, Sendable {
     var areStandardSymbolLabelsHidden = false
     var areExtraSymbolLabelsHidden = false
     var isLongPressDigitEnabled = false
+    /// Press, release and commit animations and the light effects on keys
+    /// (`SettingsKey.keyAnimationsEnabled`).
+    var areKeyAnimationsEnabled = true
 
     /// The values a key renders with when nothing is stored yet. Single source
     /// for those defaults: `DataDrivenKeyboardRootView` initializes its
@@ -128,6 +131,15 @@ struct KeyView: View {
             label
             hintOverlay
         }
+        // Feel hook: the press sink, release spring, glass ripple and the
+        // label cross-fade on a mode change (`KeyPressSurface.swift`).
+        .modifier(KeyPressFeel(
+            key: key,
+            isPressed: isPressed,
+            touchPoint: pressCell?.touchPoint ?? CGPoint(x: 0.5, y: 0.5),
+            keyboardStyle: settings.keyboardStyle,
+            isAnimated: settings.areKeyAnimationsEnabled
+        ))
         // Inset the drawn key from the touch cell by `visualInset`, so the
         // visible key keeps its position/size while the cell itself extends into
         // the inter-key gaps (see KeyboardGridLayout.gapInsets).
@@ -253,19 +265,16 @@ struct KeyView: View {
 
     // MARK: - View Construction
 
-    @ViewBuilder
+    /// The cap, its pressed state and the light a press throws: drawn by the
+    /// feel layer (`KeyPressSurface`), which keeps the styles' fills.
     private var background: some View {
-        let shape = RoundedRectangle(cornerRadius: KeyboardConstants.KeyDimensions.cornerRadius)
-        switch settings.keyboardStyle {
-        case .classic:
-            shape.fill(Self.backgroundColor(for: key.style, active: isPressed))
-        case .liquidGlass:
-            shape.fill(.bar)
-                .overlay(shape.fill(Color.primary.opacity(isPressed ? 0.16 : 0)))
-                .overlay(
-                    shape.strokeBorder(Color.primary.opacity(0.1), lineWidth: 0.5)
-                )
-        }
+        KeyPressSurface(
+            keyStyle: key.style,
+            keyboardStyle: settings.keyboardStyle,
+            isPressed: isPressed,
+            touchPoint: pressCell?.touchPoint ?? CGPoint(x: 0.5, y: 0.5),
+            isAnimated: settings.areKeyAnimationsEnabled
+        )
     }
 
     @ViewBuilder
@@ -396,9 +405,9 @@ struct KeyView: View {
         }
     }
 
-    /// Short enough to read as instant, long enough not to flicker when a
-    /// flick's direction settles.
-    static let guidanceAnimation = Animation.easeOut(duration: 0.08)
+    /// Fast enough to read as instant, smooth enough not to flicker when a
+    /// flick's direction settles (`FeelMotion.hintEmphasis`).
+    static let guidanceAnimation = FeelMotion.hintEmphasis
 
     private var centerStyle: AnyShapeStyle {
         guidance == .circle ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(Color.primary)

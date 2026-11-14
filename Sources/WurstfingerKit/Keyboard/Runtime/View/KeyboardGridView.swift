@@ -58,6 +58,10 @@ struct KeyboardGridView: View {
     /// directly (see `SnapshotHooks.swift`).
     @Environment(\.isTouchSurfaceEnabled) private var isTouchSurfaceEnabled
 
+    /// The feel layer's transient visuals (commit pops, long-press ring,
+    /// slide ratchet), if the host has a view model to supply them.
+    @Environment(\.feelBoard) private var feelBoard
+
     private var gestureTrail: GestureTrailRecorder {
         injectedTrail ?? engine.trail
     }
@@ -92,6 +96,13 @@ struct KeyboardGridView: View {
                 recorder: gestureTrail,
                 headWidth: GestureTrailOverlay.headWidth(for: metrics)
             )
+        }
+        // Feel hook: pops, the long-press ring and the slide ratchet, between
+        // the trail and the guide card.
+        .overlay {
+            if let feelBoard, renderSettings.areKeyAnimationsEnabled {
+                FeelOverlay(board: feelBoard)
+            }
         }
         .overlay {
             TouchGuideOverlay(press: engine.press, keys: keys)

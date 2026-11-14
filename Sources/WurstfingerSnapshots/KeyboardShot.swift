@@ -40,6 +40,16 @@ struct FingerTrail {
     /// Long swipes are on, so the trail turns the accent colour while a
     /// release would fire one (`LongSwipeConfiguration.isArmed`).
     var longSwipes = false
+    /// Where on the key the finger lands, as a fraction of the key's size
+    /// from its centre (the press light and ripple start there).
+    var touchOffset = CGVector.zero
+    /// The finger lifts at the end of the path: the gesture commits (its pop
+    /// and the fading trail are what the picture shows).
+    var lifts = false
+    /// How fast a drag moves, in points per second (the trail's width follows it).
+    var dragSpeed: CGFloat = 350
+    /// The long-press timer fires at the end of the path (long presses on).
+    var firesLongPress = false
 }
 
 /// Everything that distinguishes one keyboard picture from another.
@@ -67,6 +77,22 @@ struct KeyboardSpec {
     /// Languages enabled in settings. More than one makes the globe key show
     /// the active language's label.
     var enabledLanguages: [String]?
+    /// Draw the gesture trail for `finger` (the trail setting on).
+    var showsTrail = true
+    /// Freeze the feel layer's transient animations (commit pop, long-press
+    /// ring, glass ripple) at this fraction of their run (`feelStillFrame`).
+    var feelStill: CGFloat?
+    /// Render as with Reduce Motion / Reduce Transparency on.
+    var reduceMotion = false
+    var reduceTransparency = false
+    /// Draw the shaders' pure-SwiftUI fallbacks, as before the shaders
+    /// compile or on a device that cannot compile them.
+    var withoutShaders = false
+    /// A slide on the space or delete key performed before the picture (the
+    /// finger stays down): the key and the steps, positive to the right.
+    var slide: (keyId: String, steps: Int)?
+    /// The "Key Animations" setting.
+    var keyAnimations = true
 }
 
 @MainActor
@@ -80,12 +106,18 @@ enum KeyboardShot {
         store.set(spec.hideStandardSymbols, forKey: SettingsKey.areStandardSymbolLabelsHidden.rawValue)
         store.set(spec.hideExtraSymbols, forKey: SettingsKey.areExtraSymbolLabelsHidden.rawValue)
         store.set(spec.longPressDigits, forKey: SettingsKey.isLongPressDigitEnabled.rawValue)
+        store.set(spec.keyAnimations, forKey: SettingsKey.keyAnimationsEnabled.rawValue)
+        // The feel shaders, compiled once per run (the app compiles them in
+        // the background on first appearance).
+        FeelShaders.shared.prepareSynchronously()
+        FeelShaders.shared.isSuppressedForSnapshots = spec.withoutShaders
 
         spec.device.activate()
         var settings: [SettingsKey: Any] = [:]
         if let enabled = spec.enabledLanguages { settings[.enabledLanguageIds] = enabled }
         // A finger on the keyboard draws its trail, as with the setting on.
-        if spec.finger != nil { settings[.gestureTrailEnabled] = true }
+        if spec.finger != nil, spec.showsTrail { settings[.gestureTrailEnabled] = true }
+        if spec.longPressDigits { settings[.isLongPressDigitEnabled] = true }
         if spec.finger?.longSwipes == true {
             settings[.expertModeEnabled] = true
             settings[.isLongSwipeEnabled] = true
@@ -114,12 +146,18 @@ enum KeyboardShot {
         if let finger = spec.finger {
             TrailDrawing.touch(finger, on: scenario)
         }
+        if let slide = spec.slide {
+            TrailDrawing.slide(keyId: slide.keyId, steps: slide.steps, on: scenario)
+        }
         let keyboard = DataDrivenKeyboardRootView(viewModel: viewModel, overrideWidth: spec.device.width)
             .frame(width: spec.device.width, height: layout.keyboardHeight)
             .environment(\.forcedActiveKeyIds, spec.pressedKeys)
             // No native views in a headless render; the engine is fed above.
             .environment(\.isTouchSurfaceEnabled, false)
             .environment(\.touchGuideReveal, spec.finger?.paused == true ? .immediately : .never)
+            .environment(\.feelStillFrame, spec.feelStill)
+            .environment(\._accessibilityReduceMotion, spec.reduceMotion)
+            .environment(\._accessibilityReduceTransparency, spec.reduceTransparency)
 
         let fieldHeight: CGFloat = spec.typedText == nil ? 0 : 96
         let width = spec.device.width
@@ -183,7 +221,10 @@ enum TrailDrawing {
         )
         let engine = viewModel.touchEngine
         guard let frame = engine.hitMap.key(withId: finger.keyId)?.frame else { return }
-        let origin = CGPoint(x: frame.midX, y: frame.midY)
+        let origin = CGPoint(
+            x: frame.midX + finger.touchOffset.dx * frame.width,
+            y: frame.midY + finger.touchOffset.dy * frame.height
+        )
         var synthesizer = TouchSynthesizer(keySize: frame.size, jitter: 0.4, seed: 11)
 
         let path: TouchPath
@@ -191,7 +232,7 @@ enum TrailDrawing {
         case let .drag(gesture, keyWidths):
             let length = keyWidths * frame.width
             let unit = unitVector(gesture, in: frame.size)
-            path = synthesizer.drag(by: CGSize(width: unit.x * length, height: unit.y * length), speed: 350)
+            path = synthesizer.drag(by: CGSize(width: unit.x * length, height: unit.y * length), speed: finger.dragSpeed)
         case let .circle(clockwise, fraction):
             let full = synthesizer.circle(clockwise: clockwise)
             let count = max(Int(Double(full.samples.count) * Double(fraction)), 2)
@@ -215,6 +256,35 @@ enum TrailDrawing {
         engine.began(1, at: points[0], time: start)
         for (index, point) in points.dropFirst().enumerated() {
             engine.moved(1, samples: [TouchSample(location: point, time: start + Double(index + 1) / TouchPath.sampleRate)])
+        }
+        if finger.firesLongPress {
+            engine.fireLongPressTimer(for: 1)
+        }
+        if finger.lifts, let last = points.last {
+            engine.ended(1, at: last, time: start + Double(points.count) / TouchPath.sampleRate)
+        }
+    }
+
+    /// Drags a finger along a slide key (space or delete) by `steps` steps
+    /// and keeps it down, through the real engine and the view model's slide
+    /// handling.
+    static func slide(keyId: String, steps: Int, on scenario: KeyboardScenario) {
+        let viewModel = scenario.viewModel
+        viewModel.configureTouchEngine(containerWidth: scenario.containerWidth, isLongPressEnabled: false)
+        let engine = viewModel.touchEngine
+        guard let frame = engine.hitMap.key(withId: keyId)?.frame else { return }
+        let start = CGPoint(x: frame.midX, y: frame.midY)
+        let activation = keyId == UtilitySlot.delete
+            ? KeyboardConstants.DeleteGestures.slideActivationThreshold
+            : KeyboardConstants.SpaceGestures.dragActivationThreshold
+        let travel = (abs(CGFloat(steps)) + 0.5) * KeyboardConstants.SpaceGestures.dragStep + activation
+        let signedTravel = steps < 0 ? -travel : travel
+        let time = ProcessInfo.processInfo.systemUptime
+        engine.began(2, at: start, time: time)
+        let count = 24
+        for index in 1 ... count {
+            let point = CGPoint(x: start.x + signedTravel * CGFloat(index) / CGFloat(count), y: start.y)
+            engine.moved(2, samples: [TouchSample(location: point, time: time + Double(index) / 120)])
         }
     }
 

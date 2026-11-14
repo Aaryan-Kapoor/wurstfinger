@@ -198,7 +198,7 @@ extension KeyboardViewModel {
         middlewares.append(AdvancedTextMiddleware(
             target: { [weak self] in self?.textInputTarget },
             locale: { [weak self] in self?.pipelineLocale ?? Locale.current },
-            onClipboardSuccess: { [weak self] in self?.feedbackStateChange() },
+            onClipboardSuccess: { [weak self] in self?.feel(.clipboardSuccess) },
             // Read on use, not captured at build time: the pipeline is only
             // rebuilt on definition or target changes, so a captured value
             // would keep the old setting until the next reload. Cut-all runs
@@ -367,9 +367,8 @@ extension KeyboardViewModel {
             endKeystrokeInterval()
         }
         dispatchAction(action)
-        // A confirmation tick: the touch-down tap already fired, and a long
-        // swipe is a deliberate "do something else" like a mode switch.
-        feedbackStateChange()
+        // Felt at the lift (`feelReleased`, a long-swipe commit), not here:
+        // the release may be held back behind an earlier finger.
         return true
     }
 
@@ -393,7 +392,7 @@ extension KeyboardViewModel {
             let previousMode = activeModeName
             handleSwitchMode(targetMode)
             if activeModeName != previousMode {
-                feedbackStateChange()
+                feel(.modeSwitch)
             }
             return true
         }
@@ -402,7 +401,7 @@ extension KeyboardViewModel {
             let previousLanguage = currentDefinition?.id
             switchToNextLanguage()
             if currentDefinition?.id != previousLanguage {
-                feedbackStateChange()
+                feel(.languageSwitch)
             }
             return true
         }
@@ -512,6 +511,7 @@ extension KeyboardViewModel {
             // Snapshot the type once so a mid-drag settings change can't switch
             // this gesture between discrete and continuous classification.
             spaceDragCursorType = cursorMovementType
+            feelSlideBegan(.moveCursor, key: key)
         case let .changed(deltaX):
             guard isSpaceDragging, deltaX != 0 else { return }
             spaceDragResidual += deltaX
@@ -531,6 +531,7 @@ extension KeyboardViewModel {
             isSpaceDragging = false
             spaceDragResidual = 0
             spaceDragPeak = 0
+            feelSlideEnded()
             endKeystrokeInterval()
         case .cancelled:
             // System cancelled the touches mid-drag: discard the drag state
@@ -538,6 +539,7 @@ extension KeyboardViewModel {
             isSpaceDragging = false
             spaceDragResidual = 0
             spaceDragPeak = 0
+            feelSlideEnded()
         case .tap:
             handleGesture(.tap, keyId: key.id, isReturn: false)
         case let .swipeUp(isReturn):
@@ -561,10 +563,10 @@ extension KeyboardViewModel {
             let hidden = sharedDefaults.bool(forKey: SettingsKey.areExtraSymbolLabelsHidden.rawValue)
             setLabelFlag(!hidden, forKey: .areExtraSymbolLabelsHidden)
         }
-        // Confirmation tick, not a second tap impact: the touch-down already
+        // Confirmation, not a second tap impact: the touch-down already
         // fired the tap haptic, and the toggle is a state change like a
         // mode switch.
-        feedbackStateChange()
+        feel(.modeSwitch)
     }
 
     /// Writes only a value the store does not already hold. Every write fires
@@ -603,7 +605,7 @@ extension KeyboardViewModel {
             : textInputTarget?.documentContextBeforeInput
         for width in Self.clusterWidths(in: context ?? "", count: abs(steps), fromEnd: direction < 0) {
             dispatchAction(.moveCursor(offset: direction * width))
-            feedbackDrag()
+            feelSlideStep(.moveCursor, direction: direction)
         }
         spaceDragResidual -= CGFloat(steps) * step
     }
@@ -654,7 +656,7 @@ extension KeyboardViewModel {
         } else {
             dispatchAction(.moveCursor(offset: singleGraphemeOffset(direction: direction)))
         }
-        feedbackDrag()
+        feelSlideStep(.moveCursor, direction: direction)
     }
 
     /// Moves the cursor by one word in `direction` (+1 forward, -1 backward)
@@ -711,23 +713,25 @@ extension KeyboardViewModel {
         case .began:
             isDeleteDragging = true
             deleteDragResidual = 0
+            feelSlideBegan(.delete, key: key)
         case let .changed(deltaX):
             guard isDeleteDragging, deltaX != 0 else { return }
             deleteDragResidual += deltaX
             let step = KeyboardConstants.DeleteGestures.dragStep
             while deleteDragResidual <= -step {
                 dispatchAction(.deleteBackward)
-                feedbackDrag()
+                feelSlideStep(.delete, direction: -1)
                 deleteDragResidual += step
             }
             while deleteDragResidual >= step {
                 dispatchAction(.deleteForward)
-                feedbackDrag()
+                feelSlideStep(.delete, direction: 1)
                 deleteDragResidual -= step
             }
         case .ended, .cancelled:
             isDeleteDragging = false
             deleteDragResidual = 0
+            feelSlideEnded()
         case .tap:
             handleGesture(.tap, keyId: key.id, isReturn: false)
         case .swipeUp:

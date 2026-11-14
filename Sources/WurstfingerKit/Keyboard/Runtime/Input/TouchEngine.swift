@@ -36,6 +36,28 @@ struct TouchEngineActions {
     /// What a classification on a key would type or do, for the live preview —
     /// resolved without dispatching anything.
     var previewLabel: (KeyDefinition, GestureClassification) -> String? = { _, _ in nil }
+
+    // MARK: Feel hooks (haptics, animation; see docs/feel.md)
+    //
+    // Fired synchronously inside the touch event, like everything above, and
+    // never consulted for what gets typed: the feel layer only watches.
+
+    /// The speculative target of a moving flick changed (from, to).
+    var candidateChanged: (KeyDefinition, GestureCandidate, GestureCandidate) -> Void = { _, _, _ in }
+    /// A finger lifted off a key with this classification — at the lift, before
+    /// rollover ordering may hold its keystroke back, so the release is felt
+    /// when it happens. A slide key's tap reports a plain `.tap`. Called
+    /// *before* the keystroke is handed on (dispatching can change the mode,
+    /// and the feel layer must resolve against the one the finger saw); the
+    /// feel layer only resolves here and issues its effects in
+    /// `releaseHandled`.
+    var released: (KeyDefinition, GestureClassification) -> Void = { _, _ in }
+    /// The release reported by `released` has been handed on — typed, or
+    /// queued behind an earlier finger. Called at the end of the same touch
+    /// event, so the click and the pop never go out ahead of the text.
+    var releaseHandled: () -> Void = {}
+    /// A long press was armed, cancelled or fired.
+    var longPressPhase: (KeyDefinition, LongPressFeelPhase) -> Void = { _, _ in }
 }
 
 /// The keyboard's input engine.
@@ -184,6 +206,16 @@ final class TouchEngine {
         nextSequence &+= 1
         tracks.append(track)
 
+        // Feel hook: where on the key the finger landed (the press light and
+        // ripple start there), written before `isPressed` so the key renders
+        // both in the same update.
+        press.setTouchPoint(
+            CGPoint(
+                x: hit.frame.width > 0 ? (location.x - hit.frame.minX) / hit.frame.width : 0.5,
+                y: hit.frame.height > 0 ? (location.y - hit.frame.minY) / hit.frame.height : 0.5
+            ),
+            keyId: key.id
+        )
         press.setPressed(true, keyId: key.id)
         if key.slideType == .none {
             press.setGuide(TouchGuide(keyId: key.id, keyFrame: hit.frame, touchID: track.sequence))
@@ -192,6 +224,9 @@ final class TouchEngine {
         actions.touchDown(key)
         track.record(.zero, slideActions: nil)
         scheduleLongPress(for: track)
+        if track.longPress.isScheduled {
+            actions.longPressPhase(key, .armed(keyFrame: hit.frame, delay: tuning.longPressDuration))
+        }
     }
 
     /// A finger moved. `samples` are every position since the last event, in
@@ -219,6 +254,7 @@ final class TouchEngine {
         }
         if track.longPress.isScheduled, !track.isResting(within: tuning.longPressMovementTolerance) {
             track.longPress.cancel()
+            actions.longPressPhase(track.key, .cancelled)
         }
         speculate(track)
     }
@@ -227,6 +263,7 @@ final class TouchEngine {
     func ended(_ id: PointerID, at location: CGPoint, time: TimeInterval) {
         guard let track = track(for: id) else { return }
         remove(track)
+        if track.longPress.isScheduled { actions.longPressPhase(track.key, .cancelled) }
         track.longPress.cancel()
         release(track)
 
@@ -237,6 +274,9 @@ final class TouchEngine {
             flushPending(at: time)
             return
         }
+        // Feel hook: issue the release's click and pop once the keystroke
+        // below has been handed on.
+        defer { actions.releaseHandled() }
 
         let translation = track.translation(to: location)
         switch track.kind {
@@ -251,6 +291,7 @@ final class TouchEngine {
             )
             signposter.endInterval(InputSignposts.classify, interval)
             trail.finish(from: track.trailToken)
+            actions.released(track.key, classification)
             enqueue(PendingCommit(sequence: track.sequence, key: track.key, kind: .gesture(classification)), at: time)
         case let .slide(configuration):
             // Feed the release position as a final move first, as the drag
@@ -261,6 +302,7 @@ final class TouchEngine {
                 configuration: configuration
             )
             trail.finish(from: track.trailToken)
+            if phase == .tap { actions.released(track.key, GestureClassification(gesture: .tap, isReturn: false)) }
             if let phase, phase.producesText {
                 // Text-producing ends keep their place in the press order.
                 enqueue(PendingCommit(sequence: track.sequence, key: track.key, kind: .slide(phase)), at: time)
@@ -307,6 +349,14 @@ final class TouchEngine {
             || classification.isReturn != track.candidateIsReturn
             || isLongSwipe != track.candidateIsLongSwipe
         else { return }
+        // Feel hook: detents, the return turn, the long-swipe threshold.
+        actions.candidateChanged(
+            track.key,
+            GestureCandidate(
+                gesture: track.candidate, isReturn: track.candidateIsReturn, isLongSwipe: track.candidateIsLongSwipe
+            ),
+            GestureCandidate(gesture: candidate, isReturn: classification.isReturn, isLongSwipe: isLongSwipe)
+        )
         track.candidate = candidate
         track.candidateIsReturn = classification.isReturn
         track.candidateIsLongSwipe = isLongSwipe
@@ -334,10 +384,15 @@ final class TouchEngine {
     /// still resting, and a long-press binding resolved.
     private func longPressFired(_ track: PointerTrack, sequence: UInt64) -> Bool {
         guard track.sequence == sequence,
-              tracks.contains(where: { $0 === track }),
-              track.isResting(within: tuning.longPressMovementTolerance),
-              actions.longPress(track.key)
+              tracks.contains(where: { $0 === track })
         else { return false }
+        guard track.isResting(within: tuning.longPressMovementTolerance),
+              actions.longPress(track.key)
+        else {
+            actions.longPressPhase(track.key, .cancelled)
+            return false
+        }
+        actions.longPressPhase(track.key, .fired)
         trail.finish(from: track.trailToken)
         press.setCandidate(nil, isReturn: false, keyId: track.keyId)
         press.clearGuide(touchID: track.sequence)
@@ -426,6 +481,7 @@ final class TouchEngine {
     /// slide in flight, the trail cleared at once.
     private func abandon(_ track: PointerTrack) {
         remove(track)
+        if track.longPress.isScheduled { actions.longPressPhase(track.key, .cancelled) }
         track.longPress.abandon()
         if case .slide = track.kind, let phase = track.slide.handleCancelled() {
             actions.slide(track.key, phase)

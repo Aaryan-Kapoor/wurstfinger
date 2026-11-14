@@ -173,7 +173,9 @@ enum GestureTrailGeometry {
     /// Kept as part of the one closed contour so there is no second subpath
     /// whose winding could punch a hole through the ribbon under a non-zero
     /// fill.
-    private static func appendHeadCap(
+    // Internal (not private): the velocity-aware ink (`GestureTrailInk`)
+    // builds its ribbon from the same cap.
+    static func appendHeadCap(
         to path: inout Path,
         head: CGPoint,
         normal: CGVector,
@@ -196,7 +198,8 @@ enum GestureTrailGeometry {
 
     /// Unit direction of travel at `index`, from its neighbours. Nil when the
     /// neighbours coincide and no direction can be derived.
-    private static func unitTangent(at index: Int, in points: [CGPoint]) -> CGVector? {
+    // Internal for `GestureTrailInk`, like `appendHeadCap`.
+    static func unitTangent(at index: Int, in points: [CGPoint]) -> CGVector? {
         let previous = points[max(index - 1, 0)]
         let next = points[min(index + 1, points.count - 1)]
         let dx = next.x - previous.x

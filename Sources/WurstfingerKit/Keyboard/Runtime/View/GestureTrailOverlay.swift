@@ -22,6 +22,9 @@ struct GestureTrailOverlay: View {
     /// `headWidth(for:)`.
     let headWidth: CGFloat
 
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
     var body: some View {
         // Nothing is rendered — and no display-linked timer runs — unless a
         // trail is in flight.
@@ -57,24 +60,35 @@ struct GestureTrailOverlay: View {
         // Those frames would build the full ribbon only to fill it at zero
         // opacity; bail before the geometry instead.
         guard !trail.isFinished(at: now) else { return }
-        var points = trail.visiblePoints(at: now)
-        guard !points.isEmpty else { return }
+        let samples = trail.visibleSamples(at: now)
+        guard let head = samples.last?.point else { return }
         // While the finger is down, run the ribbon out to where the system
         // predicts it is going, so the head sits under the finger.
-        if trail.releaseTime == nil {
-            points.append(contentsOf: recorder.predicted)
-        }
+        let predicted = trail.releaseTime == nil ? recorder.predicted : []
 
-        let path = GestureTrailGeometry.shape(through: points, headWidth: headWidth)
-        // One fill of one closed contour, so the alpha is uniform even where
-        // the path crosses itself.
+        // Feel: ink-like — thinner where the finger moved fast, fading toward
+        // the tail, glowing under the finger (`GestureTrailInk`).
+        let path = GestureTrailInk.shape(samples: samples, predicted: predicted, headWidth: headWidth)
+        // One fill of one closed contour, so the alpha is the shading's alone
+        // even where the path crosses itself.
         // A long swipe that will fire on release reads in the accent colour,
         // and a little stronger than the neutral trail so the change registers.
         let isArmed = recorder.isLongSwipeArmed
         let opacity = isArmed
             ? KeyboardConstants.GestureTrail.armedOpacity
             : KeyboardConstants.GestureTrail.opacity
-        context.opacity = opacity * trail.fadeOpacity(at: now)
-        context.fill(path, with: .color(isArmed ? .accentColor : .primary))
+        // A light core reads as a glow on the accent ink and on light ink
+        // over a dark keyboard; on dark ink over a light one it would read
+        // as a grey smudge.
+        let glow = isArmed ? 0.7 : (colorScheme == .dark ? 0.45 : 0)
+        context.opacity = trail.fadeOpacity(at: now)
+        context.fill(path, with: GestureTrailInk.shading(
+            head: predicted.last ?? head,
+            headWidth: headWidth,
+            color: isArmed ? .accentColor : .primary,
+            opacity: opacity,
+            glow: glow,
+            library: reduceTransparency ? nil : FeelShaders.shared.library
+        ))
     }
 }
