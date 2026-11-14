@@ -265,7 +265,7 @@ final class TouchEngine {
         actions.touchDown(key)
         switch track.kind {
         case .flick:
-            track.recordFlick(.zero)
+            track.recordFlick(.zero, at: time)
         case let .slide(configuration):
             _ = track.recordSlide(.zero, configuration: configuration)
         }
@@ -290,7 +290,7 @@ final class TouchEngine {
         case .flick:
             for sample in samples {
                 trail.extend(to: sample.location, from: token)
-                track.recordFlick(track.translation(to: sample.location))
+                track.recordFlick(track.translation(to: sample.location), at: sample.time)  // WP-A
             }
         case let .slide(configuration):
             for sample in samples {
@@ -361,6 +361,7 @@ final class TouchEngine {
                 aspectRatio: track.aspectRatio,
                 tuning: tuning,
                 keySize: track.keySize,
+                elapsed: time - track.pressTime, // WP-A
                 scratch: scratch
             )
             InputSignposts.end(InputSignposts.classify, InputSignposts.classifyID)
@@ -421,6 +422,7 @@ final class TouchEngine {
                 config: tuning.config.with(aspectRatio: track.aspectRatio),
                 thresholds: tuning.thresholds,
                 keySize: track.keySize,
+                peakTime: track.flick.peakElapsed, // WP-A
                 scratch: scratch
             )
         }
@@ -782,8 +784,12 @@ private final class PointerTrack {
 
     /// Feeds one sample (relative to touch-down) to a flick key's sequence.
     @inline(__always)
-    func recordFlick(_ translation: CGPoint) {
-        _ = flick.handleChanged(translation: CGSize(width: translation.x, height: translation.y))
+    func recordFlick(_ translation: CGPoint, at time: TimeInterval) {
+        // WP-A: the time lets the classifier tell a quick short flick from a
+        // slow drift (`GestureFeatures.isFastSwipe`).
+        _ = flick.handleChanged(
+            translation: CGSize(width: translation.x, height: translation.y), elapsed: time - pressTime
+        )
     }
 
     /// Feeds one sample to a slide key's state machine; the caller dispatches

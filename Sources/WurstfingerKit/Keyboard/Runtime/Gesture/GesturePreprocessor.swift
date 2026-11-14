@@ -229,8 +229,11 @@ struct GesturePreprocessor {
         // Step 2: Outlier filter
         let filtered = filterOutliers(dejittered)
 
+        // Step 2b: Lone sideways spikes
+        let despiked = filterSpikes(filtered)
+
         // Step 3: Aspect ratio correction (normalize horizontal movement)
-        return normalizeAspectRatio(filtered)
+        return normalizeAspectRatio(despiked)
     }
 
     /// Runs a buffer step over an array: `body` reads the input, writes at
@@ -582,6 +585,89 @@ struct GesturePreprocessor {
             >= Self.minimumDirectionCosine * referenceLength * stepLength
     }
 
+    // MARK: - Step 2b: Spike Filter
+
+    /// A lone sample must make the path at least this much (points) longer than
+    /// its neighbours' own chord to be called a spike: well above the jitter the
+    /// jitter filter already removed, well under the jumps the outlier filter
+    /// catches.
+    private static let spikeMinimumDetour: CGFloat = 20
+
+    /// The path through a spike's neighbours must run straight on into the
+    /// samples beyond them: the turn at each, as a cosine, within 40°.
+    private static let spikeMinimumContinuationCosine = CGFloat(cos(Double.pi * 40 / 180))
+
+    /// Removes lone samples that jump off the path sideways and come straight
+    /// back: a digitizer glitch puts the finger a fraction of a key off its line
+    /// for one frame — too small for the outlier filter, which only judges jumps
+    /// beyond `maxJumpDistance` — and a circle is the shape that cannot afford it:
+    /// one such sample breaks its turn count and its circle fit.
+    ///
+    /// What separates a spike from the shapes that look like one:
+    /// - it costs a real detour against its neighbours' chord;
+    /// - the path runs *on* through it: into the spike and out of it the same
+    ///   way, within 40° (a return swipe's tip turns the path back: its two
+    ///   sides are opposed). A fast circle sampled three times a turn also puts a
+    ///   sample far off its neighbours' chord, but its path bends at every
+    ///   sample and never goes straight on.
+    /// A path needs two samples on each side to be judged, so a glitch in the
+    /// first or last two samples is left alone (the last is the release itself).
+    /// A spike is cut and the next sample judged against the repaired path.
+    ///
+    /// In place; returns the new count.
+    func filterSpikes(_ points: UnsafeMutableBufferPointer<CGPoint>) -> Int {
+        var count = points.count
+        var i = 2
+        while i < count - 2 {
+            if isSpike(in: points, at: i) {
+                for j in i ..< count - 1 {
+                    points[j] = points[j + 1]
+                }
+                count -= 1
+            } else {
+                i += 1
+            }
+        }
+        return count
+    }
+
+    /// Array form of `filterSpikes(_:)`.
+    func filterSpikes(_ points: [CGPoint]) -> [CGPoint] {
+        guard points.count >= 5 else { return points }
+        var copy = points
+        let count = copy.withUnsafeMutableBufferPointer { filterSpikes($0) }
+        return Array(copy.prefix(count))
+    }
+
+    private func isSpike(in points: UnsafeMutableBufferPointer<CGPoint>, at i: Int) -> Bool {
+        let a = points[i - 1], c = points[i + 1]
+        let chord = CGVector(dx: c.x - a.x, dy: c.y - a.y)
+        let length = hypot(chord.dx, chord.dy)
+        // The detour through the sample: how much longer the way via it is than
+        // the neighbours' own chord. A sideways spike, or one that jumps ahead of
+        // its successor and falls back, costs about twice its size.
+        let detour = a.distance(to: points[i]) + points[i].distance(to: c) - length
+        guard detour >= Self.spikeMinimumDetour else { return false }
+
+        // The path on either side runs the same way: into the spike and out of
+        // it. A turn-back (a return swipe's tip) has the two opposed.
+        let before = CGVector(dx: a.x - points[i - 2].x, dy: a.y - points[i - 2].y)
+        let after = CGVector(dx: points[i + 2].x - c.x, dy: points[i + 2].y - c.y)
+        guard continues(before, into: after) else { return false }
+        // And, when the neighbours are far enough apart to have a direction, it
+        // runs along their chord.
+        return length < 4 || (continues(before, into: chord) && continues(chord, into: after))
+    }
+
+    /// Whether `second` carries on from `first` to within the continuation cone.
+    private func continues(_ first: CGVector, into second: CGVector) -> Bool {
+        let firstLength = hypot(first.dx, first.dy)
+        let secondLength = hypot(second.dx, second.dy)
+        guard firstLength > 0, secondLength > 0 else { return false }
+        return first.dx * second.dx + first.dy * second.dy
+            >= Self.spikeMinimumContinuationCosine * firstLength * secondLength
+    }
+
     // MARK: - Step 3: Aspect Ratio Normalization
 
     /// Normalizes points for non-square aspect ratio
@@ -703,10 +789,26 @@ struct GestureClassificationThresholds: Sendable, Equatable {
     let minTurnConsistency: CGFloat
     /// Minimum oriented compactness (width/length) to be considered circular (1.0 = square, 0 = line)
     let minOrientedCompactness: CGFloat
+    /// The shortest *fast* stroke that is still a swipe, points on a reference
+    /// key (`GestureFeatures.referenceKeyHeight`). A quick flick of 14 pt is a
+    /// deliberate flick; a slow drift of the same length is a resting thumb.
+    var fastSwipeLength: CGFloat = GestureClassificationThresholds.defaultFastSwipeLength
+    /// How fast a stroke shorter than `minSwipeLength` must be to count, points
+    /// per second on a reference key.
+    var fastSwipeSpeed: CGFloat = GestureClassificationThresholds.defaultFastSwipeSpeed
+    /// The largest deviation from a circle, as a fraction of its radius, that
+    /// still counts as a circle (`GestureCalculations.circleFitResidual`).
+    var maxCircleFitResidual: CGFloat = GestureClassificationThresholds.defaultMaxCircleFitResidual
 
     // MARK: - Default Values
 
     static let defaultMinSwipeLength: CGFloat = 20
+    static let defaultFastSwipeLength: CGFloat = 12
+    static let defaultFastSwipeSpeed: CGFloat = 100
+    /// 0.3: a 2:1 ellipse with a thumb's wobble fits a circle to 0.2-0.3; the
+    /// flat loop of a return swipe whose way back runs wide of the way out,
+    /// 0.3 and more. 0.2 loses one circle in ten, 0.45 admits those loops.
+    static let defaultMaxCircleFitResidual: CGFloat = 0.3
     static let defaultMaxReturnRatio: CGFloat = 0.5
     static let defaultReturnDisplacementStart: CGFloat = 0.2
     static let defaultReturnDisplacementEnd: CGFloat = 0.8
@@ -731,6 +833,9 @@ struct GestureClassificationThresholds: Sendable, Equatable {
     /// stale or foreign store value (an older build's range, a hand-written
     /// default) is clamped instead of reaching classification.
     static let minSwipeLengthRange: ClosedRange<Double> = 10 ... 60
+    static let fastSwipeLengthRange: ClosedRange<Double> = 6 ... 30
+    static let fastSwipeSpeedRange: ClosedRange<Double> = 40 ... 400
+    static let maxCircleFitResidualRange: ClosedRange<Double> = 0.1 ... 0.8
     static let maxReturnRatioRange: ClosedRange<Double> = 0.2 ... 0.8
     static let returnDisplacementStartRange: ClosedRange<Double> = 0.1 ... 0.4
     static let returnDisplacementEndRange: ClosedRange<Double> = 0.6 ... 0.9
@@ -745,6 +850,9 @@ struct GestureClassificationThresholds: Sendable, Equatable {
     // MARK: - UserDefaults Keys
 
     static let minSwipeLengthKey = "gesture.minSwipeLength"
+    static let fastSwipeLengthKey = "gesture.fastSwipeLength"
+    static let fastSwipeSpeedKey = "gesture.fastSwipeSpeed"
+    static let maxCircleFitResidualKey = "gesture.maxCircleFitResidual"
     static let maxReturnRatioKey = "gesture.maxReturnRatio"
     static let returnDisplacementStartKey = "gesture.returnDisplacementStart"
     static let returnDisplacementEndKey = "gesture.returnDisplacementEnd"
@@ -822,6 +930,18 @@ struct GestureClassificationThresholds: Sendable, Equatable {
             minOrientedCompactness: clampedCGFloat(
                 from: store, key: minOrientedCompactnessKey,
                 default: defaultMinOrientedCompactness, range: minOrientedCompactnessRange
+            ),
+            fastSwipeLength: clampedCGFloat(
+                from: store, key: fastSwipeLengthKey,
+                default: defaultFastSwipeLength, range: fastSwipeLengthRange
+            ),
+            fastSwipeSpeed: clampedCGFloat(
+                from: store, key: fastSwipeSpeedKey,
+                default: defaultFastSwipeSpeed, range: fastSwipeSpeedRange
+            ),
+            maxCircleFitResidual: clampedCGFloat(
+                from: store, key: maxCircleFitResidualKey,
+                default: defaultMaxCircleFitResidual, range: maxCircleFitResidualRange
             )
         )
     }
@@ -857,16 +977,55 @@ struct GestureFeatures: Sendable {
     let turnConsistency: CGFloat // how consistent turn direction is (1.0 = all same direction, 0.5 = half each)
     let orientedCompactness: CGFloat // width/length along principal axis (1.0 = square, 0 = line)
 
+    /// The key the stroke was drawn on, relative to the reference key the
+    /// thresholds are stated for (1 when unknown), and how long the finger took
+    /// to reach `maxDisplacement` (0 when unknown). Set by `extract`.
+    var keyScale: CGFloat = 1
+    var peakTime: TimeInterval = 0
+    /// How far the path is from the best circle through it (see
+    /// `GestureCalculations.circleFitResidual`). Only computed for a path that
+    /// already passes every other circle test, so only circles pay for it; 0
+    /// otherwise, which is no objection.
+    var circleFitResidual: CGFloat = 0
+
+    /// The key height the length thresholds are stated for: a phone at the
+    /// default width. A smaller key (an SE, the numpad column) has a shorter
+    /// reach, a larger one (an iPad) a longer, and a stroke that is a third of a
+    /// key should be a swipe on both.
+    static let referenceKeyHeight: CGFloat = 58
+
+    /// How the thresholds scale for `keySize`, clamped so one odd frame cannot
+    /// make swipes impossible or free.
+    static func keyScale(for keySize: CGSize) -> CGFloat {
+        guard keySize.height > 0 else { return 1 }
+        return min(max(keySize.height / referenceKeyHeight, 0.7), 1.6)
+    }
+
+    /// The shortest stroke that counts as a swipe on this key.
+    var swipeLength: CGFloat { thresholds.minSwipeLength * keyScale }
+
+    /// A stroke shorter than `swipeLength` that was nonetheless quick and long
+    /// enough to be a flick. Needs the time; without it (0) nothing is fast.
+    /// The finger must also *end* out there (a chord of at least 60% of the
+    /// reach): one stray sample that jumps away and straight back is a glitch in
+    /// a tap, not a stroke.
+    var isFastSwipe: Bool {
+        peakTime > 0
+            && chordLength >= 0.6 * maxDisplacement
+            && maxDisplacement >= thresholds.fastSwipeLength * keyScale
+            && maxDisplacement >= thresholds.fastSwipeSpeed * keyScale * CGFloat(peakTime)
+    }
+
     // Derived classifications (using configurable thresholds)
     var isTap: Bool {
-        maxDisplacement < thresholds.minSwipeLength
+        maxDisplacement < swipeLength && !isFastSwipe
     }
 
     /// Return-swipe: maxDisplacement in the middle of the path (not at the end) AND finger returned to start
     var isReturn: Bool {
         let t = thresholds
         // Must have significant movement
-        guard maxDisplacement > t.minSwipeLength else { return false }
+        guard !isTap else { return false }
         // Must have returned close to start (low chord/path ratio)
         guard returnRatio < t.maxReturnRatio else { return false }
         // maxDisplacement should be in the middle of the path, not at the very end
@@ -874,11 +1033,21 @@ struct GestureFeatures: Sendable {
     }
 
     var isCircular: Bool {
+        passesCircleGates && circleFitResidual <= thresholds.maxCircleFitResidual
+    }
+
+    /// Beyond this much turning (540°, a turn and a half) the circle fit is not
+    /// consulted.
+    static let fitExemptSpan: CGFloat = .pi * 3
+
+    /// Every circle test but the fit: the cheap ones, which decide whether the
+    /// fit is worth computing.
+    var passesCircleGates: Bool {
         let t = thresholds
         // Require minimum size (2x swipe length) to avoid small wiggles being detected as circles
         // Also require high turn consistency and compactness to distinguish from return swipes
         // (circle: turns consistently one direction AND is not a narrow arc)
-        return pathLength > t.minSwipeLength * 2 &&
+        return pathLength > swipeLength * 2 &&
             circularity > t.minCircularity &&
             abs(angularSpan) > t.minAngularSpan &&
             turnConsistency > t.minTurnConsistency &&
@@ -896,7 +1065,23 @@ struct GestureFeatures: Sendable {
     /// buffer and tests an array; same-module generics are specialised, so
     /// neither pays for the abstraction.
     static func extract<C: RandomAccessCollection<CGPoint>>(
-        from points: C, thresholds: GestureClassificationThresholds = .default
+        from points: C, thresholds: GestureClassificationThresholds = .default,
+        keyScale: CGFloat = 1, peakTime: TimeInterval = 0
+    ) -> GestureFeatures where C.Index == Int {
+        var features = extractFeatures(from: points, thresholds: thresholds)
+        features.keyScale = keyScale
+        features.peakTime = peakTime
+        // A path that winds one and a half times or more is no return swipe,
+        // whatever shape it fits (a spiral fits no circle): the fit is only
+        // asked where a flat loop could be mistaken for a circle.
+        if features.passesCircleGates, abs(features.angularSpan) < GestureFeatures.fitExemptSpan {
+            features.circleFitResidual = GestureCalculations.circleFitResidual(of: points)
+        }
+        return features
+    }
+
+    private static func extractFeatures<C: RandomAccessCollection<CGPoint>>(
+        from points: C, thresholds: GestureClassificationThresholds
     ) -> GestureFeatures where C.Index == Int {
         guard points.count >= 2 else {
             return GestureFeatures.empty(thresholds: thresholds)

@@ -110,6 +110,69 @@ struct LabGesture: Sendable {
     /// What was drawn into it, by name (hook sizes, overshoot, the ellipse's
     /// ratio, whether a sample spiked, …), for slicing a report.
     let details: [String: Double]
+    /// How long the touch lasted, seconds (before samples were dropped).
+    let duration: Double
+    /// How long the finger took to reach the point farthest from where it
+    /// landed — the speed of the stroke is its reach over this, not over the
+    /// whole touch, which may end in a rest.
+    let peakTime: Double
+    /// The key the finger is on, points (width follows from the aspect ratio).
+    let keySize: CGSize
+}
+
+// MARK: - Traces
+
+/// A gesture as a file: what a recorded touch (or a lab gesture) is made of,
+/// in a shape that survives JSON. Real traces captured on a device replay
+/// through the same matrix and floors as the generated ones: label each with
+/// the gesture it was meant to be and `GestureLab.matrix(replaying:)` says how
+/// the classifier reads them.
+struct GestureTrace: Codable, Sendable {
+    /// `GestureType` raw value and whether it was the return form.
+    var meant: String
+    var isReturn: Bool
+    /// Origin-anchored translations, as x/y pairs.
+    var points: [[Double]]
+    var aspectRatio: Double
+    var keyWidth: Double
+    var keyHeight: Double
+    /// Seconds from touch-down to the farthest point (0 if unknown).
+    var peakTime: Double
+    var duration: Double
+
+    init(_ gesture: LabGesture) {
+        meant = gesture.label.gesture.rawValue
+        isReturn = gesture.label.isReturn
+        points = gesture.positions.map { [Double($0.x), Double($0.y)] }
+        aspectRatio = Double(gesture.aspectRatio)
+        keyWidth = Double(gesture.keySize.width)
+        keyHeight = Double(gesture.keySize.height)
+        peakTime = gesture.peakTime
+        duration = gesture.duration
+    }
+
+    /// The gesture the trace holds.
+    var gesture: LabGesture {
+        LabGesture(
+            label: LabLabel(gesture: GestureType(rawValue: meant) ?? .tap, isReturn: isReturn),
+            positions: points.map { CGPoint(x: $0[0], y: $0[1]) },
+            aspectRatio: CGFloat(aspectRatio), reach: 0, sweepDegrees: 0, details: [:],
+            duration: duration, peakTime: peakTime,
+            keySize: CGSize(width: keyWidth, height: keyHeight)
+        )
+    }
+}
+
+extension GestureLab {
+    /// The matrix of labelled gestures that were not generated here: replayed
+    /// traces.
+    static func matrix(replaying gestures: [LabGesture], tuning: GestureTuning = .default) -> ConfusionMatrix {
+        var matrix = ConfusionMatrix()
+        for gesture in gestures {
+            matrix.record(truth: gesture.label, verdict: LabLabel(classify(gesture, tuning: tuning)))
+        }
+        return matrix
+    }
 }
 
 // MARK: - Profiles
@@ -123,12 +186,23 @@ struct LabProfile: Sendable {
     // Tap
     /// Slow drift between touch-down and lift, points.
     var tapDrift: ClosedRange<Double> = 0 ... 6
+    var tapDuration: ClosedRange<Double> = 0.04 ... 0.25
 
     // Flick
     var flickLength: ClosedRange<Double> = 20 ... 90
     /// The aim may stray from the direction's centre by up to this many
     /// degrees either way (a sector is ±22.5°).
     var aimSpread: Double = 18
+    /// When set, the aim sits this many degrees off the direction's centre,
+    /// either side: the gestures that land near a sector line, where the verdict
+    /// is decided. `aimSpread` is ignored.
+    var aimNearBoundary: ClosedRange<Double>?
+    /// The hand's own lean: every aim is turned by this many degrees (a right
+    /// thumb reaching across the screen), and diagonals are pulled toward the
+    /// vertical by `diagonalPull` degrees (thumbs flick up and down more
+    /// readily than across).
+    var aimBias: Double = 0
+    var diagonalPull: Double = 0
     /// Sideways bow of the stroke as a fraction of its length.
     var bow: Double = 0.12
     /// Chance of a settling hook at touch-down, and its size in points.
@@ -181,6 +255,9 @@ struct LabProfile: Sendable {
     var spikeSize: ClosedRange<Double> = 15 ... 45
 
     var aspectRatios: ClosedRange<Double> = 0.7 ... 1.4
+    /// The key's height in points (the reference is 58, a phone at the default
+    /// width).
+    var keyHeights: ClosedRange<Double> = 54 ... 62
 
     /// A steady thumb: no hooks, no overshoot, no digitizer faults.
     static let clean: LabProfile = {
@@ -207,6 +284,119 @@ struct LabProfile: Sendable {
 
     /// Everything the lab models.
     static let realistic = LabProfile()
+
+    // MARK: Sloppiness
+    //
+    // Each of these is `realistic` with one way of typing turned up. They are
+    // the cases a keyboard is forgiving *for*: the recogniser is judged on the
+    // verdict the hand meant, not on what the geometry says.
+
+    /// Fast two-thumb typing: short, quick flicks with 3-6 samples, hooks at
+    /// both ends, taps that are quick and drift a little.
+    static let fastTyping: LabProfile = {
+        var p = LabProfile()
+        p.flickLength = 14 ... 40
+        p.keyHeights = 50 ... 60
+        p.flickDuration = 0.03 ... 0.12
+        p.aimSpread = 20
+        p.startHookChance = 0.5
+        p.endHookChance = 0.5
+        p.overshootChance = 0.3
+        p.tapDrift = 0 ... 7
+        p.tapDuration = 0.03 ... 0.12
+        p.returnLength = 22 ... 55
+        p.returnDuration = 0.1 ... 0.3
+        p.circleDuration = 0.25 ... 0.5
+        return p
+    }()
+
+    /// A hesitant finger: slow drift that must stay a tap.
+    static let slowDrift: LabProfile = {
+        var p = LabProfile()
+        p.tapDrift = 4 ... 14
+        p.tapDuration = 0.15 ... 0.5
+        p.jitter = 0.3 ... 0.9
+        return p
+    }()
+
+    /// Hooks at both ends on most strokes, and bigger: the finger settles on
+    /// landing and flicks off on lift.
+    static let hooky: LabProfile = {
+        var p = LabProfile()
+        p.startHookChance = 0.85
+        p.startHookSize = 3 ... 8
+        p.endHookChance = 0.85
+        p.endHookSize = 3 ... 9
+        p.hookCap = 0.35
+        p.flickLength = 24 ... 80
+        return p
+    }()
+
+    /// A right thumb on a phone held in one hand: the whole fan of aims leans
+    /// ten degrees, diagonals pull toward the vertical, strokes bow.
+    static let leaning: LabProfile = {
+        var p = LabProfile()
+        // Biases and spread together stay inside a sector (6 + 6 + 8 < 22.5):
+        // the aim is crooked, never across the line, so a miss is the
+        // recogniser's.
+        p.aimSpread = 8
+        p.aimBias = 5
+        p.diagonalPull = 6
+        p.bow = 0.2
+        p.flickLength = 24 ... 85
+        return p
+    }()
+
+    /// An iPhone SE, or the numpad column squeezing the keys: short travel
+    /// everywhere, narrow keys, small circles.
+    static let smallKeys: LabProfile = {
+        var p = LabProfile()
+        p.aspectRatios = 0.7 ... 0.95
+        p.keyHeights = 38 ... 46
+        p.flickLength = 16 ... 45
+        p.returnLength = 22 ... 50
+        p.circleRadius = 11 ... 20
+        p.circleMinorFloor = 6.5
+        p.tapDrift = 0 ... 4
+        p.hookCap = 0.2
+        p.startHookSize = 1.5 ... 4
+        p.endHookSize = 1.5 ... 5
+        return p
+    }()
+
+    /// An iPad: wide keys, long arm travel, big circles, a bigger hand's drift.
+    static let largeKeys: LabProfile = {
+        var p = LabProfile()
+        p.aspectRatios = 1.0 ... 1.4
+        p.keyHeights = 80 ... 105
+        p.flickLength = 40 ... 130
+        p.returnLength = 50 ... 120
+        p.circleRadius = 24 ... 55
+        p.tapDrift = 0 ... 10
+        p.startHookSize = 3 ... 10
+        p.endHookSize = 3 ... 12
+        p.spikeSize = 20 ... 60
+        return p
+    }()
+
+    /// Aims that land two to nine degrees from a sector line: the verdict is
+    /// decided by the direction estimate alone.
+    static let boundaryAim: LabProfile = {
+        var p = LabProfile()
+        p.aimNearBoundary = 13 ... 20.5
+        p.flickLength = 26 ... 90
+        p.returnLength = 35 ... 80
+        p.bow = 0.06
+        p.startHookChance = 0.15
+        p.endHookChance = 0.15
+        return p
+    }()
+
+    /// Every sloppiness profile by name, for the reports and the floors.
+    static let sloppiness: [(name: String, profile: LabProfile)] = [
+        ("fast typing", fastTyping), ("hooky", hooky), ("leaning", leaning),
+        ("small keys", smallKeys), ("large keys", largeKeys), ("boundary aim", boundaryAim),
+    ]
 }
 
 // MARK: - Generator
@@ -255,9 +445,16 @@ struct GestureLab: Sendable {
         // Intent space → screen: the aim is key-relative, so x widens with the
         // key (`GesturePreprocessor.normalizeAspectRatio` divides it back).
         let screen = points.map { CGPoint(x: $0.x * aspect, y: $0.y) }
+        var farthest = 0
+        for i in screen.indices where hypot(screen[i].x, screen[i].y) > hypot(screen[farthest].x, screen[farthest].y) { farthest = i }
+        let peakTime = kind.duration * Double(farthest) / Double(max(screen.count - 1, 1))
+        let keyHeight = random.range(profile.keyHeights)
         return LabGesture(
             label: label, positions: screen, aspectRatio: CGFloat(aspect),
-            reach: kind.reach, sweepDegrees: kind.sweep, details: kind.details.merging(spiked) { $1 }.merging(["rate": rate]) { $1 }
+            reach: kind.reach, sweepDegrees: kind.sweep,
+            details: kind.details.merging(spiked) { $1 }.merging(["rate": rate]) { $1 },
+            duration: kind.duration, peakTime: peakTime,
+            keySize: CGSize(width: keyHeight * aspect, height: keyHeight)
         )
     }
 
@@ -276,17 +473,39 @@ struct GestureLab: Sendable {
     // Each returns a position function over progress 0...1 in key-relative
     // ("intent") space, starting at the origin.
 
+    /// Where the finger aims for `label`, degrees on screen, and how far that is
+    /// from the direction's centre. The label stays the intent: a hand's lean
+    /// and a sloppy aim move the path, not the truth.
+    private func aim(for label: LabLabel, using random: inout LabRandom) -> (degrees: Double, offset: Double) {
+        let center = label.centerDegrees ?? 0
+        var offset: Double
+        if let band = profile.aimNearBoundary {
+            offset = random.range(band) * (random.chance(0.5) ? 1 : -1)
+        } else {
+            offset = random.range(-profile.aimSpread ... profile.aimSpread)
+        }
+        offset += profile.aimBias
+        // Diagonals lean toward the vertical axis: 45 and 135 turn toward 90,
+        // 225 and 315 toward 270.
+        if profile.diagonalPull != 0, center.truncatingRemainder(dividingBy: 90) != 0 {
+            let toward90 = center == 45 || center == 135 ? (90 - center).sign : (270 - center).sign
+            offset += profile.diagonalPull * (toward90 == .plus ? 1 : -1)
+        }
+        return (center + offset, offset)
+    }
+
     private func tapShape(using random: inout LabRandom) -> Shape {
         let drift = random.range(profile.tapDrift)
         let heading = random.range(0 ... 2 * .pi)
         let target = CGPoint(x: cos(heading) * drift, y: sin(heading) * drift)
-        return Shape(shape: { t in CGPoint(x: target.x * t, y: target.y * t) }, duration: random.range(0.04 ... 0.25), reach: 0, sweep: 0, details: ["drift": drift])
+        return Shape(shape: { t in CGPoint(x: target.x * t, y: target.y * t) }, duration: random.range(profile.tapDuration), reach: 0, sweep: 0, details: ["drift": drift])
     }
 
     private func flickShape(_ label: LabLabel, using random: inout LabRandom) -> Shape {
         let length = random.range(profile.flickLength)
-        let aimOffset = random.range(-profile.aimSpread ... profile.aimSpread)
-        let aim = ((label.centerDegrees ?? 0) + aimOffset) * .pi / 180
+        let chosen = aim(for: label, using: &random)
+        let aimOffset = chosen.offset
+        let aim = chosen.degrees * .pi / 180
         let direction = CGPoint(x: cos(aim), y: sin(aim))
         let normal = CGPoint(x: -direction.y, y: direction.x)
         let bow = random.range(-profile.bow ... profile.bow) * length
@@ -334,7 +553,7 @@ struct GestureLab: Sendable {
 
     private func returnShape(_ label: LabLabel, using random: inout LabRandom) -> Shape {
         let length = random.range(profile.returnLength)
-        let aim = ((label.centerDegrees ?? 0) + random.range(-profile.aimSpread ... profile.aimSpread)) * .pi / 180
+        let aim = self.aim(for: label, using: &random).degrees * .pi / 180
         let direction = CGPoint(x: cos(aim), y: sin(aim))
         let normal = CGPoint(x: -direction.y, y: direction.x)
         let residual = random.range(profile.returnResidual)
@@ -583,7 +802,8 @@ extension GestureLab {
         _ gesture: LabGesture, tuning: GestureTuning = .default
     ) -> GestureClassification {
         KeyGestureRecognizer.classify(
-            positions: gesture.positions, aspectRatio: gesture.aspectRatio, tuning: tuning
+            positions: gesture.positions, aspectRatio: gesture.aspectRatio, tuning: tuning,
+            keySize: gesture.keySize, peakTime: gesture.peakTime
         )
     }
 

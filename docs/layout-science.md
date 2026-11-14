@@ -82,8 +82,9 @@ The weights sum to exactly 1, so every cost below is per typed character, space 
 | cell height | cell width / aspect | same |
 | key centre | x = 12 + cw/2 + c*(cw+5), y = 4 + ch/2 + r*(ch+5); pitch 93.5 pt | derived; unit-tested |
 | space bar | centre of columns 0-2 in row 3, width 3*cw + 2*5 = 275.5 pt | `widthMultiplier` 3 |
-| minSwipeLength | 20 pt (shorter path = tap) | `GestureClassificationThresholds.defaultMinSwipeLength` |
+| minSwipeLength | 20 pt on a 58 pt key, scaled with the key's height (0.7x-1.6x); a stroke of 12 pt or more at 100 pt/s or faster is a swipe too (shorter path and slower = tap) | `defaultMinSwipeLength`, `defaultFastSwipeLength`, `defaultFastSwipeSpeed`, `GestureFeatures.keyScale(for:)` |
 | return-swipe peak window | 20 %-80 % of the path | `defaultReturnDisplacementStart/End` |
+| circle fit | RMS radial error of the best circle through the path <= 0.3 of its radius (a flat loop fits worse); skipped past 540 degrees of turning | `defaultMaxCircleFitResidual` |
 | circle minimum angular span | 255 degrees (was 1.5 pi, 270; measured around the centroid, which sits off an arc's true centre) | `defaultMinAngularSpan` |
 | swipe target | hint position in the key's 3x3 sub-grid: cell/3 per axis step from the key centre (cardinal cell/3, diagonal sqrt(2)*cell/3), lengthened to 20 pt if shorter | `KeyView.hintAlignments`; the 20 pt floor only binds for the 270 pt wish (19.25 pt < 20 pt) |
 

@@ -53,6 +53,15 @@ struct ExpertSettingsView: View {
     @AppStorage(GestureClassificationThresholds.minOrientedCompactnessKey, store: SharedDefaults.store)
     private var minOrientedCompactness = Double(GestureClassificationThresholds.defaultMinOrientedCompactness)
 
+    @AppStorage(GestureClassificationThresholds.maxCircleFitResidualKey, store: SharedDefaults.store)
+    private var maxCircleFitResidual = Double(GestureClassificationThresholds.defaultMaxCircleFitResidual)
+
+    @AppStorage(GestureClassificationThresholds.fastSwipeLengthKey, store: SharedDefaults.store)
+    private var fastSwipeLength = Double(GestureClassificationThresholds.defaultFastSwipeLength)
+
+    @AppStorage(GestureClassificationThresholds.fastSwipeSpeedKey, store: SharedDefaults.store)
+    private var fastSwipeSpeed = Double(GestureClassificationThresholds.defaultFastSwipeSpeed)
+
     // MARK: - Layout Settings (read-only, for the key-height indicator)
 
     @AppStorage(SettingsKey.keyAspectRatio.rawValue, store: SharedDefaults.store)
@@ -236,7 +245,25 @@ struct ExpertSettingsView: View {
                 range: GestureClassificationThresholds.minSwipeLengthRange,
                 step: 5,
                 unit: "pt",
-                description: "maxDisplacement below this = Tap. Above = continues to Step 2."
+                description: "maxDisplacement below this = Tap. Above = continues to Step 2. Stated for a 58pt key; smaller and larger keys scale it."
+            )
+
+            parameterSlider(
+                title: "Fast Swipe Length",
+                value: $fastSwipeLength,
+                range: GestureClassificationThresholds.fastSwipeLengthRange,
+                step: 1,
+                unit: "pt",
+                description: "A quick stroke at least this long counts as a swipe even when shorter than the minimum."
+            )
+
+            parameterSlider(
+                title: "Fast Swipe Speed",
+                value: $fastSwipeSpeed,
+                range: GestureClassificationThresholds.fastSwipeSpeedRange,
+                step: 10,
+                unit: "pt/s",
+                description: "How fast that short stroke must be. Slower drift stays a tap."
             )
 
             // Visual indicator
@@ -301,6 +328,15 @@ struct ExpertSettingsView: View {
                 step: 0.05,
                 unit: "",
                 description: "Width/length ratio along principal axis. 1.0 = square, 0 = line. Filters out narrow arcs."
+            )
+
+            parameterSlider(
+                title: "Max Circle Fit Error",
+                value: $maxCircleFitResidual,
+                range: GestureClassificationThresholds.maxCircleFitResidualRange,
+                step: 0.05,
+                unit: "",
+                description: "How far the path may stray from the best circle through it, as a share of its radius. Flat loops (a return swipe that comes back wide) fit worse than circles."
             )
         } header: {
             Label("Step 2: Circular Detection", systemImage: "arrow.trianglehead.2.clockwise.rotate.90")
@@ -431,6 +467,9 @@ struct ExpertSettingsView: View {
         minAngularSpan = Double(GestureClassificationThresholds.defaultMinAngularSpan)
         minTurnConsistency = Double(GestureClassificationThresholds.defaultMinTurnConsistency)
         minOrientedCompactness = Double(GestureClassificationThresholds.defaultMinOrientedCompactness)
+        maxCircleFitResidual = Double(GestureClassificationThresholds.defaultMaxCircleFitResidual)
+        fastSwipeLength = Double(GestureClassificationThresholds.defaultFastSwipeLength)
+        fastSwipeSpeed = Double(GestureClassificationThresholds.defaultFastSwipeSpeed)
     }
 }
 

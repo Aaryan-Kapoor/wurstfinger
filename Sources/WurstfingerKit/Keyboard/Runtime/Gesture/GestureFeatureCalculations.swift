@@ -131,6 +131,161 @@ enum GestureCalculations {
         return totalAngle
     }
 
+    // MARK: - Direction
+
+    /// How far from the origin a path may stray before it counts as having left
+    /// the touch-down settle: the finger lands, rocks a few points, then goes.
+    private static let settleRadius: CGFloat = 5
+
+    /// The direction a stroke was *aimed*, in radians (`atan2` convention),
+    /// from three views of its outward leg that fail in different ways, or `nil`
+    /// when the leg is too short to judge.
+    ///
+    /// The farthest point from the origin — the one direction read before — is
+    /// the stroke's end, and the end is where a thumb lies: a lift-off flick
+    /// swings it sideways, an overshoot carries it past, and on a return swipe
+    /// it is the turn, rounded off by the sideways way back. The aim is better
+    /// read from the stroke's body:
+    /// - the farthest point itself (right when the stroke is clean);
+    /// - the principal axis of the cruise (15%-90% of the arc length out to the
+    ///   farthest point), which neither end can bend;
+    /// - the chord from where the finger left the touch-down settle to the point
+    ///   85% of the way along, which drops both the landing rock and the
+    ///   lift-off.
+    /// Their unit vectors are averaged. In the gesture lab the three together
+    /// beat any one on every sloppiness profile (hooks, bow, boundary aims,
+    /// return swipes), where a single estimator wins one and loses another.
+    ///
+    /// A pass over the outward leg per estimator and no allocation.
+    static func robustDirection<C: RandomAccessCollection<CGPoint>>(
+        of points: C, farthest f: Int
+    ) -> CGFloat? where C.Index == Int {
+        guard f >= 2, f < points.count else { return nil }
+        let origin = points[0]
+        let far = points[f]
+
+        var total: CGFloat = 0
+        for i in 1 ... f { total += points[i - 1].distance(to: points[i]) }
+        guard total > 0 else { return nil }
+
+        // 1. The farthest point.
+        var sumX = cos(atan2(far.y - origin.y, far.x - origin.x))
+        var sumY = sin(atan2(far.y - origin.y, far.x - origin.x))
+
+        // 2. Principal axis of the cruise, from the polyline's continuous
+        // second moments over its arc-length window.
+        let lower = 0.15 * total
+        let upper = 0.9 * total
+        var weight: CGFloat = 0
+        var mx: CGFloat = 0, my: CGFloat = 0
+        var mxx: CGFloat = 0, myy: CGFloat = 0, mxy: CGFloat = 0
+        var walked: CGFloat = 0
+        for i in 1 ... f {
+            let a = points[i - 1], b = points[i]
+            let length = a.distance(to: b)
+            let t0 = length > 0 ? min(max((lower - walked) / length, 0), 1) : 0
+            let t1 = length > 0 ? min(max((upper - walked) / length, 0), 1) : 0
+            walked += length
+            guard t1 > t0 else { continue }
+            let p = CGPoint(x: a.x + (b.x - a.x) * t0, y: a.y + (b.y - a.y) * t0)
+            let q = CGPoint(x: a.x + (b.x - a.x) * t1, y: a.y + (b.y - a.y) * t1)
+            let l = (t1 - t0) * length
+            weight += l
+            mx += l * (p.x + q.x) / 2
+            my += l * (p.y + q.y) / 2
+            mxx += l * (p.x * p.x + p.x * q.x + q.x * q.x) / 3
+            myy += l * (p.y * p.y + p.y * q.y + q.y * q.y) / 3
+            mxy += l * (2 * p.x * p.y + p.x * q.y + q.x * p.y + 2 * q.x * q.y) / 6
+        }
+        if weight > 0 {
+            let cx = mx / weight, cy = my / weight
+            let cxx = mxx / weight - cx * cx
+            let cyy = myy / weight - cy * cy
+            let cxy = mxy / weight - cx * cy
+            var theta = 0.5 * atan2(2 * cxy, cxx - cyy)
+            // The axis has no sense: point it the way the stroke went.
+            if cos(theta) * (far.x - origin.x) + sin(theta) * (far.y - origin.y) < 0 { theta += .pi }
+            sumX += cos(theta)
+            sumY += sin(theta)
+        }
+
+        // 3. Settle to 85%.
+        var settled = 0
+        while settled < f - 1, origin.distance(to: points[settled + 1]) < settleRadius { settled += 1 }
+        let from = points[settled]
+        let target = 0.85 * total
+        var along: CGFloat = 0
+        var end = far
+        for i in 1 ... f {
+            let length = points[i - 1].distance(to: points[i])
+            if along + length >= target, length > 0 {
+                let t = (target - along) / length
+                end = CGPoint(
+                    x: points[i - 1].x + (points[i].x - points[i - 1].x) * t,
+                    y: points[i - 1].y + (points[i].y - points[i - 1].y) * t
+                )
+                break
+            }
+            along += length
+        }
+        let settledAngle = atan2(end.y - from.y, end.x - from.x)
+        sumX += cos(settledAngle)
+        sumY += sin(settledAngle)
+
+        return atan2(sumY, sumX)
+    }
+
+    // MARK: - Circle fit
+
+    /// How far a path strays from the best circle through it, as a fraction of
+    /// that circle's radius: the root-mean-square radial error of the algebraic
+    /// (Kåsa) fit. 0 is a circle; a thin loop, a U-bend or a figure of eight fit
+    /// no circle and score high; an ellipse of 2:1 scores about 0.2.
+    ///
+    /// The angular span, turn count and compactness each look at one thing; this
+    /// looks at the whole shape, and is what separates a circle from a return
+    /// swipe whose way back runs wide of the way out — both sweep a full turn,
+    /// but the loop is a flat ellipse. The gesture lab: returns read as circles
+    /// fell by two thirds with no circle lost. Returns 1 when no circle fits
+    /// (collinear points).
+    ///
+    /// One pass for the sums and one for the residual; 3×3 solved in closed form.
+    static func circleFitResidual<C: RandomAccessCollection<CGPoint>>(of points: C) -> CGFloat where C.Index == Int {
+        let n = CGFloat(points.count)
+        guard points.count >= 4 else { return 1 }
+        let c = centroid(of: points)
+
+        // Normal equations of min Σ (x² + y² + D·x + E·y + F)² on centred points.
+        var sxx: CGFloat = 0, sxy: CGFloat = 0, syy: CGFloat = 0, sx: CGFloat = 0, sy: CGFloat = 0
+        var bx: CGFloat = 0, by: CGFloat = 0, b1: CGFloat = 0
+        for i in 0 ..< points.count {
+            let x = points[i].x - c.x, y = points[i].y - c.y
+            let z = -(x * x + y * y)
+            sxx += x * x; sxy += x * y; syy += y * y; sx += x; sy += y
+            bx += x * z; by += y * z; b1 += z
+        }
+        // | sxx sxy sx |   | D |   | bx |
+        // | sxy syy sy | · | E | = | by |
+        // | sx  sy  n  |   | F |   | b1 |
+        let det = sxx * (syy * n - sy * sy) - sxy * (sxy * n - sy * sx) + sx * (sxy * sy - syy * sx)
+        guard abs(det) > 1e-9 else { return 1 }
+        let d = (bx * (syy * n - sy * sy) - sxy * (by * n - sy * b1) + sx * (by * sy - syy * b1)) / det
+        let e = (sxx * (by * n - sy * b1) - bx * (sxy * n - sy * sx) + sx * (sxy * b1 - by * sx)) / det
+        let f = (sxx * (syy * b1 - sy * by) - sxy * (sxy * b1 - by * sx) + bx * (sxy * sy - syy * sx)) / det
+
+        let ox = -d / 2, oy = -e / 2
+        let r2 = ox * ox + oy * oy - f
+        guard r2 > 1e-9 else { return 1 }
+        let r = r2.squareRoot()
+        var error: CGFloat = 0
+        for i in 0 ..< points.count {
+            let x = points[i].x - c.x - ox, y = points[i].y - c.y - oy
+            let delta = (x * x + y * y).squareRoot() - r
+            error += delta * delta
+        }
+        return (error / n).squareRoot() / r
+    }
+
     // MARK: - Circularity Analysis
 
     /// Calculates how circular a path is (0-1, where 1 = perfect circle)
