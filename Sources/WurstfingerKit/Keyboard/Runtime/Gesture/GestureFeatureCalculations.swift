@@ -64,7 +64,7 @@ enum GestureCalculations {
     // MARK: - Displacement Analysis
 
     /// Result of max displacement calculation
-    struct MaxDisplacementResult {
+    struct MaxDisplacementResult: Sendable {
         let distance: CGFloat
         let point: CGPoint
         let index: Int

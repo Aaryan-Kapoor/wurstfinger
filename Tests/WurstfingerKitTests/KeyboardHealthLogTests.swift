@@ -60,20 +60,20 @@ struct KeyboardHealthLogTests {
     /// gets, on the observation side.
     private static let deferredObservationDelay = Duration.seconds(2)
 
-    @Test func recordAppendsEntryWithLabelAndFootprint() {
+    @Test func recordAppendsEntryWithLabelAndFootprint() async {
         let url = makeTestFileURL()
         defer { try? FileManager.default.removeItem(at: url) }
         let log = KeyboardHealthLog(fileURL: url)
 
         log.record("viewDidLoad.start")
 
-        let entries = log.entries()
+        let entries = await log.entries()
         #expect(entries.count == 1)
         #expect(entries[0].label == "viewDidLoad.start")
         #expect(entries[0].usedMB > 0)
     }
 
-    @Test func entriesAreOrderedOldestFirst() {
+    @Test func entriesAreOrderedOldestFirst() async {
         let url = makeTestFileURL()
         defer { try? FileManager.default.removeItem(at: url) }
         let log = KeyboardHealthLog(fileURL: url)
@@ -81,10 +81,10 @@ struct KeyboardHealthLogTests {
         log.record("first")
         log.record("second")
 
-        #expect(log.entries().map(\.label) == ["first", "second"])
+        #expect(await log.entries().map(\.label) == ["first", "second"])
     }
 
-    @Test func recordTrimsOldestEntriesBeyondMax() {
+    @Test func recordTrimsOldestEntriesBeyondMax() async {
         let url = makeTestFileURL()
         defer { try? FileManager.default.removeItem(at: url) }
         let log = KeyboardHealthLog(fileURL: url, maxEntries: 3)
@@ -93,7 +93,7 @@ struct KeyboardHealthLogTests {
             log.record("event-\(index)")
         }
 
-        #expect(log.entries().map(\.label) == ["event-2", "event-3", "event-4"])
+        #expect(await log.entries().map(\.label) == ["event-2", "event-3", "event-4"])
     }
 
     /// A clear empties the log down to its tombstone and nothing else — the
@@ -101,15 +101,15 @@ struct KeyboardHealthLogTests {
     /// off that being the whole content of a freshly cleared log:
     /// `KeyboardHealthView` folds a tombstone-only log back into its empty
     /// state.
-    @Test func clearReplacesAllEntriesWithATombstone() throws {
+    @Test func clearReplacesAllEntriesWithATombstone() async throws {
         let url = makeTestFileURL()
         defer { try? FileManager.default.removeItem(at: url) }
         let log = KeyboardHealthLog(fileURL: url)
 
         log.record("event")
-        log.clear()
+        await log.clear()
 
-        let entries = log.entries()
+        let entries = await log.entries()
         #expect(entries.map(\.label) == [KeyboardHealthLog.clearedLabel])
         let tombstone = try #require(entries.first)
         // Stamped in the host app: its footprint is not the extension's, and
@@ -125,41 +125,41 @@ struct KeyboardHealthLogTests {
     /// the two, so the freshly emptied log does grow that entry. Ordering it
     /// behind the tombstone is what makes it read as the first event *after*
     /// the clear rather than as a clear that did not take.
-    @Test func anEntryArrivingAfterAClearIsOrderedBehindTheTombstone() {
+    @Test func anEntryArrivingAfterAClearIsOrderedBehindTheTombstone() async {
         let url = makeTestFileURL()
         defer { try? FileManager.default.removeItem(at: url) }
         let log = KeyboardHealthLog(fileURL: url)
 
         log.record("viewDidDisappear")
-        log.clear()
+        await log.clear()
         log.record("postShedSettled")
 
-        #expect(log.entries().map(\.label) == [KeyboardHealthLog.clearedLabel, "postShedSettled"])
+        #expect(await log.entries().map(\.label) == [KeyboardHealthLog.clearedLabel, "postShedSettled"])
     }
 
-    @Test func entriesAreEmptyWhenFileIsMissing() {
+    @Test func entriesAreEmptyWhenFileIsMissing() async {
         let log = KeyboardHealthLog(fileURL: makeTestFileURL())
 
-        #expect(log.entries().isEmpty)
+        #expect(await log.entries().isEmpty)
     }
 
-    @Test func corruptFileIsDiscardedAndOverwritten() throws {
+    @Test func corruptFileIsDiscardedAndOverwritten() async throws {
         let url = makeTestFileURL()
         defer { try? FileManager.default.removeItem(at: url) }
         try Data("not json".utf8).write(to: url)
         let log = KeyboardHealthLog(fileURL: url)
 
-        #expect(log.entries().isEmpty)
+        #expect(await log.entries().isEmpty)
 
         log.record("after-corruption")
-        #expect(log.entries().map(\.label) == ["after-corruption"])
+        #expect(await log.entries().map(\.label) == ["after-corruption"])
     }
 
     /// A handle failure on an *existing* file must not replace the history:
     /// the entries already on disk are the resume-jetsam forensics the log
     /// exists for, and the container can be unwritable exactly when the
     /// keyboard is being suspended.
-    @Test func unwritableExistingFileKeepsPriorEntries() throws {
+    @Test func unwritableExistingFileKeepsPriorEntries() async throws {
         let url = makeTestFileURL()
         defer {
             try? FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: url.path)
@@ -171,7 +171,7 @@ struct KeyboardHealthLogTests {
         try FileManager.default.setAttributes([.posixPermissions: 0o444], ofItemAtPath: url.path)
         log.recordAndFlush("while-locked")
 
-        #expect(log.entries().map(\.label) == ["before-lock"])
+        #expect(await log.entries().map(\.label) == ["before-lock"])
     }
 
     /// Compaction must not rewrite a file it could not read either: an
@@ -203,20 +203,20 @@ struct KeyboardHealthLogTests {
         #expect(persisted.prefix(seeded.count) == seeded)
     }
 
-    @Test func nilFileURLIsANoOp() {
+    @Test func nilFileURLIsANoOp() async {
         let log = KeyboardHealthLog(fileURL: nil)
 
         log.record("event")
 
-        #expect(log.entries().isEmpty)
+        #expect(await log.entries().isEmpty)
     }
 
-    @Test func entriesSurviveAcrossInstances() {
+    @Test func entriesSurviveAcrossInstances() async {
         let url = makeTestFileURL()
         defer { try? FileManager.default.removeItem(at: url) }
 
         KeyboardHealthLog(fileURL: url).record("cold-start")
-        let entries = KeyboardHealthLog(fileURL: url).entries()
+        let entries = await KeyboardHealthLog(fileURL: url).entries()
 
         #expect(entries.map(\.label) == ["cold-start"])
     }
@@ -224,16 +224,16 @@ struct KeyboardHealthLogTests {
     /// Recording a second entry must not rewrite the bytes of the first: the
     /// hot path is an O(1) append, not a full read-decode-encode-rewrite of a
     /// JSON array.
-    @Test func recordWritesAppendOnlyDoesNotRewritePriorBytes() throws {
+    @Test func recordWritesAppendOnlyDoesNotRewritePriorBytes() async throws {
         let url = makeTestFileURL()
         defer { try? FileManager.default.removeItem(at: url) }
         let log = KeyboardHealthLog(fileURL: url, maxEntries: 100)
 
         log.record("first")
-        _ = log.entries() // drain the async append
+        _ = await log.entries() // drain the async append
         let data1 = try Data(contentsOf: url)
         log.record("second")
-        _ = log.entries()
+        _ = await log.entries()
         let data2 = try Data(contentsOf: url)
 
         #expect(data2.count > data1.count)
@@ -250,7 +250,7 @@ struct KeyboardHealthLogTests {
     /// The on-disk file is physically compacted once it grows past the
     /// size threshold, so it never accumulates one line per lifetime event,
     /// while `entries()` still returns only the last `maxEntries`.
-    @Test func appendOnlyFileIsPhysicallyCompactedWhileEntriesReturnsLastMax() throws {
+    @Test func appendOnlyFileIsPhysicallyCompactedWhileEntriesReturnsLastMax() async throws {
         let url = makeTestFileURL()
         defer { try? FileManager.default.removeItem(at: url) }
         let log = KeyboardHealthLog(fileURL: url, maxEntries: 3)
@@ -258,9 +258,9 @@ struct KeyboardHealthLogTests {
         for index in 0 ..< 100 {
             log.record("event-\(index)")
         }
-        _ = log.entries() // drain
+        _ = await log.entries() // drain
 
-        #expect(log.entries().map(\.label) == ["event-97", "event-98", "event-99"])
+        #expect(await log.entries().map(\.label) == ["event-97", "event-98", "event-99"])
 
         let decoder = JSONDecoder()
         let perLine = try Data(contentsOf: url).split(separator: 0x0A)
@@ -327,12 +327,12 @@ struct KeyboardHealthLogTests {
         // wait for the sample" while leaving a descheduled test thread room to
         // be late.
         #expect(elapsed < 0.25)
-        // `entries()` syncs through the same serial queue, so an entry written
-        // as part of the call would already be visible here.
-        #expect(log.entries().isEmpty)
+        // `entries()` settles behind everything queued on the log, so an entry
+        // written as part of the call would already be visible here.
+        #expect(await log.entries().isEmpty)
 
         try await Task.sleep(for: Self.deferredObservationDelay)
-        let entries = log.entries()
+        let entries = await log.entries()
         #expect(entries.map(\.label) == ["postShedSettled"])
         let entry = try #require(entries.first)
         #expect(entry.usedMB > 0)
@@ -359,7 +359,7 @@ struct KeyboardHealthLogTests {
         log.recordDeferred("postShedSettled", after: Self.deferredFireDelay)
 
         try await Task.sleep(for: Self.deferredObservationDelay)
-        #expect(log.entries().map(\.label) == ["viewDidDisappear", "postShedSettled"])
+        #expect(await log.entries().map(\.label) == ["viewDidDisappear", "postShedSettled"])
     }
 
     /// A frozen process does not lose a pending deferred sample — libdispatch
@@ -396,7 +396,14 @@ struct KeyboardHealthLogTests {
         // Also releases when an expectation below fails early: an io queue
         // left parked would hang every later test in this process.
         defer { release.signal() }
-        if case .timedOut = parked.wait(timeout: .now() + 5) {
+        // Waited off the cooperative pool: a blocking semaphore wait must not
+        // sit on one of its threads.
+        let pickedUp = await withCheckedContinuation { (continuation: CheckedContinuation<DispatchTimeoutResult, Never>) in
+            DispatchQueue.global().async {
+                continuation.resume(returning: parked.wait(timeout: .now() + 5))
+            }
+        }
+        if case .timedOut = pickedUp {
             Issue.record("the io queue never picked up the blocking record")
             return
         }
@@ -409,7 +416,7 @@ struct KeyboardHealthLogTests {
 
         // `entries()` syncs through the same queue behind the released blocker
         // and behind the overdue sample, so this reads the outcome, not a race.
-        #expect(log.entries().isEmpty)
+        #expect(await log.entries().isEmpty)
     }
 
     /// Without a container there is nowhere to write, and the deferred sample
@@ -429,28 +436,114 @@ struct KeyboardHealthLogTests {
         try await Task.sleep(for: Self.deferredObservationDelay)
         // Snapshot before `entries()`, which consults the provider itself.
         let consultedByTheSample = consulted.count
-        #expect(log.entries().isEmpty)
+        #expect(await log.entries().isEmpty)
         #expect(consultedByTheSample >= 1)
     }
 
     /// The file URL provider must not be invoked at construction — that is
     /// what keeps the shared instance's `containerURL(...)` IPC off the
     /// main/spawn thread. It is resolved lazily on first file access.
-    @Test func fileURLProviderIsNotResolvedAtInit() {
-        var resolveCount = 0
+    @Test func fileURLProviderIsNotResolvedAtInit() async {
+        let resolved = CallCounter()
         let url = makeTestFileURL()
         defer { try? FileManager.default.removeItem(at: url) }
         let log = KeyboardHealthLog(fileURLProvider: {
-            resolveCount += 1
+            resolved.increment()
             return url
         })
 
-        #expect(resolveCount == 0)
+        #expect(resolved.count == 0)
 
         log.record("e")
-        _ = log.entries() // ioQueue.sync — any deferred resolution has completed
+        _ = await log.entries() // settles behind the queued append — any deferred resolution has completed
 
-        #expect(resolveCount >= 1)
+        #expect(resolved.count >= 1)
+    }
+
+    // MARK: - Stream ordering
+
+    /// The log is fed through a bounded `AsyncStream`; the contract the rest
+    /// of the file leans on is that the stream is a FIFO. A single producer's
+    /// entries land in the order they were recorded, with nothing lost below the
+    /// buffer capacity.
+    @Test func streamPreservesTheOrderOfASingleProducer() async {
+        let url = makeTestFileURL()
+        defer { try? FileManager.default.removeItem(at: url) }
+        let log = KeyboardHealthLog(fileURL: url, maxEntries: 500)
+
+        let labels = (0 ..< 200).map { "step-\($0)" }
+        for label in labels { log.record(label) }
+
+        #expect(await log.entries().map(\.label) == labels)
+    }
+
+    /// Concurrent producers interleave arbitrarily, but each one's own entries
+    /// stay in order — the FIFO is not allowed to reorder within a producer.
+    @Test func streamKeepsEachConcurrentProducersEntriesInOrder() async {
+        let url = makeTestFileURL()
+        defer { try? FileManager.default.removeItem(at: url) }
+        let log = KeyboardHealthLog(fileURL: url, maxEntries: 500)
+
+        await withTaskGroup(of: Void.self) { group in
+            for producer in 0 ..< 4 {
+                group.addTask {
+                    for step in 0 ..< 50 { log.record("p\(producer)-\(step)") }
+                }
+            }
+        }
+
+        let labels = await log.entries().map(\.label)
+        #expect(labels.count == 200)
+        for producer in 0 ..< 4 {
+            let mine = labels.filter { $0.hasPrefix("p\(producer)-") }
+            #expect(mine == (0 ..< 50).map { "p\(producer)-\($0)" })
+        }
+    }
+
+    /// A reader that began after a record observes it, even through another
+    /// instance over the same file: the stream is process-wide, like the queue
+    /// it replaced.
+    @Test func aReadThroughAnotherInstanceSeesEarlierRecords() async {
+        let url = makeTestFileURL()
+        defer { try? FileManager.default.removeItem(at: url) }
+        let writer = KeyboardHealthLog(fileURL: url)
+        let reader = KeyboardHealthLog(fileURL: url)
+
+        writer.record("from-writer")
+
+        #expect(await reader.entries().map(\.label) == ["from-writer"])
+    }
+
+    /// The buffer is bounded (256): a producer far outrunning the disk loses
+    /// the oldest queued entries, never memory, and the newest always survive.
+    @Test func overflowKeepsTheNewestEntries() async {
+        let url = makeTestFileURL()
+        defer { try? FileManager.default.removeItem(at: url) }
+        let log = KeyboardHealthLog(fileURL: url, maxEntries: 5000)
+
+        for step in 0 ..< 3000 { log.record("burst-\(step)") }
+
+        let labels = await log.entries().map(\.label)
+        #expect(labels.last == "burst-2999")
+        #expect(labels.count <= 3000)
+        // Whatever survived is still in order.
+        let indices = labels.compactMap { Int($0.dropFirst("burst-".count)) }
+        #expect(indices == indices.sorted())
+    }
+
+    /// Cancelling the handle `recordDeferred` returns voids the sample — the
+    /// contract `KeyboardViewController.configureHosting` relies on when a
+    /// rebuilt keyboard invalidates a pending post-shed sample.
+    @Test func cancellingADeferredSampleWritesNothing() async throws {
+        let url = makeTestFileURL()
+        defer { try? FileManager.default.removeItem(at: url) }
+        let log = KeyboardHealthLog(fileURL: url)
+
+        let pending = log.recordDeferred("postShedSettled", after: 0.2)
+        pending.cancel()
+
+        try await Task.sleep(for: .milliseconds(700))
+        #expect(await log.entries().isEmpty)
     }
 
     /// Counts provider calls made on the io queue and read from the test

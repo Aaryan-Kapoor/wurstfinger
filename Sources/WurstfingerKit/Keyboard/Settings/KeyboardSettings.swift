@@ -6,9 +6,9 @@
 //  and improve separation of concerns.
 //
 
-import Combine
 import CoreGraphics
 import Foundation
+import Observation
 
 // MARK: - Settings Keys
 
@@ -18,7 +18,7 @@ import Foundation
 /// line with the glossary, but only together with an explicit rawValue that
 /// keeps the string already on disk — renaming a case that relies on the
 /// implicit rawValue silently resets that setting on every installed device.
-enum SettingsKey: String, CaseIterable {
+enum SettingsKey: String, CaseIterable, Sendable {
     case hapticIntensityTap
     case hapticIntensityDrag
     /// Legacy master toggle — only read to migrate an explicit "off" into
@@ -71,7 +71,15 @@ enum SettingsKey: String, CaseIterable {
 
 /// Encapsulates all haptic-related settings with built-in persistence.
 /// Eliminates duplicate didSet handlers by using a unified approach.
-final class HapticSettings: ObservableObject {
+///
+/// `@Observable` rather than `ObservableObject`: a view that reads only
+/// `tapIntensity` is invalidated only when `tapIntensity` changes, where the
+/// old `objectWillChange` (forwarded by the view model) re-rendered the whole
+/// keyboard for any haptic slider movement. Main-actor, because the settings
+/// are read by the haptic player and bound by SwiftUI controls.
+@MainActor
+@Observable
+final class HapticSettings {
     /// Default intensity values (0.0 - 1.0). Both map to a discrete
     /// `HapticIntensityLevel`; level `.off` (intensity 0) disables the
     /// respective feedback, so there is no separate master switch.
@@ -80,10 +88,10 @@ final class HapticSettings: ObservableObject {
     static let defaultTapIntensity: CGFloat = HapticIntensityLevel.soft.storedIntensity
     static let defaultDragIntensity: CGFloat = HapticIntensityLevel.tick.storedIntensity
 
-    private let defaults: UserDefaults
-    private let shouldPersist: Bool
+    @ObservationIgnored private let defaults: UserDefaults
+    @ObservationIgnored private let shouldPersist: Bool
 
-    @Published var tapIntensity: CGFloat {
+    var tapIntensity: CGFloat {
         didSet {
             let clamped = Self.clamp(tapIntensity)
             if clamped != tapIntensity {
@@ -94,7 +102,7 @@ final class HapticSettings: ObservableObject {
         }
     }
 
-    @Published var dragIntensity: CGFloat {
+    var dragIntensity: CGFloat {
         didSet {
             let clamped = Self.clamp(dragIntensity)
             if clamped != dragIntensity {
@@ -168,16 +176,20 @@ final class HapticSettings: ObservableObject {
 // MARK: - Layout Settings
 
 /// Encapsulates keyboard layout settings (position, scale, aspect ratio).
-final class LayoutSettings: ObservableObject {
-    private let defaults: UserDefaults
-    private let shouldPersist: Bool
+/// `@Observable` for the same reason as `HapticSettings`: the grid re-renders
+/// for the layout property it reads, not for every setting in the object.
+@MainActor
+@Observable
+final class LayoutSettings {
+    @ObservationIgnored private let defaults: UserDefaults
+    @ObservationIgnored private let shouldPersist: Bool
 
-    @Published var utilityColumnLeading: Bool {
+    var utilityColumnLeading: Bool {
         didSet { persistIfNeeded(utilityColumnLeading, forKey: .utilityColumnLeading) }
     }
 
     /// Key aspect ratio (width/height). Range: 1.0 (square) to 1.62 (golden ratio)
-    @Published var keyAspectRatio: Double {
+    var keyAspectRatio: Double {
         didSet {
             let clamped = Self.clampAspectRatio(keyAspectRatio)
             if clamped != keyAspectRatio {
@@ -193,7 +205,7 @@ final class LayoutSettings: ObservableObject {
     /// This is the *wish*: what the user asked for, independent of device
     /// and orientation. The rendered *result* may be smaller (fit-clamped by
     /// `KeyboardLayoutMetrics.resolve`), but the clamp is never written back.
-    @Published var keyboardWidth: Double {
+    var keyboardWidth: Double {
         didSet {
             let clamped = Self.clampWidth(keyboardWidth)
             if clamped != keyboardWidth {
@@ -205,7 +217,7 @@ final class LayoutSettings: ObservableObject {
     }
 
     /// Horizontal position (0.0 = left, 0.5 = center, 1.0 = right)
-    @Published var keyboardHorizontalPosition: Double {
+    var keyboardHorizontalPosition: Double {
         didSet {
             let clamped = Self.clampPosition(keyboardHorizontalPosition)
             if clamped != keyboardHorizontalPosition {
@@ -337,7 +349,7 @@ final class LayoutSettings: ObservableObject {
 
 // MARK: - Numpad Type
 
-enum NumpadType: String, CaseIterable {
+enum NumpadType: String, CaseIterable, Sendable {
     case phone // 1-2-3 / 4-5-6 / 7-8-9 (default, like phone keypad)
     case classic // 7-8-9 / 4-5-6 / 1-2-3 (like calculator)
 }
@@ -345,7 +357,7 @@ enum NumpadType: String, CaseIterable {
 // MARK: - Cursor Movement Type
 
 /// Space bar cursor movement type
-enum CursorMovementType: String, CaseIterable {
+enum CursorMovementType: String, CaseIterable, Sendable {
     case continuous // Joystick-style: drag distance controls cursor position
     case discrete // MessagEase-style: one swipe = one character, return-swipe = one word
 }
@@ -353,7 +365,7 @@ enum CursorMovementType: String, CaseIterable {
 // MARK: - Keyboard Style
 
 /// Visual style for the keyboard appearance
-enum KeyboardStyle: String, CaseIterable {
+enum KeyboardStyle: String, CaseIterable, Sendable {
     case classic // Traditional opaque key backgrounds
     case liquidGlass // iOS 26+ Liquid Glass effect (renders as a simplified translucent style on older iOS)
 }

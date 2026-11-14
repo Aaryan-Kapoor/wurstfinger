@@ -8,7 +8,7 @@
 import Foundation
 
 /// Complete definition of a single key (behavior, not layout).
-struct KeyDefinition: Codable, Equatable, Identifiable {
+struct KeyDefinition: Codable, Equatable, Identifiable, Sendable {
     /// Semantic slot name (e.g. "topLeft", "center", "globe")
     let id: String
 

@@ -38,6 +38,10 @@ public struct WurstfingerApp: App {
         ]
         SharedDefaults.store.register(defaults: defaults)
 
+        // Tell a running keyboard extension about every settings write, so it
+        // updates live instead of at its next appearance.
+        SettingsChangeBroadcaster.start()
+
         // Determine screenshot mode from launch arguments
         let args = ProcessInfo.processInfo.arguments
         if args.contains("APPSTORE_SCREENSHOT_MODE") {

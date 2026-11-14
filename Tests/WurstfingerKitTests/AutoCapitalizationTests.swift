@@ -9,6 +9,7 @@ import Foundation
 import Testing
 @testable import WurstfingerKit
 
+@MainActor
 struct AutoCapitalizationTests {
     // MARK: - shouldCapitalize tests (pure logic, no ViewModel)
 
@@ -210,6 +211,9 @@ struct AutoCapitalizationTests {
     private func makeAutoCapViewModel() -> (KeyboardViewModel, MockTextTarget) {
         let (vm, target) = makeViewModel(languageId: "de_DE")
         vm.sharedDefaults.set(true, forKey: SettingsKey.autoCapitalizeEnabled.rawValue)
+        // The typing toggles are snapshotted in the view model; the settings
+        // signal (`reloadSettings`) is what makes a store change take effect.
+        vm.reloadSettings()
         return (vm, target)
     }
 

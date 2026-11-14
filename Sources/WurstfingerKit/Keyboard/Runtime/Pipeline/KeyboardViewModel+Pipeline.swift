@@ -34,6 +34,7 @@ extension KeyboardViewModel {
         pipelineLocale = definition.locale
         rebuildResolverChain()
         rebuildPipeline()
+        startPrewarmIfNeeded()
     }
 
     /// Signature of the inputs that determine a loaded definition (language +
@@ -185,7 +186,7 @@ extension KeyboardViewModel {
             // would keep the old setting until the next reload. Cut-all runs
             // once per deliberate circle, so the read is off the hot path.
             isCutAllEnabled: { [weak self] in
-                self?.sharedDefaults.bool(forKey: SettingsKey.cutAllEnabled.rawValue) ?? false
+                self?.typingBehavior.cutAllEnabled ?? false
             }
         ))
 
@@ -195,7 +196,7 @@ extension KeyboardViewModel {
         //     Hindi and Japanese get their own marks. Inert unless enabled.
         middlewares.append(DoubleSpacePeriodMiddleware(
             isEnabled: { [weak self] in
-                self?.sharedDefaults.bool(forKey: SettingsKey.doubleSpacePeriodEnabled.rawValue) ?? false
+                self?.typingBehavior.doubleSpacePeriodEnabled ?? false
             },
             documentContextBefore: { [weak self] in
                 self?.textInputTarget?.documentContextBeforeInput
@@ -276,7 +277,7 @@ extension KeyboardViewModel {
     /// support it for this language or the user disabled it in settings.
     func evaluateAutoCapitalization() -> Bool? {
         guard currentDefinition?.settings.autoCapitalize == true,
-              sharedDefaults.bool(forKey: SettingsKey.autoCapitalizeEnabled.rawValue)
+              typingBehavior.autoCapitalizeEnabled
         else { return nil }
         let context = textInputTarget?.documentContextBeforeInput
         // Sentence-opening punctuation (Spanish ¿/¡) capitalizes the letter
@@ -314,6 +315,19 @@ extension KeyboardViewModel {
     /// normal tap on release instead of being swallowed by the failed hold.
     @discardableResult
     func handleGesture(_ gesture: GestureType, keyId: String, isReturn: Bool) -> Bool {
+        // `dispatch` nests inside the `keystroke` interval opened at touch-down
+        // (see `InputSignposts`); the keystroke ends here, once the pipeline has
+        // delivered its text.
+        let signposter = InputSignposts.signposter
+        let dispatch = signposter.beginInterval(InputSignposts.dispatch)
+        defer {
+            signposter.endInterval(InputSignposts.dispatch, dispatch)
+            endKeystrokeInterval()
+        }
+        return performGesture(gesture, keyId: keyId, isReturn: isReturn)
+    }
+
+    private func performGesture(_ gesture: GestureType, keyId: String, isReturn: Bool) -> Bool {
         guard let mode = activeModeFromDefinition else { return false }
 
         // Circular gestures: try requested direction, fall back to opposite.
@@ -436,11 +450,11 @@ extension KeyboardViewModel {
         }
     }
 
-    /// Cursor-movement type for the space-bar drag. Read per gesture (stable
-    /// for the duration of a drag); defaults to `.continuous`.
+    /// Cursor-movement type for the space-bar drag. Taken from the settings
+    /// snapshot per gesture (stable for the duration of a drag); defaults to
+    /// `.continuous`.
     var cursorMovementType: CursorMovementType {
-        let raw = sharedDefaults.string(forKey: SettingsKey.cursorMovementStyle.rawValue)
-        return raw.flatMap(CursorMovementType.init(rawValue:)) ?? .continuous
+        typingBehavior.cursorMovement
     }
 
     func handleSpaceSlide(phase: SlidePhase, key: KeyDefinition) {
@@ -471,6 +485,7 @@ extension KeyboardViewModel {
             isSpaceDragging = false
             spaceDragResidual = 0
             spaceDragPeak = 0
+            endKeystrokeInterval()
         case .cancelled:
             // System cancelled the touches mid-drag: discard the drag state
             // without committing a discrete move or a tap.

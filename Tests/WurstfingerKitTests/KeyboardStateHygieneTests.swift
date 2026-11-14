@@ -9,7 +9,6 @@
 //  - a no-op settings reload publishes no view updates.
 //
 
-import Combine
 import Foundation
 import Testing
 @testable import WurstfingerKit
@@ -17,6 +16,7 @@ import Testing
 /// A view model whose shared defaults already list `enabled` languages with
 /// `selected` active — the view model reads the enabled list at init, so the
 /// seeding must happen before construction.
+@MainActor
 private func makeMultiLanguageViewModel(
     enabled: [String],
     selected: String
@@ -31,6 +31,7 @@ private func makeMultiLanguageViewModel(
 
 // MARK: - Definition signature
 
+@MainActor
 @Suite(.serialized)
 struct DefinitionSignatureTests {
     @Test func signatureCombinesLanguageAndNumpadType() {
@@ -106,6 +107,7 @@ struct DefinitionSignatureTests {
 
 // MARK: - Mode reset on appearance
 
+@MainActor
 @Suite(.serialized)
 struct ModeResetTests {
     @Test("Reopening resets the numeric mode back to letters")
@@ -124,13 +126,11 @@ struct ModeResetTests {
         let (vm, _) = makeViewModel()
         #expect(vm.activeModeName == ModeNames.main)
 
-        var emissions = 0
-        let cancellable = vm.objectWillChange.sink { emissions += 1 }
-        defer { cancellable.cancel() }
+        let renders = ChangeCounter(tracking: { vm.readEverythingRendered() })
 
         vm.resetToDefaultMode()
 
-        #expect(emissions == 0, "Resetting to an already-active mode must not re-render")
+        #expect(renders.count == 0, "Resetting to an already-active mode must not re-render")
     }
 
     @Test func resetToDefaultModeWithoutDefinitionIsSafe() {
@@ -145,6 +145,7 @@ struct ModeResetTests {
 
 // MARK: - Single-sourced mode state
 
+@MainActor
 @Suite(.serialized)
 struct ModeDerivationTests {
     /// The layout arrangement — and with it the controller's height
@@ -163,33 +164,30 @@ struct ModeDerivationTests {
 
 // MARK: - Equality-guarded settings reload
 
+@MainActor
 @Suite(.serialized)
 struct ReloadSettingsHygieneTests {
     @Test("A reload with unchanged defaults publishes no view updates")
     func noOpReloadDoesNotPublish() {
         let vm = makeMultiLanguageViewModel(enabled: ["de_DE", "en_US"], selected: "de_DE")
 
-        var emissions = 0
-        let cancellable = vm.objectWillChange.sink { emissions += 1 }
-        defer { cancellable.cancel() }
+        let renders = ChangeCounter(tracking: { vm.readEverythingRendered() })
 
         vm.reloadSettings()
 
-        #expect(emissions == 0, "No-op reload must not trigger a full keyboard re-render")
+        #expect(renders.count == 0, "No-op reload must not trigger a full keyboard re-render")
     }
 
     @Test func reloadStillPublishesRealChanges() {
         let vm = makeMultiLanguageViewModel(enabled: ["de_DE", "en_US"], selected: "de_DE")
         #expect(vm.hasMultipleLanguages)
 
-        var emissions = 0
-        let cancellable = vm.objectWillChange.sink { emissions += 1 }
-        defer { cancellable.cancel() }
+        let renders = ChangeCounter(tracking: { vm.readEverythingRendered() })
 
         LanguageSettings.saveEnabledLanguageIds(["de_DE"], to: vm.sharedDefaults)
         vm.reloadSettings()
 
-        #expect(emissions > 0)
+        #expect(renders.count > 0)
         #expect(!vm.hasMultipleLanguages)
     }
 }

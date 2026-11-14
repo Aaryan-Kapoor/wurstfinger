@@ -12,6 +12,7 @@ import Foundation
 import Testing
 @testable import WurstfingerKit
 
+@MainActor
 @Suite(.serialized)
 struct SequentialCompositionSelectionTests {
     /// End-to-end through the Korean (Hangul) pipeline: with "한" selected as

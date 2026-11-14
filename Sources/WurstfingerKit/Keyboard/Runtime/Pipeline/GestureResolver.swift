@@ -17,7 +17,10 @@ import Foundation
 /// Concrete resolvers live in their own files (PrimaryResolver,
 /// ReturnSwipeResolver, GhostKeyResolver) and are intentionally tiny so the
 /// resolution policy is composable rather than hardcoded.
-protocol GestureResolver {
+///
+/// Resolvers are pure functions of (key, gesture, mode) — no state, no I/O — so
+/// they are `Sendable` and live in the value domain, free of any actor.
+protocol GestureResolver: Sendable {
     /// Tries to resolve `gesture` on the key with `keyId` in `mode`.
     /// Returns the binding to fire, or `nil` to delegate to the next resolver.
     func resolve(keyId: String, gesture: GestureType, in mode: KeyboardMode) -> KeyBinding?

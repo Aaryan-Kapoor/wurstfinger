@@ -16,6 +16,7 @@ import UIKit
 
 // MARK: - Helpers
 
+@MainActor
 private enum AdvancedTextFixtures {
     static func context(_ action: KeyAction, mode: String = "main") -> ActionContext {
         ActionContext(action: action, binding: nil, mode: mode)
@@ -40,6 +41,7 @@ private enum AdvancedTextFixtures {
 
 // MARK: - Process / forwarding
 
+@MainActor
 struct AdvancedTextMiddlewareProcessTests {
     @Test func forwardsContextToNext() {
         let target = MockTextTarget()
@@ -81,6 +83,7 @@ struct AdvancedTextMiddlewareProcessTests {
 
 // MARK: - Delete forward
 
+@MainActor
 struct AdvancedTextMiddlewareDeleteForwardTests {
     @Test func deletesCharacterAfterCursor() {
         let target = MockTextTarget()
@@ -187,6 +190,7 @@ struct AdvancedTextMiddlewareDeleteForwardTests {
 
 // MARK: - Capitalize word
 
+@MainActor
 struct AdvancedTextCapitalizeWordTests {
     @Test func uppercasesWordBeforeCursor() {
         let target = MockTextTarget()
@@ -345,12 +349,16 @@ private enum PasteboardWarmUp {
     /// target touches `UIPasteboard.general`.
     static let didAnswer: Bool = {
         let answered = DispatchSemaphore(value: 0)
-        // Detached on purpose: a stuck call owns its thread until the service
-        // replies, and that must not be the thread the suite waits on. The
-        // thread stays stuck for the rest of the run, which is survivable —
-        // it holds no lock the suite needs, and a skipped suite touches the
-        // pasteboard no further.
-        DispatchQueue.global().async {
+        // `UIPasteboard` is `@MainActor`, so the round-trip has to run on the
+        // main queue; this thread — the one resolving the trait, which is not
+        // the main thread — waits for it with the deadline. (Before the
+        // Swift 6 port the call ran on a background thread, which kept the
+        // stall off *every* test thread; now a truly wedged service holds the
+        // main thread until it replies, so the other suites of the run wait
+        // with it. The deadline still decides whether *this* suite runs.)
+        // When already on the main thread there is nobody to hand off to: the
+        // round-trip runs inline, with no deadline.
+        let roundTrip: @MainActor () -> Void = {
             // `items`, not `string`: assigning `string` replaces every item, so
             // capturing only the string would drop an image or a URL a
             // developer had on their clipboard when the suite ran.
@@ -358,6 +366,13 @@ private enum PasteboardWarmUp {
             UIPasteboard.general.string = "warm-up-\(UUID().uuidString)"
             _ = UIPasteboard.general.string
             UIPasteboard.general.items = original
+        }
+        if Thread.isMainThread {
+            MainActor.assumeIsolated(roundTrip)
+            return true
+        }
+        DispatchQueue.main.async {
+            MainActor.assumeIsolated(roundTrip)
             answered.signal()
         }
         return answered.wait(timeout: .now() + deadline) == .success
@@ -368,6 +383,7 @@ private enum PasteboardWarmUp {
 /// suite keeps the run bounded, and this keeps the run *loud*: without it, a
 /// stuck pasteboard would read as a green build with twenty quietly skipped
 /// tests.
+@MainActor
 struct PasteboardEnvironmentTests {
     @Test func pasteboardAnswersWithinTheWarmUpDeadline() {
         #expect(
@@ -381,11 +397,57 @@ struct PasteboardEnvironmentTests {
     }
 }
 
+/// The whole pasteboard, captured on the main actor.
+///
+/// `@MainActor` (like `UIPasteboard` itself), which also makes the class
+/// `Sendable`, so the snapshot can travel through the trait's async scope.
+@MainActor
+private final class PasteboardSnapshot {
+    /// The whole pasteboard, not just its string: the tests assign `string`,
+    /// which replaces every item, so restoring a `String?` would leave a
+    /// developer's image or URL destroyed by a test run.
+    private let items = UIPasteboard.general.items
+
+    func restore() {
+        UIPasteboard.general.items = items
+    }
+}
+
+/// Reverts the clipboard writes the suite's tests make, once the suite is done.
+///
+/// This used to be `init`/`deinit` capture and restore on the suite class, i.e.
+/// once per test. Under Swift 6 a non-isolated `deinit` cannot touch
+/// `UIPasteboard` (it is `@MainActor`), and `isolated deinit` needs a newer
+/// runtime than the deployment target, so the restore moved into a
+/// `TestScoping` trait. It wraps the *suite* (a recursive trait that wrapped
+/// each test trapped inside Swift Testing 6.1's plan builder), runs on the main
+/// actor, and also restores when a test fails — what the `deinit` guaranteed.
+/// The one thing that changed is granularity: the tests are `.serialized`, and
+/// each one that reads the pasteboard writes its own marker first, so no test
+/// relies on the previous one having been rolled back. What matters — the
+/// developer's clipboard, whole items included — is back after the run.
+private struct RestoresPasteboard: SuiteTrait, TestScoping {
+    func provideScope(
+        for test: Test,
+        testCase: Test.Case?,
+        performing function: @Sendable () async throws -> Void
+    ) async throws {
+        let saved = await MainActor.run { PasteboardSnapshot() }
+        do {
+            try await function()
+        } catch {
+            await MainActor.run { saved.restore() }
+            throw error
+        }
+        await MainActor.run { saved.restore() }
+    }
+}
+
 // Serialized: these tests share the process-wide `UIPasteboard.general`
-// singleton, so they must not run concurrently with one another. A fresh
-// instance is created per test, so capturing the pasteboard in `init` and
-// restoring it in `deinit` reverts any clipboard writes and prevents leaking
-// process-global state into later tests.
+// singleton, so they must not run concurrently with one another. The
+// `RestoresPasteboard` trait captures the pasteboard before each test and
+// restores it afterwards, which reverts the clipboard writes and prevents
+// leaking process-global state into other suites.
 //
 // `.serialized` only orders this suite against itself, so the capture/restore
 // holds exactly as long as this stays the **only** place in the target that
@@ -407,22 +469,11 @@ struct PasteboardEnvironmentTests {
     .enabled(
         if: PasteboardWarmUp.didAnswer,
         "The pasteboard did not answer within the warm-up deadline — see PasteboardEnvironmentTests"
-    )
+    ),
+    RestoresPasteboard()
 )
-final class AdvancedTextMiddlewareClipboardTests {
-    /// The whole pasteboard, not just its string: the tests below assign
-    /// `string`, which replaces every item, so restoring a `String?` would
-    /// leave a developer's image or URL destroyed by a test run.
-    private let originalPasteboard: [[String: Any]]
-
-    init() {
-        // Free once the suite trait resolved it; keeps the capture below from
-        // becoming the blocking call should trait evaluation ever move.
-        _ = PasteboardWarmUp.didAnswer
-        originalPasteboard = UIPasteboard.general.items
-    }
-
-    deinit { UIPasteboard.general.items = originalPasteboard }
+@MainActor
+struct AdvancedTextMiddlewareClipboardTests {
 
     @Test func copyWritesSelectionToPasteboardWithFullAccess() {
         let target = MockTextTarget()
@@ -775,6 +826,7 @@ final class AdvancedTextMiddlewareClipboardTests {
 /// `cappedForInsertion` is pure, so the truncation semantics are tested
 /// directly with small caps; the 200k production cap is exercised once via
 /// the pasteboard in `pasteTruncatesOversizedPasteboardText` above.
+@MainActor
 struct AdvancedTextPasteCapTests {
     @Test func returnsShortTextUnchanged() {
         let text = "hello wörld 👍🏽"
@@ -814,6 +866,7 @@ struct AdvancedTextPasteCapTests {
 /// `exceedsCutLimit` is pure, so the boundary is tested directly with small
 /// caps; that it is wired into cut-all is covered by
 /// `cutAllRefusesAnOversizedDocument` above.
+@MainActor
 struct AdvancedTextCutLimitTests {
     @Test func acceptsTextExactlyAtCap() {
         #expect(!AdvancedTextMiddleware.exceedsCutLimit("abc", maxUTF16Length: 3))

@@ -8,7 +8,7 @@
 import Foundation
 
 /// A key placed at an absolute grid position with explicit column/row spans.
-struct SolvedCell: Equatable {
+struct SolvedCell: Equatable, Sendable {
     let keyId: String
     let row: Int
     let column: Int
@@ -35,22 +35,17 @@ enum GridLayoutSolver {
     /// entry keeps the arrangement storage of an evicted language alive. It is
     /// therefore dropped alongside the definition cache on the memory-pressure
     /// and pre-suspension paths (`GridLayoutSolver.evictAll`); re-solving takes
-    /// microseconds, once per arrangement per appearance. Locked for the same
-    /// reason as `KeyboardRegistry.cache`: production access is main-thread
-    /// only, but tests run in parallel.
-    private static var cache: [GridArrangement: [SolvedCell]] = [:]
-    private static let cacheLock = NSLock()
+    /// microseconds, once per arrangement per appearance. A `LockedCache` for
+    /// the same reason as `KeyboardRegistry.cache`: production access is
+    /// main-thread only, but tests run in parallel and a background prewarm may
+    /// one day solve ahead.
+    private static let cache = LockedCache<GridArrangement, [SolvedCell]>()
 
     /// Resolves an arrangement using first-fit, row-major placement: each
     /// placement takes the next free column in its row, skipping cells already
     /// occupied by a span descending from an earlier row. Memoized.
     static func solve(_ arrangement: GridArrangement) -> [SolvedCell] {
-        cacheLock.lock()
-        defer { cacheLock.unlock() }
-        if let cached = cache[arrangement] { return cached }
-        let cells = resolve(arrangement)
-        cache[arrangement] = cells
-        return cells
+        cache.value(for: arrangement) { resolve(arrangement) }
     }
 
     /// Drops every memoized result. Called from the keyboard's memory-warning
@@ -59,8 +54,6 @@ enum GridLayoutSolver {
     /// definition eviction is trying to free. Nothing observes the cache, so
     /// clearing it is invisible apart from one re-solve per arrangement.
     static func evictAll() {
-        cacheLock.lock()
-        defer { cacheLock.unlock() }
         cache.removeAll()
     }
 
@@ -69,9 +62,7 @@ enum GridLayoutSolver {
     /// count, so a test probing its own arrangement cannot race the suites
     /// solving theirs in parallel.
     static func isCached(_ arrangement: GridArrangement) -> Bool {
-        cacheLock.lock()
-        defer { cacheLock.unlock() }
-        return cache[arrangement] != nil
+        cache.contains(arrangement)
     }
 
     private static func resolve(_ arrangement: GridArrangement) -> [SolvedCell] {

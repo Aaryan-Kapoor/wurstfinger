@@ -12,6 +12,7 @@ import Foundation
 import Testing
 @testable import WurstfingerKit
 
+@MainActor
 struct DoubleSpacePeriodMiddlewareTests {
     // MARK: - Rule
 
@@ -197,6 +198,9 @@ struct DoubleSpacePeriodMiddlewareTests {
     func integrationSubstitutes() {
         let (viewModel, target) = makeViewModel(languageId: "de_DE")
         viewModel.sharedDefaults.set(true, forKey: SettingsKey.doubleSpacePeriodEnabled.rawValue)
+        // The typing toggles are snapshotted in the view model; the settings
+        // signal (`reloadSettings`) is what makes a store change take effect.
+        viewModel.reloadSettings()
         target.documentContextBeforeInput = "hi"
         viewModel.dispatchAction(.space)
         viewModel.dispatchAction(.space)
@@ -220,6 +224,9 @@ struct DoubleSpacePeriodMiddlewareTests {
         try #require(viewModel.currentDefinition?.settings.autoCapitalize == true)
         viewModel.sharedDefaults.set(true, forKey: SettingsKey.doubleSpacePeriodEnabled.rawValue)
         viewModel.sharedDefaults.set(true, forKey: SettingsKey.autoCapitalizeEnabled.rawValue)
+        // The typing toggles are snapshotted in the view model; the settings
+        // signal (`reloadSettings`) is what makes a store change take effect.
+        viewModel.reloadSettings()
         target.documentContextBeforeInput = "hi"
         viewModel.dispatchAction(.space)
         viewModel.dispatchAction(.space)
@@ -233,6 +240,9 @@ struct DoubleSpacePeriodMiddlewareTests {
     func integrationHindiDanda() {
         let (viewModel, target) = makeViewModel(languageId: "hi_IN")
         viewModel.sharedDefaults.set(true, forKey: SettingsKey.doubleSpacePeriodEnabled.rawValue)
+        // The typing toggles are snapshotted in the view model; the settings
+        // signal (`reloadSettings`) is what makes a store change take effect.
+        viewModel.reloadSettings()
         target.documentContextBeforeInput = "क"
         viewModel.dispatchAction(.space)
         viewModel.dispatchAction(.space)

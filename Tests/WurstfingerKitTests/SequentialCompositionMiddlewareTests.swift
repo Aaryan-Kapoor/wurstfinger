@@ -13,6 +13,7 @@ import Foundation
 import Testing
 @testable import WurstfingerKit
 
+@MainActor
 struct SequentialCompositionMiddlewareTests {
     /// Runs `middleware` over a `.commitText(trigger)` context and returns the
     /// forwarded action plus the number of `deleteBackward` calls it made.
@@ -176,6 +177,7 @@ struct SequentialCompositionMiddlewareTests {
 
 // MARK: - Definition-layer combiner resolution (refactor b)
 
+@MainActor
 struct SequentialCombinerResolutionTests {
     private func settings(
         inputMethod: InputMethodType = .direct,

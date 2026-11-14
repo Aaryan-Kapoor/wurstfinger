@@ -14,7 +14,7 @@ import SwiftUI
 /// The whole keyboard holds one defaults observation per setting, and the
 /// ~100 key views a mode builds hold none: the root re-renders when a
 /// setting changes and hands every key the fresh values.
-struct KeyRenderSettings: Equatable {
+struct KeyRenderSettings: Equatable, Sendable {
     var keyboardStyle: KeyboardStyle = .classic
     var areLetterLabelsHidden = false
     var areStandardSymbolLabelsHidden = false
@@ -28,6 +28,15 @@ struct KeyRenderSettings: Equatable {
     /// installation actually renders.
     static let stock = KeyRenderSettings()
 }
+
+#if DEBUG
+/// Counts `KeyView.body` evaluations so the benchmark can report how many keys
+/// a keystroke re-renders. Debug-only: release builds carry no counter at all.
+@MainActor
+enum KeyViewBodyCounter {
+    static var count = 0
+}
+#endif
 
 /// Generic key view that renders any `KeyDefinition`.
 ///
@@ -79,6 +88,12 @@ struct KeyView: View {
     /// never silently mask a wiring gap (production sites already do).
     var metrics: KeyboardLayoutMetrics
 
+    /// The user's resolved gesture settings, passed down from the view model
+    /// by `KeyboardGridView`. No default, same reasoning as `metrics`: a
+    /// defaulted snapshot would let a missing injection compile and silently
+    /// classify with stock thresholds instead of the user's.
+    let tuning: GestureTuning
+
     /// Short language label (e.g. "DE") shown on the switch key, and whether to
     /// show it. Driven by the active keyboard locale via `KeyboardViewModel`
     /// (threaded through `KeyboardGridView`) rather than re-derived from shared
@@ -105,7 +120,10 @@ struct KeyView: View {
     ]
 
     var body: some View {
-        keyContent
+        #if DEBUG
+            KeyViewBodyCounter.count += 1
+        #endif
+        return keyContent
     }
 
     @ViewBuilder
@@ -147,6 +165,7 @@ struct KeyView: View {
                 slideType: key.slideType,
                 onSlide: { phase in onSlide?(key, phase) },
                 onTouchDown: { onTouchDown?() },
+                tuning: tuning,
                 onLongPress: longPressHandler,
                 trail: gestureTrail,
                 isActive: $isActive
@@ -162,6 +181,7 @@ struct KeyView: View {
                 // metrics that size the cell) by columnSpan/rowSpan (spanRatio)
                 // to classify swipes against the real geometry.
                 aspectRatio: metrics.cellAspectRatio * spanRatio,
+                tuning: tuning,
                 onLongPress: longPressHandler,
                 trail: gestureTrail,
                 isActive: $isActive

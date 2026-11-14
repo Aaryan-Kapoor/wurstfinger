@@ -8,7 +8,7 @@
 import Foundation
 
 /// Special behavior when dragging over a key.
-enum SlideType: String, Codable {
+enum SlideType: String, Codable, Sendable {
     case none // No slide behavior (default)
     case moveCursor // Move cursor (space key)
     case delete // Progressive deletion (delete key)

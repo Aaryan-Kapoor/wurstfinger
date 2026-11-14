@@ -90,11 +90,19 @@ let package = Package(
         .unsafeFlags(["-Xlinker", "-e", "-Xlinker", "_NSExtensionMain"], .when(platforms: [.iOS]))
       ]
     ),
+    // Micro-benchmarks for the input path (see docs/performance.md). Reaches
+    // module-internal code through `@testable` (hence `testableOnMac` on the
+    // kit); macOS-only and never shipped.
+    .executableTarget(
+      name: "WurstfingerBench",
+      dependencies: ["WurstfingerKit"],
+      path: "Sources/WurstfingerBench"
+    ),
     .testTarget(
       name: "WurstfingerKitTests",
       dependencies: ["WurstfingerKit", "WurstfingerScenarioKit"],
       path: "Tests/WurstfingerKitTests"
     ),
   ],
-  swiftLanguageModes: [.v5]
+  swiftLanguageModes: [.v6]
 )

@@ -6,29 +6,37 @@
 //  there is something to draw.
 //
 
-import Combine
 import CoreGraphics
 import Foundation
+import Observation
 import SwiftUI
 
 /// Identity of one gesture modifier, used to decide which touch sequence owns
-/// the shared trail. Each recognizer holds its own in `@StateObject`, so it is
-/// created once per key rather than on every body evaluation and is stable for
-/// as long as that key exists. It publishes nothing; the conformance exists
-/// only for `@StateObject`'s deferred construction.
-final class GestureTrailToken: ObservableObject {}
+/// the shared trail. Each recognizer holds its own in `@State`, so it is stable
+/// for as long as that key exists. It has no state and observes nothing; only
+/// its object identity matters (the recorder compares tokens with `===`).
+final class GestureTrailToken {}
 
 /// Per-keyboard collector for the gesture trail.
 ///
 /// Owned by `KeyboardGridView`, fed by the gesture modifiers with positions in
 /// the shared `coordinateSpace`, and read by `GestureTrailOverlay`.
 ///
-/// It publishes only `isVisible`, which flips at most twice per gesture. The
-/// sample buffer itself is a plain property that the overlay re-reads every
-/// frame from its `TimelineView`. Publishing per sample would invalidate every
-/// observer at the drag sample rate — up to 120 Hz — and the grid owns this
-/// object, so that would re-render all ~40 keys per sample.
-final class GestureTrailRecorder: ObservableObject {
+/// It tracks only `isVisible`, which flips at most twice per gesture. The
+/// sample buffer itself is a plain, unobserved property that the overlay
+/// re-reads every frame from its `TimelineView`. Observing per sample would
+/// invalidate every reader at the drag sample rate — up to 120 Hz — and the
+/// grid owns this object, so that would re-render all ~40 keys per sample.
+/// With Observation only a view whose body *reads* `isVisible` (the overlay) is
+/// invalidated by its flips; the grid never reads it, so the old
+/// `GestureTrailStore` indirection (a non-publishing holder that kept the grid
+/// from subscribing) is no longer needed.
+///
+/// Main-actor: it is fed by the gesture modifiers on the main thread and its
+/// fade-out is a main-actor task.
+@MainActor
+@Observable
+final class GestureTrailRecorder {
     /// The coordinate space every recorded point is expressed in. Registered
     /// by `KeyboardGridView` on the grid layout, which is both an ancestor of
     /// every `KeyView` and the exact bounds the overlay draws in, so recorded
@@ -39,19 +47,32 @@ final class GestureTrailRecorder: ObservableObject {
     /// goes down with the setting on — a press that never moves is drawn as
     /// the head of the trail standing still — and false while the setting is
     /// off or once the fade-out has finished.
-    @Published private(set) var isVisible = false
+    private(set) var isVisible = false
 
-    /// The trail to draw. Unpublished, so drag samples cannot invalidate the
+    /// The trail to draw. Unobserved, so drag samples cannot invalidate the
     /// grid; the overlay re-reads it each frame.
-    private(set) var trail = GestureTrail()
+    @ObservationIgnored private(set) var trail = GestureTrail()
 
-    private let defaults: UserDefaults
-    private let now: () -> TimeInterval
+    @ObservationIgnored private let defaults: UserDefaults
+    @ObservationIgnored private let now: () -> TimeInterval
+
+    /// The trail setting as last told by the keyboard (from its
+    /// `GestureTuning` snapshot), or `nil` when nobody has told it — previews
+    /// and tests, which fall back to reading `defaults` once per touch. Set by
+    /// `KeyboardGridView`, so in the real keyboard the touch-down path never
+    /// reads `UserDefaults`.
+    @ObservationIgnored private var enabledSnapshot: Bool?
+
+    /// Hands the recorder the current trail setting. Called when the grid
+    /// appears and whenever the settings snapshot changes.
+    func useEnabledSetting(_ isEnabled: Bool) {
+        enabledSnapshot = isEnabled
+    }
 
     /// Whether the setting was on when the current touch went down. Sampled
     /// once per gesture so a toggle flipped mid-swipe cannot leave a
     /// half-recorded trail behind.
-    private var isRecording = false
+    @ObservationIgnored private var isRecording = false
 
     /// The gesture modifier whose touch sequence currently owns the trail.
     ///
@@ -61,9 +82,12 @@ final class GestureTrailRecorder: ObservableObject {
     /// trail would jump between the fingers and vanish under the one still
     /// moving. Weak, so a key torn down mid-gesture releases the trail rather
     /// than blocking it forever.
-    private weak var owner: GestureTrailToken?
+    @ObservationIgnored private weak var owner: GestureTrailToken?
 
-    private var fadeOut: DispatchWorkItem?
+    /// The pending fade-out. A cancellable task rather than a work item: it
+    /// sleeps on the main actor and then clears the trail, and cancelling it
+    /// (a new touch, a cancel) is `Task.cancel()`.
+    @ObservationIgnored private var fadeOut: Task<Void, Never>?
 
     init(
         defaults: UserDefaults = SharedDefaults.store,
@@ -129,46 +153,38 @@ final class GestureTrailRecorder: ObservableObject {
         fadeOut = nil
         trail.clear()
         setVisible(false)
-        // Read the setting per touch rather than observing the store: the host
-        // app can flip the toggle while the extension is alive, and one
-        // dictionary lookup per gesture is far cheaper than the re-render an
-        // observed value would cost on every key.
-        isRecording = defaults.bool(forKey: SettingsKey.gestureTrailEnabled.rawValue)
+        // The setting is sampled per touch from the snapshot the grid keeps
+        // current (a host-app toggle reaches it through the settings reload),
+        // never observed: observing it would re-render every key for a value
+        // only a touch-down consults. Without a snapshot (previews, tests) it
+        // is read from the store, once per touch.
+        isRecording = enabledSnapshot ?? defaults.bool(forKey: SettingsKey.gestureTrailEnabled.rawValue)
         guard isRecording else { return }
         trail.begin(at: location, time: now())
         setVisible(true)
     }
 
     private func scheduleFadeOut() {
-        let item = DispatchWorkItem { [weak self] in
-            guard let self else { return }
+        fadeOut = Task { [weak self] in
+            do {
+                try await Task.sleepWithoutLeeway(for: .seconds(KeyboardConstants.GestureTrail.fadeOutDuration))
+            } catch {
+                return // a new touch or a cancel took over the trail
+            }
+            // Re-checked on the main actor: a cancel that landed between the
+            // sleep ending and this step must not clear the *next* trail.
+            guard !Task.isCancelled, let self else { return }
             fadeOut = nil
             trail.clear()
             setVisible(false)
         }
-        fadeOut = item
-        DispatchQueue.main.asyncAfter(
-            deadline: .now() + KeyboardConstants.GestureTrail.fadeOutDuration,
-            execute: item
-        )
     }
 
-    /// Publishes only on an actual transition: the recorder is observed by the
-    /// overlay, so a redundant publish per drag sample would invalidate it at
+    /// Assigns only on an actual transition: the recorder is observed by the
+    /// overlay, so a redundant write per drag sample would invalidate it at
     /// the drag sample rate.
     private func setVisible(_ value: Bool) {
         guard isVisible != value else { return }
         isVisible = value
     }
-}
-
-/// Owns one `GestureTrailRecorder` for the lifetime of a view.
-///
-/// `@State` rebuilds its initial value on every `body` evaluation and throws
-/// it away again; `@StateObject` takes it as an autoclosure and evaluates it
-/// once. Going through a holder that publishes nothing keeps that without
-/// subscribing the grid to the recorder — an `isVisible` flip would otherwise
-/// re-render all ~40 keys twice per gesture.
-final class GestureTrailStore: ObservableObject {
-    let recorder = GestureTrailRecorder()
 }

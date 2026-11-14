@@ -8,7 +8,7 @@
 import Foundation
 
 /// Determines which arrangement to use for which context.
-enum ArrangementContext: String, Codable, CaseIterable {
+enum ArrangementContext: String, Codable, CaseIterable, Sendable {
     case portrait // Portrait, utility right (default)
     case portraitUtilityLeft // Portrait, utility left
     case landscape // Landscape

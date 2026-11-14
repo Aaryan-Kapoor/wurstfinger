@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct AppStoreScreenshotView: View {
-    @StateObject private var viewModel = KeyboardViewModel(shouldPersistSettings: false)
+    @State private var viewModel = KeyboardViewModel(shouldPersistSettings: false)
     @State private var colorScheme: ColorScheme?
 
     // Sample text to display - can be overridden via environment

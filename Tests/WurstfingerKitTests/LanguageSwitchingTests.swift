@@ -9,11 +9,11 @@
 //  pinning, the pure cycling logic — is covered by `LanguageSettingsTests`.
 //
 
-import Combine
 import Foundation
 import Testing
 @testable import WurstfingerKit
 
+@MainActor
 @Suite(.serialized)
 struct LanguageSwitchingTests {
     /// A view model whose shared defaults already list `enabled` languages with
@@ -69,11 +69,9 @@ struct LanguageSwitchingTests {
         let (vm, _) = makeViewModel(enabled: ["de_DE", "en_US"], selected: "de_DE")
         #expect(vm.hasMultipleLanguages)
 
-        // `enabledLanguageIds` is @Published, so a SwiftUI view observing the
-        // view model re-renders when the set changes — assert the emission fires.
-        var emitted = false
-        let cancellable = vm.objectWillChange.sink { emitted = true }
-        defer { cancellable.cancel() }
+        // `enabledLanguageIds` is observed, so a SwiftUI view reading the
+        // view model re-renders when the set changes — assert the invalidation fires.
+        let renders = ChangeCounter(tracking: { vm.readEverythingRendered() })
 
         // Simulate the host app disabling the second language, then the
         // viewWillAppear → reloadSettings path the extension runs on re-entry.
@@ -81,7 +79,7 @@ struct LanguageSwitchingTests {
         vm.reloadSettings()
 
         #expect(!vm.hasMultipleLanguages)
-        #expect(emitted)
+        #expect(renders.count > 0)
     }
 
     @Test("reloadSettings drops stale enabled IDs instead of cycling to them")

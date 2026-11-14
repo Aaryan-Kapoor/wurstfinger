@@ -82,6 +82,7 @@ enum CaselessLanguages {
 }
 
 /// Creates a KeyboardViewModel wired to a MockTextTarget for testing.
+@MainActor
 func makeViewModel(
     languageId: String = "de_DE",
     advanceToNextInputMode: @escaping () -> Void = {},

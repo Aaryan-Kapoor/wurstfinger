@@ -182,9 +182,12 @@ final class KeyboardScenario {
             _ = sequence.handleChanged(translation: CGSize(width: sample.x, height: sample.y))
         }
         let end = path.end
+        // The view model's settings snapshot, exactly as the key view passes
+        // it: the scenario's own defaults, never the real shared store.
         let classification = sequence.handleEnded(
             translation: CGSize(width: end.x, height: end.y),
-            aspectRatio: metrics.cellAspectRatio * spanRatio(of: keyId)
+            aspectRatio: metrics.cellAspectRatio * spanRatio(of: keyId),
+            tuning: viewModel.gestureTuning
         )
         outcome.gesture = classification.gesture
         outcome.isReturn = classification.isReturn
@@ -223,9 +226,10 @@ final class KeyboardScenario {
     /// on, the finger rested at least the press duration, and it never left
     /// its resting position.
     private func firesLongPress(for path: TouchPath) -> Bool {
-        defaults.bool(forKey: SettingsKey.isLongPressDigitEnabled.rawValue)
-            && path.duration >= KeyboardConstants.LongPress.duration
-            && path.maxDisplacement <= KeyboardConstants.LongPress.movementTolerance
+        let tuning = viewModel.gestureTuning
+        return defaults.bool(forKey: SettingsKey.isLongPressDigitEnabled.rawValue)
+            && path.duration >= tuning.longPressDuration
+            && path.maxDisplacement <= tuning.longPressMovementTolerance
     }
 
     // MARK: - Typing text

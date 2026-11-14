@@ -15,6 +15,15 @@ import Foundation
 /// Using a dedicated protocol keeps the middleware testable without the
 /// full `UITextDocumentProxy` contract (which has dozens of required
 /// members from `UIKeyInput` and `UITextInputTraits`).
+///
+/// **Main-actor by contract.** `UITextDocumentProxy` may only be touched from
+/// the main thread, and the whole action pipeline that drives a target is
+/// `@MainActor` for the same reason. Declaring the protocol `@MainActor` makes
+/// that a compile-time fact instead of a convention: a conforming type cannot
+/// be handed to a background task, and there is no `await` anywhere between a
+/// touch and `insertText` because every call is a plain synchronous main-actor
+/// call. Test doubles conform from `@MainActor` code too.
+@MainActor
 protocol TextInputTarget: AnyObject {
     func insertText(_ text: String)
     func deleteBackward()

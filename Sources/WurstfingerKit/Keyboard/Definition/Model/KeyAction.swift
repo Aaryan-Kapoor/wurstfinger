@@ -8,7 +8,7 @@
 import Foundation
 
 /// All possible actions a key binding can trigger.
-enum KeyAction: Codable, Equatable {
+enum KeyAction: Codable, Equatable, Sendable {
     /// Insert text
     case commitText(String)
 

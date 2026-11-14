@@ -15,6 +15,7 @@ import Testing
 // classification regression. The actual return-vs-regular swipe behavior is
 // exercised end-to-end by `DiscreteCursorMovementTests` below (review L20).
 
+@MainActor
 @Suite(.serialized)
 struct CursorMovementPipelineTests {
     @Test func spaceSlideMoveCursorForward() {
@@ -91,6 +92,7 @@ struct CursorMovementPipelineTests {
 
 // MARK: - Discrete cursor movement (one swipe = char, return swipe = word)
 
+@MainActor
 @Suite(.serialized)
 struct DiscreteCursorMovementTests {
     private func makeDiscreteViewModel() -> (KeyboardViewModel, MockTextTarget) {
@@ -268,6 +270,7 @@ private final class FrozenContextTextTarget: TextInputTarget {
     }
 }
 
+@MainActor
 @Suite(.serialized)
 struct ContinuousCursorSnapshotTests {
     private func makeViewModel() -> (KeyboardViewModel, FrozenContextTextTarget) {

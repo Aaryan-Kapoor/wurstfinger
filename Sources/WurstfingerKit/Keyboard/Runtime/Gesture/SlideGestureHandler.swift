@@ -10,7 +10,7 @@
 import SwiftUI
 
 /// Phase of a slide gesture lifecycle.
-enum SlidePhase: Equatable {
+enum SlidePhase: Equatable, Sendable {
     /// First drag movement detected beyond activation threshold.
     case began
     /// Continuous drag update with horizontal delta since last report.
@@ -37,7 +37,7 @@ enum SlidePhase: Equatable {
 /// `.swipeUp`), so handing it the space bar's up-swipe threshold makes a
 /// diagonal delete drag latch no slide and end as an up-swipe nobody
 /// consumes — deleting nothing at all.
-struct SlideGestureConfiguration: Equatable {
+struct SlideGestureConfiguration: Equatable, Sendable {
     /// Horizontal travel that latches the continuous slide.
     let activationThreshold: CGFloat
 
@@ -78,7 +78,7 @@ struct SlideGestureConfiguration: Equatable {
 ///
 /// Extracted as a pure value type so tap/slide classification and
 /// cancellation recovery can be unit-tested without rendering SwiftUI views.
-struct SlideGestureState {
+struct SlideGestureState: Sendable {
     private(set) var dragStarted = false
     private(set) var isSliding = false
     private(set) var lastTranslationX: CGFloat = 0
@@ -91,7 +91,7 @@ struct SlideGestureState {
     private(set) var maxDisplacement: CGFloat = 0
 
     /// Events produced by a single drag update.
-    struct Update: Equatable {
+    struct Update: Equatable, Sendable {
         var isTouchDown = false
         var phases: [SlidePhase] = []
     }
@@ -232,6 +232,10 @@ struct SlideGestureHandler: ViewModifier {
     /// on release). `nil` disables detection.
     var onLongPress: (() -> Bool)?
 
+    /// Long-press timing from the user's resolved gesture settings (see
+    /// `KeyGestureRecognizer.tuning`).
+    let tuning: GestureTuning
+
     /// Collects the touch path for the gesture trail overlay. Nil disables the
     /// feed entirely (previews and tests); when set, the recorder itself
     /// decides whether the user has the trail turned on.
@@ -242,7 +246,7 @@ struct SlideGestureHandler: ViewModifier {
     @State private var state = SlideGestureState()
     @State private var longPress: LongPressScheduler
     /// Identifies this key's touch sequence to the shared trail recorder.
-    @StateObject private var trailToken = GestureTrailToken()
+    @State private var trailToken = GestureTrailToken()
 
     /// True while a touch sequence is in flight. Unlike `@State`, SwiftUI
     /// guarantees `@GestureState` is reset when the system cancels the
@@ -259,6 +263,7 @@ struct SlideGestureHandler: ViewModifier {
         slideType: SlideType,
         onSlide: @escaping (SlidePhase) -> Void,
         onTouchDown: @escaping () -> Void,
+        tuning: GestureTuning,
         onLongPress: (() -> Bool)? = nil,
         trail: GestureTrailRecorder? = nil,
         isActive: Binding<Bool>,
@@ -267,6 +272,7 @@ struct SlideGestureHandler: ViewModifier {
         self.slideType = slideType
         self.onSlide = onSlide
         self.onTouchDown = onTouchDown
+        self.tuning = tuning
         self.onLongPress = onLongPress
         self.trail = trail
         _isActive = isActive
@@ -304,7 +310,7 @@ struct SlideGestureHandler: ViewModifier {
                             trail?.extend(to: value.location, from: trailToken)
                             if longPress.isScheduled,
                                state.isSliding
-                               || state.maxDisplacement > KeyboardConstants.LongPress.movementTolerance {
+                               || state.maxDisplacement > tuning.longPressMovementTolerance {
                                 longPress.cancel()
                             }
                         }
@@ -376,10 +382,11 @@ struct SlideGestureHandler: ViewModifier {
     /// reaches.
     private func scheduleLongPress() {
         guard onLongPress != nil else { return }
-        longPress.schedule {
+        let tolerance = tuning.longPressMovementTolerance
+        longPress.schedule(after: tuning.longPressDuration) {
             let fired = state.dragStarted
                 && !state.isSliding
-                && state.maxDisplacement <= KeyboardConstants.LongPress.movementTolerance
+                && state.maxDisplacement <= tolerance
                 && onLongPress?() == true
             if fired { trail?.finish(from: trailToken) }
             return fired

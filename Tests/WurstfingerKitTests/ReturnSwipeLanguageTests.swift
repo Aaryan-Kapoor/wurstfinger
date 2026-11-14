@@ -10,6 +10,7 @@ import Foundation
 import Testing
 @testable import WurstfingerKit
 
+@MainActor
 @Suite(.serialized)
 struct ReturnSwipeLanguageTests {
     /// French layout: return swipe up on center key (O) should produce the
@@ -86,6 +87,7 @@ struct ReturnSwipeLanguageTests {
 /// (ך ם ן ף ץ). Following the MessagEase convention, a return swipe on a
 /// base letter produces its final form; ן and ם additionally keep their
 /// dedicated directional swipes.
+@MainActor
 @Suite(.serialized)
 struct HebrewFinalLetterTests {
     static let hebrew = LanguageDefinitions.hebrew.makeDefinition()

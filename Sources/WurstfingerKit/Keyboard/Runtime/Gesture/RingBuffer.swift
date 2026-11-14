@@ -62,3 +62,7 @@ struct RingBuffer<T> {
         }
     }
 }
+
+/// A ring buffer of `Sendable` elements is itself a plain value and may cross
+/// isolation domains (the gesture sequence that owns one is a value type).
+extension RingBuffer: Sendable where T: Sendable {}

@@ -15,29 +15,36 @@ import CoreGraphics
 
 /// Fixed phone-sized "screen" so the keyboard lays out at iPhone width when
 /// hosted in a Mac window (390 x 844 pt, an iPhone 14/15/16-class display).
+///
+/// `@MainActor` like the real `UIScreen`, so shared code that reads it is
+/// isolation-checked the same way on both platforms.
+@MainActor
 struct UIScreen {
     static let main = UIScreen()
     static let phoneBounds = CGRect(x: 0, y: 0, width: 390, height: 844)
 
     /// What `bounds` reports. The Mac build keeps it at `phoneBounds`; the
     /// headless snapshot tool sets it to another device's screen to render the
-    /// keyboard the way that device lays it out.
-    nonisolated(unsafe) static var simulatedBounds = phoneBounds
+    /// keyboard the way that device lays it out. Main-actor state, like the
+    /// rest of the type.
+    static var simulatedBounds = phoneBounds
 
     var bounds: CGRect { Self.simulatedBounds }
 }
 
-enum UIUserInterfaceIdiom {
+enum UIUserInterfaceIdiom: Sendable {
     case phone
     case pad
 }
 
+/// `@MainActor` like the real `UIDevice`.
+@MainActor
 struct UIDevice {
     static let current = UIDevice()
 
     /// A Mac window hosts the phone keyboard, so the device class is phone
     /// unless the snapshot tool simulates an iPad.
-    nonisolated(unsafe) static var simulatedIdiom: UIUserInterfaceIdiom = .phone
+    static var simulatedIdiom: UIUserInterfaceIdiom = .phone
 
     var userInterfaceIdiom: UIUserInterfaceIdiom { Self.simulatedIdiom }
 }
@@ -46,10 +53,14 @@ struct UIDevice {
 
 /// Trackpad haptics standing in for the Taptic Engine generators. The macOS
 /// performer is a no-op on Macs without a Force Touch trackpad.
+@MainActor
 private func performTrackpadHaptic(_ pattern: NSHapticFeedbackManager.FeedbackPattern) {
     NSHapticFeedbackManager.defaultPerformer.perform(pattern, performanceTime: .now)
 }
 
+/// `@MainActor` like the real feedback generators: feedback is triggered from
+/// the touch handler on the main thread.
+@MainActor
 final class UISelectionFeedbackGenerator {
     init() {}
 
@@ -60,8 +71,9 @@ final class UISelectionFeedbackGenerator {
     }
 }
 
+@MainActor
 final class UIImpactFeedbackGenerator {
-    enum FeedbackStyle: Int, Hashable {
+    enum FeedbackStyle: Int, Hashable, Sendable {
         case light, medium, heavy, soft, rigid
     }
 
@@ -87,6 +99,9 @@ final class UIImpactFeedbackGenerator {
 // MARK: - Pasteboard
 
 /// `UIPasteboard.general.string` backed by `NSPasteboard.general`.
+/// `@MainActor` like the real `UIPasteboard`; the clipboard actions run in the
+/// main-actor action pipeline.
+@MainActor
 final class UIPasteboard {
     static let general = UIPasteboard()
 

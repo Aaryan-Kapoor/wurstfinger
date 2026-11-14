@@ -14,7 +14,9 @@ import SwiftUI
 /// coordinate space is registered — so the recorded points map onto this view's
 /// bounds one to one, with no padding or offset correction.
 struct GestureTrailOverlay: View {
-    @ObservedObject var recorder: GestureTrailRecorder
+    /// Read in `body` (for `isVisible`), which is what subscribes this view —
+    /// and only this view — to the recorder's visibility flips.
+    let recorder: GestureTrailRecorder
 
     /// Width of the ribbon at the finger, scaled from the rendered key size by
     /// `headWidth(for:)`.
@@ -50,7 +52,7 @@ struct GestureTrailOverlay: View {
 
     private func draw(in context: inout GraphicsContext, at now: TimeInterval) {
         let trail = recorder.trail
-        // The recorder drops a faded-out trail from a main-queue work item, so
+        // The recorder drops a faded-out trail from a main-actor fade-out task, so
         // a busy main thread can hand this a trail whose fade already expired.
         // Those frames would build the full ribbon only to fill it at zero
         // opacity; bail before the geometry instead.

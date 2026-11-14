@@ -11,6 +11,7 @@ import Testing
 
 // MARK: - All Layouts Validate
 
+@MainActor
 struct LanguageDefinitionValidationTests {
     // Pass descriptors and build inside each test so the argument list doesn't
     // materialize every layout up front (keeps peak test memory aligned with
@@ -67,6 +68,7 @@ struct LanguageDefinitionValidationTests {
 
 // MARK: - German Layout Tests
 
+@MainActor
 struct GermanLayoutTests {
     static let german = LanguageDefinitions.german.makeDefinition()
 
@@ -128,6 +130,7 @@ struct GermanLayoutTests {
 
 // MARK: - Finnish Layout Tests
 
+@MainActor
 struct FinnishLayoutTests {
     static let finnish = LanguageDefinitions.finnish.makeDefinition()
 
@@ -159,6 +162,7 @@ struct FinnishLayoutTests {
 /// (no shifted/capsLock modes, no ⇧/⇩ bindings on midRight) and must opt
 /// out of auto-capitalization. All other languages keep the full shift
 /// machinery.
+@MainActor
 struct CaselessScriptTests {
     static let hebrew = LanguageDefinitions.hebrew.makeDefinition()
 
@@ -202,6 +206,9 @@ struct CaselessScriptTests {
     @Test func hebrewAutoCapitalizationNeverEngages() {
         let (vm, target) = makeViewModel(languageId: "he_IL")
         vm.sharedDefaults.set(true, forKey: SettingsKey.autoCapitalizeEnabled.rawValue)
+        // The typing toggles are snapshotted in the view model; the settings
+        // signal (`reloadSettings`) is what makes a store change take effect.
+        vm.reloadSettings()
 
         // Neither an empty field nor a sentence ender may switch modes —
         // the definition opts out even with the user setting on.
@@ -256,6 +263,7 @@ struct CaselessScriptTests {
 
 // MARK: - NumericLayouts Tests
 
+@MainActor
 struct NumericLayoutTests {
     @Test func phoneFirstRowIs123() {
         let phone = NumericLayouts.phone()

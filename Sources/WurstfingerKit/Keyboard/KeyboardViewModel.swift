@@ -5,16 +5,17 @@
 //  Created by Claas Flint on 24.10.25.
 //
 
-import Combine
 import CoreGraphics
 import Foundation
+import Observation
+import os
 #if canImport(UIKit)
 import UIKit
 #elseif canImport(AppKit)
 import AppKit
 #endif
 
-enum KeyboardHapticEvent {
+enum KeyboardHapticEvent: Sendable {
     case tap
     case drag
     /// Mode/language changes and system actions (globe, dismiss, clipboard)
@@ -39,6 +40,10 @@ enum KeyboardHapticEvent {
     }
 }
 
+/// Device-class layout constants. `@MainActor` because `UIScreen` and
+/// `UIDevice` are (on iOS; the macOS shims mirror that): every reader is
+/// layout or settings code that already runs on the main actor.
+@MainActor
 struct DeviceLayout {
     /// Returns screen bounds for layout calculations.
     /// UIScreen.main is deprecated in iOS 16+ but UIApplication.shared is unavailable in app extensions,
@@ -62,13 +67,36 @@ struct DeviceLayout {
     static let defaultKeyboardPosition: Double = 0.5
 }
 
-final class KeyboardViewModel: ObservableObject {
+/// The keyboard's single source of truth: current definition, active mode,
+/// geometry, and the pipeline that turns gestures into text.
+///
+/// **Isolation.** `@MainActor` and `@Observable`. Main-actor because the
+/// pipeline it assembles drives the host's text proxy, which is main-thread
+/// only, and because every touch handler that calls into it is. `@Observable`
+/// (the Observation framework, iOS 17 / macOS 14) replaces `ObservableObject`:
+/// SwiftUI tracks *which properties each view's body reads* and invalidates only
+/// those views, where `objectWillChange` re-rendered the whole keyboard for any
+/// change. Only state a view actually draws from is tracked; everything the
+/// gesture runtime mutates per keystroke (drag residuals, the pipeline, the
+/// settings snapshots) is `@ObservationIgnored`, which also keeps those hot
+/// writes free of observation bookkeeping.
+///
+/// **Nothing on the input path awaits.** The touch-to-`insertText` route is a
+/// chain of plain synchronous main-actor calls (`handleGesture` -> pipeline ->
+/// target), reading only in-memory snapshots (`gestureTuning`,
+/// `typingBehavior`) that are refreshed by `reloadSettings()` when a settings
+/// signal arrives. Background work (definition prewarm, the cross-process
+/// settings signal) happens in tasks that hop *to* the main actor, never the
+/// other way round.
+@MainActor
+@Observable
+final class KeyboardViewModel {
     // MARK: - State
 
     /// Current width of the keyboard's containing view.
     /// Updated by the controller in `viewWillLayoutSubviews()` so that
     /// SwiftUI re-evaluates layout after orientation changes.
-    @Published private(set) var viewWidth: CGFloat = UIScreen.main.bounds.width
+    private(set) var viewWidth: CGFloat = UIScreen.main.bounds.width
     /// Width cap for the keyboard so it keeps its portrait width in
     /// landscape and follows narrow panes (Slide Over, Stage Manager).
     /// Derived from the hosting window's *width* — the keyboard's own window
@@ -76,42 +104,65 @@ final class KeyboardViewModel: ObservableObject {
     /// container information — bounded by the screen's shortest side, which
     /// keeps landscape at the portrait width. Falls back to the screen until
     /// a window is attached.
-    @Published private(set) var keyboardWidthCap: CGFloat = min(
+    private(set) var keyboardWidthCap: CGFloat = min(
         DeviceLayout.screenBounds.width, DeviceLayout.screenBounds.height
     )
     /// Name of the currently active mode in the data-driven definition.
-    @Published var activeModeName: String = ModeNames.main
+    var activeModeName: String = ModeNames.main
 
     // MARK: - Data-Driven Pipeline State (internal for extension access)
 
+    /// The loaded definition. Observed: the grid renders from it, so a
+    /// language switch must invalidate the views that read it.
     var currentDefinition: KeyboardDefinition?
     /// Signature of the inputs that produced `currentDefinition` (see
     /// `definitionSignature(languageId:numpadType:)`). Kept on the view model
     /// — not the controller — so in-keyboard language switches, which load a
     /// new definition directly, keep it in sync.
-    var loadedDefinitionSignature: String?
-    var resolverChain: GestureResolverChain?
-    var returnSwipeResolverChain: GestureResolverChain?
-    var pipeline: ActionPipeline?
+    @ObservationIgnored var loadedDefinitionSignature: String?
+    @ObservationIgnored var resolverChain: GestureResolverChain?
+    @ObservationIgnored var returnSwipeResolverChain: GestureResolverChain?
+    @ObservationIgnored var pipeline: ActionPipeline?
     /// Whether the current `shifted` mode was engaged by auto-capitalization
     /// (as opposed to a manual shift tap). Only auto-engaged shift may be
     /// released by `refreshAutoCapitalization()`; cleared on any mode change.
-    var shiftEngagedByAutoCapitalization = false
-    weak var textInputTarget: TextInputTarget?
-    var onAdvanceToNextInputMode: (() -> Void)?
-    var onDismissKeyboard: (() -> Void)?
+    @ObservationIgnored var shiftEngagedByAutoCapitalization = false
+    @ObservationIgnored weak var textInputTarget: TextInputTarget?
+    @ObservationIgnored var onAdvanceToNextInputMode: (() -> Void)?
+    @ObservationIgnored var onDismissKeyboard: (() -> Void)?
     /// Locale used by the pipeline (set from the keyboard definition).
+    /// Observed: the globe key's language label is derived from it.
     var pipelineLocale: Locale?
-    /// Published so the globe hint (`hasMultipleLanguages`) re-renders when the
+    /// Observed so the globe hint (`hasMultipleLanguages`) re-renders when the
     /// enabled-language set changes in Settings without the active language
     /// changing. `private(set)` keeps the normalisation invariants intact.
-    @Published private(set) var enabledLanguageIds: [String] = []
+    private(set) var enabledLanguageIds: [String] = []
+
+    // MARK: - Settings snapshots
+
+    /// The user's gesture-recognition settings, resolved once. Read on every
+    /// key release by the recognizers (threaded down through the grid), so it
+    /// is a value in memory — never a `UserDefaults` lookup. Replaced only by
+    /// `reloadSettings()`, and only when something actually changed, so an
+    /// unrelated reload does not invalidate the keys that receive it. Observed
+    /// because the root view passes it down to the keys.
+    private(set) var gestureTuning: GestureTuning
+
+    /// Typing-behaviour toggles (auto-capitalize, double-space period,
+    /// cut-all, cursor-movement style) the pipeline consults on a keystroke,
+    /// snapshotted for the same reason as `gestureTuning`. Not observed: no
+    /// view draws from them.
+    @ObservationIgnored private(set) var typingBehavior: TypingBehavior
+
+    /// How many times `reloadSettings()` has run. Lets tests and the bench
+    /// observe that a signal produced exactly one reload (the debounce).
+    @ObservationIgnored private(set) var settingsReloadCount = 0
 
     // MARK: - Settings (delegated to extracted classes)
 
     let hapticSettings: HapticSettings
     let layoutSettings: LayoutSettings
-    private let hapticPlayer: HapticFeedbackPlayer
+    @ObservationIgnored private let hapticPlayer: HapticFeedbackPlayer
 
     // MARK: - Computed Properties for Backward Compatibility
 
@@ -147,29 +198,48 @@ final class KeyboardViewModel: ObservableObject {
 
     // MARK: - Private State
 
-    let sharedDefaults: UserDefaults
-    let shouldPersistSettings: Bool
-    var isSpaceDragging = false
-    var spaceDragResidual: CGFloat = 0
+    @ObservationIgnored let sharedDefaults: UserDefaults
+    @ObservationIgnored let shouldPersistSettings: Bool
+    @ObservationIgnored var isSpaceDragging = false
+    @ObservationIgnored var spaceDragResidual: CGFloat = 0
     /// Peak signed displacement during the current space drag. Used by the
     /// discrete cursor-movement mode to classify regular vs. return swipes.
-    var spaceDragPeak: CGFloat = 0
+    @ObservationIgnored var spaceDragPeak: CGFloat = 0
     /// Cursor-movement type captured at the start of the current space drag, so
     /// a mid-drag settings change cannot switch classification mode mid-gesture.
-    var spaceDragCursorType: CursorMovementType = .continuous
-    var isDeleteDragging = false
-    var deleteDragResidual: CGFloat = 0
-    private var userDefaultsObserver: NSObjectProtocol?
-    private var settingsCancellables = Set<AnyCancellable>()
+    @ObservationIgnored var spaceDragCursorType: CursorMovementType = .continuous
+    @ObservationIgnored var isDeleteDragging = false
+    @ObservationIgnored var deleteDragResidual: CGFloat = 0
 
+    /// Removes the in-process defaults observer when the view model goes away.
+    @ObservationIgnored private var userDefaultsObserver: ObserverToken?
+    /// The in-flight touch-down -> text interval, see `InputSignposts`.
+    @ObservationIgnored var keystrokeInterval: OSSignpostIntervalState?
+    /// The debounced cross-process settings observation, if started.
+    @ObservationIgnored var externalSettingsObservation: TaskHandle?
+    /// The most recent background definition prewarm, if one was started.
+    @ObservationIgnored var prewarmTask: Task<Void, Never>?
+    /// Whether a prewarm is running right now (cleared on the main actor when
+    /// it finishes), so overlapping requests do not stack up builds.
+    @ObservationIgnored var isPrewarming = false
+    /// Whether `loadDefinition` kicks off the language prewarm (the keyboard
+    /// extension asks for it; previews, tests and screenshots do not).
+    @ObservationIgnored let prewarmsLanguages: Bool
+
+    /// - Parameter prewarmsLanguages: Build every enabled language's
+    ///   definition on a background task when a definition loads, so the globe
+    ///   key hits a warm cache. Only the real keyboard wants that; previews and
+    ///   tests construct view models by the dozen and must not spawn builds.
     init(
         userDefaults: UserDefaults? = nil,
-        shouldPersistSettings: Bool = true
+        shouldPersistSettings: Bool = true,
+        prewarmsLanguages: Bool = false
     ) {
         // Initialize UserDefaults once
         let defaults = userDefaults ?? SharedDefaults.store
         sharedDefaults = defaults
         self.shouldPersistSettings = shouldPersistSettings
+        self.prewarmsLanguages = prewarmsLanguages
 
         // Initialize extracted settings classes
         hapticSettings = HapticSettings(defaults: defaults, shouldPersist: shouldPersistSettings)
@@ -177,43 +247,39 @@ final class KeyboardViewModel: ObservableObject {
         hapticPlayer = HapticFeedbackPlayer(settings: hapticSettings)
 
         enabledLanguageIds = LanguageSettings.normalizedEnabledLanguageIds(from: defaults)
-
-        // Forward settings changes to trigger objectWillChange on this ViewModel
-        hapticSettings.objectWillChange
-            .sink { [weak self] _ in self?.objectWillChange.send() }
-            .store(in: &settingsCancellables)
-        layoutSettings.objectWillChange
-            .sink { [weak self] _ in self?.objectWillChange.send() }
-            .store(in: &settingsCancellables)
+        gestureTuning = GestureTuning.load(from: defaults)
+        typingBehavior = TypingBehavior.load(from: defaults)
 
         // Observe in-process UserDefaults changes (e.g. utility column toggle).
         // Note: didChangeNotification only fires within the same process.
-        // Cross-process updates from the host app are handled by
-        // KeyboardViewController.viewWillAppear → reloadSettings().
+        // Cross-process updates from the host app arrive as a Darwin
+        // notification (`observeExternalSettingsChanges`) and, as a backstop,
+        // via KeyboardViewController.viewWillAppear → reloadSettings().
         // Non-persisting view models (previews, showcases, screenshots) are
         // configured programmatically; reloading everything from the store
         // would revert forced values (e.g. the full-size screenshot scale) on
         // the next runloop pass — but haptic settings are never forced, and
         // the settings screen's preview keyboard should play slider changes
         // live, so non-persisting view models follow the store for haptics only.
-        userDefaultsObserver = NotificationCenter.default.addObserver(
+        //
+        // Delivered on the main queue, so the closure may assume main-actor
+        // isolation; it holds the view model weakly and the token removes
+        // the observer on deallocation (a non-isolated `deinit` could not
+        // touch these main-actor properties).
+        userDefaultsObserver = ObserverToken(observer: NotificationCenter.default.addObserver(
             forName: UserDefaults.didChangeNotification,
             object: sharedDefaults,
             queue: .main
         ) { [weak self] _ in
-            guard let self else { return }
-            if shouldPersistSettings {
-                reloadSettings()
-            } else {
-                hapticSettings.reload()
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                if self.shouldPersistSettings {
+                    self.reloadSettings()
+                } else {
+                    self.hapticSettings.reload()
+                }
             }
-        }
-    }
-
-    deinit {
-        if let observer = userDefaultsObserver {
-            NotificationCenter.default.removeObserver(observer)
-        }
+        })
     }
 
     /// Updates the tracked view width. Called by the controller in
@@ -272,7 +338,7 @@ final class KeyboardViewModel: ObservableObject {
     /// Resolved layout metrics for the tracked view width — the single
     /// geometry source for the grid, key fonts, gesture classification, and
     /// the controller's height constraint. Recomputed whenever settings
-    /// reload or `viewWidth`/`keyboardWidthCap` change (all `@Published`).
+    /// reload or `viewWidth`/`keyboardWidthCap` change (all observed).
     var layoutMetrics: KeyboardLayoutMetrics {
         layoutMetrics(forContainerWidth: viewWidth)
     }
@@ -299,17 +365,27 @@ final class KeyboardViewModel: ObservableObject {
     }
 
     func reloadSettings() {
+        settingsReloadCount += 1
         // Delegate to extracted settings classes - eliminates duplicate code
         hapticSettings.reload()
         layoutSettings.reload()
 
         // Equality-guarded: this runs on every in-process defaults write (via
         // the didChangeNotification observer), and an unguarded assignment to
-        // a @Published property re-renders the whole keyboard each time.
+        // an observed property would re-render what reads it each time.
         let newEnabledLanguageIds = LanguageSettings.normalizedEnabledLanguageIds(from: sharedDefaults)
         if enabledLanguageIds != newEnabledLanguageIds {
             enabledLanguageIds = newEnabledLanguageIds
         }
+
+        // The one place the per-keystroke settings are read from the store.
+        // Compared before assigning so a reload that changed nothing leaves the
+        // snapshot (and the views holding it) untouched.
+        let newTuning = GestureTuning.load(from: sharedDefaults)
+        if gestureTuning != newTuning {
+            gestureTuning = newTuning
+        }
+        typingBehavior = TypingBehavior.load(from: sharedDefaults)
     }
 
     func switchToNextLanguage() {
@@ -347,6 +423,21 @@ final class KeyboardViewModel: ObservableObject {
     /// Haptic feedback for key touch-down — called by button views on first contact
     func feedbackTap() {
         hapticPlayer.tap()
+    }
+
+    /// A finger touched a key: opens the `keystroke` signpost interval (closed
+    /// when the pipeline has delivered the result, or the touch is abandoned)
+    /// and fires the touch-down haptic. The interval costs nothing unless
+    /// Instruments is recording.
+    func touchDown() {
+        beginKeystrokeInterval()
+        feedbackTap()
+    }
+
+    /// Warms the Taptic Engine ahead of the first touch (called when the
+    /// keyboard appears); the player re-warms on each touch-down after a pause.
+    func prepareHaptics() {
+        hapticPlayer.prepareIfNeeded()
     }
 
     func feedbackDrag() {

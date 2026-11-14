@@ -10,7 +10,7 @@ import CoreGraphics
 import Foundation
 
 /// One recorded touch position together with the time it was sampled.
-struct GestureTrailSample: Equatable {
+struct GestureTrailSample: Equatable, Sendable {
     let point: CGPoint
     let time: TimeInterval
 }
@@ -26,7 +26,7 @@ struct GestureTrailSample: Equatable {
 ///
 /// A pure value type, so both can be unit-tested with explicit timestamps and
 /// without rendering anything.
-struct GestureTrail: Equatable {
+struct GestureTrail: Equatable, Sendable {
     private(set) var samples: [GestureTrailSample] = []
 
     /// Time the finger lifted, or nil while it is still down.

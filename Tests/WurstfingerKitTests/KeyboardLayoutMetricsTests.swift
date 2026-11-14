@@ -13,6 +13,7 @@ import Foundation
 import Testing
 @testable import WurstfingerKit
 
+@MainActor
 struct KeyboardLayoutMetricsTests {
     private let hChrome = KeyboardLayoutMetrics.horizontalChrome(columns: 4)
     private let vChrome = KeyboardLayoutMetrics.verticalChrome(rows: 4)

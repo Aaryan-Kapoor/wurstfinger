@@ -5,21 +5,30 @@
 //  Created by Claas Flint on 06.11.25.
 //
 
-import Combine
 import Foundation
+import Observation
 
 /// Manages keyboard language settings shared between host app and keyboard extension.
 /// Supports multiple enabled languages with in-keyboard cycling.
-class LanguageSettings: ObservableObject {
+///
+/// `@MainActor @Observable`: the settings screens bind to it and the keyboard
+/// reads it on the main thread; Observation tracks per property, so the
+/// language list does not re-render for a pin change and vice versa. The pure
+/// helpers (`resolvedLanguageId`, `nextLanguageId`, `normalizedEnabledLanguageIds`,
+/// …) are `nonisolated`: they take their inputs explicitly and touch no
+/// instance state, so the value domain can call them from anywhere.
+@MainActor
+@Observable
+class LanguageSettings {
     static let shared = LanguageSettings()
 
-    @Published var selectedLanguageId: String {
+    var selectedLanguageId: String {
         didSet {
             save()
         }
     }
 
-    @Published private(set) var enabledLanguageIds: [String] {
+    private(set) var enabledLanguageIds: [String] {
         didSet {
             saveEnabledLanguages()
             if let pinned = pinnedLanguageId, !enabledLanguageIds.contains(pinned) {
@@ -32,15 +41,20 @@ class LanguageSettings: ObservableObject {
     /// with this language. When nil, it opens with the last-used language.
     /// `private(set)` so writes funnel through `pinLanguage(_:)`, preserving the
     /// "pin implies enabled" invariant.
-    @Published private(set) var pinnedLanguageId: String? {
+    private(set) var pinnedLanguageId: String? {
         didSet {
+            // Change-guarded against the store (not just `oldValue`): the
+            // Optional's implicit `nil` default means construction assigns
+            // through this observer, and an unguarded write there would fire
+            // `UserDefaults.didChangeNotification` on every construction.
+            guard userDefaults.string(forKey: SettingsKey.pinnedLanguageId.rawValue) != pinnedLanguageId else { return }
             userDefaults.set(pinnedLanguageId, forKey: SettingsKey.pinnedLanguageId.rawValue)
         }
     }
 
-    private let userDefaults: UserDefaults
-    private let languageKey = SettingsKey.selectedLanguageId.rawValue
-    private let enabledKey = SettingsKey.enabledLanguageIds.rawValue
+    @ObservationIgnored private let userDefaults: UserDefaults
+    @ObservationIgnored private let languageKey = SettingsKey.selectedLanguageId.rawValue
+    @ObservationIgnored private let enabledKey = SettingsKey.enabledLanguageIds.rawValue
 
     init(userDefaults: UserDefaults? = nil) {
         let defaults = userDefaults ?? SharedDefaults.store
@@ -49,11 +63,10 @@ class LanguageSettings: ObservableObject {
         let state = Self.loadNormalizedState(from: defaults)
         selectedLanguageId = state.selected
         enabledLanguageIds = state.enabled
-        // Initialize the backing wrapper directly: the Optional property gets
-        // an implicit `nil` default, so a plain assignment here would run the
-        // setter — and its `didSet` persists to the app group on every
-        // construction, even when nothing changed.
-        _pinnedLanguageId = Published(initialValue: state.pinned)
+        // The Optional property gets an implicit `nil` default, so this
+        // assignment runs the setter — and its `didSet`, which is why that
+        // observer compares against the store before writing.
+        pinnedLanguageId = state.pinned
 
         // `didSet` does not fire inside `init`, so persist the normalized
         // values explicitly — otherwise a corrected inconsistency (e.g. a
@@ -74,7 +87,7 @@ class LanguageSettings: ObservableObject {
     }
 
     /// Snapshot of the persisted language state after normalization.
-    private struct NormalizedState {
+    private struct NormalizedState: Sendable {
         let selected: String
         let enabled: [String]
         let pinned: String?
@@ -88,7 +101,7 @@ class LanguageSettings: ObservableObject {
     /// the host app subsequently disabled — the selection falls back to the
     /// first enabled language instead of re-inserting the disabled one, so an
     /// explicit disable is never silently undone.
-    private static func loadNormalizedState(from defaults: UserDefaults) -> NormalizedState {
+    private nonisolated static func loadNormalizedState(from defaults: UserDefaults) -> NormalizedState {
         // Normalize the saved language through the shared resolver (stale/nil →
         // system language → English) so the host app and the keyboard extension
         // always resolve the same active language.
@@ -120,7 +133,7 @@ class LanguageSettings: ObservableObject {
     /// automatically before every mutating API and when the app foregrounds.
     func reloadFromStore() {
         let state = Self.loadNormalizedState(from: userDefaults)
-        // Only reassign on change so @Published does not emit spurious updates.
+        // Only reassign on change so Observation does not invalidate readers for nothing.
         if enabledLanguageIds != state.enabled {
             enabledLanguageIds = state.enabled
         }
@@ -137,7 +150,7 @@ class LanguageSettings: ObservableObject {
     /// removed in a later version), falls back to the detected system language
     /// — which itself falls back to English. Callers therefore always receive a
     /// renderable language id, so the keyboard never comes up blank.
-    static func resolvedLanguageId(_ storedId: String?) -> String {
+    nonisolated static func resolvedLanguageId(_ storedId: String?) -> String {
         if let storedId, LanguageMetadata.language(withId: storedId) != nil {
             return storedId
         }
@@ -147,7 +160,7 @@ class LanguageSettings: ObservableObject {
     // MARK: - Public API
 
     /// Detects the system language and returns matching language ID, or English as fallback
-    static func detectSystemLanguage(preferredLanguages: [String]? = nil) -> String {
+    nonisolated static func detectSystemLanguage(preferredLanguages: [String]? = nil) -> String {
         let preferredLanguages = preferredLanguages ?? Locale.preferredLanguages
 
         for languageCode in preferredLanguages {
@@ -192,7 +205,7 @@ class LanguageSettings: ObservableObject {
     /// Centralised so every call site uses the same casing rules (German de_DE,
     /// Turkish dotted/dotless i, …) instead of recreating the casing drift that
     /// caused the original label bug.
-    static func label(for locale: Locale, fallback: String = "") -> String {
+    nonisolated static func label(for locale: Locale, fallback: String = "") -> String {
         let lang = locale.language.languageCode?.identifier ?? fallback
         return lang.uppercased(with: locale)
     }
@@ -270,7 +283,7 @@ class LanguageSettings: ObservableObject {
         Self.nextLanguageId(after: currentId, in: enabledLanguageIds)
     }
 
-    static func nextLanguageId(after currentId: String, in enabledIds: [String]) -> String {
+    nonisolated static func nextLanguageId(after currentId: String, in enabledIds: [String]) -> String {
         guard enabledIds.count > 1 else {
             return enabledIds.first ?? currentId
         }
@@ -291,11 +304,11 @@ class LanguageSettings: ObservableObject {
         Self.saveEnabledLanguageIds(enabledLanguageIds, to: userDefaults)
     }
 
-    static func saveEnabledLanguageIds(_ ids: [String], to defaults: UserDefaults) {
+    nonisolated static func saveEnabledLanguageIds(_ ids: [String], to defaults: UserDefaults) {
         defaults.set(ids, forKey: SettingsKey.enabledLanguageIds.rawValue)
     }
 
-    static func loadEnabledLanguageIds(from defaults: UserDefaults) -> [String]? {
+    nonisolated static func loadEnabledLanguageIds(from defaults: UserDefaults) -> [String]? {
         defaults.stringArray(forKey: SettingsKey.enabledLanguageIds.rawValue)
     }
 
@@ -307,7 +320,7 @@ class LanguageSettings: ObservableObject {
     /// not in the enabled list is deliberately **not** added back: that state
     /// means the host app disabled the language after the keyboard selected it,
     /// and re-adding it would resurrect a language the user turned off.
-    static func normalizedEnabledLanguageIds(from defaults: UserDefaults) -> [String] {
+    nonisolated static func normalizedEnabledLanguageIds(from defaults: UserDefaults) -> [String] {
         loadNormalizedState(from: defaults).enabled
     }
 }

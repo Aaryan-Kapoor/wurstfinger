@@ -11,6 +11,7 @@ import Foundation
 import Testing
 @testable import WurstfingerKit
 
+@MainActor
 struct CircularGesturePipelineTests {
     /// Path 2: a plain letter key with no explicit circular binding inserts
     /// the uppercase center character.
@@ -135,6 +136,7 @@ struct CircularGesturePipelineTests {
 /// process-wide `UIPasteboard.general`, which would race the serialized
 /// clipboard suite in `AdvancedTextMiddlewareTests`. The cut itself is covered
 /// there; what matters here is that both directions reach it.
+@MainActor
 struct CircularCutAllBindingTests {
     private func symbolsKey(_ vm: KeyboardViewModel) -> KeyDefinition? {
         vm.activeModeFromDefinition?.key(for: UtilitySlot.symbols)

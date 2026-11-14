@@ -342,7 +342,7 @@ struct TouchPathTests {
         #expect(path.end == CGPoint(x: 0, y: 50))
     }
 
-    @Test func textTargetMovesTheCursorInUTF16Units() {
+    @MainActor @Test func textTargetMovesTheCursorInUTF16Units() {
         let target = ScenarioTextTarget()
         target.insertText("ab😀")
         #expect(target.cursor == 3)

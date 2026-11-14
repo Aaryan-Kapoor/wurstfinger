@@ -8,7 +8,7 @@
 import Foundation
 
 /// A complete set of compose rules.
-struct ComposeRuleSet: Codable, Equatable {
+struct ComposeRuleSet: Codable, Equatable, Sendable {
     /// trigger → (baseChar → result)
     /// e.g. "¨" → ["a": "ä", "o": "ö", ...]
     let rules: [String: [String: String]]

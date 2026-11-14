@@ -8,7 +8,7 @@
 import Foundation
 
 /// All gestures that can be recognized on a key.
-enum GestureType: String, Codable, CaseIterable {
+enum GestureType: String, Codable, CaseIterable, Sendable {
     // Tap
     case tap
 

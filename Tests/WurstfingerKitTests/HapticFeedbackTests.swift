@@ -12,6 +12,7 @@ import UIKit
 #endif
 @testable import WurstfingerKit
 
+@MainActor
 struct HapticPulseTests {
     @Test func lowestIntensityMapsToSelectionTick() {
         #expect(HapticPulse.pulse(for: 0.05) == .selectionTick)
@@ -31,6 +32,7 @@ struct HapticPulseTests {
     }
 }
 
+@MainActor
 struct HapticIntensityLevelTests {
     @Test func storedIntensityRoundTripsForAllLevels() {
         for level in HapticIntensityLevel.allCases {
@@ -55,6 +57,7 @@ struct HapticIntensityLevelTests {
     }
 }
 
+@MainActor
 struct PipelineHapticEventTests {
     @Test func textActionsAreSilent() {
         #expect(KeyboardHapticEvent.forPipelineAction(.commitText("a")) == nil)

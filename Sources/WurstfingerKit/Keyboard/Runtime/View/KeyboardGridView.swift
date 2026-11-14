@@ -43,20 +43,23 @@ struct KeyboardGridView: View {
     /// showcase modes with `shouldPersistSettings: false`).
     let metrics: KeyboardLayoutMetrics
 
-    /// Collects the touch path for the gesture trail. Held through a
-    /// non-publishing store so the object is created once instead of on every
-    /// body evaluation, and the samples arriving at up to 120 Hz still cannot
-    /// re-render the grid and all of its keys. Only `GestureTrailOverlay`
-    /// observes the recorder, and only for the one flag that says whether to
-    /// draw.
-    @StateObject private var trailStore = GestureTrailStore()
+    /// The user's resolved gesture settings, forwarded to every `KeyView`.
+    /// Undefaulted for the same reason as `renderSettings` and `metrics`.
+    let tuning: GestureTuning
+
+    /// Collects the touch path for the gesture trail. `@State` keeps one
+    /// recorder for the life of the grid. The samples arriving at up to 120 Hz
+    /// cannot re-render the grid and its keys because the recorder's sample
+    /// buffer is unobserved; only `GestureTrailOverlay` reads the one flag
+    /// (`isVisible`) that says whether to draw, so only it is invalidated.
+    @State private var ownTrail = GestureTrailRecorder()
 
     /// A recorder a headless host supplies to draw a trail it feeds itself
     /// (see `SnapshotHooks.swift`); nil in the app.
     @Environment(\.gestureTrailRecorderOverride) private var injectedTrail
 
     private var gestureTrail: GestureTrailRecorder {
-        injectedTrail ?? trailStore.recorder
+        injectedTrail ?? ownTrail
     }
 
     var body: some View {
@@ -78,6 +81,12 @@ struct KeyboardGridView: View {
         // and so the recorded points land in exactly the bounds the overlay
         // below draws in, with no padding or offset math to keep in sync.
         .coordinateSpace(GestureTrailRecorder.coordinateSpace)
+        // Tells the recorder the trail setting from the settings snapshot, so
+        // a touch-down never has to read it from the store. `initial: true`
+        // delivers it before the first touch.
+        .onChange(of: tuning.isTrailEnabled, initial: true) { _, isEnabled in
+            gestureTrail.useEnabledSetting(isEnabled)
+        }
         .overlay {
             GestureTrailOverlay(
                 recorder: gestureTrail,
@@ -100,6 +109,7 @@ struct KeyboardGridView: View {
                 visualInset: visualInset(for: cell, totalRows: totalRows),
                 settings: renderSettings,
                 metrics: metrics,
+                tuning: tuning,
                 languageLabel: languageLabel,
                 isLanguageLabelShown: isLanguageLabelShown
             )

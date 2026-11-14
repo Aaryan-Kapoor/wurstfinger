@@ -11,7 +11,7 @@ import CoreGraphics
 /// A 2D vector for geometric calculations.
 /// Unlike CGPoint, Vector2D is semantically a vector (direction + magnitude),
 /// making code more readable and self-documenting.
-struct Vector2D: Equatable {
+struct Vector2D: Equatable, Sendable {
     let x: CGFloat
     let y: CGFloat
 

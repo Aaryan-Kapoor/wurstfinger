@@ -12,6 +12,10 @@ import Foundation
 /// Each middleware receives the `ActionContext` and may mutate it before
 /// calling `next`. The pipeline guarantees ordered execution and short-
 /// circuits cleanly if any middleware skips calling `next`.
+///
+/// Main-actor, like every middleware it composes: `process` is synchronous, so
+/// a keystroke never yields between the touch and the text insertion.
+@MainActor
 struct ActionPipeline {
     let middlewares: [ActionMiddleware]
 

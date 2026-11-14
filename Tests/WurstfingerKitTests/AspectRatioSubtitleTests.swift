@@ -38,6 +38,7 @@ private let aspectRatioKey = "Current: %@:1"
 /// the tree they were compiled in — true for `swift test` and `xcodebuild test`; re-running built products against a moved or absent source
 /// tree fails these two with a file-not-found error, loudly and in the safe
 /// direction.
+@MainActor
 private func projectDir(file: String = #filePath) -> URL {
     URL(fileURLWithPath: file)
         .deletingLastPathComponent()
@@ -46,6 +47,7 @@ private func projectDir(file: String = #filePath) -> URL {
 }
 
 /// Every localized value of `aspectRatioKey`, keyed by language.
+@MainActor
 private func aspectRatioTranslations() throws -> [String: String] {
     let url = projectDir().appendingPathComponent("Sources/Wurstfinger/Resources/Localizable.xcstrings")
     let data = try Data(contentsOf: url)
@@ -73,6 +75,7 @@ private func aspectRatioTranslations() throws -> [String: String] {
 /// SwiftPM runner — so the same bundle is rebuilt from the app's String
 /// Catalog, the source the compiled one is generated from. Either way the
 /// expectations below run against the shipped Arabic translations.
+@MainActor
 private func arabicBundle() throws -> Bundle {
     if let path = Bundle.main.path(forResource: "ar", ofType: "lproj"), let bundle = Bundle(path: path) {
         return bundle
@@ -103,6 +106,7 @@ private func arabicBundle() throws -> Bundle {
     return try #require(Bundle(path: directory.path))
 }
 
+@MainActor
 struct AspectRatioSubtitleTests {
     /// The ratio ends the subtitle and its decimals are fixed at two places (it
     /// is a display value, not a measurement). This resolves in whatever

@@ -13,6 +13,7 @@ import Foundation
 import Testing
 @testable import WurstfingerKit
 
+@MainActor
 @Suite(.serialized)
 struct ComposeSpaceGuardTests {
     /// `"word "` + grave compose commits a backtick, consuming the space

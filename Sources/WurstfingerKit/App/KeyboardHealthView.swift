@@ -42,14 +42,19 @@ struct KeyboardHealthView: View {
         }
         .navigationTitle("Keyboard Health")
         .navigationBarTitleDisplayMode(.inline)
-        .onAppear(perform: reload)
-        .refreshable { reload() }
+        // `.task` and `.refreshable` are async contexts, which is what the
+        // health log's reads need: they run on the log's own queue, never the
+        // main thread, and the list fills in when they return.
+        .task { await reload() }
+        .refreshable { await reload() }
         .toolbar {
             if !recordedEntries.isEmpty {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Clear") {
-                        KeyboardHealthLog.shared.clear()
-                        reload()
+                        Task {
+                            await KeyboardHealthLog.shared.clear()
+                            await reload()
+                        }
                     }
                 }
             }
@@ -155,8 +160,8 @@ struct KeyboardHealthView: View {
     across into that process.
     """
 
-    private func reload() {
-        entries = KeyboardHealthLog.shared.entries()
+    private func reload() async {
+        entries = await KeyboardHealthLog.shared.entries()
     }
 
     /// "used / available" in MB; available is omitted when the API returned 0.

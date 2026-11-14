@@ -14,6 +14,7 @@ import Testing
 
 // MARK: - Sample Buffer
 
+@MainActor
 struct GestureTrailBufferTests {
     @Test func beginSeedsTheFirstSample() {
         var trail = GestureTrail()
@@ -157,6 +158,7 @@ struct GestureTrailBufferTests {
 
 // MARK: - Ribbon Geometry
 
+@MainActor
 struct GestureTrailGeometryTests {
     @Test func aSinglePointDrawsADotAtTheTouch() {
         // Exercises the production `pressDotWidthFactor`, so retuning the
@@ -320,6 +322,7 @@ struct GestureTrailGeometryTests {
 
 // MARK: - Recorder
 
+@MainActor
 struct GestureTrailRecorderTests {
     /// Feeds a straight drag of `distance` points into the recorder, as a
     /// letter key would.
@@ -548,6 +551,7 @@ struct GestureTrailRecorderTests {
 
 // MARK: - Overlay Sizing
 
+@MainActor
 struct GestureTrailOverlaySizingTests {
     @Test func headWidthScalesWithTheRowHeight() {
         let small = KeyboardLayoutMetrics.resolve(

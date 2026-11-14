@@ -5,6 +5,7 @@
 //  Keyboard showcase view for automated screenshots
 //
 
+import Observation
 import SwiftUI
 
 /// Captures pipeline actions for UI testing.
@@ -14,12 +15,14 @@ import SwiftUI
 /// cursor — so typing UI tests can assert the actual output, including
 /// cursor-aware behaviour (space-drag moves the insertion point) and
 /// context-dependent actions (compose / capitalize).
-private class ActionCountTarget: TextInputTarget, ObservableObject {
-    @Published var count: Int = 0
-    @Published private var before: String = ""
-    @Published private var after: String = ""
+@MainActor
+@Observable
+private final class ActionCountTarget: TextInputTarget {
+    var count: Int = 0
+    private var before: String = ""
+    private var after: String = ""
 
-    private let capturesText: Bool
+    @ObservationIgnored private let capturesText: Bool
 
     init(capturesText: Bool = false) {
         self.capturesText = capturesText
@@ -72,8 +75,8 @@ private class ActionCountTarget: TextInputTarget, ObservableObject {
 }
 
 struct KeyboardShowcaseView: View {
-    @StateObject private var viewModel = KeyboardViewModel(shouldPersistSettings: false)
-    @StateObject private var actionTarget = ActionCountTarget(
+    @State private var viewModel = KeyboardViewModel(shouldPersistSettings: false)
+    @State private var actionTarget = ActionCountTarget(
         capturesText: ProcessInfo.processInfo.environment["TYPING_TEST"] != nil
     )
     @State private var colorScheme: ColorScheme?
@@ -86,7 +89,7 @@ struct KeyboardShowcaseView: View {
     /// NOT be routed through the registry-validating helper. Otherwise the
     /// stored id is resolved via `LanguageSettings.resolvedLanguageId`, which
     /// falls back to the detected system language when the stored id is stale.
-    static func resolvedShowcaseLanguageId(forceLanguage: String?, storedId: String?) -> String {
+    nonisolated static func resolvedShowcaseLanguageId(forceLanguage: String?, storedId: String?) -> String {
         forceLanguage ?? LanguageSettings.resolvedLanguageId(storedId)
     }
 

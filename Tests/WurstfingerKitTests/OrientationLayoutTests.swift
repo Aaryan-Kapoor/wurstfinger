@@ -5,51 +5,48 @@
 //  Tests for keyboard misalignment after orientation change while backgrounded.
 //
 
-import Combine
 import Foundation
 import Testing
 @testable import WurstfingerKit
 
+@MainActor
 struct OrientationLayoutTests {
     /// When the keyboard is backgrounded during an orientation change
     /// (e.g. user opens camera in landscape), the keyboard layout uses stale
-    /// screen bounds on return because no @Published property triggers a SwiftUI
+    /// screen bounds on return because no observed property triggers a SwiftUI
     /// re-render. viewWillAppear is NOT called when the keyboard was already
     /// loaded but inactive — only viewWillLayoutSubviews runs.
     ///
-    /// The viewModel must have a @Published viewWidth that the controller updates
+    /// The viewModel must have an observed viewWidth that the controller updates
     /// in viewWillLayoutSubviews(), so SwiftUI re-evaluates the layout.
     @Test("viewWidth publishes changes for orientation handling")
     func viewWidthPublishesChanges() {
         let viewModel = KeyboardViewModel(userDefaults: InMemoryUserDefaults(), shouldPersistSettings: false)
 
-        var observedWidths: [CGFloat] = []
-        let cancellable = viewModel.$viewWidth
-            .dropFirst()
-            .sink { observedWidths.append($0) }
+        // One invalidation per distinct width, and the value each one leaves
+        // behind (Observation announces a change before storing it, so the
+        // value is checked after each update rather than carried by the event).
+        let widthReaders = ChangeCounter(tracking: { _ = viewModel.viewWidth })
 
         viewModel.updateViewWidth(400)
-        viewModel.updateViewWidth(800)
+        #expect(widthReaders.count == 1)
+        #expect(viewModel.viewWidth == 400)
 
-        #expect(observedWidths == [400, 800])
+        viewModel.updateViewWidth(800)
+        #expect(widthReaders.count == 2)
         #expect(viewModel.viewWidth == 800)
-        _ = cancellable
     }
 
     @Test("Same viewWidth does not trigger redundant publish")
     func sameViewWidthNoRedundantPublish() {
         let viewModel = KeyboardViewModel(userDefaults: InMemoryUserDefaults(), shouldPersistSettings: false)
 
-        var publishCount = 0
-        let cancellable = viewModel.$viewWidth
-            .dropFirst()
-            .sink { _ in publishCount += 1 }
+        let widthReaders = ChangeCounter(tracking: { _ = viewModel.viewWidth })
 
         viewModel.updateViewWidth(400)
         viewModel.updateViewWidth(400)
 
-        #expect(publishCount == 1, "Same width should not publish again")
-        _ = cancellable
+        #expect(widthReaders.count == 1, "Same width should not publish again")
     }
 
     // MARK: - Window bounds (Split View / Stage Manager, issue #116)
@@ -102,16 +99,12 @@ struct OrientationLayoutTests {
     func sameWindowBoundsNoRedundantPublish() {
         let viewModel = KeyboardViewModel(userDefaults: InMemoryUserDefaults(), shouldPersistSettings: false)
 
-        var publishCount = 0
-        let cancellable = viewModel.$keyboardWidthCap
-            .dropFirst()
-            .sink { _ in publishCount += 1 }
+        let capReaders = ChangeCounter(tracking: { _ = viewModel.keyboardWidthCap })
 
         viewModel.updateWindowBounds(CGRect(x: 0, y: 0, width: 320, height: 300))
         viewModel.updateWindowBounds(CGRect(x: 0, y: 0, width: 320, height: 300))
 
-        #expect(publishCount == 1, "Same bounds should not publish again")
-        _ = cancellable
+        #expect(capReaders.count == 1, "Same bounds should not publish again")
     }
 
     @Test("Landscape metrics never exceed the portrait width cap")

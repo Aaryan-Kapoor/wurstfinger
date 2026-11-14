@@ -8,7 +8,7 @@
 import Foundation
 
 /// Restriction of allowed swipe directions per key.
-enum SwipeMode: String, Codable {
+enum SwipeMode: String, Codable, Sendable {
     case eightWay // All 8 directions (default for letter keys)
     case fourWayCross // Cross only (↑↓←→)
     case fourWayDiagonal // Diagonals only

@@ -95,7 +95,7 @@ import Foundation
 
 // MARK: - Configuration
 
-struct GesturePreprocessorConfiguration {
+struct GesturePreprocessorConfiguration: Sendable, Equatable {
     /// Minimum distance between consecutive points (jitter threshold)
     let jitterThreshold: CGFloat
     /// Maximum jump distance to consider valid (outlier threshold)
@@ -589,7 +589,7 @@ struct GesturePreprocessor {
 
 // MARK: - Classification Thresholds
 
-struct GestureClassificationThresholds {
+struct GestureClassificationThresholds: Sendable, Equatable {
     /// Minimum path length to be considered a swipe (not a tap)
     let minSwipeLength: CGFloat
     /// Maximum return ratio to be considered a return-swipe
@@ -723,7 +723,7 @@ struct GestureClassificationThresholds {
 
 // MARK: - Gesture Features
 
-struct GestureFeatures {
+struct GestureFeatures: Sendable {
     /// Thresholds used for classification
     let thresholds: GestureClassificationThresholds
 

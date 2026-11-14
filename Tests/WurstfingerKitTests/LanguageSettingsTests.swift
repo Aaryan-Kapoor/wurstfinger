@@ -9,6 +9,7 @@ import Foundation
 import Testing
 @testable import WurstfingerKit
 
+@MainActor
 struct LanguageSettingsTests {
     @Test("Detects German with exact match")
     func detectGermanExactMatch() {
@@ -174,6 +175,7 @@ struct LanguageSettingsTests {
 
 // MARK: - Multi-Language Settings Tests
 
+@MainActor
 struct MultiLanguageSettingsTests {
     private func makeTestDefaults() -> UserDefaults {
         InMemoryUserDefaults()
@@ -384,6 +386,7 @@ struct MultiLanguageSettingsTests {
 
 // MARK: - Pinned Default Language Tests
 
+@MainActor
 struct PinnedLanguageTests {
     private func makeTestDefaults() -> UserDefaults {
         InMemoryUserDefaults()
@@ -563,6 +566,7 @@ struct PinnedLanguageTests {
 
 // MARK: - Info.plist PrimaryLanguage Tests
 
+@MainActor
 struct InfoPlistLanguageTests {
     @Test("Keyboard extension Info.plist has PrimaryLanguage set to mul")
     func primaryLanguageIsMul() throws {
@@ -588,6 +592,7 @@ struct InfoPlistLanguageTests {
 
 // MARK: - resolvedLanguageId
 
+@MainActor
 struct ResolvedLanguageIdTests {
     @Test("Keeps a valid stored id")
     func keepsValidId() {
@@ -639,6 +644,7 @@ struct ResolvedLanguageIdTests {
 
 // MARK: - normalizedEnabledLanguageIds
 
+@MainActor
 struct NormalizedEnabledLanguageIdsTests {
     private func makeDefaults(selected: String, enabled: [String]?) -> UserDefaults {
         let defaults = InMemoryUserDefaults()
@@ -688,6 +694,7 @@ struct NormalizedEnabledLanguageIdsTests {
 /// the keyboard extension writes `selectedLanguageId` on every globe-key
 /// language cycle. These tests simulate that cross-process drift by writing to
 /// the injected in-memory store externally between init and the mutating call.
+@MainActor
 struct LanguageSettingsStalenessTests {
     /// Store seeded with `selected = en_US`, `enabled = [en_US, de_DE]`.
     private func makeStore() -> InMemoryUserDefaults {
@@ -816,6 +823,7 @@ private final class WriteRecordingDefaults: UserDefaults {
     }
 }
 
+@MainActor
 struct LanguageSettingsInitWriteHygieneTests {
     @Test("Init on an already-normalized store performs no write")
     func initOnNormalizedStoreIsWriteFree() {

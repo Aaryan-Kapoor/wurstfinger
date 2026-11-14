@@ -25,19 +25,33 @@ import os
 /// defaults write fires the in-process `didChangeNotification`, which would
 /// trigger a redundant settings reload on each keyboard appearance.
 ///
+/// **Concurrency model.** An `actor` whose executor is one shared utility-QoS
+/// serial `DispatchQueue`, so every file touch happens on that queue and can
+/// never contend with the main thread. Callers are never made to `await` it:
 /// `record` captures the footprint synchronously at the call site (so the
-/// measurement is attributed to the right lifecycle point) but persists on a
-/// serial utility queue — file I/O must not sit in the keyboard's launch
-/// path. The suspension path uses `recordAndFlush` instead: there the write
-/// must land before the process is frozen, and latency does not matter.
-/// `recordDeferred` covers the one case neither serves — a figure that is
-/// only correct some time *after* the call site — and is allowed to go
-/// missing: the caller can cancel it, and a sample that arrives long after
-/// its deadline is discarded rather than logged (see there). A host-app clear
+/// measurement is attributed to the right lifecycle point) and `yield`s the
+/// finished entry into an `AsyncStream` (`bufferingNewest(256)`, so a runaway
+/// producer can only ever cost the oldest queued entries, never memory). One
+/// long-lived task drains the stream and appends in order, onto each entry's
+/// log. That single FIFO is also what orders everything else: `entries()` and
+/// `clear()` first `await` a barrier marker that rides the same stream, so
+/// "reads observe every previously recorded entry" holds exactly as it did when
+/// the queue was drained with `sync` — across log instances too, since the
+/// stream, like the queue before it, is process-wide.
+///
+/// The suspension path uses `recordAndFlush` instead: there the write must
+/// land before the process is frozen, and latency does not matter. It is the
+/// one deliberately blocking call in the keyboard (never on the typing path):
+/// a suspended process may never get CPU time again, so an async hop that
+/// "will run soon" is not an option there. `recordDeferred` covers the one
+/// case neither serves — a figure that is only correct some time *after* the
+/// call site — and is allowed to go missing: the caller can cancel it (it
+/// returns the `Task` handle), and a sample that arrives long after its
+/// deadline is discarded rather than logged (see there). A host-app clear
 /// racing an extension write can lose one side — acceptable for diagnostics,
 /// and the file stays bounded by `maxEntries` either way.
-struct KeyboardHealthLog {
-    struct Entry: Codable, Equatable, Identifiable {
+actor KeyboardHealthLog {
+    struct Entry: Codable, Equatable, Identifiable, Sendable {
         let id: UUID
         /// Wall-clock time of the event, for correlating with incidents where
         /// the system keyboard appeared instead of Wurstfinger.
@@ -78,7 +92,7 @@ struct KeyboardHealthLog {
 
     /// Shared instance persisting into the app group container. The
     /// `containerURL(...)` lookup is out-of-process IPC; it is deferred into a
-    /// provider closure so it runs lazily inside the `ioQueue` on first file
+    /// provider closure so it runs lazily on the log's queue on first file
     /// access, never synchronously on the main thread during the latency-
     /// critical extension spawn.
     static let shared = KeyboardHealthLog(fileURLProvider: {
@@ -87,7 +101,79 @@ struct KeyboardHealthLog {
             .appendingPathComponent(fileName)
     })
 
-    private let fileURLProvider: () -> URL?
+    // MARK: - Execution
+
+    /// Serializes all file access across instances, and is every instance's
+    /// actor executor. Utility QoS: a diagnostics write must never compete
+    /// with the touch path for CPU.
+    fileprivate static let ioQueue = DispatchSerialQueue(
+        label: "de.akator.wurstfinger.keyboard-health-log",
+        qos: .utility
+    )
+
+    /// Runs the actor on the shared utility queue instead of the cooperative
+    /// pool, so file I/O keeps its own thread and QoS, and the synchronous
+    /// `recordAndFlush` can wait for it with a plain `sync` barrier.
+    nonisolated var unownedExecutor: UnownedSerialExecutor {
+        Self.ioQueue.asUnownedSerialExecutor()
+    }
+
+    // MARK: - Stream
+
+    /// What travels through the stream. One FIFO carries entries and markers
+    /// alike, which is what makes "a reader sees everything recorded before
+    /// it" a property of the queue order rather than of timing.
+    fileprivate enum Command: Sendable {
+        /// An entry, with the log whose file it belongs to.
+        case append(KeyboardHealthLog, Entry)
+        /// Resumed once everything queued before it has been written.
+        case barrier(CheckedContinuation<Void, Never>)
+        /// Completed once everything queued before it has been written.
+        case flushed(FlushTicket)
+    }
+
+    /// The completion flag a synchronous caller polls (`recordAndFlush`).
+    fileprivate final class FlushTicket: Sendable {
+        private let done = OSAllocatedUnfairLock(initialState: false)
+
+        var isDone: Bool {
+            done.withLock { $0 }
+        }
+
+        func complete() {
+            done.withLock { $0 = true }
+        }
+    }
+
+    /// Entries queued but not yet written. Bounded: a producer outrunning the
+    /// disk loses the *oldest* queued entries rather than growing memory
+    /// inside a ~48 MB budget.
+    private static let streamCapacity = 256
+
+    /// The one stream every instance feeds, and the single task draining it.
+    ///
+    /// Process-wide rather than per instance because the previous design had
+    /// one process-wide serial queue ("serializes all file access across
+    /// instances"): a read through *any* log instance observes every entry
+    /// recorded through *any other* before it. Per-instance streams would have
+    /// silently dropped that ordering between two instances over one file.
+    /// There is a single log in production (`shared`); the guarantee is what
+    /// keeps tests and tools that open the same file twice honest.
+    ///
+    /// The drain task is itself bound to the log queue (see `LogDrainer`), so
+    /// consecutive entries are written back to back on one thread with no hop
+    /// per entry; it only suspends when the stream runs dry.
+    private static let commands: AsyncStream<Command>.Continuation = {
+        let (stream, continuation) = AsyncStream.makeStream(
+            of: Command.self, bufferingPolicy: .bufferingNewest(streamCapacity)
+        )
+        Task(priority: .utility) {
+            await LogDrainer().drain(stream)
+        }
+        return continuation
+    }()
+
+    private let fileURLProvider: @Sendable () -> URL?
     private let maxEntries: Int
 
     /// Approximate encoded size of one entry, used to size the compaction
@@ -101,14 +187,6 @@ struct KeyboardHealthLog {
         2 * maxEntries * Self.approxBytesPerEntry
     }
 
-    /// Serializes all file access across instances. `record` hops onto it
-    /// asynchronously; `entries()`/`clear()` sync through it, so reads always
-    /// observe every previously recorded entry.
-    private static let ioQueue = DispatchQueue(
-        label: "de.akator.wurstfinger.keyboard-health-log",
-        qos: .utility
-    )
-
     #if DEBUG
         private static let logger = Logger(subsystem: "de.akator.wurstfinger", category: "memory")
     #endif
@@ -117,32 +195,89 @@ struct KeyboardHealthLog {
         self.init(fileURLProvider: { fileURL }, maxEntries: maxEntries)
     }
 
-    init(fileURLProvider: @escaping () -> URL?, maxEntries: Int = KeyboardHealthLog.defaultMaxEntries) {
+    init(fileURLProvider: @escaping @Sendable () -> URL?, maxEntries: Int = KeyboardHealthLog.defaultMaxEntries) {
         self.fileURLProvider = fileURLProvider
         self.maxEntries = maxEntries
     }
 
-    /// Records the current footprint under the given lifecycle label.
-    func record(_ label: String) {
-        let entry = makeEntry(label)
-        Self.ioQueue.async { appendEntry(entry) }
+    /// Appends one drained entry to this log's file. The only writer; runs on
+    /// the log's queue.
+    fileprivate func write(_ entry: Entry) {
+        appendEntry(entry)
     }
+
+    /// Queues a command, and releases a waiter whose marker the bounded
+    /// buffer evicted (or that arrived after termination), so no reader can be
+    /// left hanging by the capacity policy.
+    private nonisolated static func enqueue(_ command: Command) {
+        switch commands.yield(command) {
+        case .enqueued:
+            break
+        case let .dropped(evicted):
+            release(evicted)
+        case .terminated:
+            release(command)
+        @unknown default:
+            release(command)
+        }
+    }
+
+    private nonisolated static func release(_ command: Command) {
+        switch command {
+        case let .barrier(waiter): waiter.resume()
+        case let .flushed(ticket): ticket.complete()
+        case .append: break
+        }
+    }
+
+    /// Suspends until every entry queued before this call has been written.
+    private nonisolated func settle() async {
+        await withCheckedContinuation { (waiter: CheckedContinuation<Void, Never>) in
+            Self.enqueue(.barrier(waiter))
+        }
+    }
+
+    // MARK: - Recording
+
+    /// Records the current footprint under the given lifecycle label.
+    /// Returns immediately: the entry is built here, at the call site, and
+    /// handed to the log's own queue through the stream.
+    nonisolated func record(_ label: String) {
+        Self.enqueue(.append(self, makeEntry(label)))
+    }
+
+    /// Longest `recordAndFlush` waits for its entry to reach the disk before
+    /// giving up. Only a pathological stall (a hung container lookup) comes
+    /// near it; the bound keeps such a stall from freezing suspension.
+    private static let flushTimeout: DispatchTimeInterval = .seconds(2)
 
     /// Records like `record(_:)`, but returns only once the entry is on disk.
     /// For the suspension path: a suspended process may never get CPU time
     /// again — a resume-jetsam kills it on wake before queued writes run —
     /// and the post-shedding footprint entry is exactly what those incidents
-    /// need. The serial queue also drains any earlier async records first.
-    /// Not for the launch path, where file I/O must stay off the main thread.
-    func recordAndFlush(_ label: String) {
-        let entry = makeEntry(label)
-        Self.ioQueue.sync { appendEntry(entry) }
+    /// need. Entries queued earlier are written first (same FIFO). Not for
+    /// the launch path or the typing path, where nothing may block.
+    ///
+    /// The wait is a `sync` barrier on the log's queue rather than an `await`,
+    /// because the caller is synchronous UIKit teardown. It re-polls until the
+    /// drain task has reported the entry written, rather than trusting one
+    /// barrier: the drain task may not even have been scheduled onto the queue
+    /// yet when the first barrier runs (a freshly created log), and an empty
+    /// barrier then returns before the entry exists.
+    nonisolated func recordAndFlush(_ label: String) {
+        dispatchPrecondition(condition: .notOnQueue(Self.ioQueue))
+        let ticket = FlushTicket()
+        Self.enqueue(.append(self, makeEntry(label)))
+        Self.enqueue(.flushed(ticket))
+        let giveUp = DispatchTime.now() + Self.flushTimeout
+        while !ticket.isDone, DispatchTime.now() < giveUp {
+            Self.ioQueue.sync {}
+        }
     }
 
     /// Records an entry whose footprint is sampled `delay` seconds from now,
-    /// on a strictly best-effort basis, and hands back the pending work item
-    /// so the caller can void it once the premise it was queued under stops
-    /// holding.
+    /// on a strictly best-effort basis, and hands back the pending task so the
+    /// caller can void it once the premise it was queued under stops holding.
     ///
     /// The inverse of the other two: they sample at the call site precisely so
     /// the figure belongs to that lifecycle point, while this one deliberately
@@ -155,39 +290,51 @@ struct KeyboardHealthLog {
     /// deliberate. A process that dies before the timer fires loses it — hence
     /// callers must treat this as a refinement of an already-recorded
     /// guaranteed entry, never as the record itself. A process that is merely
-    /// *frozen* does not lose it: libdispatch has no drop-on-overdue policy,
-    /// so the block runs as soon as the process is scheduled again — possibly
-    /// minutes later and inside the next host cycle, since the extension
-    /// process is reused. That sample would describe the resumed process while
-    /// carrying the label of the earlier one, so a block that starts more than
-    /// its own delay late writes nothing.
+    /// *frozen* does not lose it: the sleep ends as soon as the process is
+    /// scheduled again — possibly minutes later and inside the next host
+    /// cycle, since the extension process is reused. That sample would
+    /// describe the resumed process while carrying the label of the earlier
+    /// one, so a sample that reaches the log's queue more than its own delay
+    /// late writes nothing. (The lateness is judged on the queue, not when the
+    /// timer fires: a queue that was busy is as late as a process that was
+    /// frozen.)
     ///
-    /// One clock caveat bounds that guard rather than breaking it: the
-    /// comparison reads `DispatchTime` — mach time, which pauses while the
-    /// *device* sleeps — so a sample delayed across a sleep window can look
-    /// punctual and slip through. The caller's cancellation covers the case
-    /// that matters (a rebuilt keyboard voids the pending sample); what the
-    /// clock caveat can cost is a single stale-but-plausible diagnostics
-    /// entry, which the log's consumers tolerate by design.
+    /// The clock is `ContinuousClock`, which — unlike the mach-time clock the
+    /// previous `DispatchQueue.asyncAfter` implementation compared against —
+    /// keeps counting while the *device* sleeps, so a sample delayed across a
+    /// sleep window is recognised as late instead of slipping through.
+    /// Cancelling the returned task before it fires writes nothing.
     @discardableResult
-    func recordDeferred(_ label: String, after delay: TimeInterval) -> DispatchWorkItem {
-        let deadline = DispatchTime.now() + delay
+    nonisolated func recordDeferred(_ label: String, after delay: TimeInterval) -> Task<Void, Never> {
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: .seconds(delay))
         // Overdue by more than the wait itself: no process that kept running
         // is that far behind, so whatever the sample would read now belongs to
         // a different situation than the label names.
-        let discardAfter = deadline + delay
-        let item = DispatchWorkItem {
-            guard DispatchTime.now() < discardAfter else { return }
-            appendEntry(makeEntry(label))
+        let discardAfter = deadline.advanced(by: .seconds(delay))
+        return Task(priority: .utility) {
+            do {
+                try await clock.sleep(until: deadline)
+            } catch {
+                return // cancelled: the premise no longer holds
+            }
+            await self.recordIfPunctual(label, discardAfter: discardAfter)
         }
-        Self.ioQueue.asyncAfter(deadline: deadline, execute: item)
-        return item
+    }
+
+    /// Runs on the log's queue, so `ContinuousClock.now` here is the time the
+    /// queue actually got to the sample.
+    private func recordIfPunctual(_ label: String, discardAfter: ContinuousClock.Instant) {
+        guard !Task.isCancelled, ContinuousClock.now < discardAfter else { return }
+        // Through the stream, not straight to disk, so it stays behind
+        // anything already queued (the flushed suspension entry it pairs with).
+        Self.enqueue(.append(self, makeEntry(label)))
     }
 
     /// Captures the footprint synchronously at the call site, so the
     /// measurement is attributed to the right lifecycle point no matter when
     /// the entry is persisted.
-    private func makeEntry(_ label: String) -> Entry {
+    private nonisolated func makeEntry(_ label: String) -> Entry {
         let entry = Entry(
             id: UUID(),
             date: Date(),
@@ -217,13 +364,16 @@ struct KeyboardHealthLog {
     /// the file is missing or unreadable (corruption is silently discarded —
     /// this is diagnostics, it must never take the keyboard down).
     ///
+    /// Waits for every entry recorded before the call to reach the file, so a
+    /// read always observes what the caller just recorded. Async because the
+    /// work runs on the log's queue; only the host app's settings screen reads.
+    ///
     /// The `suffix(maxEntries)` cap keeps the read bound even when the on-disk
     /// file has grown past `maxEntries` between physical compactions.
-    func entries() -> [Entry] {
-        Self.ioQueue.sync {
-            guard let fileURL = fileURLProvider() else { return [] }
-            return Array(readEntries(fileURL).suffix(maxEntries))
-        }
+    func entries() async -> [Entry] {
+        await settle()
+        guard let fileURL = fileURLProvider() else { return [] }
+        return Array(readEntries(fileURL).suffix(maxEntries))
     }
 
     /// Removes all recorded entries and stamps a tombstone in their place, so
@@ -236,7 +386,7 @@ struct KeyboardHealthLog {
     /// `KeyboardViewController.shedMemoryBeforeSuspension`). Clearing the log
     /// shortly after a dismissal therefore reliably grows one entry in the
     /// file that was just emptied, and no cancellation can prevent it: the
-    /// pending work item lives in another process, and the log has no channel
+    /// pending task lives in another process, and the log has no channel
     /// to reach across. Marking where the clear happened is the honest fix;
     /// cancelling in-process would only look like one.
     ///
@@ -245,19 +395,18 @@ struct KeyboardHealthLog {
     /// budget, and a host-sized number in that column would skew the peak.
     /// `KeyboardHealthView` folds it away while it is the only entry, so a
     /// cleared log still reads as empty.
-    func clear() {
-        Self.ioQueue.sync {
-            guard let fileURL = fileURLProvider() else { return }
-            try? FileManager.default.removeItem(at: fileURL)
-            appendEntry(makeClearedEntry())
-        }
+    func clear() async {
+        await settle()
+        guard let fileURL = fileURLProvider() else { return }
+        try? FileManager.default.removeItem(at: fileURL)
+        appendEntry(makeClearedEntry())
     }
 
     // MARK: - Private
 
     /// Appends a single entry to the newline-delimited JSON (JSONL) file with
     /// a `seekToEnd` + `write` — O(1), no full-file read on the hot path.
-    /// Must only run on `ioQueue`.
+    /// Runs on the log's queue (the actor's executor).
     private func appendEntry(_ entry: Entry) {
         guard let fileURL = fileURLProvider(),
               let encoded = try? JSONEncoder().encode(entry) else { return }
@@ -282,7 +431,7 @@ struct KeyboardHealthLog {
     /// Physically rewrites the file to the last `maxEntries` entries once it
     /// grows past `trimThresholdBytes`. Gated on a cheap `stat` (no content
     /// read), so a full read+rewrite happens only ~once per `maxEntries`
-    /// appends — O(1) amortized per event. Must only run on `ioQueue`.
+    /// appends — O(1) amortized per event. Runs on the log's queue.
     private func compactIfNeeded(_ fileURL: URL) {
         let size = (try? FileManager.default.attributesOfItem(atPath: fileURL.path))?[.size] as? Int ?? 0
         // A file the process cannot read is history, not garbage: rewriting it
@@ -291,7 +440,7 @@ struct KeyboardHealthLog {
         write(Array(decodeEntries(from: data).suffix(maxEntries)), to: fileURL)
     }
 
-    /// Raw JSONL read; must only run on `ioQueue`.
+    /// Raw JSONL read; runs on the log's queue.
     private func readEntries(_ fileURL: URL) -> [Entry] {
         guard let data = try? Data(contentsOf: fileURL) else { return [] }
         return decodeEntries(from: data)
@@ -334,5 +483,40 @@ struct KeyboardHealthLog {
             }
         }
         return result == KERN_SUCCESS ? info.phys_footprint : 0
+    }
+}
+
+/// The stream's consumer: an actor on the same queue as every
+/// `KeyboardHealthLog`, so the drain loop and the writes it performs share one
+/// thread of execution.
+///
+/// Draining from a plain task would cost a thread hop per entry (pool thread ->
+/// log queue and back), which under load stretches a burst of appends from
+/// milliseconds to seconds. Running the loop on the queue itself lets the
+/// buffered entries go out back to back; `assumeIsolated` is sound because both
+/// actors' executor *is* that queue, which the runtime verifies.
+private actor LogDrainer {
+    nonisolated var unownedExecutor: UnownedSerialExecutor {
+        KeyboardHealthLog.ioQueue.asUnownedSerialExecutor()
+    }
+
+    /// A synchronous function, because `assumeIsolated` is unavailable from
+    /// async contexts. Runs while the drain loop holds the queue, so the
+    /// assumption always holds.
+    private nonisolated static func write(_ entry: KeyboardHealthLog.Entry, to log: KeyboardHealthLog) {
+        log.assumeIsolated { $0.write(entry) }
+    }
+
+    func drain(_ stream: AsyncStream<KeyboardHealthLog.Command>) async {
+        for await command in stream {
+            switch command {
+            case let .append(log, entry):
+                Self.write(entry, to: log)
+            case let .barrier(waiter):
+                waiter.resume()
+            case let .flushed(ticket):
+                ticket.complete()
+            }
+        }
     }
 }

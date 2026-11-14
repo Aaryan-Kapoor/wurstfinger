@@ -11,8 +11,9 @@ import CoreGraphics
 import Foundation
 @testable import WurstfingerKit
 
+@MainActor
 enum KeyboardGeometry {
-    struct Layout {
+    struct Layout: Sendable {
         /// Size of the key grid.
         var gridSize: CGSize
         /// Where the grid's top-left corner sits in the keyboard root view.
