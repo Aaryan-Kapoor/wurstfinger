@@ -63,7 +63,8 @@ struct DataDrivenKeyboardRootView: View {
         // width here and the row/cell sizes in the grid, so they can never
         // desynchronize — which a second, `@AppStorage`-read source of row
         // heights would allow.
-        let metrics = viewModel.layoutMetrics(forContainerWidth: currentWidth)
+        let plan = viewModel.layoutPlan(forContainerWidth: currentWidth)
+        let metrics = plan?.metrics ?? viewModel.layoutMetrics(forContainerWidth: currentWidth)
         let availableSpace = currentWidth - metrics.keyboardWidth
         let horizontalOffset = availableSpace * (viewModel.keyboardHorizontalPosition - 0.5)
 
@@ -71,10 +72,9 @@ struct DataDrivenKeyboardRootView: View {
             keyboardBackground
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            if let mode = viewModel.activeModeFromDefinition,
-               let arrangement = mode.arrangement(for: viewModel.currentContext) {
+            if let mode = viewModel.activeModeFromDefinition, let plan {
                 KeyboardGridView(
-                    arrangement: arrangement,
+                    arrangement: plan.arrangement,
                     keys: mode.keys,
                     onGesture: { key, gesture, isReturn in
                         viewModel.handleGesture(gesture, keyId: key.id, isReturn: isReturn)

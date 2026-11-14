@@ -50,3 +50,22 @@ struct KeyPlacement: Codable, Hashable, Sendable {
         self.init(keyId: keyId, widthMultiplier: width, heightMultiplier: height)
     }
 }
+
+// MARK: - Gaps
+
+extension KeyPlacement {
+    /// The reserved id of a placement that holds no key.
+    static let gapKeyId = "gap"
+
+    /// A run of `columns` empty columns, for the split layout's empty middle.
+    /// `GridLayoutSolver` advances over it without emitting a cell, so no key
+    /// exists there: nothing is drawn and the hit map has no key to hit.
+    static func gap(columns: Int) -> KeyPlacement {
+        KeyPlacement(keyId: gapKeyId, widthMultiplier: columns)
+    }
+
+    /// Whether this placement is a gap rather than a key.
+    var isGap: Bool {
+        keyId == Self.gapKeyId
+    }
+}

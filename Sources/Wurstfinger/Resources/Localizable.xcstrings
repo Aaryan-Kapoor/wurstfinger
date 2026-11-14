@@ -34807,6 +34807,834 @@
           }
         }
       }
+    },
+    "Key Spacing": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tastenabstand"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Espacement des touches"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Espaciado de teclas"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spaziatura dei tasti"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Расстояние между клавишами"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odstępy między klawiszami"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tangentavstånd"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Näppäinten väli"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Razmak tipki"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "מרווח בין מקשים"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Khoảng cách giữa các phím"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Espasyo ng mga Key"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Απόσταση πλήκτρων"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Espaçamento das teclas"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Відстань між клавішами"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "المسافة بين المفاتيح"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "فاصله بین کلیدها"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "کیز کے درمیان فاصلہ"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ระยะห่างระหว่างปุ่ม"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "कुंजियों के बीच की दूरी"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "キーの間隔"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "키 간격"
+          }
+        }
+      },
+      "comment": "Settings: slider for the gap between keys"
+    },
+    "Space between the keys. Tighter gaps make the keys bigger; wider ones make them easier to tell apart.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abstand zwischen den Tasten. Kleinere Abstände machen die Tasten größer, größere erleichtern die Unterscheidung."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Espace entre les touches. Un espacement plus faible agrandit les touches ; un espacement plus large les distingue mieux."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Espacio entre las teclas. Un espacio menor agranda las teclas; uno mayor facilita distinguirlas."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spazio tra i tasti. Spazi più stretti ingrandiscono i tasti; spazi più larghi li rendono più facili da distinguere."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Расстояние между клавишами. Меньший зазор делает клавиши крупнее, больший помогает их различать."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odstęp między klawiszami. Mniejszy odstęp powiększa klawisze, większy ułatwia ich rozróżnianie."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avstånd mellan tangenterna. Mindre avstånd ger större tangenter, större avstånd gör dem lättare att skilja åt."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Näppäinten välinen etäisyys. Pienempi väli tekee näppäimistä isompia, suurempi helpottaa niiden erottamista."
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Razmak između tipki. Manji razmak povećava tipke, a veći ih olakšava razlikovati."
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "הרווח בין המקשים. רווח קטן יותר מגדיל את המקשים, רווח גדול יותר מקל להבחין ביניהם."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Khoảng trống giữa các phím. Khoảng cách nhỏ làm phím lớn hơn; khoảng cách lớn giúp dễ phân biệt các phím hơn."
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Espasyo sa pagitan ng mga key. Ang mas maliit na agwat ay nagpapalaki sa mga key; ang mas malaki ay nagpapadali sa pagkakaiba nila."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Το κενό ανάμεσα στα πλήκτρα. Μικρότερο κενό μεγαλώνει τα πλήκτρα· μεγαλύτερο τα κάνει πιο εύκολα στη διάκριση."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Espaço entre as teclas. Espaços menores aumentam as teclas; maiores facilitam distingui-las."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Відстань між клавішами. Менший проміжок робить клавіші більшими, більший — легшими для розрізнення."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "المسافة بين المفاتيح. المسافات الأصغر تجعل المفاتيح أكبر، والأكبر تسهّل التمييز بينها."
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "فاصله بین کلیدها. فاصله کمتر کلیدها را بزرگ‌تر می‌کند و فاصله بیشتر تشخیص آن‌ها را آسان‌تر می‌کند."
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "کیز کے درمیان فاصلہ۔ کم فاصلہ کیز کو بڑا کرتا ہے، زیادہ فاصلہ انہیں الگ پہچاننا آسان بناتا ہے۔"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ช่องว่างระหว่างปุ่ม ช่องว่างน้อยทำให้ปุ่มใหญ่ขึ้น ช่องว่างมากทำให้แยกปุ่มได้ง่ายขึ้น"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "कुंजियों के बीच की जगह। कम जगह कुंजियों को बड़ा करती है; ज़्यादा जगह उन्हें अलग पहचानना आसान बनाती है।"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "キーとキーの間のすき間です。狭くするとキーが大きくなり、広くすると見分けやすくなります。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "키 사이의 간격입니다. 간격이 좁으면 키가 커지고, 넓으면 키를 구분하기 쉬워집니다."
+          }
+        }
+      },
+      "comment": "Settings: explanation under the key spacing slider"
+    },
+    "Numpad Column": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zifferntasten-Spalte"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Colonne pavé numérique"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Columna numérica"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Colonna tastierino numerico"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Колонка с цифрами"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kolumna numeryczna"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sifferkolumn"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Numeropylväs"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stupac s brojevima"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "עמודת מספרים"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cột bàn phím số"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hanay ng Numpad"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Στήλη αριθμών"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Coluna numérica"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Колонка з цифрами"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "عمود الأرقام"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ستون اعداد"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "نمبر کالم"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "คอลัมน์ตัวเลข"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "संख्या स्तंभ"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "テンキー列"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "숫자 열"
+          }
+        }
+      },
+      "comment": "Settings: picker for the always-available numpad column"
+    },
+    "A column of numbers beside the letters: tap for the middle digit, swipe left or right for the others, swipe the other ways for symbols. Not shown in number mode.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eine Zahlenspalte neben den Buchstaben: Tippen für die mittlere Ziffer, nach links oder rechts wischen für die anderen, in die übrigen Richtungen für Symbole. Im Zahlenmodus wird sie nicht angezeigt."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Une colonne de chiffres à côté des lettres : touchez pour le chiffre du milieu, balayez vers la gauche ou la droite pour les autres, dans les autres directions pour des symboles. Elle n’apparaît pas en mode numérique."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Una columna de números junto a las letras: toca para el dígito central, desliza a izquierda o derecha para los demás y en las otras direcciones para símbolos. No aparece en el modo numérico."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Una colonna di numeri accanto alle lettere: tocca per la cifra centrale, scorri a sinistra o a destra per le altre, nelle altre direzioni per i simboli. Non appare nella modalità numerica."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Колонка цифр рядом с буквами: нажатие вводит среднюю цифру, свайп влево или вправо — остальные, свайпы в других направлениях — символы. В цифровом режиме не показывается."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kolumna cyfr obok liter: dotknięcie wpisuje środkową cyfrę, przesunięcie w lewo lub w prawo — pozostałe, w inne strony — symbole. W trybie cyfr nie jest widoczna."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En kolumn med siffror bredvid bokstäverna: tryck för mittensiffran, svep åt vänster eller höger för de andra och åt andra håll för symboler. Visas inte i sifferläget."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Numeropylväs kirjainten vieressä: napauta keskimmäistä numeroa, pyyhkäise vasemmalle tai oikealle muille ja muihin suuntiin symboleille. Ei näy numerotilassa."
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stupac brojeva uz slova: dodir upisuje srednju znamenku, povlačenje ulijevo ili udesno ostale, a u druge smjerove simbole. Ne prikazuje se u brojčanom načinu."
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "עמודת ספרות לצד האותיות: הקשה מקלידה את הספרה האמצעית, החלקה שמאלה או ימינה את האחרות, והחלקה לכיוונים אחרים מקלידה סמלים. העמודה אינה מוצגת במצב מספרים."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Một cột số bên cạnh các chữ cái: chạm để nhập chữ số ở giữa, vuốt trái hoặc phải để nhập các số còn lại, vuốt các hướng khác để nhập ký hiệu. Không hiển thị ở chế độ số."
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Isang hanay ng mga numero sa tabi ng mga letra: i-tap para sa gitnang digit, mag-swipe pakaliwa o pakanan para sa iba, at sa ibang direksyon para sa mga simbolo. Hindi ito ipinapakita sa number mode."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Μια στήλη αριθμών δίπλα στα γράμματα: πατήστε για το μεσαίο ψηφίο, σύρετε αριστερά ή δεξιά για τα υπόλοιπα, προς άλλες κατευθύνσεις για σύμβολα. Δεν εμφανίζεται στη λειτουργία αριθμών."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uma coluna de números ao lado das letras: toque para o dígito do meio, deslize para a esquerda ou direita para os outros e nas demais direções para símbolos. Não aparece no modo numérico."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Колонка цифр поруч із літерами: дотик вводить середню цифру, свайп ліворуч або праворуч — інші, свайпи в інших напрямках — символи. У цифровому режимі не показується."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "عمود أرقام بجانب الحروف: انقر لإدخال الرقم الأوسط، واسحب يسارًا أو يمينًا للأرقام الأخرى، وفي الاتجاهات الأخرى للرموز. لا يظهر في وضع الأرقام."
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ستونی از اعداد کنار حروف: ضربه برای عدد وسط، کشیدن به چپ یا راست برای بقیه و کشیدن در جهت‌های دیگر برای نمادها. در حالت اعداد نمایش داده نمی‌شود."
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "حروف کے ساتھ اعداد کا ایک کالم: درمیانے ہندسے کے لیے ٹیپ کریں، باقی کے لیے بائیں یا دائیں سوائپ کریں، اور علامات کے لیے دوسری سمتوں میں۔ نمبر موڈ میں نظر نہیں آتا۔"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "คอลัมน์ตัวเลขข้างตัวอักษร: แตะเพื่อพิมพ์เลขตรงกลาง ปัดซ้ายหรือขวาเพื่อพิมพ์เลขอื่น ปัดทิศอื่นเพื่อพิมพ์สัญลักษณ์ ไม่แสดงในโหมดตัวเลข"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "अक्षरों के बगल में संख्याओं का एक स्तंभ: बीच का अंक लिखने के लिए टैप करें, बाकी के लिए बाएँ या दाएँ स्वाइप करें, और चिह्नों के लिए दूसरी दिशाओं में। संख्या मोड में यह नहीं दिखता।"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文字キーの横に数字の列を表示します。タップで中央の数字、左右にスワイプで両側の数字、ほかの方向で記号を入力します。数字モードでは表示されません。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "글자 키 옆에 숫자 열을 표시합니다. 탭하면 가운데 숫자, 좌우로 스와이프하면 양옆 숫자, 다른 방향으로 스와이프하면 기호가 입력됩니다. 숫자 모드에서는 표시되지 않습니다."
+          }
+        }
+      },
+      "comment": "Settings: explanation under the numpad column picker"
+    },
+    "Split on Wide Screens": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auf breiten Bildschirmen teilen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diviser sur les grands écrans"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dividir en pantallas anchas"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dividi sugli schermi larghi"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Разделять на широких экранах"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Podziel na szerokich ekranach"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dela på breda skärmar"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jaa leveillä näytöillä"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Podijeli na širokim zaslonima"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "פיצול במסכים רחבים"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tách đôi trên màn hình rộng"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hatiin sa Malalapad na Screen"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Διαχωρισμός σε πλατιές οθόνες"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dividir em ecrãs largos"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Розділяти на широких екранах"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تقسيم على الشاشات العريضة"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تقسیم در صفحه‌های عریض"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "چوڑی اسکرینوں پر تقسیم"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "แยกครึ่งบนหน้าจอกว้าง"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "चौड़ी स्क्रीन पर बाँटें"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "広い画面で分割"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "넓은 화면에서 분할"
+          }
+        }
+      },
+      "comment": "Settings: toggle for the split keyboard on wide landscape screens"
+    },
+    "On a wide screen held sideways (an iPad, or a large iPhone), the letters go to one side and the utility and numpad keys to the other, leaving the middle free.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auf einem breiten, quer gehaltenen Bildschirm (iPad oder großes iPhone) wandern die Buchstaben auf eine Seite und die Funktions- und Zifferntasten auf die andere – die Mitte bleibt frei."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sur un grand écran tenu à l’horizontale (iPad ou grand iPhone), les lettres passent d’un côté et les touches utilitaires et numériques de l’autre, le milieu restant libre."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En una pantalla ancha en horizontal (iPad o iPhone grande), las letras van a un lado y las teclas de utilidad y numéricas al otro, dejando libre el centro."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Su uno schermo largo in orizzontale (iPad o iPhone grande) le lettere vanno da un lato e i tasti di servizio e numerici dall’altro, lasciando libero il centro."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "На широком экране в горизонтальной ориентации (iPad или большой iPhone) буквы уходят на одну сторону, а служебные и цифровые клавиши — на другую; середина остаётся свободной."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na szerokim ekranie w poziomie (iPad lub duży iPhone) litery trafiają na jedną stronę, a klawisze funkcyjne i numeryczne na drugą; środek zostaje wolny."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "På en bred skärm i liggande läge (iPad eller stor iPhone) hamnar bokstäverna på ena sidan och funktions- och siffertangenterna på den andra, och mitten lämnas fri."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leveällä vaakatilassa olevalla näytöllä (iPad tai iso iPhone) kirjaimet siirtyvät toiselle puolelle ja toiminto- ja numeronäppäimet toiselle; keskelle jää tyhjää tilaa."
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na širokom zaslonu u vodoravnom položaju (iPad ili veliki iPhone) slova idu na jednu stranu, a funkcijske i brojčane tipke na drugu, a sredina ostaje slobodna."
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "במסך רחב המוחזק לרוחב (iPad או iPhone גדול) האותיות עוברות לצד אחד ומקשי הפונקציה והמספרים לצד השני, והאמצע נשאר פנוי."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trên màn hình rộng khi cầm ngang (iPad hoặc iPhone lớn), các chữ cái chuyển sang một bên còn phím chức năng và phím số sang bên kia, để trống phần giữa."
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sa malapad na screen na nakahiga (iPad o malaking iPhone), mapupunta ang mga letra sa isang gilid at ang mga utility at numpad key sa kabila, at walang laman ang gitna."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Σε πλατιά οθόνη σε οριζόντιο προσανατολισμό (iPad ή μεγάλο iPhone), τα γράμματα πηγαίνουν στη μία πλευρά και τα πλήκτρα λειτουργιών και αριθμών στην άλλη, αφήνοντας ελεύθερο το κέντρο."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Num ecrã largo na horizontal (iPad ou iPhone grande), as letras ficam de um lado e as teclas de utilidade e numéricas do outro, deixando o centro livre."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "На широкому екрані в горизонтальній орієнтації (iPad або великий iPhone) літери переходять на один бік, а службові та цифрові клавіші — на інший; середина залишається вільною."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "على الشاشة العريضة في الوضع الأفقي (iPad أو iPhone كبير) تنتقل الحروف إلى جانب، ومفاتيح الوظائف والأرقام إلى الجانب الآخر، ويبقى الوسط فارغًا."
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "در صفحه عریض و افقی (iPad یا iPhone بزرگ)، حروف به یک سمت و کلیدهای کاربردی و اعداد به سمت دیگر می‌روند و وسط خالی می‌ماند."
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "چوڑی اور افقی اسکرین پر (iPad یا بڑا iPhone) حروف ایک طرف اور افعال و اعداد کی کیز دوسری طرف چلی جاتی ہیں، اور درمیان خالی رہتا ہے۔"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "บนหน้าจอกว้างที่ถือแนวนอน (iPad หรือ iPhone รุ่นใหญ่) ตัวอักษรจะอยู่ด้านหนึ่ง ส่วนปุ่มฟังก์ชันและปุ่มตัวเลขอยู่อีกด้าน โดยเว้นตรงกลางไว้ว่าง"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "चौड़ी स्क्रीन को आड़ा पकड़ने पर (iPad या बड़ा iPhone), अक्षर एक ओर और उपयोगी तथा संख्या कुंजियाँ दूसरी ओर चली जाती हैं, बीच का हिस्सा खाली रहता है।"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "横向きの広い画面(iPad や大きな iPhone)では、文字キーを片側、機能キーと数字キーをもう片側に配置し、中央を空けます。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "가로로 든 넓은 화면(iPad 또는 큰 iPhone)에서는 글자 키를 한쪽에, 기능 키와 숫자 키를 다른 쪽에 두고 가운데를 비웁니다."
+          }
+        }
+      },
+      "comment": "Settings: explanation under the split toggle"
     }
   },
   "version": "1.0"

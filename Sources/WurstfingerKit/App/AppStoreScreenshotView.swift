@@ -179,6 +179,11 @@ struct AppStoreScreenshotView: View {
         // read from (or written to) the user's real settings store.
         viewModel.keyAspectRatio = 1.0
         viewModel.keyboardHorizontalPosition = 0.5
+        // The marketing look is the plain block at the shipped spacing, whatever
+        // the layout settings of the machine it renders on say.
+        viewModel.keySpacing = Double(KeyboardConstants.Layout.defaultKeySpacing)
+        viewModel.numpadColumn = .off
+        viewModel.isSplitLayoutEnabled = false
         viewModel.keyboardWidth = KeyboardConstants.Calculations.squareKeyboardWidth(
             cellSize: KeyboardConstants.Calculations.screenshotCellSize,
             columns: viewModel.currentArrangement?.columns ?? 4

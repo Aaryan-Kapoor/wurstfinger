@@ -147,6 +147,7 @@ check_eq "appex development region" "en" "$(plist_value "$APPEX/Info.plist" CFBu
 check_eq "appex minimum OS" "17.0" "$(plist_value "$APPEX/Info.plist" MinimumOSVersion)"
 check_eq "appex platform" "iPhoneSimulator" "$(plist_value "$APPEX/Info.plist" CFBundleSupportedPlatforms.0)"
 check_eq "appex device family" "1" "$(plist_value "$APPEX/Info.plist" UIDeviceFamily.0)"
+check_eq "appex runs on iPad" "2" "$(plist_value "$APPEX/Info.plist" UIDeviceFamily.1)"
 check_eq "appex extension point" "com.apple.keyboard-service" "$(plist_value "$APPEX/Info.plist" NSExtension.NSExtensionPointIdentifier)"
 check_eq "appex principal class" "KeyboardViewController" "$(plist_value "$APPEX/Info.plist" NSExtension.NSExtensionPrincipalClass)"
 check_eq "appex export compliance" "false" "$(plist_value "$APPEX/Info.plist" ITSAppUsesNonExemptEncryption)"

@@ -228,8 +228,17 @@ struct KeyView: View, Equatable {
     private var keyContent: some View {
         ZStack {
             background
-            label
-            hintOverlay
+            // Numpad column (WP-B): three digits across the key and symbol
+            // hints, drawn by `NumpadKeyFace` instead of the label and hints.
+            if key.style == .numpad {
+                NumpadKeyFace(
+                    key: key, metrics: metrics, typography: typography,
+                    settings: settings, candidate: pressCell?.candidate
+                )
+            } else {
+                label
+                hintOverlay
+            }
         }
         // Feel hook: the press sink, release spring, glass ripple and the
         // label cross-fade on a mode change (`KeyPressSurface.swift`).
@@ -297,7 +306,7 @@ struct KeyView: View, Equatable {
             KeyboardConstants.FontSizes.utilityLabel
         case .spacebar:
             KeyboardConstants.FontSizes.defaultLabel
-        case .accent:
+        case .accent, .numpad:
             KeyboardConstants.FontSizes.mainLabelBaseSize
         }
     }

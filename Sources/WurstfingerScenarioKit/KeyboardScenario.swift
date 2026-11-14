@@ -339,7 +339,7 @@ final class KeyboardScenario {
     }
 
     private func spanRatio(of keyId: String) -> CGFloat {
-        guard let arrangement = viewModel.currentArrangement,
+        guard let arrangement = viewModel.layoutPlan(forContainerWidth: containerWidth)?.arrangement,
               let cell = GridLayoutSolver.solve(arrangement).first(where: { $0.keyId == keyId })
         else { return 1 }
         return CGFloat(cell.columnSpan) / CGFloat(cell.rowSpan)

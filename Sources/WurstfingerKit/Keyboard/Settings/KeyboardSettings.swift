@@ -74,6 +74,17 @@ enum SettingsKey: String, CaseIterable, Sendable {
     /// The `LongSwipeAction` raw value chosen for each of the eight directions.
     case longSwipeUp, longSwipeDown, longSwipeLeft, longSwipeRight
     case longSwipeUpLeft, longSwipeUpRight, longSwipeDownLeft, longSwipeDownRight
+    /// Where the compact numpad column sits beside the letter grid:
+    /// a `NumpadColumnPlacement` raw value ("off", "leading", "trailing").
+    /// Off by default, which leaves the keyboard exactly as it was.
+    case numpadColumn
+    /// The gap between keys in points (`KeyboardConstants.Layout.minKeySpacing`
+    /// ... `maxKeySpacing`); unset means the shipped spacing.
+    case keySpacing
+    /// Splits the keyboard on wide landscape screens: the letter grid on one
+    /// side, the utility (and numpad) columns on the other, the middle empty.
+    /// Off by default.
+    case isSplitLayoutEnabled = "splitLayoutEnabled"
     /// The user's text-replacement shortcuts, a JSON array of
     /// `{shortcut, phrase}` objects (see `TextReplacementTable`).
     case textReplacements
@@ -262,6 +273,29 @@ final class LayoutSettings {
         }
     }
 
+    /// Gap between keys in points, `minKeySpacing`...`maxKeySpacing`. The same
+    /// value across and down, in every mode, orientation and language.
+    var keySpacing: Double {
+        didSet {
+            let clamped = Self.clampSpacing(keySpacing)
+            if clamped != keySpacing {
+                keySpacing = clamped
+                return
+            }
+            persistIfNeeded(clamped, forKey: .keySpacing)
+        }
+    }
+
+    /// Where the numpad column sits (or `.off`).
+    var numpadColumn: NumpadColumnPlacement {
+        didSet { persistIfNeeded(numpadColumn.rawValue, forKey: .numpadColumn) }
+    }
+
+    /// Whether wide landscape screens get the split layout.
+    var isSplitLayoutEnabled: Bool {
+        didSet { persistIfNeeded(isSplitLayoutEnabled, forKey: .isSplitLayoutEnabled) }
+    }
+
     /// Horizontal position (0.0 = left, 0.5 = center, 1.0 = right)
     var keyboardHorizontalPosition: Double {
         didSet {
@@ -289,6 +323,10 @@ final class LayoutSettings {
         let savedPosition = defaults.object(forKey: SettingsKey.keyboardHorizontalPosition.rawValue) as? Double
             ?? DeviceLayout.defaultKeyboardPosition
         keyboardHorizontalPosition = Self.clampPosition(savedPosition)
+
+        keySpacing = Self.loadSpacing(from: defaults)
+        numpadColumn = Self.loadNumpadColumn(from: defaults)
+        isSplitLayoutEnabled = defaults.object(forKey: SettingsKey.isSplitLayoutEnabled.rawValue) as? Bool ?? false
     }
 
     /// Reload settings from UserDefaults
@@ -308,6 +346,15 @@ final class LayoutSettings {
             ?? DeviceLayout.defaultKeyboardPosition
         let newPosition = Self.clampPosition(savedPosition)
         if keyboardHorizontalPosition != newPosition { keyboardHorizontalPosition = newPosition }
+
+        let newSpacing = Self.loadSpacing(from: defaults)
+        if keySpacing != newSpacing { keySpacing = newSpacing }
+
+        let newNumpadColumn = Self.loadNumpadColumn(from: defaults)
+        if numpadColumn != newNumpadColumn { numpadColumn = newNumpadColumn }
+
+        let newSplit = defaults.object(forKey: SettingsKey.isSplitLayoutEnabled.rawValue) as? Bool ?? false
+        if isSplitLayoutEnabled != newSplit { isSplitLayoutEnabled = newSplit }
     }
 
     // MARK: - Layout Metrics
@@ -317,6 +364,7 @@ final class LayoutSettings {
     /// never write back to the store.
     func resolveMetrics(
         columns: Int,
+        wishColumns: Int? = nil,
         rows: Int = KeyboardConstants.KeyDimensions.totalRows,
         availableWidth: CGFloat,
         screenHeight: CGFloat
@@ -325,9 +373,11 @@ final class LayoutSettings {
             wishWidth: keyboardWidth,
             aspectRatio: keyAspectRatio,
             columns: columns,
+            wishColumns: wishColumns,
             rows: rows,
             availableWidth: availableWidth,
-            screenHeight: screenHeight
+            screenHeight: screenHeight,
+            spacing: CGFloat(keySpacing)
         )
     }
 
@@ -382,6 +432,24 @@ final class LayoutSettings {
         min(600, max(90, value))
     }
 
+    /// Spacing range in points: `minKeySpacing` (keys touch) to `maxKeySpacing`.
+    /// A non-finite stored value falls back to the shipped spacing.
+    static func clampSpacing(_ value: Double) -> Double {
+        guard value.isFinite else { return Double(KeyboardConstants.Layout.defaultKeySpacing) }
+        return min(Double(KeyboardConstants.Layout.maxKeySpacing), max(Double(KeyboardConstants.Layout.minKeySpacing), value))
+    }
+
+    private static func loadSpacing(from defaults: UserDefaults) -> Double {
+        let stored = defaults.object(forKey: SettingsKey.keySpacing.rawValue) as? Double
+            ?? Double(KeyboardConstants.Layout.defaultKeySpacing)
+        return clampSpacing(stored)
+    }
+
+    private static func loadNumpadColumn(from defaults: UserDefaults) -> NumpadColumnPlacement {
+        defaults.string(forKey: SettingsKey.numpadColumn.rawValue)
+            .flatMap(NumpadColumnPlacement.init(rawValue:)) ?? .off
+    }
+
     /// Position range: 0.0 (left) to 1.0 (right)
     private static func clampPosition(_ value: Double) -> Double {
         min(1.0, max(0.0, value))
@@ -398,6 +466,22 @@ final class LayoutSettings {
 enum NumpadType: String, CaseIterable, Sendable {
     case phone // 1-2-3 / 4-5-6 / 7-8-9 (default, like phone keypad)
     case classic // 7-8-9 / 4-5-6 / 1-2-3 (like calculator)
+}
+
+// MARK: - Numpad Column Placement
+
+/// Whether the always-available numpad column is shown, and on which side of
+/// the letter grid. "Leading" and "trailing" are physical (left / right, as the
+/// keyboard is pinned to left-to-right), and the column sits *next to the
+/// letters*: the utility column keeps the outer edge on its own side, whichever
+/// way "Utility Keys on Left" is set. (Not a `…Type` or `…Style`: it is a
+/// placement of a column in the layout, neither a digit order nor a look.)
+enum NumpadColumnPlacement: String, CaseIterable, Sendable {
+    case off
+    case leading
+    case trailing
+
+    var isEnabled: Bool { self != .off }
 }
 
 // MARK: - Cursor Movement Type

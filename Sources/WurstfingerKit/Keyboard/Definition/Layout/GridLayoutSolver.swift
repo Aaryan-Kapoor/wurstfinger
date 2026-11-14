@@ -96,15 +96,20 @@ enum GridLayoutSolver {
                     }
                 }
 
-                cells.append(
-                    SolvedCell(
-                        keyId: placement.keyId,
-                        row: rowIndex,
-                        column: column,
-                        rowSpan: rowSpan,
-                        columnSpan: columnSpan
+                // A gap takes its columns but is no key: it yields no cell, so
+                // the renderer draws nothing there and the hit map (which is
+                // built from the cells) maps those columns to "no key".
+                if !placement.isGap {
+                    cells.append(
+                        SolvedCell(
+                            keyId: placement.keyId,
+                            row: rowIndex,
+                            column: column,
+                            rowSpan: rowSpan,
+                            columnSpan: columnSpan
+                        )
                     )
-                )
+                }
                 column += columnSpan
             }
         }

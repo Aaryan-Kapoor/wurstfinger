@@ -178,7 +178,10 @@ because no rule can catch it: it fails in the App Store, not in CI.
 | slot | `GridSlot`, `UtilitySlot` | semantic name of a position; the string that is also a key id |
 | arrangement | `GridArrangement` | which keys sit where, at what size, for one `ArrangementContext` |
 | arrangement context | `ArrangementContext` | the situation an arrangement applies to: `portrait`, `portraitUtilityLeft`, `landscape`, `landscapeUtilityLeft` |
-| placement | `KeyPlacement` | one key's entry in an arrangement: `keyId` + `widthMultiplier` + `heightMultiplier` |
+| placement | `KeyPlacement` | one key's entry in an arrangement: `keyId` + `widthMultiplier` + `heightMultiplier`. A **gap** placement (`KeyPlacement.gap(columns:)`) holds no key: the solver yields no cell for it, so nothing is drawn and the hit map maps those columns to "no key" |
+| numpad column | `NumpadColumn`, `NumpadColumnPlacement` | the four always-available numpad keys beside the letter grid (setting `numpadColumn`: `off`, `leading`, `trailing`). Not the numeric *mode*, and not `NumpadType` (the digit order) |
+| split | `KeyboardLayoutPlan.isSplit` | the wide-landscape layout: letters on one side, utility and numpad columns on the other, an empty middle |
+| layout plan | `KeyboardLayoutPlan` | the arrangement to draw and the metrics resolved for it, together, for one render context |
 | cell | `SolvedCell` | a *computed* grid rectangle, output of `GridLayoutSolver`. "Cell" is always a result, never a declaration — declare with slot/placement, compute into cells |
 | metrics | `KeyboardLayoutMetrics` (in `Settings/`) | resolved pixel geometry (heights, insets) for the current device and orientation |
 

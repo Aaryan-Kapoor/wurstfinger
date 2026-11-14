@@ -14,4 +14,5 @@ enum KeyStyle: String, Codable, CaseIterable, Sendable {
     case utility // Function keys (delete, return, globe) — icon instead of text
     case spacebar // Space bar — special rendering
     case accent // Accent/compose — visually highlighted
+    case numpad // Numpad-column key — three digits side by side, symbols as hints
 }

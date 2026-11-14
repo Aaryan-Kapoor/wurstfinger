@@ -48,6 +48,12 @@ struct InteractiveKeyboardPreview: View {
     /// Keyboard width wish in points (mirrors the persisted setting).
     @Binding var width: Double
     @Binding var position: Double
+    /// Gap between keys in points (mirrors `SettingsKey.keySpacing`).
+    @Binding var keySpacing: Double
+    /// A `NumpadColumnPlacement` raw value (mirrors `SettingsKey.numpadColumn`).
+    @Binding var numpadColumn: String
+    /// Mirrors `SettingsKey.isSplitLayoutEnabled`.
+    @Binding var isSplit: Bool
 
     @State private var previewViewModel = KeyboardViewModel(shouldPersistSettings: false)
     @State private var previewTarget = PreviewTextTarget()
@@ -55,11 +61,17 @@ struct InteractiveKeyboardPreview: View {
     init(
         aspectRatio: Binding<Double> = .constant(1.0),
         width: Binding<Double> = .constant(DeviceLayout.defaultKeyboardWidth),
-        position: Binding<Double> = .constant(0.5)
+        position: Binding<Double> = .constant(0.5),
+        keySpacing: Binding<Double> = .constant(Double(KeyboardConstants.Layout.defaultKeySpacing)),
+        numpadColumn: Binding<String> = .constant(NumpadColumnPlacement.off.rawValue),
+        isSplit: Binding<Bool> = .constant(false)
     ) {
         _aspectRatio = aspectRatio
         _width = width
         _position = position
+        _keySpacing = keySpacing
+        _numpadColumn = numpadColumn
+        _isSplit = isSplit
     }
 
     private var previewHeight: CGFloat {
@@ -120,10 +132,25 @@ struct InteractiveKeyboardPreview: View {
                         .onChange(of: position) { _, newValue in
                             previewViewModel.keyboardHorizontalPosition = newValue
                         }
+                        .onChange(of: keySpacing) { _, newValue in
+                            previewViewModel.keySpacing = newValue
+                        }
+                        .onChange(of: numpadColumn) { _, newValue in
+                            // The column's keys belong to the definition, so
+                            // the preview reloads it like the keyboard does.
+                            previewViewModel.numpadColumn = NumpadColumnPlacement(rawValue: newValue) ?? .off
+                            previewViewModel.reloadDefinitionIfNumpadColumnChanged()
+                        }
+                        .onChange(of: isSplit) { _, newValue in
+                            previewViewModel.isSplitLayoutEnabled = newValue
+                        }
                         .onAppear {
                             previewViewModel.keyAspectRatio = aspectRatio
                             previewViewModel.keyboardWidth = width
                             previewViewModel.keyboardHorizontalPosition = position
+                            previewViewModel.keySpacing = keySpacing
+                            previewViewModel.numpadColumn = NumpadColumnPlacement(rawValue: numpadColumn) ?? .off
+                            previewViewModel.isSplitLayoutEnabled = isSplit
 
                             // Wire up preview text target and load definition
                             previewViewModel.bindTextInputTarget(previewTarget)
@@ -139,6 +166,7 @@ struct InteractiveKeyboardPreview: View {
             .animation(.easeInOut(duration: 0.2), value: aspectRatio)
             .animation(.easeInOut(duration: 0.2), value: width)
             .animation(.easeInOut(duration: 0.2), value: position)
+            .animation(.easeInOut(duration: 0.2), value: keySpacing)
         }
     }
 }

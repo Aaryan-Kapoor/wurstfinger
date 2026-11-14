@@ -32,6 +32,12 @@ struct KeyboardLayoutMetrics: Equatable, Sendable {
     let columns: Int
     /// Grid rows the height was resolved against.
     let rows: Int
+    /// The gap between neighbouring keys, in points, both across and down: the
+    /// "Key Spacing" setting, clamped. Part of the metrics (not read from the
+    /// constants) so the drawn layout, the touch frames, the hit map and the
+    /// guide card all use the one value the rows and the height were resolved
+    /// with.
+    var keySpacing: CGFloat = KeyboardConstants.Layout.defaultKeySpacing
 
     /// Height of a single grid row (identical to the cell height; rows are
     /// sized from the cells, not the other way around).
@@ -55,7 +61,7 @@ struct KeyboardLayoutMetrics: Equatable, Sendable {
     /// vertical paddings. This is both the SwiftUI content height and the
     /// controller's height-constraint value — identical by construction.
     var totalHeight: CGFloat {
-        cellHeight * CGFloat(rows) + Self.verticalChrome(rows: rows)
+        cellHeight * CGFloat(rows) + Self.verticalChrome(rows: rows, spacing: keySpacing)
     }
 
     /// Absolute floor for the height cap, as a share of the *screen* height:
@@ -96,32 +102,61 @@ struct KeyboardLayoutMetrics: Equatable, Sendable {
     ///     orientation-independent).
     ///   - aspectRatio: Persisted cell aspect ratio (width/height).
     ///   - columns: Columns of the active arrangement.
+    ///   - wishColumns: The columns `wishWidth` was asked for, when they differ
+    ///     from `columns` (see below). Defaults to `columns`.
     ///   - rows: Rows of the keyboard (letters + space row).
     ///   - availableWidth: Actual container width (view width capped by the
     ///     hosting window). The keyboard's own 12 pt horizontal paddings are
     ///     part of `wishWidth`, so they double as the minimal side margin.
     ///   - screenHeight: Screen height in the *current* orientation for the
     ///     height guard. Pass `0` to skip the guard (unknown context).
+    ///   - spacing: Gap between keys (`LayoutSettings.keySpacing`).
+    ///
+    /// **Extra columns grow the keyboard; they do not shrink the keys.** The
+    /// width wish is a statement about the standard four-column keyboard, so
+    /// the key size it implies is `(wish - chrome) / wishColumns`. An arrangement
+    /// with more columns (the numpad column makes five) keeps that key size and
+    /// is wider by the extra columns — flick distances and muscle memory do not
+    /// change when a column is switched on. Only if the result does not fit
+    /// `availableWidth` do the keys shrink, exactly as the plain wish does.
     static func resolve(
         wishWidth: CGFloat,
         aspectRatio: CGFloat,
         columns: Int,
+        wishColumns: Int? = nil,
         rows: Int = KeyboardConstants.KeyDimensions.totalRows,
         availableWidth: CGFloat,
-        screenHeight: CGFloat
+        screenHeight: CGFloat,
+        spacing: CGFloat = KeyboardConstants.Layout.defaultKeySpacing
     ) -> KeyboardLayoutMetrics {
         let columns = max(columns, 1)
+        let spacing = (spacing.isFinite && spacing >= 0) ? spacing : KeyboardConstants.Layout.defaultKeySpacing
         let rows = max(rows, 1)
         // Harden against corrupt stored values: a zero/non-finite aspect
         // ratio must not propagate NaN into the render tree.
         let aspect = (aspectRatio.isFinite && aspectRatio > 0) ? aspectRatio : 1.0
         let wish = (wishWidth.isFinite && wishWidth > 0) ? wishWidth : 270
 
+        // The width the wish asks for at this column count: the wish itself
+        // for the standard grid, the wish plus the extra columns' worth of
+        // keys otherwise (see above).
+        let wishColumns = max(wishColumns ?? columns, 1)
+        let desiredWidth: CGFloat
+        if wishColumns == columns {
+            desiredWidth = wish
+        } else {
+            let desiredCell = max(
+                (wish - Self.horizontalChrome(columns: wishColumns, spacing: spacing)) / CGFloat(wishColumns),
+                Self.minCellSize
+            )
+            desiredWidth = desiredCell * CGFloat(columns) + Self.horizontalChrome(columns: columns, spacing: spacing)
+        }
+
         // Width fit-clamp: the wish may exceed the hosting container
         // (smaller device, Slide Over pane). Render smaller, never persist.
-        var width = availableWidth > 0 ? min(wish, availableWidth) : wish
+        var width = availableWidth > 0 ? min(desiredWidth, availableWidth) : desiredWidth
 
-        let horizontalChrome = Self.horizontalChrome(columns: columns)
+        let horizontalChrome = Self.horizontalChrome(columns: columns, spacing: spacing)
         var cellWidth = max((width - horizontalChrome) / CGFloat(columns), Self.minCellSize)
         var cellHeight = cellWidth / aspect
 
@@ -139,7 +174,7 @@ struct KeyboardLayoutMetrics: Equatable, Sendable {
         // screenHeight - 120 < 0.70·screenHeight), so the floor governs and
         // the very largest wishes still clamp there — Option C cannot make
         // them invariant without letting the keyboard exceed the screen.
-        let verticalChrome = Self.verticalChrome(rows: rows)
+        let verticalChrome = Self.verticalChrome(rows: rows, spacing: spacing)
         if screenHeight > 0 {
             let maxHeight = max(
                 screenHeight - Self.minReservedScreenHeight,
@@ -167,22 +202,36 @@ struct KeyboardLayoutMetrics: Equatable, Sendable {
             cellWidth: cellWidth,
             cellHeight: cellHeight,
             columns: columns,
-            rows: rows
+            rows: rows,
+            keySpacing: spacing
         )
     }
 
     /// Constant horizontal space around/between the cells: outer paddings
     /// plus inter-column gaps. Never scaled.
-    static func horizontalChrome(columns: Int) -> CGFloat {
-        KeyboardConstants.Layout.horizontalPadding * 2 +
-            KeyboardConstants.Layout.gridHorizontalSpacing * CGFloat(max(columns, 1) - 1)
+    static func horizontalChrome(
+        columns: Int, spacing: CGFloat = KeyboardConstants.Layout.defaultKeySpacing
+    ) -> CGFloat {
+        KeyboardConstants.Layout.horizontalPadding * 2 + spacing * CGFloat(max(columns, 1) - 1)
     }
 
     /// Constant vertical space around/between the rows: top/bottom paddings
     /// plus inter-row gaps. Never scaled.
-    static func verticalChrome(rows: Int) -> CGFloat {
+    static func verticalChrome(
+        rows: Int, spacing: CGFloat = KeyboardConstants.Layout.defaultKeySpacing
+    ) -> CGFloat {
         KeyboardConstants.Layout.verticalPaddingTop +
             KeyboardConstants.Layout.verticalPaddingBottom +
-            KeyboardConstants.Layout.gridVerticalSpacing * CGFloat(max(rows, 1) - 1)
+            spacing * CGFloat(max(rows, 1) - 1)
+    }
+
+    /// The grid's own size inside the keyboard's paddings: what the root frames
+    /// the grid to, and what the guide card and the hit map are laid out in.
+    /// `rows` is the arrangement's row count (spans included).
+    func gridSize(rows gridRows: Int) -> CGSize {
+        CGSize(
+            width: keyboardWidth - 2 * KeyboardConstants.Layout.horizontalPadding,
+            height: CGFloat(gridRows) * rowHeight + CGFloat(max(gridRows - 1, 0)) * keySpacing
+        )
     }
 }

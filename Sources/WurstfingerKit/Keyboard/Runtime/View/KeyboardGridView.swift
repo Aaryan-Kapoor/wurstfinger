@@ -76,17 +76,13 @@ struct KeyboardGridView: View {
         // the height is what `KeyboardGridLayout.sizeThatFits` reports. The
         // guide overlay places its card inside these bounds without a
         // `GeometryReader` between it and the grid.
-        let gridSize = CGSize(
-            width: metrics.keyboardWidth - 2 * KeyboardConstants.Layout.horizontalPadding,
-            height: CGFloat(totalRows) * metrics.rowHeight
-                + CGFloat(max(totalRows - 1, 0)) * KeyboardConstants.Layout.gridVerticalSpacing
-        )
+        let gridSize = metrics.gridSize(rows: totalRows)
         KeyboardGridLayout(
             cells: cells,
             columns: arrangement.columns,
             rowHeight: metrics.rowHeight,
-            horizontalSpacing: KeyboardConstants.Layout.gridHorizontalSpacing,
-            verticalSpacing: KeyboardConstants.Layout.gridVerticalSpacing
+            horizontalSpacing: metrics.keySpacing,
+            verticalSpacing: metrics.keySpacing
         ) {
             // Identity by slot id: the same slot in the next mode is the same
             // view, updated rather than rebuilt, which is what makes a mode
@@ -127,14 +123,7 @@ struct KeyboardGridView: View {
         .overlay {
             if isTouchSurfaceEnabled {
                 TouchSurface(engine: engine, configuration: TouchSurfaceConfiguration(
-                    geometry: GridGeometry(
-                        cells: cells,
-                        columns: arrangement.columns,
-                        rowHeight: metrics.rowHeight,
-                        horizontalSpacing: KeyboardConstants.Layout.gridHorizontalSpacing,
-                        verticalSpacing: KeyboardConstants.Layout.gridVerticalSpacing,
-                        cellAspectRatio: metrics.cellAspectRatio
-                    ),
+                    geometry: GridGeometry(cells: cells, columns: arrangement.columns, metrics: metrics),
                     keys: keys,
                     tuning: tuning,
                     isLongPressEnabled: renderSettings.isLongPressDigitEnabled,
@@ -143,6 +132,8 @@ struct KeyboardGridView: View {
                 .accessibilityHidden(true)
             }
         }
+        // For the overlays above, which outline a key inside its touch frame.
+        .environment(\.keyGridSpacing, metrics.keySpacing)
     }
 
     @ViewBuilder
@@ -175,8 +166,8 @@ struct KeyboardGridView: View {
             for: cell,
             columns: arrangement.columns,
             totalRows: totalRows,
-            horizontalSpacing: KeyboardConstants.Layout.gridHorizontalSpacing,
-            verticalSpacing: KeyboardConstants.Layout.gridVerticalSpacing
+            horizontalSpacing: metrics.keySpacing,
+            verticalSpacing: metrics.keySpacing
         )
         return EdgeInsets(
             top: insets.top,

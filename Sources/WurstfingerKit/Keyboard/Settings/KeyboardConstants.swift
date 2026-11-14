@@ -83,10 +83,19 @@ enum KeyboardConstants {
     // MARK: - Layout Spacing
 
     enum Layout {
-        /// Horizontal gap between keys in the grid.
-        static let gridHorizontalSpacing: CGFloat = 5
-        /// Vertical gap between key rows.
-        static let gridVerticalSpacing: CGFloat = 5
+        /// The gap between keys the keyboard ships with, and the default of the
+        /// "Key Spacing" setting (`LayoutSettings.keySpacing`).
+        static let defaultKeySpacing: CGFloat = 5
+        /// Bounds of the "Key Spacing" setting, in points. At 0 the keys touch;
+        /// at 12 the gap is wider than a fingertip's blur, past which the keys
+        /// shrink too much to be worth it.
+        static let minKeySpacing: CGFloat = 0
+        static let maxKeySpacing: CGFloat = 12
+        /// Horizontal gap between keys in the grid at the default spacing. The
+        /// rendered gap is `KeyboardLayoutMetrics.keySpacing`.
+        static let gridHorizontalSpacing: CGFloat = defaultKeySpacing
+        /// Vertical gap between key rows at the default spacing.
+        static let gridVerticalSpacing: CGFloat = defaultKeySpacing
         /// Left/right padding of the entire keyboard.
         static let horizontalPadding: CGFloat = 12
         /// Top padding - minimal since keyboard sits directly below text input.

@@ -27,9 +27,11 @@ extension KeyboardViewModel {
         // from the requested one after the English fallback) so the controller
         // can skip redundant rebuilds on the next appearance.
         let numpadType = sharedDefaults.string(forKey: SettingsKey.numpadStyle.rawValue)
+        let hasNumpadColumn = layoutSettings.numpadColumn.isEnabled
         loadedDefinitionSignature = Self.definitionSignature(
             languageId: definition.id,
-            numpadType: numpadType
+            numpadType: numpadType,
+            numpadColumn: layoutSettings.numpadColumn.rawValue
         )
         activeModeName = definition.defaultMode
         pipelineLocale = definition.locale
@@ -39,7 +41,7 @@ extension KeyboardViewModel {
         compiledDefinition = KeyboardRegistry.compiled(
             for: definition,
             signature: KeyboardRegistry.compiledSignature(
-                languageId: definition.id, numpadType: numpadType
+                languageId: definition.id, numpadType: numpadType, hasNumpadColumn: hasNumpadColumn
             )
         )
         rebuildPipeline()
@@ -50,22 +52,56 @@ extension KeyboardViewModel {
     /// numpad type). Pure so the desync-free comparison between the
     /// controller's desired inputs and the view model's loaded state can be
     /// unit-tested without a UIKit lifecycle.
-    static func definitionSignature(languageId: String, numpadType: String?) -> String {
-        "\(languageId)|\(numpadType ?? "")"
+    ///
+    /// The numpad column joins the signature only as on or off (it adds keys to
+    /// the definition), and only when on — so a keyboard without it keeps the
+    /// signature it always had. Which side it sits on is a layout matter, not a
+    /// definition one.
+    static func definitionSignature(
+        languageId: String, numpadType: String?, numpadColumn: String? = nil
+    ) -> String {
+        let isColumnOn = numpadColumn.flatMap(NumpadColumnPlacement.init(rawValue:))?.isEnabled ?? false
+        return "\(languageId)|\(numpadType ?? "")" + (isColumnOn ? "|numpad" : "")
     }
 
     /// Swaps the numeric mode to the classic (7-8-9) ordering when the user
     /// selected it. The registry caches the phone-style definition, so this
     /// always derives from the canonical phone layout and never mutates the cache.
+    ///
+    /// Also adds the numpad column's keys (in that same style, in the layout's
+    /// own digits) when the column is switched on.
     private func applyNumpadType(to definition: KeyboardDefinition) -> KeyboardDefinition {
         let raw = sharedDefaults.string(forKey: SettingsKey.numpadStyle.rawValue)
         let numpadType = raw.flatMap(NumpadType.init(rawValue:)) ?? .phone
-        guard numpadType == .classic else { return definition }
-        let classicNumeric = NumericLayouts.classic(
-            digits: definition.numericDigits,
-            backToAlphaLabel: definition.numericBackToAlphaLabel
-        )
-        return definition.replacingMode(ModeNames.numeric, with: classicNumeric)
+        var result = definition
+        if numpadType == .classic {
+            let classicNumeric = NumericLayouts.classic(
+                digits: definition.numericDigits,
+                backToAlphaLabel: definition.numericBackToAlphaLabel
+            )
+            result = definition.replacingMode(ModeNames.numeric, with: classicNumeric)
+        }
+        if layoutSettings.numpadColumn.isEnabled {
+            result = result.addingNumpadColumn(style: numpadType)
+        }
+        return result
+    }
+
+    /// Whether the loaded definition carries the numpad column's keys.
+    var hasNumpadColumnKeys: Bool {
+        currentDefinition?.modes.values.contains { $0.keys[NumpadColumn.keyIds[0]] != nil } ?? false
+    }
+
+    /// Reloads the current layout when the "Numpad Column" setting was switched
+    /// on or off since it was loaded (the keys are part of the definition), keeping
+    /// the mode the user is in. A no-op otherwise.
+    func reloadDefinitionIfNumpadColumnChanged() {
+        guard let id = currentDefinition?.id,
+              layoutSettings.numpadColumn.isEnabled != hasNumpadColumnKeys
+        else { return }
+        let mode = activeModeName
+        loadDefinition(for: id)
+        if currentDefinition?.mode(mode) != nil { activeModeName = mode }
     }
 
     /// Injects the text input target (typically a `DocumentProxyTarget`).

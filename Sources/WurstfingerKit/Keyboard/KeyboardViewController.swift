@@ -219,7 +219,8 @@ public final class KeyboardViewController: UIInputViewController {
         )
         let signature = KeyboardViewModel.definitionSignature(
             languageId: languageId,
-            numpadType: numpadType
+            numpadType: numpadType,
+            numpadColumn: SharedDefaults.store.string(forKey: SettingsKey.numpadColumn.rawValue)
         )
         // Compare against the view model's record of what it actually loaded —
         // a controller-side cache desyncs when the user cycles languages via

@@ -128,9 +128,15 @@ enum KeyboardRegistry {
     /// and unrecognised values mean the phone layout. The id is the prefix, so
     /// eviction by language is a prefix match. Shared by the registry and the
     /// view model so the two can never disagree about a key.
-    static func compiledSignature(languageId: String, numpadType: String?) -> String {
+    ///
+    /// A definition carrying the numpad column's keys compiles to different
+    /// tables (the keys are in them), so it has its own entry: `"…|numpad"`. The
+    /// column's side does not matter to the tables, only that the keys exist.
+    static func compiledSignature(
+        languageId: String, numpadType: String?, hasNumpadColumn: Bool = false
+    ) -> String {
         let style = numpadType.flatMap(NumpadType.init(rawValue:)) ?? .phone
-        return "\(languageId)|\(style.rawValue)"
+        return "\(languageId)|\(style.rawValue)" + (hasNumpadColumn ? "|numpad" : "")
     }
 
     /// The compiled tables for `definition`, built on first use and cached

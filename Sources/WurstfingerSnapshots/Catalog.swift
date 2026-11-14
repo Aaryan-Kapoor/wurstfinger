@@ -22,7 +22,7 @@ struct Scenario {
 @MainActor
 enum Catalog {
     static func all() -> [Scenario] {
-        modes() + languages() + layouts() + optimized() + devices() + variants() + states() + feel() + typing() + surfaces()
+        modes() + languages() + layouts() + optimized() + devices() + variants() + layoutOptions() + states() + feel() + typing() + surfaces()
     }
 
     private static func keyboard(
@@ -152,6 +152,161 @@ enum Catalog {
                 $0.widthWish = min(Double(device.width), 600)
             })
         }
+        return scenarios
+    }
+
+    // MARK: 3b. Numpad column, key spacing, iPad and split
+
+    private static func layoutOptions() -> [Scenario] {
+        var scenarios: [Scenario] = []
+        // The numpad column on each side, light and dark, in a layout with Latin
+        // digits and in the three native-numeral scripts.
+        for placement in [NumpadColumnPlacement.leading, .trailing] {
+            for scheme in [ColorScheme.light, .dark] {
+                scenarios.append(keyboard("layout", "numpad-\(placement.rawValue)\(suffix(scheme))") {
+                    $0.numpadColumn = placement
+                    $0.scheme = scheme
+                })
+            }
+            for language in ["ar", "hi_IN", "th_TH", "de_DE", "ru_RU"] {
+                scenarios.append(keyboard("layout", "numpad-\(placement.rawValue)-\(language)") {
+                    $0.numpadColumn = placement
+                    $0.language = language
+                })
+            }
+            scenarios.append(keyboard("layout", "numpad-\(placement.rawValue)-classic") {
+                $0.numpadColumn = placement
+                $0.numpadStyle = .classic
+            })
+            scenarios.append(keyboard("layout", "numpad-\(placement.rawValue)-utility-left") {
+                $0.numpadColumn = placement
+                $0.utilityColumnLeading = true
+            })
+            scenarios.append(keyboard("layout", "numpad-\(placement.rawValue)-numeric-mode") {
+                $0.numpadColumn = placement
+                $0.mode = ModeNames.numeric
+            })
+            scenarios.append(keyboard("layout", "numpad-\(placement.rawValue)-shifted") {
+                $0.numpadColumn = placement
+                $0.mode = ModeNames.shifted
+            })
+        }
+        scenarios.append(keyboard("layout", "numpad-trailing-liquidglass") {
+            $0.numpadColumn = .trailing
+            $0.style = .liquidGlass
+            $0.backdrop = .colorful
+        })
+        scenarios.append(keyboard("layout", "numpad-narrow-iphone-se") {
+            $0.numpadColumn = .trailing
+            $0.device = .iPhoneSE
+        })
+        scenarios.append(keyboard("layout", "numpad-hide-labels") {
+            $0.numpadColumn = .trailing
+            $0.hideLetters = true
+            $0.hideStandardSymbols = true
+            $0.hideExtraSymbols = true
+        })
+        // The guide card on a numpad key: beside it on the top row, above it
+        // lower down, with the digit the finger is heading for lit.
+        scenarios.append(keyboard("layout", "numpad-guide-top") {
+            $0.numpadColumn = .trailing
+            $0.finger = FingerTrail(keyId: NumpadColumn.keyIds[0], motion: .drag(.swipeRight, keyWidths: 0.5), paused: true)
+        })
+        scenarios.append(keyboard("layout", "numpad-guide-middle") {
+            $0.numpadColumn = .leading
+            $0.finger = FingerTrail(keyId: NumpadColumn.keyIds[1], motion: .drag(.swipeLeft, keyWidths: 0.5), paused: true)
+        })
+        scenarios.append(keyboard("layout", "numpad-guide-symbol") {
+            $0.numpadColumn = .trailing
+            $0.finger = FingerTrail(keyId: NumpadColumn.keyIds[2], motion: .drag(.swipeUpRight, keyWidths: 0.5))
+        })
+        scenarios.append(keyboard("layout", "numpad-typing") {
+            $0.numpadColumn = .trailing
+            $0.typedText = "Total: 1,250.00 + 3"
+        })
+
+        // Key spacing at both ends and the shipped value, with and without
+        // the numpad column.
+        for spacing in [0.0, 5.0, 12.0] {
+            scenarios.append(keyboard("layout", "spacing-\(Int(spacing))") { $0.keySpacing = spacing })
+            scenarios.append(keyboard("layout", "spacing-\(Int(spacing))-dark") {
+                $0.keySpacing = spacing
+                $0.scheme = .dark
+            })
+            scenarios.append(keyboard("layout", "spacing-\(Int(spacing))-numpad") {
+                $0.keySpacing = spacing
+                $0.numpadColumn = .trailing
+            })
+        }
+        scenarios.append(keyboard("layout", "spacing-12-guide") {
+            $0.keySpacing = 12
+            $0.finger = FingerTrail(keyId: GridSlot.center, motion: .drag(.swipeUpRight, keyWidths: 0.5), paused: true)
+        })
+
+        // Every iPad width with the numpad column, and the split in landscape.
+        for device in [Device.iPadMini, .iPadAir, .iPadPro, .iPadLandscape] {
+            scenarios.append(keyboard("layout", "ipad-numpad-\(device.name)") {
+                $0.device = device
+                $0.numpadColumn = .trailing
+            })
+        }
+        for device in [Device.iPadLandscape, .iPhoneLandscape] {
+            scenarios.append(keyboard("layout", "split-\(device.name)") {
+                $0.device = device
+                $0.isSplit = true
+            })
+            scenarios.append(keyboard("layout", "split-numpad-\(device.name)") {
+                $0.device = device
+                $0.isSplit = true
+                $0.numpadColumn = .trailing
+            })
+            scenarios.append(keyboard("layout", "split-numpad-utility-left-\(device.name)") {
+                $0.device = device
+                $0.isSplit = true
+                $0.numpadColumn = .trailing
+                $0.utilityColumnLeading = true
+            })
+        }
+        scenarios.append(keyboard("layout", "split-numpad-ipad-landscape-dark") {
+            $0.device = .iPadLandscape
+            $0.isSplit = true
+            $0.numpadColumn = .trailing
+            $0.scheme = .dark
+        })
+        scenarios.append(keyboard("layout", "split-numpad-ipad-landscape-wide-keys") {
+            $0.device = .iPadLandscape
+            $0.isSplit = true
+            $0.numpadColumn = .trailing
+            $0.widthWish = 520
+        })
+        scenarios.append(keyboard("layout", "split-numeric-ipad-landscape") {
+            $0.device = .iPadLandscape
+            $0.isSplit = true
+            $0.numpadColumn = .trailing
+            $0.mode = ModeNames.numeric
+        })
+        scenarios.append(keyboard("layout", "split-guide-ipad-landscape") {
+            $0.device = .iPadLandscape
+            $0.isSplit = true
+            $0.numpadColumn = .trailing
+            $0.finger = FingerTrail(keyId: GridSlot.topLeft, motion: .drag(.swipeDown, keyWidths: 0.5), paused: true)
+        })
+        scenarios.append(keyboard("layout", "split-guide-numpad-ipad-landscape") {
+            $0.device = .iPadLandscape
+            $0.isSplit = true
+            $0.numpadColumn = .trailing
+            $0.finger = FingerTrail(keyId: NumpadColumn.keyIds[0], motion: .drag(.swipeRight, keyWidths: 0.5), paused: true)
+        })
+        // Split asked for on a screen it does not apply to: iPad portrait.
+        scenarios.append(keyboard("layout", "split-ignored-ipad-portrait") {
+            $0.device = .iPadAir
+            $0.isSplit = true
+        })
+        // A floating iPad keyboard (~320 pt) with the numpad column.
+        scenarios.append(keyboard("layout", "ipad-floating-numpad") {
+            $0.device = Device(name: "ipad-floating-320", size: CGSize(width: 320, height: 1024), isPad: true)
+            $0.numpadColumn = .trailing
+        })
         return scenarios
     }
 

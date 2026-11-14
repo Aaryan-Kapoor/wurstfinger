@@ -94,14 +94,30 @@ enum FeelMotion {
     static let ratchetFade = Animation.easeOut(duration: 0.18)
 }
 
+private struct KeyGridSpacingKey: EnvironmentKey {
+    static let defaultValue = KeyboardConstants.Layout.defaultKeySpacing
+}
+
+extension EnvironmentValues {
+    /// The gap between keys the grid is laid out with (`KeyboardLayoutMetrics.keySpacing`),
+    /// so the overlays that outline a key find its drawn bounds inside the touch frame.
+    var keyGridSpacing: CGFloat {
+        get { self[KeyGridSpacingKey.self] }
+        set { self[KeyGridSpacingKey.self] = newValue }
+    }
+}
+
 /// Geometry shared by the feel overlays.
 enum FeelGeometry {
     /// The key as drawn, from its touch frame: the touch frame reaches into
     /// half of each inner gap (`KeyboardGridLayout.gapInsets`), except at the
     /// grid's outer edges.
-    static func visibleKeyRect(touchFrame frame: CGRect, in bounds: CGSize) -> CGRect {
-        let halfH = KeyboardConstants.Layout.gridHorizontalSpacing / 2
-        let halfV = KeyboardConstants.Layout.gridVerticalSpacing / 2
+    static func visibleKeyRect(
+        touchFrame frame: CGRect, in bounds: CGSize,
+        spacing: CGFloat = KeyboardConstants.Layout.defaultKeySpacing
+    ) -> CGRect {
+        let halfH = spacing / 2
+        let halfV = spacing / 2
         let edge: CGFloat = 0.5
         let leading = frame.minX <= edge ? 0 : halfH
         let trailing = frame.maxX >= bounds.width - edge ? 0 : halfH
