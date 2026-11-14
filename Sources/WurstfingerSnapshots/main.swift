@@ -1,0 +1,118 @@
+//
+//  main.swift
+//  WurstfingerSnapshots
+//
+//  Headless screenshot tool. Renders the real keyboard and app views to PNG
+//  with SwiftUI's ImageRenderer — no Xcode, no simulator.
+//
+//      swift run WurstfingerSnapshots [--out DIR] [--filter TEXT] [--list] [--scale 3]
+//
+
+import AppKit
+import Foundation
+import SwiftUI
+@testable import WurstfingerKit
+
+/// Re-launches the tool with the isolated-defaults launch argument if it was
+/// started without it. `SharedDefaults.store` picks its suite from the process
+/// arguments once, so this is the only way to keep the scenarios — which flip
+/// settings like the keyboard style — away from the app group's real store.
+func relaunchIsolatedIfNeeded() {
+    guard !CommandLine.arguments.contains(SharedDefaults.isolatedStoreArgument) else { return }
+    let process = Process()
+    process.executableURL = Bundle.main.executableURL ?? URL(fileURLWithPath: CommandLine.arguments[0])
+    process.arguments = Array(CommandLine.arguments.dropFirst()) + [SharedDefaults.isolatedStoreArgument]
+    do {
+        try process.run()
+    } catch {
+        FileHandle.standardError.write(Data("cannot relaunch: \(error)\n".utf8))
+        exit(EXIT_FAILURE)
+    }
+    process.waitUntilExit()
+    exit(process.terminationStatus)
+}
+
+@MainActor
+func runSnapshots() -> Int32 {
+    let options: Options
+    do {
+        options = try Options.parse(Array(CommandLine.arguments.dropFirst()))
+    } catch {
+        FileHandle.standardError.write(Data("error: \(error)\n\n\(Options.usage)\n".utf8))
+        return 2
+    }
+    if options.showHelp {
+        print(Options.usage)
+        return 0
+    }
+
+    var scenarios = Catalog.all()
+    if let filter = options.filter?.lowercased(), !filter.isEmpty {
+        scenarios = scenarios.filter { $0.name.lowercased().contains(filter) }
+    }
+    if options.listOnly {
+        for scenario in scenarios { print(scenario.name) }
+        return 0
+    }
+    guard !scenarios.isEmpty else {
+        FileHandle.standardError.write(Data("no scenario matches the filter\n".utf8))
+        return 1
+    }
+
+    let directory = URL(fileURLWithPath: options.outputDirectory, isDirectory: true)
+    do {
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    } catch {
+        FileHandle.standardError.write(Data("cannot create \(directory.path): \(error)\n".utf8))
+        return 1
+    }
+
+    // A command-line process has no application object; SwiftUI resolves
+    // appearance-dependent colours through it.
+    _ = NSApplication.shared
+
+    let start = Date()
+    var entries: [ContactSheetEntry] = []
+    var failures = 0
+    for scenario in scenarios {
+        let began = Date()
+        let shot = scenario.make()
+        do {
+            let image = try Renderer.writePNG(shot, scale: options.scale, to: directory.appendingPathComponent(scenario.fileName))
+            let size = "\(image.pixelWidth)x\(image.pixelHeight) px"
+            entries.append(ContactSheetEntry(
+                group: scenario.group, name: scenario.name, file: scenario.fileName,
+                pixelSize: "\(size), \(Int(shot.size.width))x\(Int(shot.size.height)) pt", failure: nil
+            ))
+            let kilobytes = image.byteCount / 1024
+            let seconds = String(format: "%.2f", Date().timeIntervalSince(began))
+            print("ok    \(scenario.name.padding(toLength: 40, withPad: " ", startingAt: 0)) \(size.padding(toLength: 14, withPad: " ", startingAt: 0)) \(kilobytes) KB  \(seconds)s")
+        } catch {
+            failures += 1
+            entries.append(ContactSheetEntry(
+                group: scenario.group, name: scenario.name, file: scenario.fileName,
+                pixelSize: "", failure: "\(error)"
+            ))
+            print("FAIL  \(scenario.name): \(error)")
+        }
+        withExtendedLifetime(shot) {}
+    }
+
+    let html = ContactSheet.html(entries: entries, scale: Int(options.scale.rounded()))
+    let index = directory.appendingPathComponent("index.html")
+    do {
+        try html.write(to: index, atomically: true, encoding: .utf8)
+    } catch {
+        FileHandle.standardError.write(Data("cannot write \(index.path): \(error)\n".utf8))
+        return 1
+    }
+
+    let seconds = String(format: "%.1f", Date().timeIntervalSince(start))
+    print("\n\(entries.count - failures) of \(entries.count) images in \(seconds)s -> \(directory.path)")
+    print("contact sheet: \(index.path)")
+    return failures == 0 ? 0 : 1
+}
+
+relaunchIsolatedIfNeeded()
+let status = MainActor.assumeIsolated { runSnapshots() }
+exit(status)
