@@ -8,7 +8,8 @@
 //      swift run -c release WurstfingerBench
 //
 //  (`--timers` runs only the timer section; `--bodies` additionally needs a debug build, where the KeyView body
-//  counter exists: `swift run WurstfingerBench --bodies`.)
+//  counter exists: `swift run WurstfingerBench --bodies`. `--alloc`, `--memory` and `--switch` run
+//  only the allocation, memory and mode-switch sections.)
 //
 //  Every section prints p50 / p99 / max in nanoseconds per operation, so the
 //  numbers before and after the Swift 6 port are directly comparable.
@@ -310,6 +311,24 @@ func benchBodies() {
 let arguments = CommandLine.arguments
 let onlyBodies = arguments.contains("--bodies")
 let onlyTimers = arguments.contains("--timers")
+let onlyAlloc = arguments.contains("--alloc")
+let onlyMemory = arguments.contains("--memory")
+let onlySwitch = arguments.contains("--switch")
+
+/// Sections 8-10 (the prewarm in each is awaited before it counts anything).
+func runAllocationSection() async { await benchAllocations() }
+
+func runMemorySection() async {
+    await MainActor.run { _ = NSApplication.shared }
+    await MainActor.run { benchDefinitionMemory() }
+    await benchCacheMemory()
+    await benchViewGraphMemory()
+    await MainActor.run { benchEngineMemory() }
+}
+
+func runSwitchSection() async {
+    for stats in await benchModeSwitch() { stats.report() }
+}
 
 #if DEBUG
 if onlyBodies {
@@ -318,8 +337,20 @@ if onlyBodies {
 }
 #endif
 
+if arguments.contains("--render") {
+    for stats in await MainActor.run(body: { benchRender(iterations: 60) }) { stats.report() }
+    exit(0)
+}
+
 if onlyTimers {
     for stats in await benchTimers(count: 1000) { stats.report() }
+    exit(0)
+}
+
+if onlyAlloc || onlyMemory || onlySwitch {
+    if onlyAlloc { await runAllocationSection() }
+    if onlyMemory { await runMemorySection() }
+    if onlySwitch { await runSwitchSection() }
     exit(0)
 }
 
@@ -334,6 +365,9 @@ for stats in benchDefinitionBuilds() { stats.report() }
 for stats in await benchLanguageSwitch() { stats.report() }
 for stats in await MainActor.run(body: { benchRender(iterations: 60) }) { stats.report() }
 for stats in await benchTimers(count: 1000) { stats.report() }
+await runAllocationSection()
+await runMemorySection()
+await runSwitchSection()
 exit(0)
 
 #else

@@ -13,6 +13,9 @@ import Foundation
 ///
 /// Returns `nil` if the binding has no `returnAction` so the chain can fall
 /// back to the regular swipe action.
+///
+/// Part of the policy `CompiledMode` is compiled from (its `isReturn` half of
+/// the table); not called per keystroke.
 struct ReturnSwipeResolver: GestureResolver {
     func resolve(keyId: String, gesture: GestureType, in mode: KeyboardMode) -> KeyBinding? {
         guard let key = mode.key(for: keyId) else { return nil }

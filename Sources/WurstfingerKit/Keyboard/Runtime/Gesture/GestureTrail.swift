@@ -36,9 +36,11 @@ struct GestureTrail: Equatable, Sendable {
         samples.isEmpty
     }
 
-    /// Starts a fresh gesture, discarding anything recorded before.
+    /// Starts a fresh gesture, discarding anything recorded before. The
+    /// buffer keeps its capacity: a touch-down must not pay for a new array.
     mutating func begin(at point: CGPoint, time: TimeInterval) {
-        samples = [GestureTrailSample(point: point, time: time)]
+        samples.removeAll(keepingCapacity: true)
+        samples.append(GestureTrailSample(point: point, time: time))
         releaseTime = nil
     }
 

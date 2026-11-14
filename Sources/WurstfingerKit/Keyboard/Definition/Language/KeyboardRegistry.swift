@@ -68,7 +68,9 @@ enum KeyboardRegistry {
         // use reads the store) is not even touched.
         guard defaults.string(forKey: SettingsKey.customLayoutsRevision.rawValue) != nil else { return [] }
         let stale = (registry ?? .shared).sync(defaults: defaults, store: store)
-        for id in stale { cache.remove(id) }
+        // `evict`, not just the definition: the compiled resolution tables
+        // of an edited layout would otherwise keep typing the old bindings.
+        for id in stale { evict(id: id) }
         return stale
     }
 
@@ -82,7 +84,7 @@ enum KeyboardRegistry {
         registry: CustomLayoutRegistry = .shared
     ) -> Set<String> {
         let stale = registry.replace(with: layouts, revision: revision)
-        for id in stale { cache.remove(id) }
+        for id in stale { evict(id: id) }
         return stale
     }
 
@@ -110,6 +112,42 @@ enum KeyboardRegistry {
     /// and concurrent requests for the same id share one build. See
     /// `LockedCache` for the locking argument.
     private static let cache = LockedCache<String, KeyboardDefinition>()
+
+    /// Cache for the gesture-resolution tables compiled from a definition
+    /// (`CompiledDefinition`), keyed by `compiledSignature(languageId:numpadType:)`.
+    ///
+    /// Keyed by signature rather than by language id because the numeric mode
+    /// differs per numpad style, and the tables embed the numeric mode (the
+    /// ghost keys' fallback). Same `LockedCache` discipline as `cache`.
+    private static let compiledCache = LockedCache<String, CompiledDefinition>()
+
+    /// The key under which a language's compiled tables are cached:
+    /// `"<language id>|<phone|classic>"`.
+    ///
+    /// The numpad type is normalised the way `applyNumpadType` reads it: `nil`
+    /// and unrecognised values mean the phone layout. The id is the prefix, so
+    /// eviction by language is a prefix match. Shared by the registry and the
+    /// view model so the two can never disagree about a key.
+    static func compiledSignature(languageId: String, numpadType: String?) -> String {
+        let style = numpadType.flatMap(NumpadType.init(rawValue:)) ?? .phone
+        return "\(languageId)|\(style.rawValue)"
+    }
+
+    /// The compiled tables for `definition`, built on first use and cached
+    /// under `signature`.
+    ///
+    /// `definition` must be the one `signature` names (the registry's canonical
+    /// definition for the language, with the numpad style's numeric mode
+    /// applied); the signature, not the definition, is the cache key, so the
+    /// hot path does not hash a whole definition. Compiling a language (four
+    /// modes of about fourteen keys) took about 2 ms in a debug build, which is
+    /// why `prewarm(_:)` does it off the main thread for the phone numpad. A
+    /// user on the classic numpad compiles on the first switch to each language
+    /// in a session instead, once; that cost is small beside the grid rebuild a
+    /// language switch already pays.
+    static func compiled(for definition: KeyboardDefinition, signature: String) -> CompiledDefinition {
+        compiledCache.value(for: signature) { CompiledDefinition(definition) }
+    }
 
     /// Loads the full definition for a keyboard ID, building it lazily on first
     /// use and caching the result.
@@ -146,12 +184,21 @@ enum KeyboardRegistry {
     /// mid-build and waits on it (with priority donation to the building
     /// thread) instead of building a second copy. Unknown and duplicate ids
     /// are ignored. Never awaited from the input path.
+    ///
+    /// Each child also compiles the definition's gesture tables for the phone
+    /// numpad (the registry's canonical definition), so a switch finds both the
+    /// definition and its tables warm. The compile rides in the same child
+    /// rather than a second pass: it needs the definition the child just built.
     static func prewarm(_ ids: [String]) async {
         let unique = Set(ids).filter { descriptor(for: $0) != nil }
         await withDiscardingTaskGroup { group in
             for id in unique {
                 group.addTask(priority: .utility) {
-                    _ = load(id: id)
+                    guard let definition = load(id: id) else { return }
+                    _ = compiled(
+                        for: definition,
+                        signature: compiledSignature(languageId: id, numpadType: nil)
+                    )
                 }
             }
         }
@@ -160,22 +207,36 @@ enum KeyboardRegistry {
     /// Removes a cached definition (e.g. on memory warning).
     static func evict(id: String) {
         cache.remove(id)
+        compiledCache.removeAll { $0.hasPrefix(signaturePrefix(of: id)) }
     }
 
     /// Clears the entire cache. Active definitions are rebuilt lazily on next
     /// `load(id:)`.
     static func evictAll() {
         cache.removeAll()
+        compiledCache.removeAll()
     }
 
     /// Evicts every cached definition except the given id. Used on memory
     /// warnings to free inactive layouts while keeping the active one resident.
     static func evictAll(except keepID: String) {
         cache.removeAll(except: keepID)
+        compiledCache.removeAll { !$0.hasPrefix(signaturePrefix(of: keepID)) }
+    }
+
+    /// The prefix every compiled signature of language `id` starts with. The
+    /// separator is part of it so "de" never matches "de_DE|phone".
+    private static func signaturePrefix(of id: String) -> String {
+        "\(id)|"
     }
 
     /// Whether a definition is currently cached (for testing).
     static func isCached(id: String) -> Bool {
         cache.contains(id)
+    }
+
+    /// Whether compiled tables are currently cached under `signature` (for testing).
+    static func isCompiledCached(signature: String) -> Bool {
+        compiledCache.contains(signature)
     }
 }

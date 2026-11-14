@@ -222,6 +222,26 @@ struct RegistryTests {
         }
     }
 
+    /// The keyboard resolves gestures through compiled tables cached beside
+    /// the definition; an edit must drop those too, or the keyboard would draw
+    /// the new layout and type the old one.
+    @Test @MainActor func editingALayoutChangesWhatTheKeyboardTypes() throws {
+        let original = makeCustomLayout(id: "custom-reg-typing")
+        try withRegistered([original]) {
+            let (vm, target) = makeViewModel(languageId: original.id)
+            vm.handleGesture(.tap, keyId: GridSlot.topLeft, isReturn: false)
+            #expect(target.events.last == .insertText("q"))
+
+            let edited = makeCustomLayout(id: "custom-reg-typing") {
+                $0.keys[GridSlot.topLeft]?[.tap] = CustomBinding("z")
+            }
+            KeyboardRegistry.replaceCustomLayouts([edited], revision: "r2")
+            vm.loadDefinition(for: original.id)
+            vm.handleGesture(.tap, keyId: GridSlot.topLeft, isReturn: false)
+            #expect(target.events.last == .insertText("z"))
+        }
+    }
+
     @Test func anUnchangedLayoutKeepsItsCachedDefinition() {
         let layout = makeCustomLayout(id: "custom-reg-keep")
         withRegistered([layout]) {

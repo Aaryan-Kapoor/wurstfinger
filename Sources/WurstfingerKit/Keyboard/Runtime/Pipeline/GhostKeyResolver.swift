@@ -15,6 +15,8 @@ import Foundation
 /// numeric-mode binding on the same key without a mode switch. The resolver
 /// is constructed with the *resolved* fallback mode (rather than just a name)
 /// so it can run without a `KeyboardDefinition` reference at call time.
+///
+/// Part of the policy `CompiledMode` is compiled from; not called per keystroke.
 struct GhostKeyResolver: GestureResolver {
     let fallbackMode: KeyboardMode
 

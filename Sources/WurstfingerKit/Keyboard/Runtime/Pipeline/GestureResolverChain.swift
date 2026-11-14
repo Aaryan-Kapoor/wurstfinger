@@ -12,6 +12,9 @@ import Foundation
 /// Each resolver is tried in order; the first non-nil result wins. If no
 /// resolver matches, the chain returns `nil` (callers typically fall back to
 /// `KeyAction.none`).
+///
+/// Used at compile time only: `CompiledMode` evaluates a chain over every
+/// (key, gesture, isReturn) of a mode to fill its lookup tables.
 struct GestureResolverChain: Sendable {
     let resolvers: [GestureResolver]
 

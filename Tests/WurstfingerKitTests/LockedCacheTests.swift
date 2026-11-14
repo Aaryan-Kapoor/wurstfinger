@@ -106,12 +106,17 @@ struct LockedCacheTests {
 struct KeyboardRegistryPrewarmTests {
     @Test func prewarmBuildsEveryRequestedLanguage() async {
         let ids = ["de_DE", "en_US", "fr_FR", "ru_RU"]
-        await KeyboardRegistry.prewarm(ids)
-        for id in ids {
-            // Presence-only assertion: other suites load these ids too, and
-            // none of them evicts (see `KeyboardRegistryTests`).
-            #expect(KeyboardRegistry.isCached(id: id), "\(id) was not prewarmed")
+        // The registry is process-wide and other suites (`KeyboardRegistryTests`,
+        // `CompiledModeTests`) call `evictAll` while this one runs in parallel,
+        // so a single check can observe a foreign eviction. A prewarm that
+        // works leaves every id cached on some attempt; a regression leaves
+        // one missing on every attempt.
+        var allCached = false
+        for _ in 0 ..< 5 where !allCached {
+            await KeyboardRegistry.prewarm(ids)
+            allCached = ids.allSatisfy { KeyboardRegistry.isCached(id: $0) }
         }
+        #expect(allCached, "prewarm left one of \(ids) uncached on every attempt")
     }
 
     @Test func prewarmIgnoresUnknownIdsAndDuplicates() async {

@@ -52,6 +52,32 @@ struct KeyGestureSequence: Sendable {
         KeyGestureRecognizer.anchoringOrigin(positions.elements)
     }
 
+    /// Calls `body` with the origin-anchored path — what `path` returns —
+    /// copied into `scratch.path` instead of a fresh array. The origin is
+    /// prepended exactly when the ring evicted it (`anchoringOrigin`'s rule).
+    /// The scratch is passed in, never stored, so the sequence stays a
+    /// `Sendable` value.
+    func withOriginAnchoredPath<R>(
+        scratch: ClassificationScratch, _ body: (UnsafeBufferPointer<CGPoint>) -> R
+    ) -> R {
+        let destination = scratch.path
+        precondition(
+            positions.count < destination.count,
+            "scratch is smaller than the position buffer: it needs room for the ring plus the origin"
+        )
+        guard !positions.isEmpty, let base = destination.baseAddress else {
+            return body(UnsafeBufferPointer(start: destination.baseAddress, count: 0))
+        }
+        // The ring is copied behind slot 0 so the origin can be put in front
+        // of it without moving anything.
+        let count = positions.copyOrdered(into: UnsafeMutableBufferPointer(start: base + 1, count: positions.count))
+        if base[1] == .zero {
+            return body(UnsafeBufferPointer(start: base + 1, count: count))
+        }
+        base[0] = .zero
+        return body(UnsafeBufferPointer(start: base, count: count + 1))
+    }
+
     /// Records one `onChanged` sample. Returns true when this sample is the
     /// first contact of a new sequence (touch down).
     mutating func handleChanged(translation: CGSize) -> Bool {
@@ -81,6 +107,36 @@ struct KeyGestureSequence: Sendable {
         return KeyGestureRecognizer.classify(
             positions: samples, aspectRatio: aspectRatio, tuning: tuning, keySize: keySize
         )
+    }
+
+    /// Records the final sample and classifies the completed sequence through
+    /// `scratch` without allocating — the input engine's release path. The
+    /// result is identical to `handleEnded(translation:aspectRatio:tuning:keySize:)`,
+    /// which classifies the same samples through arrays.
+    mutating func handleEnded(
+        translation: CGSize,
+        aspectRatio: CGFloat,
+        tuning: GestureTuning,
+        keySize: CGSize = .zero,
+        scratch: ClassificationScratch
+    ) -> GestureClassification {
+        defer {
+            positions.removeAll()
+            maxDisplacement = 0
+        }
+        if positions.isEmpty {
+            positions.append(.zero)
+        }
+        positions.append(CGPoint(x: translation.width, y: translation.height))
+        return withOriginAnchoredPath(scratch: scratch) { path in
+            KeyGestureRecognizer.classify(
+                path: path,
+                config: tuning.config.with(aspectRatio: aspectRatio),
+                thresholds: tuning.thresholds,
+                keySize: keySize,
+                scratch: scratch
+            )
+        }
     }
 
     /// Records the final sample and classifies the completed sequence, reading
@@ -186,11 +242,73 @@ enum KeyGestureRecognizer {
         thresholds: GestureClassificationThresholds,
         keySize: CGSize = .zero
     ) -> GestureClassification {
-        let preprocessor = GesturePreprocessor(config: config)
-        let cleaned = preprocessor.cleaned(positions)
-        let processed = cleaned.count >= 2 ? preprocessor.smoothSavitzkyGolay(cleaned) : cleaned
-        let features = GestureFeatures.extract(from: processed, thresholds: thresholds)
+        // The array entry point is a wrapper over the buffer pipeline, so
+        // there is exactly one implementation of it. The scratch it allocates
+        // here is the cost of convenience; the engine passes its own.
+        let scratch = ClassificationScratch(capacity: positions.count)
+        return positions.withUnsafeBufferPointer { path in
+            classify(path: path, config: config, thresholds: thresholds, keySize: keySize, scratch: scratch)
+        }
+    }
 
+    /// The classification pipeline over a path in a buffer, allocation-free:
+    /// every step works in `scratch`.
+    ///
+    /// Data flow, with the buffer each step reads and writes:
+    /// jitter filter `path → a`; outlier filter `a → b` (it needs the raw,
+    /// dejittered neighbours in `a` while it writes the accepted points to
+    /// `b`); aspect normalisation in place on `b`; displacement in keys read
+    /// from `b`; Savitzky-Golay `b → a`; feature extraction over `a`.
+    ///
+    /// `path` must be origin-anchored (see `anchoringOrigin`) and no longer
+    /// than `scratch.pathCapacity`; it may live in `scratch.path`, but not in
+    /// `a` or `b`.
+    nonisolated static func classify(
+        path: UnsafeBufferPointer<CGPoint>,
+        config: GesturePreprocessorConfiguration,
+        thresholds: GestureClassificationThresholds,
+        keySize: CGSize = .zero,
+        scratch: ClassificationScratch
+    ) -> GestureClassification {
+        precondition(path.count <= scratch.pathCapacity, "path is longer than the scratch it is classified in")
+        let preprocessor = GesturePreprocessor(config: config)
+
+        // Too short to filter: the preprocessor passes it through untouched.
+        guard path.count >= 2 else {
+            return finish(processed: path, cleaned: path, config: config, thresholds: thresholds, keySize: keySize)
+        }
+
+        let a = scratch.a
+        let b = scratch.b
+
+        // Steps 1-3: jitter, outliers, aspect ratio.
+        let dejitteredCount = preprocessor.filterJitter(path, into: a)
+        let dejittered = UnsafeBufferPointer(start: a.baseAddress, count: dejitteredCount)
+        let cleanedCount = preprocessor.filterOutliers(dejittered, into: b)
+        let cleanedPath = UnsafeMutableBufferPointer(start: b.baseAddress, count: cleanedCount)
+        preprocessor.normalizeAspectRatio(cleanedPath)
+        let cleaned = UnsafeBufferPointer(start: b.baseAddress, count: cleanedCount)
+
+        // Step 4: smoothing, only for a path with something to smooth.
+        guard cleanedCount >= 2 else {
+            return finish(processed: cleaned, cleaned: cleaned, config: config, thresholds: thresholds, keySize: keySize)
+        }
+        let smoothedCount = preprocessor.smoothSavitzkyGolay(cleaned, into: a)
+        let smoothed = UnsafeBufferPointer(start: a.baseAddress, count: smoothedCount)
+        return finish(processed: smoothed, cleaned: cleaned, config: config, thresholds: thresholds, keySize: keySize)
+    }
+
+    /// Features, verdict and displacement from a processed path and its
+    /// cleaned (unsmoothed) original.
+    @inline(__always)
+    private nonisolated static func finish(
+        processed: UnsafeBufferPointer<CGPoint>,
+        cleaned: UnsafeBufferPointer<CGPoint>,
+        config: GesturePreprocessorConfiguration,
+        thresholds: GestureClassificationThresholds,
+        keySize: CGSize
+    ) -> GestureClassification {
+        let features = GestureFeatures.extract(from: processed, thresholds: thresholds)
         var classification = classify(features: features)
         classification.displacementInKeys = displacementInKeys(
             of: cleaned, aspectRatio: config.aspectRatio, keySize: keySize
@@ -203,9 +321,9 @@ enum KeyGestureRecognizer {
     /// ratio, so it is multiplied back here before dividing by the key's width.
     /// Unsmoothed on purpose: the live check that tints the trail judges the
     /// raw finger position, and a release must agree with it.
-    nonisolated static func displacementInKeys(
-        of cleaned: [CGPoint], aspectRatio: CGFloat, keySize: CGSize
-    ) -> CGVector {
+    nonisolated static func displacementInKeys<C: RandomAccessCollection<CGPoint>>(
+        of cleaned: C, aspectRatio: CGFloat, keySize: CGSize
+    ) -> CGVector where C.Index == Int {
         guard let first = cleaned.first, let last = cleaned.last,
               keySize.width > 0, keySize.height > 0
         else { return .zero }

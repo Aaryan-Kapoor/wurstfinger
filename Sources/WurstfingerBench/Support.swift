@@ -2,7 +2,7 @@
 //  Support.swift
 //  WurstfingerBench
 //
-//  Timing, statistics and the deterministic gesture corpus.
+//  Timing, statistics, allocation counting and the deterministic gesture corpus.
 //
 
 #if os(macOS)
@@ -11,6 +11,7 @@ import Dispatch
 import Foundation
 import os
 import SwiftUI
+import WurstfingerBenchAllocCounter
 @testable import WurstfingerKit
 
 // MARK: - Statistics
@@ -65,6 +66,74 @@ func measure<Input>(_ name: String, inputs: [Input], warmup: Int = 200, _ body: 
     let total = accumulator
     sink.withLock { $0 &+= total }
     return Stats(name: name, samples: samples)
+}
+
+// MARK: - Allocation counting
+
+/// Accumulates the allocations that happen between `start()` and `stop()`
+/// pairs, so a measurement can exclude its own setup (a finger landing, a
+/// finger lifting) while still summing many short regions.
+///
+/// The hook counts the whole process, not one thread: run it on the main actor
+/// with nothing else in flight (no prewarm, no timers firing), or the numbers
+/// include someone else's allocations.
+@MainActor
+struct AllocationMeter {
+    private(set) var allocations: UInt64 = 0
+    private(set) var bytes: UInt64 = 0
+    private var startCount: UInt64 = 0
+    private var startBytes: UInt64 = 0
+
+    init() { bench_alloc_counter_install() }
+
+    mutating func start() {
+        startCount = bench_alloc_count()
+        startBytes = bench_alloc_bytes()
+    }
+
+    mutating func stop() {
+        allocations &+= bench_alloc_count() &- startCount
+        bytes &+= bench_alloc_bytes() &- startBytes
+    }
+}
+
+/// Heap allocations (events and requested bytes) per call of `body`: installs
+/// the counter, runs `warmup` calls so lazy statics and caches are not
+/// charged, then counts `iterations` calls and divides.
+///
+/// The body is main-actor isolated on purpose; see `AllocationMeter`.
+@MainActor
+func countAllocations(
+    iterations: Int, warmup: Int = 50, _ body: @MainActor () -> Void
+) -> (perIteration: Double, bytesPerIteration: Double) {
+    var meter = AllocationMeter()
+    for _ in 0 ..< warmup { body() }
+    meter.start()
+    for _ in 0 ..< iterations { body() }
+    meter.stop()
+    let count = Double(Swift.max(iterations, 1))
+    return (Double(meter.allocations) / count, Double(meter.bytes) / count)
+}
+
+/// Prints one allocation row: allocations and requested bytes per iteration.
+func reportAllocations(_ name: String, _ result: (perIteration: Double, bytesPerIteration: Double)) {
+    reportAllocations(name, allocations: result.perIteration, bytes: result.bytesPerIteration)
+}
+
+func reportAllocations(_ name: String, allocations: Double, bytes: Double) {
+    let line = name.padding(toLength: 62, withPad: " ", startingAt: 0)
+    print("\(line) \(format(allocations, 1).leftPad(9)) allocs/iter \(format(bytes, 0).leftPad(10)) bytes/iter")
+}
+
+/// Fixed-point formatting without `String(format:)`'s varargs.
+func format(_ value: Double, _ decimals: Int) -> String {
+    String(format: "%.\(decimals)f", value)
+}
+
+/// Prints one aligned measurement line with a number and a unit.
+func reportValue(_ name: String, _ value: Double, unit: String, decimals: Int = 0) {
+    let line = name.padding(toLength: 62, withPad: " ", startingAt: 0)
+    print("\(line) \(format(value, decimals).leftPad(12)) \(unit)")
 }
 
 // MARK: - Corpus

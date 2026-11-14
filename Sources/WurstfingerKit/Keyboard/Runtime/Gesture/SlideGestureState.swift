@@ -90,9 +90,28 @@ struct SlideGestureState: Sendable {
     private(set) var maxDisplacement: CGFloat = 0
 
     /// Events produced by a single drag update.
+    ///
+    /// One sample can latch the slide (`.began`) and report its first travel
+    /// (`.changed`) in the same update, and never anything else, so the two
+    /// are stored as two fields rather than an array: the input engine reads
+    /// them on every drag sample, and an array of phases cost a heap
+    /// allocation per sample for as long as a cursor slide lasted.
     struct Update: Equatable, Sendable {
         var isTouchDown = false
-        var phases: [SlidePhase] = []
+        /// The slide latched on this sample.
+        var began = false
+        /// Horizontal travel since the last report, when the slide is latched
+        /// and the finger moved.
+        var deltaX: CGFloat?
+
+        /// The phases in the order they are reported, for callers that want
+        /// a sequence (the tests); the engine reads the fields directly.
+        var phases: [SlidePhase] {
+            var phases: [SlidePhase] = []
+            if began { phases.append(.began) }
+            if let deltaX { phases.append(.changed(deltaX: deltaX)) }
+            return phases
+        }
     }
 
     /// Processes one `onChanged` sample.
@@ -151,14 +170,14 @@ struct SlideGestureState: Sendable {
             lastTranslationX = currentX < 0
                 ? -configuration.activationThreshold
                 : configuration.activationThreshold
-            update.phases.append(.began)
+            update.began = true
         }
 
         if isSliding {
             let deltaX = currentX - lastTranslationX
             if deltaX != 0 {
                 lastTranslationX = currentX
-                update.phases.append(.changed(deltaX: deltaX))
+                update.deltaX = deltaX
             }
         }
 

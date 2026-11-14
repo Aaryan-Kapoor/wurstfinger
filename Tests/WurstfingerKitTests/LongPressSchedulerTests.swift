@@ -53,7 +53,12 @@ struct LongPressSchedulerTests {
                 confirmed()
                 return true
             }
-            try? await Task.sleep(for: .milliseconds(200))
+            // Polled rather than a fixed sleep: under the full suite the main
+            // actor can be busy for seconds before the timer's turn comes.
+            let deadline = ContinuousClock.now.advanced(by: .seconds(20))
+            while !scheduler.consumedTouch, ContinuousClock.now < deadline {
+                try? await Task.sleep(for: .milliseconds(10))
+            }
             #expect(scheduler.consumedTouch)
             #expect(!scheduler.isScheduled)
         }

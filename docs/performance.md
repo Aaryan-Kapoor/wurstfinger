@@ -141,3 +141,135 @@ render is dominated by SwiftUI. The port does not touch either.
   category `input` (`keystroke`, with `classify` and `dispatch` nested inside).
 - **Live settings sync** (the host app's Darwin notification) is a behaviour
   change, not a speed change; it is covered by tests, not by the bench.
+
+---
+
+# Rework: zero-allocation input path, compiled resolution, cheaper keys
+
+The second measured pass (`docs/rework-review.md` lists the findings it
+addressed). All rows come from the same bench binary: the new sections 8–10
+were copied into an export of the pre-rework commit (`4a98cef`) and run
+there for the **before** column, then run on this tree for **after**, back to
+back on the same machine, nothing else in flight. Release builds,
+`-enable-testing`. Timings are p50 unless noted; allocation counts are exact
+(a `malloc_logger` hook in the `WurstfingerBenchAllocCounter` C target counts
+every allocation the process makes between two points on the main actor).
+
+```sh
+swift run -c release WurstfingerBench --alloc    # section 8
+swift run -c release WurstfingerBench --memory   # section 9
+swift run -c release WurstfingerBench --switch   # section 10 (debug build adds body counts)
+```
+
+## Allocations and latency per operation (section 8)
+
+| Operation | Before: allocs / bytes | After: allocs / bytes | Before p50 | After p50 |
+| --- | --- | --- | --- | --- |
+| 8a tap keystroke: engine → view model → pipeline → target | 14 / 375 B | **9 / 87 B** | – | – |
+| 8b flick keystroke: down, 8 one-sample moves, up | 198 / 18,095 B | **9 / 87 B** | – | – |
+| 8c one drag move, 1 sample (engine + view model) | 23.2 / 2,923 B | **0 / 0** | 5,291 ns | **625 ns** |
+| 8c one drag move, 4 coalesced samples | 23.4 / 4,702 B | **0 / 0** | 6,500 ns | **833 ns** |
+| 8d one drag move, 1 sample, engine only (no-op actions) | 23.2 / 2,923 B | **0 / 0** | 4,708 ns | **542 ns** |
+| 8d one drag move, 4 samples, engine only | 23.4 / 4,702 B | **0 / 0** | 5,875 ns | **875 ns** |
+| 8e `classify(positions:…tuning:)` (array entry, tests/tools) | 20.5 / 3,502 B | **1 / 803 B** | 1,958 ns | **667 ns** |
+| 8f `previewLabel` (live guide, per candidate change) | 0 | 0 | – | – |
+| 8g `handleGesture(.tap)` → pipeline → target | 3 / 29 B | 3 / 29 B | 1,042 ns | **916 ns** |
+| 8g-i `ActionPipeline.process` alone | – | **0** | – | – |
+| 8g-ii `OSSignposter` begin/end interval pair alone | – | 3 / 29 B | – | – |
+| 8h tap keystroke with long-press digits on (one timer task per touch-down) | 23 / 1,927 B | **18 / 1,639 B** | – | – |
+| 3b compose sequence (tap + swipe) → target | – | – | 2,458 ns | **2,167 ns** |
+| 4d globe-key language switch, warm cache | – | – | 280 µs | **158 µs** |
+| 4c globe-key language switch, cold cache | – | – | 450 µs | 953 µs (now also compiles the tables; the prewarm exists so this branch is not taken in practice) |
+
+What the rows say:
+
+- **A drag sample allocates nothing and costs an eighth of what it did.**
+  The engine classifies the whole path on every move event; that
+  classification went from ~20 arrays (ring-buffer read, origin anchoring,
+  three filter stages, smoothing kernel rebuilt per call, two feature
+  helpers) plus a closure context per sample to zero, working in a
+  `ClassificationScratch` arena the engine owns. 625 ns per move at 240 Hz
+  is 0.015 % of the main thread.
+- **The remaining 9 allocations per keystroke** are: 3 from the
+  `OSSignposter` interval state (built even with nobody recording;
+  `isEnabled` is true regardless, a guard was measured useless), the rest
+  from the touch-down/release bookkeeping the views observe
+  (`KeyPressRegistry` mutations through Observation, the guide value, the
+  trail's fade task). The pipeline itself allocates nothing (8g-i).
+- **Resolution is a table.** `previewLabel` and dispatch no longer walk the
+  resolver chain; the warm language switch halved because the tables come
+  from the same cache the prewarm fills.
+- The `handleGesture` row is dominated by the middlewares' string work on
+  the document context, not by dispatch; the existential middleware array
+  was measured (8g-i) and left.
+
+## Memory (section 9)
+
+| What | Before | After |
+| --- | --- | --- |
+| heap per language definition (mean over 26) | 47.4 KB | 47.3 KB (unchanged: the definition model was not touched) |
+| all 26 definitions resident | 1.20 MB | 1.20 MB |
+| `KeyboardRegistry.prewarm(all 26)` heap delta | 1.19 MB | 3.2 MB — the prewarm now also compiles every language's tables (~77 KB per language: the deduplicated binding pool dominates, the `Int32` tables are ~1.3 KB per mode). In the keyboard only the *enabled* languages are prewarmed (one to three), and the pre-suspension shedding evicts the tables with the definitions, so the suspended footprint is unchanged. |
+| `GridLayoutSolver` memo, 8 distinct arrangements | 8 KB | 8 KB |
+| one keyboard view graph, marginal heap / `phys_footprint` (off-screen `NSHostingView`, 390 pt, de_DE) | 3.1 MB / 5.5 MB | 3.1 MB / 5.6 MB (noise: ±0.2 MB run to run) |
+| first graph incl. SwiftUI warm-up, heap / footprint | 7.0 / 13.5 MB | 6.8 / 14.4 MB |
+| a mode switch kept alive, heap delta | +23 KB … −300 KB | −70 KB … −300 KB (noise; a switch frees as much as it adds) |
+| `TouchEngine` with 10 warmed tracks | 39.4 KB | 35.1 KB (non-optional ring, scratch arena of 5.8 KB included) |
+
+`MemoryLayout` sizes: `KeyDefinition` 41 B, `KeyBinding` 80 B,
+`KeyboardMode` 40 B, `GestureTuning` 160 B, `TouchSample` 24 B.
+
+Decisions this supports:
+
+- **Grids are rebuilt on a mode switch, not kept alive.** A switch costs
+  ~55–65 µs in `handleGesture` and ~115–160 µs with a layout and display
+  pass (section 10, both trees within noise of each other), and its memory
+  delta is noise. A second resident grid would cost on the order of the
+  marginal graph above, 3 MB heap / 5 MB footprint, against a 48–66 MB
+  jetsam limit. Slot ids are the view identities, so the rebuild is a diff:
+  12 of ~14 key bodies run on a letters → numeric switch (13 before; the
+  `Equatable` key skips the ones whose inputs did not change), 11 on the way
+  back (12 before).
+- **The hosting graph is the footprint.** Definitions, tables and the
+  engine together are under 2 MB with every language loaded; one view graph
+  is 3 MB of heap and 5–6 MB of footprint, and the SwiftUI warm-up another
+  ~7 MB that never comes back. The pre-suspension teardown of the hosting
+  controller remains the right lever; nothing in the data model is worth a
+  byte-level optimisation beside it.
+
+## Mode switch (section 10)
+
+| | Before p50 | After p50 |
+| --- | --- | --- |
+| main → numeric, `handleGesture` only | 67 µs | 54–66 µs |
+| main → numeric, + layout + display pass | 155 µs | 141–162 µs |
+| numeric → main, `handleGesture` only | 72 µs | 50–65 µs |
+| numeric → main, + layout + display pass | 156 µs | 115–162 µs |
+| `KeyView.body` evaluations per switch (debug) | 13 / 12 | 12 / 11 |
+
+The "until settled" rows are bounded below by the 20 ms settle loop and are
+not reported. The work a key body does shrank (nine `Font` boxes → none,
+no `AnyShapeStyle`, constant fills), but a mode switch genuinely changes
+almost every key, so the switch itself stays where it was, within noise.
+
+## Rendering (row 5, `--render`)
+
+`DataDrivenKeyboardRootView` through `ImageRenderer`, 59 fresh renders,
+alternating the two binaries five times on the same machine (p50, ms):
+before 28.5 / 21.5 / 16.6 / 14.2 / 14.8, after 25.5 / 37.7 / 15.7 / 15.3 /
+14.5. The spread is the machine (load average 50–120 while measuring), not
+the trees: the pairs converge as the load drops. No measurable change, as
+expected — a fresh render pays SwiftUI's graph construction, which the key
+changes do not touch; what they reduce is the per-body work and the number
+of bodies on an update (section 10).
+
+## Caveats
+
+- Same machine, back to back, but still a shared desktop: treat ratios that
+  hold in every row (allocations, the drag sample, classification) as real
+  and differences under ~20 % (dispatch, switch timings, memory noise) as
+  noise.
+- The long-press row (8h) counts the timer task's creation; its cancelled
+  body runs after the row ends and is not counted.
+- Allocation counts are process-wide; the rows run on the main actor with
+  every prewarm drained first, so they are the operation's own.

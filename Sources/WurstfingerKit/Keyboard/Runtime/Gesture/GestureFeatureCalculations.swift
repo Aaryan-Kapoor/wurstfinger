@@ -13,11 +13,17 @@ import CoreGraphics
 /// Namespace for gesture feature calculation functions.
 /// These are pure functions that take input and return a result,
 /// making them easy to test in isolation.
+///
+/// Every function is generic over the path's storage (`[CGPoint]` for tests
+/// and tools, `UnsafeBufferPointer<CGPoint>` for the input engine's scratch
+/// arena) and works in passes over it, so none builds an intermediate array.
+/// They live in the same module as their callers, so the optimizer
+/// specialises them per storage type.
 enum GestureCalculations {
     // MARK: - Path Metrics
 
     /// Calculates the total path length (sum of distances between consecutive points)
-    static func pathLength(of points: [CGPoint]) -> CGFloat {
+    static func pathLength<C: RandomAccessCollection<CGPoint>>(of points: C) -> CGFloat where C.Index == Int {
         guard points.count >= 2 else { return 0 }
 
         var length: CGFloat = 0
@@ -28,19 +34,20 @@ enum GestureCalculations {
     }
 
     /// Calculates the chord length (direct distance from start to end)
-    static func chordLength(of points: [CGPoint]) -> CGFloat {
+    static func chordLength<C: RandomAccessCollection<CGPoint>>(of points: C) -> CGFloat where C.Index == Int {
         guard let first = points.first, let last = points.last else { return 0 }
         return first.distance(to: last)
     }
 
     /// Finds the bounding box of a set of points
-    static func boundingBox(of points: [CGPoint]) -> CGRect {
+    static func boundingBox<C: RandomAccessCollection<CGPoint>>(of points: C) -> CGRect where C.Index == Int {
         guard let first = points.first else { return .zero }
 
         var minX = first.x, maxX = first.x
         var minY = first.y, maxY = first.y
 
-        for point in points.dropFirst() {
+        for i in 1 ..< points.count {
+            let point = points[i]
             if point.x < minX { minX = point.x } else if point.x > maxX { maxX = point.x }
             if point.y < minY { minY = point.y } else if point.y > maxY { maxY = point.y }
         }
@@ -49,11 +56,15 @@ enum GestureCalculations {
     }
 
     /// Calculates the centroid (geometric center) of a set of points
-    static func centroid(of points: [CGPoint]) -> CGPoint {
+    static func centroid<C: RandomAccessCollection<CGPoint>>(of points: C) -> CGPoint where C.Index == Int {
         guard !points.isEmpty else { return .zero }
 
-        let sumX = points.reduce(0) { $0 + $1.x }
-        let sumY = points.reduce(0) { $0 + $1.y }
+        var sumX: CGFloat = 0
+        var sumY: CGFloat = 0
+        for i in 0 ..< points.count {
+            sumX += points[i].x
+            sumY += points[i].y
+        }
 
         return CGPoint(
             x: sumX / CGFloat(points.count),
@@ -73,7 +84,7 @@ enum GestureCalculations {
     }
 
     /// Finds the point with maximum displacement from the start
-    static func maxDisplacement(in points: [CGPoint]) -> MaxDisplacementResult {
+    static func maxDisplacement<C: RandomAccessCollection<CGPoint>>(in points: C) -> MaxDisplacementResult where C.Index == Int {
         guard let start = points.first, points.count >= 2 else {
             return MaxDisplacementResult(distance: 0, point: .zero, index: 0, progress: 0)
         }
@@ -82,7 +93,8 @@ enum GestureCalculations {
         var maxPoint = start
         var maxIndex = 0
 
-        for (index, point) in points.enumerated() {
+        for index in 0 ..< points.count {
+            let point = points[index]
             let dist = start.distance(to: point)
             if dist > maxDist {
                 maxDist = dist
@@ -105,7 +117,7 @@ enum GestureCalculations {
 
     /// Calculates the total angular span around the centroid
     /// Positive = clockwise, Negative = counterclockwise
-    static func angularSpan(of points: [CGPoint], around centroid: CGPoint) -> CGFloat {
+    static func angularSpan<C: RandomAccessCollection<CGPoint>>(of points: C, around centroid: CGPoint) -> CGFloat where C.Index == Int {
         guard points.count >= 2 else { return 0 }
 
         var totalAngle: CGFloat = 0
@@ -123,21 +135,27 @@ enum GestureCalculations {
 
     /// Calculates how circular a path is (0-1, where 1 = perfect circle)
     /// Based on coefficient of variation of radii from centroid
-    static func circularity(of points: [CGPoint], centroid: CGPoint) -> CGFloat {
+    static func circularity<C: RandomAccessCollection<CGPoint>>(of points: C, centroid: CGPoint) -> CGFloat where C.Index == Int {
         guard !points.isEmpty else { return 0 }
 
-        let radii = points.map { $0.distance(to: centroid) }
-        let meanRadius = radii.reduce(0, +) / CGFloat(radii.count)
+        // Two passes over the points (mean radius, then variance) instead of
+        // materialising the radii: the distance is recomputed, not stored.
+        let count = CGFloat(points.count)
+        var radiusSum: CGFloat = 0
+        for i in 0 ..< points.count {
+            radiusSum += points[i].distance(to: centroid)
+        }
+        let meanRadius = radiusSum / count
 
         guard meanRadius > 0 else { return 0 }
 
         var varianceSum: CGFloat = 0
-        for r in radii {
-            let diff = r - meanRadius
+        for i in 0 ..< points.count {
+            let diff = points[i].distance(to: centroid) - meanRadius
             varianceSum += diff * diff
         }
 
-        let stdDev = sqrt(varianceSum / CGFloat(radii.count))
+        let stdDev = sqrt(varianceSum / count)
         let coefficientOfVariation = stdDev / meanRadius
 
         // Invert and clamp to 0-1 range
@@ -146,7 +164,7 @@ enum GestureCalculations {
 
     /// Calculates path separation (how far apart mirrored points are)
     /// High value = spiral, Low value = return swipe
-    static func pathSeparation(of points: [CGPoint], maxDisplacement: CGFloat) -> CGFloat {
+    static func pathSeparation<C: RandomAccessCollection<CGPoint>>(of points: C, maxDisplacement: CGFloat) -> CGFloat where C.Index == Int {
         guard points.count >= 2, maxDisplacement > 0 else { return 0 }
 
         let comparisons = min(points.count / 2, 10)
@@ -171,31 +189,39 @@ enum GestureCalculations {
     /// scale-invariant; a raw cross product has magnitude `|v1||v2|sin θ` (px²),
     /// so a fixed cross threshold would make the effective angle depend on
     /// segment length (large gestures count nearly every wobble, tiny ones none).
-    static func turnConsistency(of points: [CGPoint], turnThreshold: CGFloat = 0.15) -> CGFloat {
-        // Drop consecutive duplicate samples first; a repeated point (A→B→B→C)
-        // would otherwise split the real A→B / B→C turn across two zero-length
-        // segments and never count it.
-        var pts: [CGPoint] = []
-        for p in points where pts.last != p {
-            pts.append(p)
-        }
-        guard pts.count >= 3 else { return 1.0 }
+    static func turnConsistency<C: RandomAccessCollection<CGPoint>>(
+        of points: C, turnThreshold: CGFloat = 0.15
+    ) -> CGFloat where C.Index == Int {
+        // Consecutive duplicate samples are skipped as the points stream by; a
+        // repeated point (A→B→B→C) would otherwise split the real A→B / B→C
+        // turn across two zero-length segments and never count it. Only the
+        // last two distinct points are kept — the turn at `corner` needs its
+        // predecessor and successor, and nothing older.
+        var previous: CGPoint?
+        var corner: CGPoint?
 
         var cwCount = 0
         var ccwCount = 0
 
-        for i in 1 ..< (pts.count - 1) {
-            let v1 = Vector2D(from: pts[i - 1], to: pts[i])
-            let v2 = Vector2D(from: pts[i], to: pts[i + 1])
-            // Skip degenerate segments — turn angle is undefined for zero length.
-            guard v1.magnitudeSquared > 0, v2.magnitudeSquared > 0 else { continue }
-            let turn = v1.angle(to: v2) // signed radians: + = CCW, - = CW
+        for i in 0 ..< points.count {
+            let p = points[i]
+            if let current = corner, current == p { continue }
+            if let before = previous, let current = corner {
+                let v1 = Vector2D(from: before, to: current)
+                let v2 = Vector2D(from: current, to: p)
+                // Skip degenerate segments — turn angle is undefined for zero length.
+                if v1.magnitudeSquared > 0, v2.magnitudeSquared > 0 {
+                    let turn = v1.angle(to: v2) // signed radians: + = CCW, - = CW
 
-            if turn > turnThreshold {
-                ccwCount += 1
-            } else if turn < -turnThreshold {
-                cwCount += 1
+                    if turn > turnThreshold {
+                        ccwCount += 1
+                    } else if turn < -turnThreshold {
+                        cwCount += 1
+                    }
+                }
             }
+            previous = corner
+            corner = p
         }
 
         let totalTurns = cwCount + ccwCount
@@ -206,7 +232,7 @@ enum GestureCalculations {
 
     /// Calculates oriented compactness (width/length along principal axis)
     /// 1.0 = square, 0 = narrow line
-    static func orientedCompactness(of points: [CGPoint], principalAngle: CGFloat) -> CGFloat {
+    static func orientedCompactness<C: RandomAccessCollection<CGPoint>>(of points: C, principalAngle: CGFloat) -> CGFloat where C.Index == Int {
         guard let start = points.first else { return 0 }
 
         let cosA = cos(principalAngle)
@@ -215,7 +241,8 @@ enum GestureCalculations {
         var minPara: CGFloat = 0, maxPara: CGFloat = 0
         var minPerp: CGFloat = 0, maxPerp: CGFloat = 0
 
-        for p in points {
+        for i in 0 ..< points.count {
+            let p = points[i]
             let dx = p.x - start.x
             let dy = p.y - start.y
 

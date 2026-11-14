@@ -121,8 +121,11 @@ struct ExternalSettingsObservationTests {
     }
 
     /// Waits (on the main actor, so the observation task can run) until
-    /// `condition` holds or the deadline passes.
-    private func waitUntil(timeout: Duration = .seconds(2), _ condition: () -> Bool) async {
+    /// `condition` holds or the deadline passes. The deadline is generous on
+    /// purpose: a passing run returns as soon as the condition holds, and the
+    /// full suite keeps the main actor busy for seconds at a time (fuzzing,
+    /// typing scenarios), which a tight deadline mistakes for a failure.
+    private func waitUntil(timeout: Duration = .seconds(20), _ condition: () -> Bool) async {
         let clock = ContinuousClock()
         let end = clock.now.advanced(by: timeout)
         while !condition(), clock.now < end {

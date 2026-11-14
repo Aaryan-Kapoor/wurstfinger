@@ -95,8 +95,18 @@ let package = Package(
     // kit); macOS-only and never shipped.
     .executableTarget(
       name: "WurstfingerBench",
-      dependencies: ["WurstfingerKit"],
+      dependencies: [
+        "WurstfingerKit",
+        .target(name: "WurstfingerBenchAllocCounter", condition: .when(platforms: [.macOS])),
+      ],
       path: "Sources/WurstfingerBench"
+    ),
+    // The bench's allocation counter: a libmalloc `malloc_logger` hook, which
+    // only C can declare. Only the bench links it, so neither the kit nor the
+    // tests pay for a process-wide hook on every allocation.
+    .target(
+      name: "WurstfingerBenchAllocCounter",
+      path: "Sources/WurstfingerBenchAllocCounter"
     ),
     .testTarget(
       name: "WurstfingerKitTests",

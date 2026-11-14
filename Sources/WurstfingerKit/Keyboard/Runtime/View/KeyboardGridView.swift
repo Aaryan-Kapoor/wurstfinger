@@ -64,7 +64,19 @@ struct KeyboardGridView: View {
 
     var body: some View {
         let cells = GridLayoutSolver.solve(arrangement)
-        let totalRows = cells.map { $0.row + $0.rowSpan }.max() ?? 0
+        let totalRows = cells.reduce(0) { max($0, $1.row + $1.rowSpan) }
+        // One set of fonts for the whole grid (see `KeyTypography`).
+        let typography = KeyTypography(metrics: metrics)
+        // The grid's own size, computed rather than measured: the width is the
+        // keyboard minus its padding (what the root frames this view to) and
+        // the height is what `KeyboardGridLayout.sizeThatFits` reports. The
+        // guide overlay places its card inside these bounds without a
+        // `GeometryReader` between it and the grid.
+        let gridSize = CGSize(
+            width: metrics.keyboardWidth - 2 * KeyboardConstants.Layout.horizontalPadding,
+            height: CGFloat(totalRows) * metrics.rowHeight
+                + CGFloat(max(totalRows - 1, 0)) * KeyboardConstants.Layout.gridVerticalSpacing
+        )
         KeyboardGridLayout(
             cells: cells,
             columns: arrangement.columns,
@@ -72,8 +84,11 @@ struct KeyboardGridView: View {
             horizontalSpacing: KeyboardConstants.Layout.gridHorizontalSpacing,
             verticalSpacing: KeyboardConstants.Layout.gridVerticalSpacing
         ) {
-            ForEach(Array(cells.enumerated()), id: \.offset) { _, cell in
-                cellContent(for: cell, totalRows: totalRows)
+            // Identity by slot id: the same slot in the next mode is the same
+            // view, updated rather than rebuilt, which is what makes a mode
+            // switch a diff of ~40 keys instead of a teardown and rebuild.
+            ForEach(cells, id: \.keyId) { cell in
+                cellContent(for: cell, totalRows: totalRows, typography: typography)
             }
         }
         // Registered here rather than on the root view so it exists wherever a
@@ -94,7 +109,7 @@ struct KeyboardGridView: View {
             )
         }
         .overlay {
-            TouchGuideOverlay(press: engine.press, keys: keys)
+            TouchGuideOverlay(press: engine.press, keys: keys, gridSize: gridSize)
         }
         // Topmost, so it receives every touch on the grid: one native view for
         // all fingers instead of a gesture per key (see `TouchEngine`).
@@ -120,7 +135,7 @@ struct KeyboardGridView: View {
     }
 
     @ViewBuilder
-    private func cellContent(for cell: SolvedCell, totalRows: Int) -> some View {
+    private func cellContent(for cell: SolvedCell, totalRows: Int, typography: KeyTypography) -> some View {
         if let key = keys[cell.keyId] {
             KeyView(
                 key: key,
@@ -129,11 +144,13 @@ struct KeyboardGridView: View {
                 visualInset: visualInset(for: cell, totalRows: totalRows),
                 settings: renderSettings,
                 metrics: metrics,
-                tuning: tuning,
+                typography: typography,
                 languageLabel: languageLabel,
                 isLanguageLabelShown: isLanguageLabelShown
             )
-            .id(cell.keyId)
+            // Skip the body when nothing the key draws changed (see
+            // `KeyView`'s `Equatable` conformance).
+            .equatable()
         } else {
             Color.clear
         }

@@ -100,4 +100,13 @@ final class LockedCache<Key: Hashable & Sendable, Value: Sendable>: Sendable {
             cells = cells.filter { $0.key == keep }
         }
     }
+
+    /// Drops every entry whose key satisfies `predicate`. For caches whose keys
+    /// are composite (the compiled-mode cache keys on "language|numpad style"
+    /// and evicts by language).
+    func removeAll(where predicate: @Sendable (Key) -> Bool) {
+        cells.withLock { cells in
+            cells = cells.filter { !predicate($0.key) }
+        }
+    }
 }
