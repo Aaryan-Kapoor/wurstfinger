@@ -10,7 +10,7 @@ import Foundation
 /// A complete keyboard mode (e.g. lowercase, uppercase, numbers).
 /// Separates key definitions (WHAT the keys do) from arrangements (WHERE they are).
 /// Contains state machine rules for automatic mode transitions.
-struct KeyboardMode: Codable, Equatable {
+struct KeyboardMode: Codable, Equatable, Sendable {
     /// Unique name of the mode
     let name: String
 

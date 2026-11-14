@@ -8,10 +8,13 @@
 //
 
 import Foundation
+import Observation
 import Testing
 @testable import WurstfingerKit
 
-/// Mock implementation of TextInputTarget for pipeline tests.
+/// Mock implementation of TextInputTarget for pipeline tests. Main-actor, like
+/// the protocol it implements and like every suite that drives it.
+@MainActor
 final class MockTextTarget: TextInputTarget {
     enum Event: Equatable {
         case insertText(String)
@@ -145,5 +148,61 @@ class InMemoryUserDefaults: UserDefaults {
 
     override func float(forKey defaultName: String) -> Float {
         (object(forKey: defaultName) as? NSNumber)?.floatValue ?? 0
+    }
+}
+
+/// Counts how often what a closure *reads* changes, using the Observation
+/// framework the way SwiftUI does.
+///
+/// The view model used to be an `ObservableObject`, and tests pinned its
+/// "no needless re-render" behaviour by counting `objectWillChange`
+/// emissions. Under Observation the equivalent question is per property: does
+/// a change invalidate a reader of *that* property. `ChangeCounter` re-arms
+/// `withObservationTracking` after each change (it fires once per arming), so
+/// `count` is the number of distinct invalidations a view reading `read`
+/// would have received. It fires synchronously, before the new value is
+/// stored, so `count` is up to date the moment a mutation returns.
+@MainActor
+final class ChangeCounter {
+    private(set) var count = 0
+    private let read: @MainActor () -> Void
+
+    init(tracking read: @escaping @MainActor () -> Void) {
+        self.read = read
+        arm()
+    }
+
+    private func arm() {
+        withObservationTracking {
+            read()
+        } onChange: { [weak self] in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                self.count += 1
+                self.arm()
+            }
+        }
+    }
+}
+
+extension KeyboardViewModel {
+    /// Reads every observed property a view can draw from — what a
+    /// whole-keyboard render would depend on. A counter tracking this sees any
+    /// change that could re-render the keyboard.
+    @MainActor
+    func readEverythingRendered() {
+        _ = viewWidth
+        _ = keyboardWidthCap
+        _ = activeModeName
+        _ = currentDefinition
+        _ = pipelineLocale
+        _ = enabledLanguageIds
+        _ = gestureTuning
+        _ = hapticIntensityTap
+        _ = hapticIntensityDrag
+        _ = utilityColumnLeading
+        _ = keyAspectRatio
+        _ = keyboardWidth
+        _ = keyboardHorizontalPosition
     }
 }

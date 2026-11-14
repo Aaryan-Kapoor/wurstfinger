@@ -12,6 +12,7 @@ import Testing
 
 /// Builds a view model whose loaded definition comes from
 /// `GridKeyboardFactory.layout` with the given compose rule overrides.
+@MainActor
 private func makeOverrideViewModel(
     composeRuleOverrides: ComposeRuleSet?
 ) -> (KeyboardViewModel, MockTextTarget) {
@@ -36,6 +37,7 @@ private func makeOverrideViewModel(
     return (vm, target)
 }
 
+@MainActor
 @Suite(.serialized)
 struct ComposeOverrideWiringTests {
     private let overrides = ComposeRuleSet(rules: [

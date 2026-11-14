@@ -8,7 +8,7 @@
 import Foundation
 
 /// Categorizes a binding for context-dependent behavior.
-enum KeyCategory: String, Codable {
+enum KeyCategory: String, Codable, Sendable {
     case letter // Letter — reacts to shift, triggers auto-capitalization
     case digit // Digit
     case symbol // Punctuation, special character

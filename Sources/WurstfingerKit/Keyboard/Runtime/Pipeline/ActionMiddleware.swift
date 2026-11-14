@@ -15,7 +15,7 @@ import Foundation
 /// `UITextDocumentProxy` reference — middlewares inject whatever host
 /// dependencies they need via their initializer so every middleware can be
 /// unit-tested without a view controller.
-struct ActionContext {
+struct ActionContext: Sendable {
     /// The action currently being processed. Middlewares may transform it
     /// before calling `next`.
     var action: KeyAction
@@ -35,6 +35,14 @@ struct ActionContext {
 /// A middleware receives the `ActionContext` and must call `next(_:)` zero
 /// or one time to forward a (possibly transformed) context to the next step.
 /// Not calling `next` short-circuits the pipeline.
+///
+/// **Main-actor.** Middlewares drive the host's text proxy, which is
+/// main-thread-only, and they run synchronously inside the touch handler: the
+/// whole chain from "finger lifted" to `insertText` is one uninterrupted
+/// main-actor call, with no suspension point a second touch or a settings
+/// change could slip into. Conforming types therefore inherit `@MainActor`,
+/// and their injected closures may call main-actor state directly.
+@MainActor
 protocol ActionMiddleware {
     func process(_ context: ActionContext, next: (ActionContext) -> Void)
 }

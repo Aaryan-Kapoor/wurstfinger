@@ -15,6 +15,7 @@ import Testing
 
 // MARK: - Definition Layer
 
+@MainActor
 struct LongPressBindingTests {
     @Test func numericModeDigitsAreTapDigitsWithoutMirroredLongPress() {
         // The numeric mode no longer mirrors each digit `.tap` as an identical
@@ -54,6 +55,7 @@ struct LongPressBindingTests {
 
 // MARK: - Pipeline (gesture → digit)
 
+@MainActor
 @Suite(.serialized)
 struct LongPressNumberPipelineTests {
     @Test func longPressOnLetterKeyTypesDigit() {

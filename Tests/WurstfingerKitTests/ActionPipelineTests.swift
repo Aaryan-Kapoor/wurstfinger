@@ -138,6 +138,7 @@ private final class RewritingMiddleware: ActionMiddleware {
 
 // MARK: - ActionPipeline
 
+@MainActor
 struct ActionPipelineTests {
     @Test func runsMiddlewaresInOrder() {
         let log = OrderLog()
@@ -186,6 +187,7 @@ struct ActionPipelineTests {
 
 // MARK: - ComposeMiddleware
 
+@MainActor
 struct ComposeMiddlewareTests {
     @Test func composesWhenRuleMatches() {
         var deleted = 0
@@ -414,6 +416,7 @@ struct ComposeMiddlewareTests {
 
 // MARK: - SequentialCompositionMiddleware (combine flavour)
 
+@MainActor
 struct SequentialCompositionCombineTests {
     @Test func combinesWhenRuleMatches() {
         var deleted = 0
@@ -490,6 +493,7 @@ struct SequentialCompositionCombineTests {
 // event-only mock used to live here; it drifted from the shared one (no
 // document context / UTF-16 semantics), so it was removed (review M12).
 
+@MainActor
 struct TextInputMiddlewareTests {
     private func pipeline(target: MockTextTarget) -> ActionPipeline {
         let middleware = TextInputMiddleware(target: { target })
@@ -560,6 +564,7 @@ struct TextInputMiddlewareTests {
 
 // MARK: - SequentialCompositionMiddleware (Telex flavour)
 
+@MainActor
 struct SequentialCompositionTelexTests {
     /// Shared spy capturing deleteBackward calls and exposing a mutable
     /// documentContextBefore. Tests configure the context, dispatch through
@@ -675,6 +680,7 @@ struct SequentialCompositionTelexTests {
 
 // MARK: - AutoCapitalizationMiddleware
 
+@MainActor
 struct AutoCapitalizationMiddlewareTests {
     @Test func engagesCapitalizationWhenEvaluateReturnsTrue() {
         var capitalized = 0
@@ -786,6 +792,7 @@ struct AutoCapitalizationMiddlewareTests {
 
 // MARK: - ModeTransitionMiddleware
 
+@MainActor
 private func modeTransitionDefinition(
     shiftedAutoTransitions: [KeyCategory: String]
 ) -> KeyboardDefinition {
@@ -805,6 +812,7 @@ private func modeTransitionDefinition(
     return PipelineFixtures.definition(modes: [main, shifted, capsLock])
 }
 
+@MainActor
 struct ModeTransitionMiddlewareTests {
     @Test func shiftedLetterReturnsToMain() {
         var changes: [String] = []
@@ -907,6 +915,7 @@ struct ModeTransitionMiddlewareTests {
 
 // MARK: - Pipeline Integration
 
+@MainActor
 struct PipelineIntegrationTests {
     @Test func composeThenTextInputProducesCommittedCharacter() {
         // ComposeMiddleware rewrites the action; TextInputMiddleware then

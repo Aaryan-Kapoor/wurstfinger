@@ -18,6 +18,7 @@ import SwiftUI
 import Testing
 @testable import WurstfingerKit
 
+@MainActor
 @Suite(.serialized)
 struct HintAlignmentTests {
     @Test func hintAlignmentsMapDirectionsToPhysicalEdges() {

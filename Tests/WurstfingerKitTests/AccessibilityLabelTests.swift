@@ -31,6 +31,7 @@ import Testing
 ///
 /// Throwing (rather than a computed property) is what `#require` needs; every
 /// test in both suites below goes through here.
+@MainActor
 private func loadedDefinitions() throws -> [KeyboardDefinition] {
     let loaded = KeyboardRegistry.available.map {
         (id: $0.id, definition: KeyboardRegistry.load(id: $0.id))
@@ -46,6 +47,7 @@ private func loadedDefinitions() throws -> [KeyboardDefinition] {
     return loaded.compactMap(\.definition)
 }
 
+@MainActor
 struct AccessibilityLabelTests {
     /// Mirrors KeyView's accessibility-label resolution
     /// (custom accessibility label → tap label → slot id fallback).
@@ -205,6 +207,7 @@ struct AccessibilityLabelTests {
 /// dropped, and a name silently added (the rotor flooding the opt-in exists to
 /// prevent). The reasoning behind the selection lives on
 /// `CommonKeys.defaultSlotBindings`.
+@MainActor
 struct NamedAccessibilityBindingTests {
     /// Every grid-key gesture allowed to carry a name. Letter gestures are
     /// absent on purpose: a key's own center letter is reachable by activating

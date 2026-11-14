@@ -13,6 +13,7 @@ import Testing
 
 // MARK: - currentContext
 
+@MainActor
 @Suite(.serialized)
 struct KeyboardViewModelContextTests {
     /// Builds a ViewModel with a deterministic utility-column setting. We use an
@@ -91,6 +92,7 @@ struct KeyboardViewModelContextTests {
 
 // MARK: - KeyboardGridView Span Behavior
 
+@MainActor
 struct KeyboardGridViewSpanTests {
     @Test func defaultPlacementHasUnitSpan() {
         let placement = KeyPlacement(keyId: "topLeft")
@@ -131,6 +133,7 @@ struct KeyboardGridViewSpanTests {
 
 // MARK: - KeyView Style Rendering
 
+@MainActor
 struct KeyViewStyleTests {
     @Test func primaryAndUtilityProduceDifferentFontSizes() {
         // Primary keys are large, utility keys use the utility label size.
@@ -165,7 +168,8 @@ struct KeyViewStyleTests {
             onGesture: { _, _, _ in },
             onTouchDown: {},
             settings: KeyRenderSettings(),
-            metrics: .reference
+            metrics: .reference,
+            tuning: .default
         )
         #expect(view.primaryLabel == "midLeft")
     }
@@ -190,7 +194,8 @@ struct KeyViewStyleTests {
             onGesture: { _, _, _ in },
             onTouchDown: {},
             settings: KeyRenderSettings(),
-            metrics: .reference
+            metrics: .reference,
+            tuning: .default
         )
         #expect(view.primaryLabel == "d")
     }
@@ -215,7 +220,8 @@ struct KeyViewStyleTests {
             onGesture: { _, _, _ in },
             onTouchDown: {},
             settings: KeyRenderSettings(),
-            metrics: .reference
+            metrics: .reference,
+            tuning: .default
         )
         #expect(view.accessibilityLabel == "Löschen")
     }

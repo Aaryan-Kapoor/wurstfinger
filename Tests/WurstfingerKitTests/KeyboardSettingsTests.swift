@@ -9,6 +9,7 @@ import Foundation
 import Testing
 @testable import WurstfingerKit
 
+@MainActor
 struct HapticSettingsTests {
     // Helper to create isolated UserDefaults for testing
     private func makeTestDefaults() -> UserDefaults {
@@ -167,6 +168,7 @@ struct HapticSettingsTests {
     }
 }
 
+@MainActor
 struct LayoutSettingsTests {
     private func makeTestDefaults() -> UserDefaults {
         InMemoryUserDefaults()
@@ -278,6 +280,7 @@ struct LayoutSettingsTests {
 
 // MARK: - Legacy Scale Migration Tests
 
+@MainActor
 struct LayoutSettingsMigrationTests {
     private var shortestScreenSide: Double {
         Double(min(DeviceLayout.screenBounds.width, DeviceLayout.screenBounds.height))
@@ -362,6 +365,7 @@ struct LayoutSettingsMigrationTests {
 
 // MARK: - SettingsKey Tests
 
+@MainActor
 struct SettingsKeyTests {
     @Test func settingsKeysHaveCorrectRawValues() {
         #expect(SettingsKey.hapticIntensityTap.rawValue == "hapticIntensityTap")

@@ -19,7 +19,7 @@ import Foundation
 /// anywhere. That is what the settings API needs: `LanguageSettings` hands
 /// languages out by value and has to be able to name the `english` fallback
 /// without going through the registry.
-struct LanguageMetadata: Identifiable {
+struct LanguageMetadata: Identifiable, Sendable {
     let id: String
     let title: String
     let localeIdentifier: String

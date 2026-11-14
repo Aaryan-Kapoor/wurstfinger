@@ -17,6 +17,12 @@ import UIKit
 /// Holds a weak reference to the owning `UIInputViewController` so it can
 /// access `textDocumentProxy` (which may change between input fields) and
 /// `hasFullAccess` without extending the controller's lifetime.
+///
+/// `@MainActor` — already implied by `TextInputTarget`, stated here because it
+/// is the reason this file needs no further isolation work: `UIInputViewController`
+/// and `UITextDocumentProxy` are main-actor in the iOS SDK, so every access
+/// below is a plain main-actor access.
+@MainActor
 final class DocumentProxyTarget: TextInputTarget {
     private weak var controller: UIInputViewController?
 

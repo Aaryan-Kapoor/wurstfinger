@@ -45,15 +45,25 @@ enum SharedDefaults {
         name == isolated && name != appGroup
     }
 
-    /// The shared UserDefaults instance.
+    /// The shared UserDefaults instance, resolved once and handed out by
+    /// reference (callers compare it by identity).
+    ///
+    /// Exposed as a computed property over a `Sendable` handle rather than a
+    /// `static let`: `UserDefaults` is documented thread-safe, but the SDK this
+    /// package builds against does not mark it `Sendable`, and a global of a
+    /// non-`Sendable` type is a data-race error in Swift 6 mode.
+    static var store: UserDefaults {
+        storeHandle.defaults
+    }
+
     /// Falls back to standard UserDefaults if the suite is unavailable — this
     /// must never happen in production (app and extension would stop sharing
     /// settings silently), so flag it loudly in debug builds.
-    static let store: UserDefaults = {
+    private static let storeHandle: DefaultsHandle = {
         let name = resolvedSuiteName(arguments: ProcessInfo.processInfo.arguments)
         guard let shared = UserDefaults(suiteName: name) else {
             assertionFailure("Defaults suite '\(name)' unavailable — settings will not sync between app and keyboard extension")
-            return .standard
+            return DefaultsHandle(.standard)
         }
         #if DEBUG
             // Start every isolated launch from an empty suite. The wipe has to
@@ -70,6 +80,21 @@ enum SharedDefaults {
                 shared.removePersistentDomain(forName: name)
             }
         #endif
-        return shared
+        return DefaultsHandle(shared)
     }()
+}
+
+/// Lets a `UserDefaults` instance live in a `static let`.
+///
+/// `@unchecked Sendable`: `UserDefaults` is documented as thread-safe ("you can
+/// use it from any thread"), and the box only ever hands out the same instance
+/// through an immutable `let`; it adds no mutable state of its own. The SDKs
+/// that mark `UserDefaults` itself `Sendable` make this wrapper redundant, not
+/// wrong.
+final class DefaultsHandle: @unchecked Sendable {
+    let defaults: UserDefaults
+
+    init(_ defaults: UserDefaults) {
+        self.defaults = defaults
+    }
 }

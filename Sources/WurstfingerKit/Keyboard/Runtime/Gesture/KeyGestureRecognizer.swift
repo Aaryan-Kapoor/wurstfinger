@@ -12,7 +12,7 @@ import Foundation
 import SwiftUI
 
 /// Result of classifying a completed gesture.
-struct GestureClassification {
+struct GestureClassification: Sendable {
     let gesture: GestureType
     let isReturn: Bool
 }
@@ -21,7 +21,7 @@ struct GestureClassification {
 ///
 /// Extracted as a pure value type so sequence tracking and cancellation
 /// recovery can be unit-tested without rendering SwiftUI views.
-struct KeyGestureSequence {
+struct KeyGestureSequence: Sendable {
     private var positions: RingBuffer<CGPoint>
 
     /// Largest distance from the touch-down origin seen so far. Tracked as a
@@ -51,8 +51,31 @@ struct KeyGestureSequence {
         return isTouchDown
     }
 
-    /// Records the final sample and classifies the completed sequence.
+    /// Records the final sample and classifies the completed sequence against
+    /// an already-resolved settings snapshot — the production path, which never
+    /// touches `UserDefaults`.
+    mutating func handleEnded(
+        translation: CGSize,
+        aspectRatio: CGFloat,
+        tuning: GestureTuning
+    ) -> GestureClassification {
+        let samples = recordFinalSample(translation: translation)
+        return KeyGestureRecognizer.classify(
+            positions: samples, aspectRatio: aspectRatio, tuning: tuning
+        )
+    }
+
+    /// Records the final sample and classifies the completed sequence, reading
+    /// the settings from `SharedDefaults`. Kept for tests and tools; the view
+    /// layer passes its snapshot to `handleEnded(translation:aspectRatio:tuning:)`.
     mutating func handleEnded(translation: CGSize, aspectRatio: CGFloat) -> GestureClassification {
+        let samples = recordFinalSample(translation: translation)
+        return KeyGestureRecognizer.classify(positions: samples, aspectRatio: aspectRatio)
+    }
+
+    /// Appends the release sample, returns the origin-anchored path, and resets
+    /// the sequence for the next touch.
+    private mutating func recordFinalSample(translation: CGSize) -> [CGPoint] {
         defer {
             positions.removeAll()
             maxDisplacement = 0
@@ -61,10 +84,7 @@ struct KeyGestureSequence {
             positions.append(.zero)
         }
         positions.append(CGPoint(x: translation.width, y: translation.height))
-        return KeyGestureRecognizer.classify(
-            positions: KeyGestureRecognizer.anchoringOrigin(positions.elements),
-            aspectRatio: aspectRatio
-        )
+        return KeyGestureRecognizer.anchoringOrigin(positions.elements)
     }
 
     /// Discards the partial sequence after the system cancelled the touches
@@ -81,6 +101,11 @@ struct KeyGestureSequence {
 ///
 /// Wraps the existing `GesturePreprocessor` + `GestureFeatures` pipeline and
 /// produces `GestureType` values instead of `KeyboardDirection`.
+///
+/// The modifier itself is main-actor (it is a `ViewModifier`), but the
+/// classification statics are `nonisolated`: they are pure functions of their
+/// arguments and belong to the value domain, so they can be called from any
+/// isolation — including, one day, off the main thread.
 struct KeyGestureRecognizer: ViewModifier {
     /// Called once per completed gesture with the classified result.
     let onGestureRecognized: (GestureClassification) -> Void
@@ -90,6 +115,11 @@ struct KeyGestureRecognizer: ViewModifier {
 
     /// Key aspect ratio forwarded to the preprocessor for normalization.
     let aspectRatio: CGFloat
+
+    /// The user's gesture settings, resolved once by the view model and passed
+    /// down by value. Classification and long-press timing read this — never
+    /// `UserDefaults` — so the touch path does no store lookups.
+    let tuning: GestureTuning
 
     /// Called when the finger has rested on the key for
     /// `KeyboardConstants.LongPress.duration` without moving beyond
@@ -108,7 +138,7 @@ struct KeyGestureRecognizer: ViewModifier {
     @State private var sequence = KeyGestureSequence()
     @State private var longPress: LongPressScheduler
     /// Identifies this key's touch sequence to the shared trail recorder.
-    @StateObject private var trailToken = GestureTrailToken()
+    @State private var trailToken = GestureTrailToken()
     @Binding var isActive: Bool
 
     /// True while a touch sequence is in flight. Unlike `@State`, SwiftUI
@@ -129,6 +159,7 @@ struct KeyGestureRecognizer: ViewModifier {
         onGestureRecognized: @escaping (GestureClassification) -> Void,
         onTouchDown: @escaping () -> Void,
         aspectRatio: CGFloat,
+        tuning: GestureTuning,
         onLongPress: (() -> Bool)? = nil,
         trail: GestureTrailRecorder? = nil,
         isActive: Binding<Bool>,
@@ -137,6 +168,7 @@ struct KeyGestureRecognizer: ViewModifier {
         self.onGestureRecognized = onGestureRecognized
         self.onTouchDown = onTouchDown
         self.aspectRatio = aspectRatio
+        self.tuning = tuning
         self.onLongPress = onLongPress
         self.trail = trail
         _isActive = isActive
@@ -172,7 +204,7 @@ struct KeyGestureRecognizer: ViewModifier {
                             onTouchDown()
                             scheduleLongPress()
                         } else if longPress.isScheduled,
-                                  sequence.maxDisplacement > KeyboardConstants.LongPress.movementTolerance {
+                                  sequence.maxDisplacement > tuning.longPressMovementTolerance {
                             longPress.cancel()
                         }
                         isActive = true
@@ -188,10 +220,14 @@ struct KeyGestureRecognizer: ViewModifier {
                             isActive = false
                             return
                         }
+                        let signposter = InputSignposts.signposter
+                        let classifyInterval = signposter.beginInterval(InputSignposts.classify)
                         let classification = sequence.handleEnded(
                             translation: value.translation,
-                            aspectRatio: aspectRatio
+                            aspectRatio: aspectRatio,
+                            tuning: tuning
                         )
+                        signposter.endInterval(InputSignposts.classify, classifyInterval)
                         trail?.finish(from: trailToken)
                         isActive = false
                         onGestureRecognized(classification)
@@ -220,7 +256,7 @@ struct KeyGestureRecognizer: ViewModifier {
     /// partial path, and the trail. Shared by the system-cancel path and by
     /// teardown — a key removed mid-gesture (mode switch, rotation, definition
     /// reload) reaches neither `onEnded` nor the `sequenceInFlight` reset,
-    /// because both live on the view that went away, so an armed work item
+    /// because both live on the view that went away, so an armed timer
     /// would fire 0.7 s later and type the old key's digit into the new mode.
     private func abandonSequence() {
         longPress.abandon()
@@ -257,9 +293,10 @@ struct KeyGestureRecognizer: ViewModifier {
     /// active mode; it is not worth the extra state for that window.
     private func scheduleLongPress() {
         guard onLongPress != nil else { return }
-        longPress.schedule {
+        let tolerance = tuning.longPressMovementTolerance
+        longPress.schedule(after: tuning.longPressDuration) {
             let fired = sequence.isTracking
-                && sequence.maxDisplacement <= KeyboardConstants.LongPress.movementTolerance
+                && sequence.maxDisplacement <= tolerance
                 && onLongPress?() == true
             if fired { trail?.finish(from: trailToken) }
             return fired
@@ -276,32 +313,47 @@ struct KeyGestureRecognizer: ViewModifier {
     /// returnRatio, dominant angle, circularity) measure from `points.first`,
     /// a lost origin mis-classifies the gesture. When the origin was evicted
     /// (`elements[0] != .zero`), re-anchor it.
-    static func anchoringOrigin(_ points: [CGPoint]) -> [CGPoint] {
+    nonisolated static func anchoringOrigin(_ points: [CGPoint]) -> [CGPoint] {
         guard let first = points.first, first != .zero else { return points }
         return [.zero] + points
     }
 
     // MARK: - Classification (Pure Function)
 
-    /// Classifies a sequence of touch positions into a `GestureType`, reading
-    /// preprocessor config and thresholds from `SharedDefaults`.
-    static func classify(
+    /// Classifies a sequence of touch positions into a `GestureType` against a
+    /// resolved settings snapshot. The production entry point: pure arithmetic
+    /// over `positions`, no store access.
+    nonisolated static func classify(
         positions: [CGPoint],
-        aspectRatio: CGFloat = 1.0
+        aspectRatio: CGFloat = 1.0,
+        tuning: GestureTuning
     ) -> GestureClassification {
         classify(
             positions: positions,
-            config: GesturePreprocessorConfiguration.fromUserDefaults()
-                .with(aspectRatio: aspectRatio),
-            thresholds: GestureClassificationThresholds.fromUserDefaults()
+            config: tuning.config.with(aspectRatio: aspectRatio),
+            thresholds: tuning.thresholds
         )
+    }
+
+    /// Classifies a sequence of touch positions into a `GestureType`, reading
+    /// preprocessor config and thresholds from `SharedDefaults`.
+    ///
+    /// Kept for tests and tools, which pin classification against whatever the
+    /// store holds. The view layer does not call it: each call costs about a
+    /// dozen defaults lookups, which is exactly what `GestureTuning` removes
+    /// from the touch path.
+    nonisolated static func classify(
+        positions: [CGPoint],
+        aspectRatio: CGFloat = 1.0
+    ) -> GestureClassification {
+        classify(positions: positions, aspectRatio: aspectRatio, tuning: .load())
     }
 
     /// Classifies a sequence of touch positions with explicit configuration.
     ///
     /// This is a pure function so it can be unit-tested without rendering
     /// any SwiftUI views and without depending on the shared defaults store.
-    static func classify(
+    nonisolated static func classify(
         positions: [CGPoint],
         config: GesturePreprocessorConfiguration,
         thresholds: GestureClassificationThresholds
@@ -315,7 +367,7 @@ struct KeyGestureRecognizer: ViewModifier {
 
     /// Classifies already-extracted features. Useful for testing with
     /// synthetic feature vectors.
-    static func classify(features: GestureFeatures) -> GestureClassification {
+    nonisolated static func classify(features: GestureFeatures) -> GestureClassification {
         // Tap
         if features.isTap {
             return GestureClassification(gesture: .tap, isReturn: false)
@@ -339,7 +391,7 @@ struct KeyGestureRecognizer: ViewModifier {
 
     /// Maps an angle (radians, from `atan2`) to the corresponding swipe
     /// `GestureType`.
-    static func angleToGestureType(_ angle: CGFloat) -> GestureType {
+    nonisolated static func angleToGestureType(_ angle: CGFloat) -> GestureType {
         let normalized = angle < 0 ? angle + 2 * .pi : angle
         return gestureType(forDegrees: normalized * 180 / .pi)
     }
@@ -352,7 +404,7 @@ struct KeyGestureRecognizer: ViewModifier {
     /// Separate from `angleToGestureType` so the boundaries can be tested at
     /// their exact values — the degree/radian round trip is one ulp off for
     /// several of them, which is exactly where the convention lives.
-    static func gestureType(forDegrees degrees: CGFloat) -> GestureType {
+    nonisolated static func gestureType(forDegrees degrees: CGFloat) -> GestureType {
         switch degrees {
         case 337.5 ... 360, 0 ..< 22.5:
             .swipeRight

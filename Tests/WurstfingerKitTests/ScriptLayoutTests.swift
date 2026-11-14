@@ -12,12 +12,14 @@ import Foundation
 import Testing
 @testable import WurstfingerKit
 
+@MainActor
 private func inserts(_ target: MockTextTarget) -> [String] {
     target.events.compactMap { if case let .insertText(t) = $0 { t } else { nil } }
 }
 
 // MARK: - Thai
 
+@MainActor
 struct ThaiLayoutTests {
     /// The reference's center returns live on the circle gesture. ฬ ฒ ฑ ฏ have
     /// no other position in the layout.
@@ -54,6 +56,7 @@ struct ThaiLayoutTests {
 
 // MARK: - Japanese kana
 
+@MainActor
 struct KanaLayoutTests {
     @Test func hiraganaTypesIdeographicCommaAndFullStop() {
         let (vm, target) = makeViewModel(languageId: "ja_JP")
@@ -174,11 +177,12 @@ struct KanaLayoutTests {
 
 // MARK: - Arabic script
 
+@MainActor
 struct ArabicScriptLayoutTests {
-    static let ids = ["ar", "fa_IR", "ur"]
+    nonisolated static let ids = ["ar", "fa_IR", "ur"]
 
     /// Slot and gesture of every mark `ScriptPunctuation.arabicScript` places.
-    static let punctuationPositions: [(slot: String, gesture: GestureType)] = [
+    nonisolated static let punctuationPositions: [(slot: String, gesture: GestureType)] = [
         (GridSlot.topRight, .swipeLeft),
         (GridSlot.bottomCenter, .swipeDownLeft),
         (GridSlot.bottomRight, .swipeDownLeft),
@@ -257,6 +261,7 @@ struct ArabicScriptLayoutTests {
 
 // MARK: - Hindi
 
+@MainActor
 struct HindiLayoutTests {
     @Test func rupeeSignIsTypable() {
         let (vm, target) = makeViewModel(languageId: "hi_IN")
@@ -269,6 +274,7 @@ struct HindiLayoutTests {
 
 // MARK: - Hebrew
 
+@MainActor
 struct HebrewPunctuationTests {
     @Test func gereshAndGershayimAreTypable() {
         let (vm, target) = makeViewModel(languageId: "he_IL")

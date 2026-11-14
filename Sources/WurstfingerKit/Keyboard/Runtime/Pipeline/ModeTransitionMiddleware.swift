@@ -15,7 +15,7 @@ import Foundation
 /// is invoked with the target mode name.
 ///
 /// The middleware does not mutate state itself — the owner of the pipeline
-/// decides what to do with the callback (update a `@Published` mode name,
+/// decides what to do with the callback (update an observed mode name,
 /// re-configure arrangements, …).
 struct ModeTransitionMiddleware: ActionMiddleware {
     let definition: KeyboardDefinition

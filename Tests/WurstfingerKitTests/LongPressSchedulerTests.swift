@@ -4,7 +4,7 @@
 //
 //  Tests for the shared LongPressScheduler extracted from KeyGestureRecognizer
 //  and SlideGestureHandler: the synchronous fire/consume core plus the
-//  DispatchWorkItem timer wiring. `runFire` is synchronous so the guard path
+//  main-actor task timer wiring. `runFire` is synchronous so the guard path
 //  is testable without a real 0.7 s timer.
 //
 
@@ -12,6 +12,7 @@ import Foundation
 import Testing
 @testable import WurstfingerKit
 
+@MainActor
 @Suite(.serialized)
 struct LongPressSchedulerTests {
     @Test func runFireWithPassingGuardConsumesTouch() {

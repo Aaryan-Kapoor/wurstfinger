@@ -8,7 +8,7 @@
 import Foundation
 
 /// One named action a key offers to assistive technologies.
-struct KeyAccessibilityAction: Equatable {
+struct KeyAccessibilityAction: Equatable, Sendable {
     let name: String
     let gesture: GestureType
 }

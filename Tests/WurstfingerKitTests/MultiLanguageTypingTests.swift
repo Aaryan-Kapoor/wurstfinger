@@ -11,6 +11,7 @@ import Foundation
 import Testing
 @testable import WurstfingerKit
 
+@MainActor
 struct MultiLanguageTypingTests {
     private func inserts(_ target: MockTextTarget) -> [String] {
         target.events.compactMap { if case let .insertText(t) = $0 { t } else { nil } }

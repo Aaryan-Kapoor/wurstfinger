@@ -18,7 +18,7 @@ import Foundation
 /// materialising a single layout, and only the language actually in use is ever
 /// built (and then cached by `KeyboardRegistry`). Loading all layouts eagerly
 /// added avoidable memory pressure under the extension's tight budget.
-struct LanguageDescriptor: Identifiable {
+struct LanguageDescriptor: Identifiable, Sendable {
     let id: String
     let title: String
     let localeIdentifier: String

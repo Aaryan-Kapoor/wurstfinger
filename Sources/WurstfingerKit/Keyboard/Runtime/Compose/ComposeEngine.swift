@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct ComposeEngine {
+struct ComposeEngine: Sendable {
     let ruleSet: ComposeRuleSet
     private let accentCycles: [String: [String]]
 

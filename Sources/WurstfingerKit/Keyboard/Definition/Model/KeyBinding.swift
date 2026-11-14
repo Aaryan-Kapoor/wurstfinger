@@ -8,7 +8,7 @@
 import Foundation
 
 /// What a single gesture on a key produces.
-struct KeyBinding: Codable, Equatable {
+struct KeyBinding: Codable, Equatable, Sendable {
     /// Displayed text on the key (can differ from output, e.g. "⇧" for shift)
     let label: String
 

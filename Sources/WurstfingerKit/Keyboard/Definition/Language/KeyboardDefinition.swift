@@ -8,7 +8,7 @@
 import Foundation
 
 /// Complete definition of a keyboard with all modes and settings.
-struct KeyboardDefinition: Codable, Equatable {
+struct KeyboardDefinition: Codable, Equatable, Sendable {
     /// Display name (e.g. "Deutsch MessagEase")
     let title: String
 
@@ -100,7 +100,7 @@ enum ModeNames {
 /// transformation over recent document context — Vietnamese Telex being
 /// the first real example. Making this a data-driven enum on the keyboard
 /// definition keeps language activation out of view-controller locale checks.
-enum InputMethodType: String, Codable, Equatable {
+enum InputMethodType: String, Codable, Equatable, Sendable {
     /// Characters are committed verbatim. Default.
     case direct
 
@@ -115,7 +115,7 @@ enum InputMethodType: String, Codable, Equatable {
 }
 
 /// Keyboard-specific settings for a KeyboardDefinition.
-struct KeyboardDefinitionSettings: Codable, Equatable {
+struct KeyboardDefinitionSettings: Codable, Equatable, Sendable {
     /// Auto-capitalization enabled
     let autoCapitalize: Bool
 

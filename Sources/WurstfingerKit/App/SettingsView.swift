@@ -8,7 +8,9 @@
 import SwiftUI
 
 struct SettingsView: View {
-    @StateObject private var languageSettings = LanguageSettings.shared
+    /// `@Observable` and shared: reading it in `body` subscribes this view to
+    /// the properties it uses; `let` is enough because nothing here binds to it.
+    private let languageSettings = LanguageSettings.shared
 
     @AppStorage(SettingsKey.utilityColumnLeading.rawValue, store: SharedDefaults.store)
     private var utilityColumnLeading = false

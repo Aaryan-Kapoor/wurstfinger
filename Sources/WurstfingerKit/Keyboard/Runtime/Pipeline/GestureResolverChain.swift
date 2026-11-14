@@ -12,7 +12,7 @@ import Foundation
 /// Each resolver is tried in order; the first non-nil result wins. If no
 /// resolver matches, the chain returns `nil` (callers typically fall back to
 /// `KeyAction.none`).
-struct GestureResolverChain {
+struct GestureResolverChain: Sendable {
     let resolvers: [GestureResolver]
 
     /// Returns the first matching binding, or `nil` if no resolver in the

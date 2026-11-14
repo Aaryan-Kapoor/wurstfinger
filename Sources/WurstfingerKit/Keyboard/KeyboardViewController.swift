@@ -11,13 +11,24 @@ import Foundation
 import SwiftUI
 import UIKit
 
+// `UIInputViewController` is `@MainActor` in the iOS SDK, and a subclass inherits
+// that; the annotation is spelled out so the isolation the rest of this file
+// relies on (every UIKit call, the view model, the static sample handle) is
+// visible at the declaration.
+@MainActor
 @objc(KeyboardViewController)
 public final class KeyboardViewController: UIInputViewController {
     private var hostingController: UIHostingController<DataDrivenKeyboardRootView>?
-    private lazy var viewModel = KeyboardViewModel()
+    /// `prewarmsLanguages`: this is the one real keyboard, so it builds the
+    /// enabled languages' definitions in the background once it has loaded its
+    /// own, and a globe-key switch lands on a warm cache.
+    private lazy var viewModel = KeyboardViewModel(prewarmsLanguages: true)
     private var heightConstraint: NSLayoutConstraint?
     private var documentProxyTarget: DocumentProxyTarget?
-    private var hostLifecycleObservers: [NSObjectProtocol] = []
+    /// Removes each observer when the controller is deallocated. (A non-isolated
+    /// `deinit` cannot touch main-actor state, and `NSObjectProtocol` tokens are
+    /// not `Sendable`, so the tokens remove themselves.)
+    private var hostLifecycleObservers: [ObserverToken] = []
     /// Render-server snapshot standing in for the torn-down hosting view
     /// while the host app is backgrounded (see `installSuspensionPlaceholder`).
     private var suspensionPlaceholder: UIView?
@@ -71,6 +82,10 @@ public final class KeyboardViewController: UIInputViewController {
         // Load the keyboard definition for the selected language
         loadDefinitionIfNeeded()
 
+        // Follow settings the host app changes while this keyboard is on
+        // screen (debounced), instead of waiting for the next appearance.
+        viewModel.observeExternalSettingsChanges()
+
         // Configure hosting synchronously so the SwiftUI view exists
         // before viewWillAppear sets the height constraint. Deferring via
         // DispatchQueue.main.async caused a race in WebView-based apps where
@@ -81,16 +96,15 @@ public final class KeyboardViewController: UIInputViewController {
         KeyboardHealthLog.shared.record("viewDidLoad.end")
     }
 
-    deinit {
-        hostLifecycleObservers.forEach(NotificationCenter.default.removeObserver)
-    }
-
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         // Heartbeat: one entry per keyboard appearance. Its absence at the time
         // of a "system keyboard showed instead" incident proves iOS never
         // launched the extension (as opposed to the extension failing).
         KeyboardHealthLog.shared.record("viewWillAppear")
+        // Spin the Taptic Engine up now, so the first keystroke's impact does
+        // not pay the ramp.
+        viewModel.prepareHaptics()
         // Reopen in the default (letters) mode: a keyboard dismissed in
         // numeric or shifted mode must not resurface there.
         refreshForAppearance(resettingMode: true)
@@ -128,6 +142,10 @@ public final class KeyboardViewController: UIInputViewController {
             viewModel.resetToDefaultMode()
         }
         updateKeyboardHeight()
+        // Warm the other enabled languages again: the pre-suspension shedding
+        // evicted them, and a globe-key switch should not pay a build. Runs in
+        // the background; nothing here waits for it.
+        viewModel.startPrewarmIfNeeded()
         // Engage/release shift for the field's current context (e.g. start
         // uppercase in an empty compose field). `textDidChange` usually also
         // fires on appearance, but that is not guaranteed in every host app;
@@ -271,7 +289,7 @@ public final class KeyboardViewController: UIInputViewController {
     /// keyboard that invalidates it is rebuilt. The token has to outlive it to
     /// be reachable from there at all. Only ever touched from the shedding and
     /// hosting paths, both of which are main-thread-only.
-    private static var pendingSettledSample: DispatchWorkItem?
+    private static var pendingSettledSample: Task<Void, Never>?
 
     /// Covers the hole the hosting teardown would leave in the host app's
     /// app-switcher card: iOS takes that snapshot *after* the host
@@ -347,39 +365,47 @@ public final class KeyboardViewController: UIInputViewController {
     /// until someone has measured it on real hardware.
     private func observeHostLifecycle() {
         let center = NotificationCenter.default
-        hostLifecycleObservers.append(center.addObserver(
+        // Both observers are delivered on the main queue (`queue: .main`), so
+        // each block assumes main-actor isolation instead of hopping: the
+        // shedding must run in the same turn the notification arrives, before
+        // the process can be frozen, which an async hop would not guarantee.
+        hostLifecycleObservers.append(ObserverToken(center: center, observer: center.addObserver(
             forName: NSNotification.Name.NSExtensionHostDidEnterBackground,
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.shedMemoryBeforeSuspension("hostDidEnterBackground")
-        })
-        hostLifecycleObservers.append(center.addObserver(
+            MainActor.assumeIsolated {
+                self?.shedMemoryBeforeSuspension("hostDidEnterBackground")
+            }
+        }))
+        hostLifecycleObservers.append(ObserverToken(center: center, observer: center.addObserver(
             forName: NSNotification.Name.NSExtensionHostWillEnterForeground,
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            guard let self else { return }
-            // Foreground return after a host-background suspension does not
-            // fire `viewWillAppear` (the view stayed in the hierarchy), so
-            // everything appearance normally refreshes must happen here too:
-            // the hosting graph torn down in `shedMemoryBeforeSuspension` —
-            // otherwise the keyboard returns blank — and any settings or
-            // language change made in the host app while this process was
-            // suspended, which no in-process defaults notification reports.
-            // Gated on being on screen: waking without a window (keyboard
-            // dismissed before the host backgrounded) must not pay the
-            // hosting rebuild — the biggest allocation — in the resume
-            // moment, where the jetsam limit is enforced; `viewWillAppear`
-            // covers that case when the keyboard is next shown. The active
-            // mode is deliberately kept: the user returns to the same field
-            // mid-typing. (A definition reload inside the refresh still
-            // resets it — a new language's layout cannot keep the old mode.)
-            if viewIfLoaded?.window != nil {
-                refreshForAppearance(resettingMode: false)
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                // Foreground return after a host-background suspension does not
+                // fire `viewWillAppear` (the view stayed in the hierarchy), so
+                // everything appearance normally refreshes must happen here too:
+                // the hosting graph torn down in `shedMemoryBeforeSuspension` —
+                // otherwise the keyboard returns blank — and any settings or
+                // language change made in the host app while this process was
+                // suspended, which no in-process defaults notification reports.
+                // Gated on being on screen: waking without a window (keyboard
+                // dismissed before the host backgrounded) must not pay the
+                // hosting rebuild — the biggest allocation — in the resume
+                // moment, where the jetsam limit is enforced; `viewWillAppear`
+                // covers that case when the keyboard is next shown. The active
+                // mode is deliberately kept: the user returns to the same field
+                // mid-typing. (A definition reload inside the refresh still
+                // resets it — a new language's layout cannot keep the old mode.)
+                if viewIfLoaded?.window != nil {
+                    refreshForAppearance(resettingMode: false)
+                }
+                KeyboardHealthLog.shared.record("hostWillEnterForeground")
             }
-            KeyboardHealthLog.shared.record("hostWillEnterForeground")
-        })
+        }))
     }
 
     override func didReceiveMemoryWarning() {

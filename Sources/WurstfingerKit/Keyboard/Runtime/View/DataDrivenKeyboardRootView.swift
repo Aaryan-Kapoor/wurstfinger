@@ -11,8 +11,13 @@ import SwiftUI
 
 /// Root view for the data-driven keyboard path. Reads mode and arrangement
 /// from the ViewModel and delegates all gesture callbacks back to it.
+///
+/// The view model is `@Observable`: reading `viewModel.viewWidth`,
+/// `activeModeName` and the rest below is what subscribes this body to them,
+/// property by property — so a haptic-intensity or typing-toggle change, which
+/// nothing here reads, re-renders no keys at all.
 struct DataDrivenKeyboardRootView: View {
-    @ObservedObject var viewModel: KeyboardViewModel
+    let viewModel: KeyboardViewModel
 
     /// Optional width override used by InteractiveKeyboardPreview.
     /// When nil, falls back to `viewModel.viewWidth`.
@@ -71,7 +76,7 @@ struct DataDrivenKeyboardRootView: View {
                         viewModel.handleGesture(gesture, keyId: key.id, isReturn: isReturn)
                     },
                     onTouchDown: {
-                        viewModel.feedbackTap()
+                        viewModel.touchDown()
                     },
                     onSlide: { key, phase in
                         viewModel.handleSlide(key, phase: phase)
@@ -82,7 +87,8 @@ struct DataDrivenKeyboardRootView: View {
                     languageLabel: viewModel.currentLanguageLabel,
                     isLanguageLabelShown: viewModel.hasMultipleLanguages,
                     renderSettings: renderSettings,
-                    metrics: metrics
+                    metrics: metrics,
+                    tuning: viewModel.gestureTuning
                 )
                 .padding(.horizontal, KeyboardConstants.Layout.horizontalPadding)
                 .padding(.top, KeyboardConstants.Layout.verticalPaddingTop)

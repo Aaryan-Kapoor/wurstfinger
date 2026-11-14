@@ -35,7 +35,13 @@ enum OnboardingProgress {
     }
 
     /// The app's own defaults, or the isolated suite under a UI test.
-    static let store: UserDefaults = resolvedStore(arguments: ProcessInfo.processInfo.arguments)
+    static var store: UserDefaults {
+        storeHandle.defaults
+    }
+
+    private static let storeHandle = DefaultsHandle(
+        resolvedStore(arguments: ProcessInfo.processInfo.arguments)
+    )
 
     /// Moves checklist state written by earlier versions out of the shared
     /// app-group container — without it, an updating user's ticked steps would

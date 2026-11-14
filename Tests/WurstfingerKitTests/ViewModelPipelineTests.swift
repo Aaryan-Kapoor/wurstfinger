@@ -16,6 +16,7 @@ import Testing
 
 // MARK: - Tap → commitText
 
+@MainActor
 @Suite(.serialized)
 struct ViewModelTapTests {
     @Test func tapCenterKeyCommitsText() {
@@ -54,6 +55,7 @@ struct ViewModelTapTests {
 
 // MARK: - Swipe → correct character
 
+@MainActor
 @Suite(.serialized)
 struct ViewModelSwipeTests {
     @Test func swipeDownRightFromTopLeftCommitsV() {
@@ -80,6 +82,7 @@ struct ViewModelSwipeTests {
 
 // MARK: - Return swipe → returnAction
 
+@MainActor
 @Suite(.serialized)
 struct ViewModelReturnSwipeTests {
     @Test func returnSwipeExecutesReturnAction() {
@@ -97,6 +100,7 @@ struct ViewModelReturnSwipeTests {
 
 // MARK: - Mode switching (shift)
 
+@MainActor
 @Suite(.serialized)
 struct ViewModelModeTests {
     @Test func switchModeToShifted() {
@@ -217,6 +221,7 @@ struct ViewModelModeTests {
 
 // MARK: - Slide gestures
 
+@MainActor
 @Suite(.serialized)
 struct ViewModelSlideTests {
     @Test func spaceSlideTapCommitsSpace() {
@@ -260,6 +265,7 @@ struct ViewModelSlideTests {
 
 // MARK: - Definition loading
 
+@MainActor
 struct ViewModelDefinitionTests {
     @Test func loadDefinitionSetsActiveMode() {
         let (vm, _) = makeViewModel()
@@ -293,6 +299,7 @@ struct ViewModelDefinitionTests {
 
 // MARK: - ViewControllerActionMiddleware integration
 
+@MainActor
 @Suite(.serialized)
 struct ViewModelVCActionTests {
     @Test func advanceToNextInputModeCallsClosure() {
@@ -308,6 +315,7 @@ struct ViewModelVCActionTests {
 
 // MARK: - Numpad type wiring
 
+@MainActor
 @Suite(.serialized)
 struct ViewModelNumpadTypeTests {
     private func loadedNumericTopLeftDigit(numpadType: String?) -> String? {

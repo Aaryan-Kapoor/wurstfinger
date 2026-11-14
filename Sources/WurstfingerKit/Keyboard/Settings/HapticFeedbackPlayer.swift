@@ -20,7 +20,7 @@ import AppKit
 /// the intensity slider a wide perceived range, the scale starts with a
 /// barely-noticeable `UISelectionFeedbackGenerator` tick and then steps
 /// through impact styles up to `.heavy`.
-enum HapticPulse: Equatable {
+enum HapticPulse: Equatable, Sendable {
     /// `UISelectionFeedbackGenerator` tick — the subtlest available feedback.
     case selectionTick
     case impact(UIImpactFeedbackGenerator.FeedbackStyle)
@@ -43,7 +43,7 @@ enum HapticPulse: Equatable {
 ///
 /// Stored settings remain a 0...1 intensity for backward compatibility;
 /// levels map to their bucket's midpoint in `HapticPulse.pulse(for:)`.
-enum HapticIntensityLevel: Int, CaseIterable, Equatable {
+enum HapticIntensityLevel: Int, CaseIterable, Equatable, Sendable {
     case off = 0, tick, soft, light, medium, heavy
 
     /// Canonical stored intensity (midpoint of the corresponding pulse bucket).
@@ -80,6 +80,14 @@ enum HapticIntensityLevel: Int, CaseIterable, Equatable {
 /// Requires Full Access to be enabled — without it, `UIFeedbackGenerator` silently
 /// fails because the underlying `CHHapticEngine` is blocked by the keyboard sandbox.
 /// The host app settings UI prevents enabling haptics when Full Access is not granted.
+///
+/// **Main-actor only.** UIKit's feedback generators are `@MainActor`, and every
+/// caller is already on the main actor (touch-down handlers, the action
+/// pipeline), so there is no thread hop to make: the pulse is issued in the
+/// same synchronous call that received the touch. (This type used to bounce
+/// off-main callers through `DispatchQueue.main.async`; with the isolation
+/// stated in the type system no such caller can exist.)
+@MainActor
 final class HapticFeedbackPlayer {
     private let settings: HapticSettings
 
@@ -96,14 +104,61 @@ final class HapticFeedbackPlayer {
     /// intensity level.
     private lazy var selectionGenerator = UISelectionFeedbackGenerator()
 
+    /// When the generators were last told to `prepare()`. The Taptic Engine
+    /// stays warm for only a couple of seconds after a prepare, so a keyboard
+    /// that has been idle fires its next impact through a cold engine — the
+    /// perceptible lag on the first keystroke after a pause.
+    private var lastPrepared: ContinuousClock.Instant?
+
+    /// How long a prepare is trusted to still be warm. Apple documents "a
+    /// short time" without a figure; the engine idles down after roughly two
+    /// seconds, so re-preparing slightly before that keeps it hot at the cost
+    /// of one cheap call per touch-down after a pause.
+    private static let warmWindow: Duration = .seconds(1.5)
+
     init(settings: HapticSettings) {
         self.settings = settings
     }
 
     // MARK: - Public API
 
+    /// Warms the generators the next touch will use, if they have gone cold.
+    ///
+    /// Called on touch-down *before* the tap pulse and again when the keyboard
+    /// appears: preparing at the moment of the first touch of a burst means
+    /// the engine is already spun up for the drag ticks and for every
+    /// following key, instead of each pulse paying the ramp. A no-op while the
+    /// last prepare is still inside `warmWindow`, and when haptics are off.
+    func prepareIfNeeded() {
+        guard settings.tapIntensity > 0 || settings.dragIntensity > 0 else { return }
+        let now = ContinuousClock.now
+        if let lastPrepared, now - lastPrepared < Self.warmWindow { return }
+        lastPrepared = now
+        // Only the generators this user's settings can actually fire: the tap
+        // and drag pulses, plus the selection tick that state changes (which
+        // follow the tap intensity) use. Preparing the unused styles would
+        // keep the engine busier for nothing.
+        if settings.tapIntensity > 0 {
+            prepare(.pulse(for: settings.tapIntensity))
+            selectionGenerator.prepare()
+        }
+        if settings.dragIntensity > 0 {
+            prepare(.pulse(for: settings.dragIntensity))
+        }
+    }
+
+    private func prepare(_ pulse: HapticPulse) {
+        switch pulse {
+        case .selectionTick:
+            selectionGenerator.prepare()
+        case let .impact(style):
+            impactGenerators[style]?.prepare()
+        }
+    }
+
     /// Triggers haptic feedback for a key tap (touch-down)
     func tap() {
+        prepareIfNeeded()
         trigger(.tap)
     }
 
@@ -130,24 +185,17 @@ final class HapticFeedbackPlayer {
         case .stateChange: .selectionTick
         }
 
-        let performFeedback = { [self] in
-            switch pulse {
-            case .selectionTick:
-                selectionGenerator.selectionChanged()
-                selectionGenerator.prepare()
-            case let .impact(style):
-                guard let generator = impactGenerators[style] else { return }
-                generator.impactOccurred()
-                // Keep the Taptic Engine warm so the next keystroke fires
-                // without ramp-up latency.
-                generator.prepare()
-            }
+        switch pulse {
+        case .selectionTick:
+            selectionGenerator.selectionChanged()
+            selectionGenerator.prepare()
+        case let .impact(style):
+            guard let generator = impactGenerators[style] else { return }
+            generator.impactOccurred()
+            // Keep the Taptic Engine warm so the next keystroke fires
+            // without ramp-up latency.
+            generator.prepare()
         }
-
-        if Thread.isMainThread {
-            performFeedback()
-        } else {
-            DispatchQueue.main.async(execute: performFeedback)
-        }
+        lastPrepared = ContinuousClock.now
     }
 }

@@ -63,11 +63,19 @@ let package = Package(
         .unsafeFlags(["-Xlinker", "-e", "-Xlinker", "_NSExtensionMain"], .when(platforms: [.iOS]))
       ]
     ),
+    // Micro-benchmarks for the input path (see docs/performance.md). Reaches
+    // module-internal code through `@testable`, so it must be built with
+    // `-Xswiftc -enable-testing`; it is macOS-only and never shipped.
+    .executableTarget(
+      name: "WurstfingerBench",
+      dependencies: ["WurstfingerKit"],
+      path: "Sources/WurstfingerBench"
+    ),
     .testTarget(
       name: "WurstfingerKitTests",
       dependencies: ["WurstfingerKit"],
       path: "Tests/WurstfingerKitTests"
     ),
   ],
-  swiftLanguageModes: [.v5]
+  swiftLanguageModes: [.v6]
 )

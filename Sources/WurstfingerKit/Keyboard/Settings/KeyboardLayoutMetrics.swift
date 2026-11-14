@@ -20,7 +20,7 @@ import Foundation
 /// All consumers — the SwiftUI grid, `KeyView` fonts, gesture classification,
 /// and the controller's height constraint — read from the same instance, so
 /// width, row height, and total height cannot desynchronize by construction.
-struct KeyboardLayoutMetrics: Equatable {
+struct KeyboardLayoutMetrics: Equatable, Sendable {
     /// Resolved outer keyboard width in points, including the keyboard's own
     /// horizontal paddings (`Layout.horizontalPadding` on each side).
     let keyboardWidth: CGFloat

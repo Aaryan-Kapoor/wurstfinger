@@ -12,6 +12,7 @@ import Foundation
 import Testing
 @testable import WurstfingerKit
 
+@MainActor
 struct SlideGestureStateTests {
     /// Space-bar activation threshold used throughout these tests.
     private let threshold = KeyboardConstants.SpaceGestures.dragActivationThreshold
@@ -465,6 +466,7 @@ struct SlideGestureStateTests {
 
 // MARK: - ViewModel handling of .cancelled
 
+@MainActor
 @Suite(.serialized)
 struct SlideCancellationPipelineTests {
     @Test func cancelledSpaceSlideResetsDragStateWithoutInput() throws {
@@ -506,6 +508,7 @@ private final class WriteCountingDefaults: InMemoryUserDefaults {
     }
 }
 
+@MainActor
 @Suite(.serialized)
 struct SpaceLabelTogglePipelineTests {
     private func hides(_ vm: KeyboardViewModel, _ key: SettingsKey) -> Bool {
@@ -535,6 +538,9 @@ struct SpaceLabelTogglePipelineTests {
     func upSwipeTogglesExtraSymbolsWithoutTextInput(style: CursorMovementType) throws {
         let (vm, target) = makeViewModel(languageId: "de_DE")
         vm.sharedDefaults.set(style.rawValue, forKey: SettingsKey.cursorMovementStyle.rawValue)
+        // The typing toggles are snapshotted in the view model; the settings
+        // signal (`reloadSettings`) is what makes a store change take effect.
+        vm.reloadSettings()
         let spaceKey = try #require(vm.activeModeFromDefinition?.key(for: UtilitySlot.space))
 
         vm.handleSlide(spaceKey, phase: .swipeUp(isReturn: false))

@@ -5,13 +5,15 @@
 //  Created by Claas Flint on 19.11.25.
 //
 
-import Combine
+import Observation
 import SwiftUI
 
 /// A simple in-memory text target that captures pipeline output
 /// for the interactive preview.
-private class PreviewTextTarget: TextInputTarget, ObservableObject {
-    @Published var text: String = ""
+@MainActor
+@Observable
+private final class PreviewTextTarget: TextInputTarget {
+    var text: String = ""
     var documentContextBeforeInput: String? {
         text
     }
@@ -47,8 +49,8 @@ struct InteractiveKeyboardPreview: View {
     @Binding var width: Double
     @Binding var position: Double
 
-    @StateObject private var previewViewModel = KeyboardViewModel(shouldPersistSettings: false)
-    @StateObject private var previewTarget = PreviewTextTarget()
+    @State private var previewViewModel = KeyboardViewModel(shouldPersistSettings: false)
+    @State private var previewTarget = PreviewTextTarget()
 
     init(
         aspectRatio: Binding<Double> = .constant(1.0),
