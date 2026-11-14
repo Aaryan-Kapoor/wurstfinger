@@ -1,0 +1,19 @@
+Versjon 1.4.1
+
+Nytt:
+• Valgfritt bevegelsesspor — en myk strek følger fingeren mens du sveiper og toner ut når du løfter den. Av som standard, under Innstillinger › Bevegelser
+• Nytt app-ikon: Liquid Glass på iOS 26, med dybde på Hjem-skjermen
+
+Forbedret:
+• Raske sveip gjenkjennes som sveip igjen, i stedet for å skrive tastens midtbokstav
+• Tegn som ikke lot seg skrive i det hele tatt på de nye oppsettene: thai ฬ ฒ ฑ ฏ og ฿, de japanske 、 og 。 med de små kana-tegnene, halvmellomrommet i persisk og urdu, skilletegn i arabisk skrift, hindi-₹, de hebraiske ׳ og ״ samt kanas gjentakelsestegn for stemte lyder ゞ og ヾ
+• č ď ě ň ř š ť ž kan nås direkte: hacekentegnet ligger nå på returnsveipet på ^-tasten og erstatter den frittstående sirkumfleksen som sveipet skrev tidligere (selve ^ er uendret)
+• Diagonale drag på slettetasten sletter nå, i stedet for å gjøre ingenting
+• Et langt trykk som holdes over et modus- eller språkbytte skriver ikke lenger sifferet til den gamle tasten
+• Dobbelt mellomrom skriver punktum bare ved to mellomrom på rad, og setter inn setningstegnet for skriften du skriver med
+• Sletting fremover og stor forbokstav på ord respekterer et aktivt utvalg
+• Når du kommer tilbake fra en annen app, brukes innstillinger som er endret i mellomtiden før første tastetrykk, og appvelgeren viser ikke lenger et tomt hull der tastaturet var
+• VoiceOver når skift-, skilletegn- og modustastene og tilbyr handlinger som ellers bare er tilgjengelige med sveip, som kopier, klipp ut, lim inn og skjul tastatur, via rotoren
+• Tasteetiketter holder seg innenfor tasten selv ved de minste tastaturstørrelsene
+• Størrelse og posisjon ble vist på engelsk uansett appspråk, og er nå oversatt, sammen med 70 korrigerte oversettelser
+• Slankere gjengivelse gir tastaturet mer minnemargin

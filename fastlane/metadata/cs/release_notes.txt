@@ -1,0 +1,19 @@
+Verze 1.4.1
+
+Novinky:
+• Volitelná stopa gesta — jemná čára sleduje prst při přejetí a po jeho zvednutí zmizí. Ve výchozím stavu vypnuto, v Nastavení › Gesta
+• Nová ikona aplikace: Liquid Glass v iOS 26, s hloubkou na domovské obrazovce
+
+Vylepšení:
+• Rychlá švihnutí se opět rozpoznají jako přejetí, místo aby se napsalo prostřední písmeno klávesy
+• Znaky, které na nových rozloženích nešlo napsat vůbec: thajské ฬ ฒ ฑ ฏ a ฿, japonské 、 a 。 s malými znaky kana, poloviční mezera v perštině a urdštině, interpunkce arabského písma, hindské ₹, hebrejské ׳ a ״ a znaky opakování znělé kany ゞ a ヾ
+• č ď ě ň ř š ť ž jsou přímo dostupné: háček je nyní na zpětném přejetí klávesy ^ a nahrazuje samostatný diakritický znak stříška (circumflex), který toto přejetí dříve psalo (samotné ^ zůstává beze změny)
+• Úhlopříčné tažení po klávese mazání maže, místo aby se nedělo nic
+• Dlouhé podržení přes přepnutí režimu nebo jazyka už nepíše číslici původní klávesy
+• Dvojitá mezera napíše tečku jen po dvou po sobě jdoucích mezerách a vloží větnou interpunkci psaného písma
+• Mazání dopředu a změna slova na velká písmena respektují aktivní výběr
+• Po návratu z jiné aplikace se mezitím změněná nastavení uplatní už od prvního stisku a přepínač aplikací nezobrazuje prázdnou mezeru tam, kde byla klávesnice
+• VoiceOver se dostane na klávesy Shift, interpunkce a režimů a přes rotor nabízí akce dostupné jen přejetím, například kopírování, vyjmutí, vložení a skrytí klávesnice
+• Popisky kláves zůstávají uvnitř klávesy i při nejmenších velikostech klávesnice
+• Nastavení Velikost a pozice se zobrazovalo anglicky bez ohledu na jazyk aplikace, nyní je přeloženo, spolu se 70 opravenými překlady
+• Úspornější vykreslování nechává klávesnici více paměťové rezervy

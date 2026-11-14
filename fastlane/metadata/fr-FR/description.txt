@@ -1,0 +1,27 @@
+Wurstfinger - Le clavier pour gros doigts
+
+Marre des fautes de frappe ? Wurstfinger est un clavier respectueux de votre vie privée, avec de grandes touches et des gestes de balayage. Fondé sur la disposition éprouvée MessagEase, il remplace la grille QWERTY étriquée par une disposition 3x3 optimisée pour la saisie au pouce.
+
+Contrairement aux claviers habituels, Wurstfinger ne mise pas sur une prédiction de mots intrusive : sa précision vient de sa conception ergonomique. Des touches larges et bien espacées, ce sont moins de touches manquées, et le système de gestes donne accès à tous les caractères sans avoir à chercher de minuscules boutons.
+
+FONCTIONNALITÉS :
+
+• Grande grille de 3x3 touches - Optimisée pour les pouces, pas pour les pointeurs de précision
+• Gestes de balayage - Accédez à 8 caractères supplémentaires par touche en balayant
+• 26 dispositions de clavier - Français, allemand, anglais, arabe, coréen, croate, espagnol, espagnol-catalan, estonien-finnois, finnois, grec, hébreu, hindi, italien, japonais (hiragana), japonais (katakana), ourdou, persan, polonais, portugais, russe, suédois, tagalog, thaï, ukrainien et vietnamien (avec saisie Telex)
+• Règles de composition - Créez des accents par combinaison (p. ex. ' + a = á)
+• Gestes circulaires - Tracez un cercle pour obtenir des majuscules
+• Contrôle du curseur - Faites glisser le doigt sur la barre d'espace pour déplacer le curseur, et sur la touche de suppression pour effacer en continu
+• Retour haptique - Intensité des vibrations personnalisable
+• Entièrement ajustable - Adaptez la taille du clavier à votre convenance
+
+CONFIDENTIALITÉ D'ABORD :
+
+• Aucune collecte de données
+• Aucun accès au réseau
+• Aucun suivi de la prédiction de mots
+• Tout le traitement s'effectue localement sur votre appareil
+
+Wurstfinger demande de l'entraînement : comptez quelques jours pour acquérir la mémoire musculaire. Mais une fois ce cap franchi, vous ne voudrez plus revenir à un clavier classique. Les gestes deviennent une seconde nature, et vous taperez plus vite et avec moins d'erreurs que jamais.
+
+Vos doigts vous remercieront !

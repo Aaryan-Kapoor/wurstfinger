@@ -4,8 +4,8 @@
 
 - [ ] All relevant PRs merged into `develop`
 - [ ] CI green on `develop`
-- [ ] Update `fastlane/metadata/de-DE/release_notes.txt`
-- [ ] Update `fastlane/metadata/en-US/release_notes.txt`
+- [ ] Update `fastlane/metadata/en-US/release_notes.txt` (source text) and `fastlane/metadata/de-DE/release_notes.txt`
+- [ ] Translate the notes into every other `fastlane/metadata/<locale>/release_notes.txt` (a locale left untouched ships the previous version's notes); limit 4000 characters each
 - [ ] Update `CHANGELOG.md` — rename "Unreleased" to `v X.Y.Z — YYYY-MM-DD`, add empty "Unreleased" section
 - [ ] Bump `MARKETING_VERSION` in `Wurstfinger.xcodeproj/project.pbxproj` (all targets)
 - [ ] Verify version bump: `grep MARKETING_VERSION Wurstfinger.xcodeproj/project.pbxproj`
@@ -49,7 +49,7 @@ The `ITSAppUsesNonExemptEncryption` flag must be set in both the host app and th
 
 ### Wrong release notes in App Store Connect
 
-Fastlane reads from `fastlane/metadata/*/release_notes.txt`. Update them before creating the release. If already submitted, edit directly in App Store Connect or re-run the workflow after fixing.
+Fastlane reads from `fastlane/metadata/*/release_notes.txt` (every locale directory). Update them before creating the release. If already submitted, edit directly in App Store Connect or re-run the workflow after fixing.
 
 ### Wrong release marked as "Latest" on GitHub
 

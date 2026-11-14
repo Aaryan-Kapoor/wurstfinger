@@ -1,0 +1,27 @@
+Wurstfinger - Bàn phím cho ngón tay to bự
+
+Chán cảnh gõ sai chính tả? Wurstfinger là bàn phím tôn trọng quyền riêng tư, với phím lớn và cử chỉ vuốt. Dựa trên bố cục MessagEase đã được kiểm chứng, bàn phím thay lưới QWERTY chật chội bằng bố cục 3x3 được tối ưu cho việc gõ bằng ngón cái.
+
+Không như các bàn phím thông thường, Wurstfinger không dựa vào tính năng dự đoán từ xâm lấn - thay vào đó, độ chính xác đến từ thiết kế công thái học. Phím lớn, đặt cách nhau thoải mái nghĩa là ít bấm trượt hơn, và hệ thống cử chỉ giúp bạn truy cập mọi ký tự mà không phải săn tìm những nút nhỏ xíu.
+
+TÍNH NĂNG:
+
+• Lưới phím 3x3 lớn - Tối ưu cho ngón cái, không dành cho con trỏ chính xác
+• Cử chỉ vuốt - Thêm 8 ký tự trên mỗi phím bằng cách vuốt
+• 26 bố cục bàn phím - Việt (với kiểu gõ Telex), Ả Rập, Anh, Ba Lan, Ba Tư, Bồ Đào Nha, Crô-a-ti-a, Do Thái, Đức, Estonia-Phần Lan, Hàn, Hindi, Hy Lạp, Nga, Nhật (Hiragana), Nhật (Katakana), Pháp, Phần Lan, Tagalog, Tây Ban Nha, Tây Ban Nha-Catalan, Thái, Thụy Điển, Ukraina, Urdu và Ý
+• Quy tắc kết hợp - Tạo dấu bằng cách kết hợp phím (ví dụ: ' + a = á)
+• Cử chỉ vòng tròn - Vẽ một vòng tròn để gõ chữ hoa
+• Điều khiển con trỏ - Kéo trên phím cách để di chuyển con trỏ, kéo trên phím xóa để xóa liên tục
+• Phản hồi xúc giác - Cường độ rung tùy chỉnh được
+• Tùy chỉnh hoàn toàn - Thay đổi kích cỡ bàn phím theo ý bạn
+
+QUYỀN RIÊNG TƯ LÀ TRÊN HẾT:
+
+• Không thu thập dữ liệu
+• Không truy cập mạng
+• Không theo dõi dự đoán từ
+• Mọi xử lý đều diễn ra cục bộ trên thiết bị của bạn
+
+Wurstfinger đòi hỏi luyện tập - hãy chuẩn bị dành vài ngày để hình thành trí nhớ cơ bắp. Nhưng một khi đã vượt qua ngưỡng đó, bạn sẽ không bao giờ muốn quay lại bàn phím thông thường. Các cử chỉ dần trở thành bản năng, và bạn sẽ gõ nhanh hơn, ít lỗi hơn bao giờ hết.
+
+Những ngón tay của bạn sẽ cảm ơn bạn!

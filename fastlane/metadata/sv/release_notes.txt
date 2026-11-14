@@ -1,0 +1,19 @@
+Version 1.4.1
+
+Nytt:
+• Valfritt gestspår — ett mjukt streck följer fingret medan du sveper och tonas ut när du lyfter det. Av som standard, under Inställningar › Gester
+• Ny appikon: Liquid Glass på iOS 26, med djup på hemskärmen
+
+Förbättrat:
+• Snabba svep känns igen som svep igen, i stället för att skriva tangentens mittbokstav
+• Tecken som inte alls gick att skriva på de nya layouterna: thailändska ฬ ฒ ฑ ฏ och ฿, de japanska 、 och 。 med de små kanatecknen, halvmellanslaget i persiska och urdu, skiljetecken i arabisk skrift, hindi-₹, de hebreiska ׳ och ״ samt kanas upprepningstecken för tonande ljud ゞ och ヾ
+• č ď ě ň ř š ť ž nås direkt: hacekentecknet ligger nu på returvepet på ^-tangenten och ersätter den fristående cirkumflexaccent som det vepet skrev tidigare (själva ^ är oförändrat)
+• Diagonala drag på raderingstangenten raderar nu, i stället för att inte göra något
+• Ett långt tryck som hålls över ett läges- eller språkbyte skriver inte längre den gamla tangentens siffra
+• Dubbelt mellanslag skriver en punkt bara vid två mellanslag i följd, och infogar meningstecknet för det skriftsystem du skriver med
+• Radera framåt och versalisera ord respekterar en aktiv markering
+• När du kommer tillbaka från en annan app tillämpas inställningar som ändrats under tiden före första tangenttrycket, och appväxlaren visar inte längre ett tomt hål där tangentbordet var
+• VoiceOver når skift-, skiljetecken- och lägestangenterna och erbjuder åtgärder som annars bara går att göra med svep, som kopiera, klipp ut, klistra in och dölj tangentbord, via rotorn
+• Tangentetiketter stannar inom sin tangent även vid de minsta tangentbordsstorlekarna
+• Storlek och position visades på engelska oavsett appspråk och är nu översatt, tillsammans med 70 korrigerade översättningar
+• Smidigare rendering ger tangentbordet mer minnesutrymme

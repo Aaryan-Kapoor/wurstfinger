@@ -1,0 +1,19 @@
+Versie 1.4.1
+
+Nieuw:
+• Optioneel gebarenspoor — een zachte lijn volgt je vinger terwijl je veegt en vervaagt zodra je loslaat. Standaard uit, te vinden onder Instellingen › Gebaren
+• Nieuw app-icoon: Liquid Glass op iOS 26, met diepte op het beginscherm
+
+Verbeterd:
+• Snelle veegbewegingen worden weer herkend als veeggebaar in plaats van de middelste letter van de toets te typen
+• Tekens die op de nieuwe indelingen helemaal niet te typen waren: Thai ฬ ฒ ฑ ฏ en ฿, de Japanse 、 en 。 met de kleine kana, de halve spatie in het Perzisch en Urdu, Arabische leestekens, de Hindi-₹, de Hebreeuwse ׳ en ״ en de herhalingstekens voor stemhebbende kana ゞ en ヾ
+• č ď ě ň ř š ť ž zijn direct bereikbaar: de hatsjek zit nu op de terugveeg van de ^-toets en vervangt de losstaande circumflex die die veeg eerder typte (de ^ zelf blijft ongewijzigd)
+• Diagonaal slepen op de verwijdertoets verwijdert nu in plaats van niets te doen
+• Een lange druk die over een modus- of taalwissel heen wordt vastgehouden, typt niet meer het cijfer van de oude toets
+• Dubbele spatie typt alleen een punt bij twee opeenvolgende spaties en voegt het zinseindteken van het schrift in dat je typt
+• Vooruit wissen en een woord met hoofdletter schrijven houden rekening met een actieve selectie
+• Als je terugkeert uit een andere app, worden tussentijds gewijzigde instellingen toegepast vóór de eerste toetsaanslag, en de appkiezer toont geen lege plek meer waar het toetsenbord was
+• VoiceOver bereikt de shift-, leesteken- en modustoetsen en biedt via de rotor acties die alleen met een veeg beschikbaar zijn, zoals kopiëren, knippen, plakken en toetsenbord verbergen
+• Toetslabels blijven ook bij de kleinste toetsenbordformaten binnen hun toets
+• Grootte en positie werd in elke app-taal in het Engels getoond en is nu vertaald, samen met 70 gecorrigeerde vertalingen
+• Slankere weergave laat het toetsenbord meer geheugenruimte

@@ -1,0 +1,27 @@
+Wurstfinger - La tastiera per dita grosse
+
+Basta errori di battitura! Wurstfinger è una tastiera attenta alla privacy, con tasti grandi e gesti di scorrimento. Basata sul collaudato layout MessagEase, sostituisce la stretta griglia QWERTY con un layout 3x3 pensato per scrivere con i pollici.
+
+A differenza delle tastiere tradizionali, Wurstfinger non si affida a invasive previsioni delle parole: raggiunge la precisione grazie a un design ergonomico. Tasti grandi e ben distanziati significano meno tocchi mancati, e il sistema di gesti permette di accedere a tutti i caratteri senza dover cercare minuscoli pulsanti.
+
+FUNZIONI:
+
+• Griglia 3x3 di tasti grandi - Ottimizzata per i pollici, non per puntatori di precisione
+• Gesti di scorrimento - 8 caratteri aggiuntivi per ogni tasto scorrendo
+• 26 layout di tastiera - Italiano, Arabo, Coreano, Croato, Ebraico, Estone-finlandese, Finlandese, Francese, Giapponese (Hiragana), Giapponese (Katakana), Greco, Hindi, Inglese, Persiano, Polacco, Portoghese, Russo, Spagnolo, Spagnolo-catalano, Svedese, Tagalog, Tedesco, Thai, Ucraino, Urdu e Vietnamita (con input Telex)
+• Regole di composizione - Crea gli accenti combinando i tasti (es. ' + a = á)
+• Gesti circolari - Disegna un cerchio per le lettere maiuscole
+• Controllo del cursore - Trascina sulla barra spaziatrice per spostare il cursore, trascina sul tasto di cancellazione per cancellare in continuo
+• Feedback aptico - Intensità della vibrazione personalizzabile
+• Totalmente regolabile - Ridimensiona la tastiera come preferisci
+
+PRIVACY AL PRIMO POSTO:
+
+• Nessuna raccolta di dati
+• Nessun accesso alla rete
+• Nessun tracciamento della previsione delle parole
+• Tutta l'elaborazione avviene in locale sul tuo dispositivo
+
+Wurstfinger richiede allenamento: ci vogliono alcuni giorni per costruire la memoria muscolare. Ma una volta superata questa soglia, non vorrai più tornare a una tastiera standard. I gesti diventano una seconda natura e scriverai più velocemente e con meno errori che mai.
+
+Le tue dita ti ringrazieranno!

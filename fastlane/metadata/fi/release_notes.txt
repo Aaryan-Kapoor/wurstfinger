@@ -1,0 +1,19 @@
+Versio 1.4.1
+
+Uutta:
+• Valinnainen eleen jälki — pehmeä viiva seuraa sormeasi pyyhkäisyn aikana ja häipyy, kun nostat sormen. Oletuksena pois päältä, kohdassa Asetukset › Eleet
+• Uusi sovelluskuvake: Liquid Glass iOS 26:ssa, syvyysvaikutelmalla Koti-valikossa
+
+Parannettua:
+• Nopeat näpäytykset tunnistetaan taas pyyhkäisyiksi sen sijaan, että kirjoitettaisiin näppäimen keskikirjain
+• Merkit, joita ei voinut kirjoittaa lainkaan uusilla asetteluilla: thain ฬ ฒ ฑ ฏ ja ฿, japanin 、 ja 。 pienten kana-merkkien kanssa, puolivälilyönti persiassa ja urdussa, arabialaisen kirjoitusjärjestelmän välimerkit, hindin ₹, heprean ׳ ja ״ sekä äänellisten kana-merkkien toistomerkit ゞ ja ヾ
+• č ď ě ň ř š ť ž ovat suoraan saavutettavissa: hataček on nyt ^-näppäimen paluupyyhkäisyllä ja korvaa erillisen sirkumfleksin, jonka tuo pyyhkäisy aiemmin kirjoitti (itse ^ ei muutu)
+• Vinot vedot poistonäppäimellä poistavat sen sijaan, ettei tapahdu mitään
+• Tilan- tai kielenvaihdon yli jatkunut pitkä painallus ei enää kirjoita vanhan näppäimen numeroa
+• Kaksoisvälilyönti kirjoittaa pisteen vain kahdella peräkkäisellä välilyönnillä ja lisää kirjoitettavan kirjoitusjärjestelmän lauseen päätösmerkin
+• Eteenpäin poisto ja sanan muuttaminen isoiksi kirjaimiksi huomioivat aktiivisen valinnan
+• Toisesta sovelluksesta palatessa välillä muuttuneet asetukset otetaan käyttöön ennen ensimmäistä näppäinpainallusta, eikä sovellusvalitsin enää näytä tyhjää aukkoa näppäimistön paikalla
+• VoiceOver tavoittaa vaihto-, välimerkki- ja tilanäppäimet sekä tarjoaa rotorin kautta vain pyyhkäisyllä saatavat toiminnot, kuten kopioinnin, leikkaamisen, liittämisen ja näppäimistön piilottamisen
+• Näppäinten tekstit pysyvät näppäimen sisällä pienimmilläkin näppäimistön koilla
+• Koko ja sijainti näkyi englanniksi sovelluksen kielestä riippumatta, ja se on nyt käännetty, samoin 70 korjattua käännöstä
+• Kevyempi piirtäminen jättää näppäimistölle enemmän muistivaraa

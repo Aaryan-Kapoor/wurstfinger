@@ -1,0 +1,19 @@
+Verzija 1.4.1
+
+Novo:
+• Neobavezan trag geste — mekan potez prati tvoj prst dok prelaziš zaslonom i nestaje kad ga podigneš. Prema zadanim postavkama isključeno, u Postavke › Geste
+• Nova ikona aplikacije: Liquid Glass na iOS-u 26, s dubinom na početnom zaslonu
+
+Poboljšano:
+• Brzi potezi ponovno se prepoznaju kao prijelazi umjesto da utipkaju središnje slovo tipke
+• Znakovi koji se na novim rasporedima uopće nisu mogli utipkati: tajlandski ฬ ฒ ฑ ฏ i ฿, japanski 、 i 。 uz male kane, polurazmak u perzijskom i urduu, interpunkcija arapskog pisma, hindski ₹, hebrejski ׳ i ״ te znakovi ponavljanja zvučnih kana ゞ i ヾ
+• č ď ě ň ř š ť ž sada su izravno dostupni: karon se nalazi na povratnom prijelazu tipke ^ i zamjenjuje samostalni cirkumfleks koji je taj prijelaz prije tipkao (sama tipka ^ ostaje nepromijenjena)
+• Dijagonalno povlačenje po tipki za brisanje sada briše umjesto da ne radi ništa
+• Dugi pritisak zadržan preko promjene načina ili jezika više ne tipka znamenku stare tipke
+• Dvostruki razmak tipka točku samo nakon dva uzastopna razmaka i umeće rečeničnu oznaku pisma u kojem tipkaš
+• Brisanje prema naprijed i pisanje riječi velikim slovima poštuju aktivan odabir
+• Povratak iz druge aplikacije primjenjuje postavke promijenjene u međuvremenu prije prvog pritiska tipke, a izmjenjivač aplikacija više ne prikazuje prazninu na mjestu tipkovnice
+• VoiceOver doseže tipke shift, interpunkcije i načina rada te preko rotora nudi radnje samo za prijelaze, kao što su kopiranje, izrezivanje, lijepljenje i sakrivanje tipkovnice
+• Oznake tipki ostaju unutar svojih tipki i pri najmanjim veličinama tipkovnice
+• Odjeljak Veličina i položaj bio je na engleskom bez obzira na jezik aplikacije, a sada je preveden, uz 70 ispravljenih prijevoda
+• Lakše iscrtavanje ostavlja tipkovnici više slobodne memorije
