@@ -1,0 +1,168 @@
+//
+//  GridLayoutSolverTests.swift
+//  WurstfingerTests
+//
+//  Reproduces the landscape multi-row return-key crash and verifies the
+//  GridLayoutSolver resolves spans correctly.
+//
+
+import Foundation
+import Testing
+@testable import WurstfingerKit
+
+struct GridLayoutSolverReproTests {
+    /// Reproduces the *crash input*: the landscape arrangement feeds the
+    /// renderer a return key with `heightMultiplier == 2`. The old
+    /// `KeyboardGridView.cell(for:)` rejected that with
+    /// `assert(heightMultiplier == 1)`, trapping (EXC_BREAKPOINT) when the
+    /// keyboard laid out in landscape. (A literal trap can't be caught
+    /// in-process on the iOS simulator, so we pin the triggering data and
+    /// verify the solver now handles it below.)
+    @Test func landscapeArrangementContainsMultiRowReturnKey() {
+        let landscape = StandardArrangements.grid3x3[.landscape]
+        let placements = landscape?.rows.flatMap(\.self) ?? []
+        let returnPlacement = placements.first { $0.keyId == UtilitySlot.return }
+        #expect(returnPlacement?.heightMultiplier == 2)
+    }
+
+    /// The fix: the solver spans the return key across two rows at the correct
+    /// position, instead of trapping.
+    @Test func solverSpansLandscapeReturnKeyAcrossTwoRows() throws {
+        let landscape = try #require(StandardArrangements.grid3x3[.landscape])
+        let cells = GridLayoutSolver.solve(landscape)
+        let returnCell = try #require(cells.first { $0.keyId == UtilitySlot.return })
+        #expect(returnCell.rowSpan == 2)
+        // In the 5-column landscape grid the return key sits in row 1, column 4.
+        #expect(returnCell.row == 1)
+        #expect(returnCell.column == 4)
+    }
+
+    /// The row below the spanning key must skip the occupied column: the
+    /// bottom-row keys land in columns 0...3, never under the return key.
+    @Test func cellsBelowSpanSkipOccupiedColumn() throws {
+        let landscape = try #require(StandardArrangements.grid3x3[.landscape])
+        let cells = GridLayoutSolver.solve(landscape)
+        let returnCell = try #require(cells.first { $0.keyId == UtilitySlot.return })
+        let lastRow = returnCell.row + returnCell.rowSpan - 1
+        let cellsInLastRow = cells.filter { $0.row == lastRow && $0.keyId != UtilitySlot.return }
+        #expect(cellsInLastRow.allSatisfy { $0.column < returnCell.column })
+    }
+}
+
+/// A named arrangement so parameterised tests report which one failed.
+struct NamedArrangement: CustomStringConvertible {
+    let name: String
+    let arrangement: GridArrangement
+    var description: String {
+        name
+    }
+}
+
+struct GridLayoutSolverInvariantTests {
+    /// Every standard arrangement (all contexts, alpha + numeric) must resolve
+    /// to a fully tiled grid with no overlapping cells. This is the property the
+    /// old renderer violated; it guards every layout, not just the one that
+    /// happened to crash.
+    @Test(arguments: GridLayoutSolverInvariantTests.allArrangements)
+    func arrangementTilesWithoutOverlap(_ item: NamedArrangement) {
+        let name = item.name
+        let arrangement = item.arrangement
+        let cells = GridLayoutSolver.solve(arrangement)
+        // Derive expected rows from the fixture, not the function under test,
+        // so a rowCount regression can't also lower the expected tiled area.
+        let rows = arrangement.rows.count
+        var covered = Set<[Int]>()
+        for cell in cells {
+            for row in cell.row ..< (cell.row + cell.rowSpan) {
+                for column in cell.column ..< (cell.column + cell.columnSpan) {
+                    let key = [row, column]
+                    #expect(!covered.contains(key), "\(name): overlap at \(key)")
+                    covered.insert(key)
+                }
+            }
+        }
+        // No cell escapes the declared column count.
+        #expect(cells.allSatisfy { $0.column + $0.columnSpan <= arrangement.columns }, "\(name): column overflow")
+        // Every grid slot is covered exactly once (full tiling).
+        #expect(covered.count == rows * arrangement.columns, "\(name): grid not fully tiled")
+    }
+
+    static let allArrangements: [NamedArrangement] = {
+        var result: [NamedArrangement] = []
+        for (context, arrangement) in StandardArrangements.grid3x3 {
+            result.append(NamedArrangement(name: "grid3x3.\(context)", arrangement: arrangement))
+        }
+        for (context, arrangement) in StandardArrangements.numeric3x3 {
+            result.append(NamedArrangement(name: "numeric3x3.\(context)", arrangement: arrangement))
+        }
+        return result
+    }()
+}
+
+/// Locks the memoization contract: `solve` is called from `KeyboardGridView.body`
+/// on every render, so a cached result must be indistinguishable from a fresh
+/// one — including after the memory-pressure paths drop the cache.
+///
+/// Every test works on its own probe arrangement (unique key ids), so the
+/// cache assertions never observe entries other suites solve in parallel.
+/// `.serialized` because `evictAll` is global: it must not land between
+/// another test in this suite solving and asserting.
+@Suite(.serialized)
+struct GridLayoutSolverMemoizationTests {
+    /// A 2×2 arrangement whose key ids are unique per test.
+    private static func probe(_ name: String) -> GridArrangement {
+        GridArrangement(
+            columns: 2,
+            rows: [
+                [KeyPlacement(keyId: "\(name)-a"), KeyPlacement(keyId: "\(name)-b")],
+                [KeyPlacement(keyId: "\(name)-c", widthMultiplier: 2)],
+            ]
+        )
+    }
+
+    @Test func solvingMemoizesTheArrangement() {
+        let arrangement = Self.probe("memoizes")
+        #expect(!GridLayoutSolver.isCached(arrangement))
+        _ = GridLayoutSolver.solve(arrangement)
+        #expect(GridLayoutSolver.isCached(arrangement))
+    }
+
+    @Test func repeatedSolvesReturnEqualCells() {
+        let arrangement = Self.probe("repeated")
+        let first = GridLayoutSolver.solve(arrangement)
+        let second = GridLayoutSolver.solve(arrangement)
+        #expect(first == second)
+        #expect(!first.isEmpty)
+    }
+
+    /// The cache is keyed by value, so a structurally identical arrangement
+    /// built somewhere else hits the same entry — and must get the same cells.
+    @Test func equalArrangementValuesShareTheResult() {
+        let original = Self.probe("shared")
+        let copy = Self.probe("shared")
+        let cells = GridLayoutSolver.solve(original)
+        #expect(GridLayoutSolver.isCached(copy))
+        #expect(GridLayoutSolver.solve(copy) == cells)
+    }
+
+    /// `KeyboardViewController` drops the cache on memory warnings and before
+    /// suspension; the next solve must rebuild the identical result.
+    @Test func evictAllDropsEntriesAndKeepsSolverCorrect() {
+        let arrangement = Self.probe("evicted")
+        let before = GridLayoutSolver.solve(arrangement)
+        GridLayoutSolver.evictAll()
+        #expect(!GridLayoutSolver.isCached(arrangement))
+        #expect(GridLayoutSolver.solve(arrangement) == before)
+    }
+
+    /// `rowCount` shares the memoized cells, so it must agree with the solver
+    /// whether the arrangement was solved before or not.
+    @Test func rowCountMatchesSolvedSpansRegardlessOfCacheState() {
+        let arrangement = Self.probe("rowCount")
+        let cold = GridLayoutSolver.rowCount(arrangement)
+        let warm = GridLayoutSolver.rowCount(arrangement)
+        let expected = GridLayoutSolver.solve(arrangement).map { $0.row + $0.rowSpan }.max()
+        #expect(cold == warm)
+        #expect(cold == expected)
+    }
+}

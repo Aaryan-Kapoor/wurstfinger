@@ -1,10 +1,9 @@
 # SwiftLint Configuration for Wurstfinger
 
 included:
-  - wurstfinger
-  - wurstfingerKeyboard
-  - wurstfingerTests
-  - wurstfingerUITests
+  - Sources
+  - Tests
+  - UITests
 
 excluded:
   - DerivedData
@@ -27,7 +26,6 @@ line_length:
 
 type_name:
   excluded:
-    - wurstfingerApp
     - wurstfingerUITests
     - wurstfingerUITestsLaunchTests
     - wurstfingerTests
@@ -60,8 +58,8 @@ disabled_rules:
 
 custom_rules:
   ui_test_app_factory:
-    included: ".*wurstfingerUITests/.*"
-    excluded: ".*wurstfingerUITests/UITestApp\\.swift"
+    included: ".*UITests/.*"
+    excluded: ".*UITests/UITestApp\\.swift"
     name: "UI test app factory"
     regex: "XCUIApplication\\(\\)|\\.launchArguments\\s*="
     message: "Build the app under test with UITestApp.make() — a bare XCUIApplication() or launchArguments assignment drops the isolated defaults suite and writes into the real app group"
@@ -173,7 +171,7 @@ custom_rules:
     severity: error
   glossary_vague_type_suffix:
     name: "Glossary: vague type suffix"
-    regex: "(?!(?:FileManager|fileManager)\\b)\\b[A-Za-z]*(Manager|Helper|Helpers|Utils|Util)\\b"
+    regex: "(?!(?:FileManager|NSHapticFeedbackManager|fileManager)\\b)\\b[A-Za-z]*(Manager|Helper|Helpers|Utils|Util)\\b"
     match_kinds: [identifier]
     message: "`…Manager`, `…Helper` and `…Utils` describe no responsibility. Write a name that says what the type does instead (docs/GLOSSARY.md)."
     severity: error

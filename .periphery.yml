@@ -1,7 +1,5 @@
-project: wurstfinger.xcodeproj
-schemes:
-  - Wurstfinger
+# Swift Package Manager project: Periphery builds the package itself.
 targets:
+  - WurstfingerKit
   - Wurstfinger
-  - WurstfingerApp
-  - WurstfingerTests
+  - WurstfingerKeyboard

@@ -401,7 +401,7 @@ def main() -> None:
     try:
         outcome = generate_icon(
             svg_path=project_root / "Design" / "AppIcon.svg",
-            icon_dir=project_root / "wurstfinger" / "AppIcon.icon",
+            icon_dir=project_root / "Bundling" / "AppIcon.icon",
             reset=args.reset_icon_json,
         )
     except ConversionError as error:

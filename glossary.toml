@@ -219,7 +219,7 @@ id = "vague_type_suffix"
 regex = "\\b[A-Za-z]*(Manager|Helper|Helpers|Utils|Util)\\b"
 replacement = "a name that says what the type does"
 rationale = "`…Manager`, `…Helper` and `…Utils` describe no responsibility."
-allowed = ["FileManager", "fileManager"]
+allowed = ["FileManager", "fileManager", "NSHapticFeedbackManager"]
 applies_to = ["identifier", "filename"]
 
 [[pattern]]

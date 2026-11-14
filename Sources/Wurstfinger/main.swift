@@ -1,0 +1,3 @@
+import WurstfingerKit
+
+WurstfingerApp.main()

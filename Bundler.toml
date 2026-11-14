@@ -1,0 +1,70 @@
+format_version = 2
+
+# The macOS app is a real Mac app (it hosts the keyboard in a window, which is
+# how the keyboard is exercised without a simulator). The iOS overlays add the
+# keyboard extension's executable and the iOS-only Info.plist keys.
+#
+# Overlays replace the base `plist` table rather than merging into it, so each
+# one repeats the keys it shares with the base.
+
+[apps.Wurstfinger]
+identifier = "de.akator.wurstfinger"
+product = "Wurstfinger"
+version = "1.4.1"
+category = "public.app-category.utilities"
+icon = "Bundling/AppIcon.png"
+
+[apps.Wurstfinger.plist]
+CFBundleDisplayName = "Wurstfinger"
+CFBundleVersion = "2"
+ITSAppUsesNonExemptEncryption = false
+
+[[apps.Wurstfinger.overlays]]
+condition = "platform(iOS)"
+dependencies = ["WurstfingerKeyboard"]
+
+[apps.Wurstfinger.overlays.plist]
+CFBundleDisplayName = "Wurstfinger"
+CFBundleVersion = "2"
+ITSAppUsesNonExemptEncryption = false
+UIApplicationSupportsIndirectInputEvents = true
+UILaunchScreen = {}
+UISupportedInterfaceOrientations = [
+  "UIInterfaceOrientationPortrait",
+  "UIInterfaceOrientationLandscapeLeft",
+  "UIInterfaceOrientationLandscapeRight",
+]
+"UISupportedInterfaceOrientations~ipad" = [
+  "UIInterfaceOrientationPortrait",
+  "UIInterfaceOrientationPortraitUpsideDown",
+  "UIInterfaceOrientationLandscapeLeft",
+  "UIInterfaceOrientationLandscapeRight",
+]
+
+[apps.Wurstfinger.overlays.plist.UIApplicationSceneManifest]
+UIApplicationSupportsMultipleScenes = true
+
+[[apps.Wurstfinger.overlays]]
+condition = "platform(iOSSimulator)"
+dependencies = ["WurstfingerKeyboard"]
+
+[apps.Wurstfinger.overlays.plist]
+CFBundleDisplayName = "Wurstfinger"
+CFBundleVersion = "2"
+ITSAppUsesNonExemptEncryption = false
+UIApplicationSupportsIndirectInputEvents = true
+UILaunchScreen = {}
+UISupportedInterfaceOrientations = [
+  "UIInterfaceOrientationPortrait",
+  "UIInterfaceOrientationLandscapeLeft",
+  "UIInterfaceOrientationLandscapeRight",
+]
+"UISupportedInterfaceOrientations~ipad" = [
+  "UIInterfaceOrientationPortrait",
+  "UIInterfaceOrientationPortraitUpsideDown",
+  "UIInterfaceOrientationLandscapeLeft",
+  "UIInterfaceOrientationLandscapeRight",
+]
+
+[apps.Wurstfinger.overlays.plist.UIApplicationSceneManifest]
+UIApplicationSupportsMultipleScenes = true
