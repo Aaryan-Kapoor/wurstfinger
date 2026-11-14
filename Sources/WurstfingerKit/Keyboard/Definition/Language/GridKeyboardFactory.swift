@@ -160,6 +160,16 @@ enum GridKeyboardFactory {
             "letter and utility key IDs must not overlap"
         )
         var allKeys = letterKeys.merging(CommonKeys.allUtilityKeys) { letter, _ in letter }
+        // The one-shot Ctrl and Alt modes make sense where the letter keys type
+        // ASCII letters (a terminal reads control codes for those); the symbols
+        // key then carries the gestures that enter them.
+        let hasTerminalModes = centerCharacters.joined().contains { character in
+            character.unicodeScalars.count == 1 && character.unicodeScalars.allSatisfy { $0.isASCII }
+                && character.first?.isLetter == true
+        }
+        if hasTerminalModes {
+            allKeys[UtilitySlot.symbols] = CommonKeys.symbols(withTerminalModes: true)
+        }
         // Bind the space-bar hold-for-zero to this layout's own digit set so
         // non-Latin layouts type their native zero (e.g. Arabic ٠) instead of
         // ASCII "0". `.first ?? "0"` avoids an index crash on a short digit set.
@@ -207,9 +217,18 @@ enum GridKeyboardFactory {
                     accessibilityLabel: nil
                 )
 
-            // 6. Main mode — remove shift-down hint from midRight (only shown in shifted/capsLock).
+            // 6. Main mode — the ⇩ hint on midRight only belongs in shifted/capsLock,
+            // but its return swipe (step the word's case down) works anywhere:
+            // keep the binding as an unlabelled carrier. Its tap switches to
+            // the mode already active, which is a no-op. A language letter on
+            // that gesture is left as it is.
             modes[ModeNames.main] = baseMode
-                .removingBinding(keyId: GridSlot.midRight, gesture: .swipeDown)
+                .replacingBinding(keyId: GridSlot.midRight, gesture: .swipeDown, ifAction: .switchMode(ModeNames.main)) {
+                    KeyBinding(
+                        label: "", action: $0.action, category: $0.category,
+                        returnAction: $0.returnAction, accessibilityLabel: nil
+                    )
+                }
         } else {
             // Caseless script: no shifted/capsLock modes. Strip only the
             // auto-generated shift affordance from midRight (the ⇧ shift-up
@@ -227,7 +246,15 @@ enum GridKeyboardFactory {
                 )
         }
 
-        // 7. Assemble definition
+        // 7. Ctrl and Alt: generated from the finished main mode, so they follow
+        // whatever the language's overrides put on the keys.
+        if hasTerminalModes, let main = modes[ModeNames.main] {
+            for modifier in TerminalModifier.allCases {
+                modes[modifier.modeName] = main.generateTerminalModifier(modifier, locale: locale)
+            }
+        }
+
+        // 8. Assemble definition
         return KeyboardDefinition(
             title: title,
             id: id,

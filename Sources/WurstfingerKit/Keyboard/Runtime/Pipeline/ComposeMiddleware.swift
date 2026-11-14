@@ -46,6 +46,15 @@ struct ComposeMiddleware: ActionMiddleware {
     /// through.
     var selectedText: () -> String? = { nil }
 
+    /// What a trigger types when nothing composes with it. The grave key's
+    /// trigger is the modifier letter `ˋ` (U+02CB), which is what the rule
+    /// tables key on; the key itself shows the ASCII grave accent, and that is
+    /// the character a keyboard is expected to type on its own (Markdown code
+    /// spans, shell command substitution). Every other trigger is its own text.
+    nonisolated static func plainText(for trigger: String) -> String {
+        trigger == "ˋ" ? "`" : trigger
+    }
+
     func process(_ context: ActionContext, next: (ActionContext) -> Void) {
         switch context.action {
         case let .compose(trigger):
@@ -68,7 +77,7 @@ struct ComposeMiddleware: ActionMiddleware {
             } else {
                 // No rule (or an active selection) — insert the trigger as
                 // plain text so it replaces any selection verbatim.
-                transformed.action = .commitText(trigger)
+                transformed.action = .commitText(Self.plainText(for: trigger))
             }
             next(transformed)
 

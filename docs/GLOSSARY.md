@@ -44,7 +44,7 @@ These five are the ones that actually cause wrong code. Read them first.
 ### `mode`, never `layer`
 
 A **mode** is one keyboard state with its own key set and arrangement: `main`, `shifted`,
-`capsLock`, `numeric`, `symbols`, `emoji` (`ModeNames` in
+`capsLock`, `numeric`, `symbols`, `emoji`, `control`, `alt` (`ModeNames` in
 `Definition/Language/KeyboardDefinition.swift`). The type is `KeyboardMode`, the action is
 `.switchMode(name)`.
 

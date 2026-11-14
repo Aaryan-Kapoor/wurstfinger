@@ -1,0 +1,91 @@
+{
+  "id": "wurstfinger-en-optimized-two-thumb",
+  "grid": [
+    [
+      "a",
+      "s",
+      "l"
+    ],
+    [
+      "e",
+      "t",
+      "n"
+    ],
+    [
+      "i",
+      "o",
+      "r"
+    ]
+  ],
+  "swipes": {
+    "topLeft": {
+      "swipeDownRight": "j"
+    },
+    "topCenter": {
+      "swipeDown": "b"
+    },
+    "topRight": {
+      "swipeDownLeft": "q"
+    },
+    "midLeft": {
+      "swipeRight": "u"
+    },
+    "center": {
+      "swipeDown": "h",
+      "swipeDownLeft": "v",
+      "swipeDownRight": "y",
+      "swipeLeft": "m",
+      "swipeRight": "d",
+      "swipeUp": "c",
+      "swipeUpLeft": "w",
+      "swipeUpRight": "k"
+    },
+    "midRight": {
+      "swipeLeft": "g"
+    },
+    "bottomLeft": {
+      "swipeUpRight": "z"
+    },
+    "bottomCenter": {
+      "swipeRight": "p",
+      "swipeUp": "f"
+    },
+    "bottomRight": {
+      "swipeUpLeft": "x"
+    }
+  },
+  "model": "scripts/layout-science/model.py (one-thumb Fitts + stroke, bits per typed character)",
+  "cost_per_char_bits": 1.671833,
+  "messagease_cost_per_char_bits": 1.641092,
+  "vs_messagease_pct": 1.873,
+  "cost_per_char_bits_two_thumb": 0.892529,
+  "letters_moved_from_messagease": 25,
+  "moved_letters": [
+    "b",
+    "c",
+    "d",
+    "e",
+    "f",
+    "g",
+    "h",
+    "i",
+    "j",
+    "k",
+    "l",
+    "m",
+    "n",
+    "o",
+    "p",
+    "q",
+    "r",
+    "s",
+    "t",
+    "u",
+    "v",
+    "w",
+    "x",
+    "y",
+    "z"
+  ],
+  "notes": "optimum of the two-thumb variant (reported in its own file for comparison; scored here under the one-thumb model)"
+}

@@ -8,7 +8,7 @@ FUNKCE:
 
 • Velká mřížka kláves 3x3 - Navržená pro palce, ne pro přesné ukazovátko
 • Gesta přejetí - 8 dalších znaků na každé klávese přejetím
-• 26 rozložení klávesnice - angličtina, arabština, estonština-finština, finština, francouzština, hebrejština, hindština, chorvatština, italština, japonština (hiragana), japonština (katakana), korejština, němčina, perština, polština, portugalština, ruština, řečtina, španělština, španělština-katalánština, švédština, tagalog, thajština, ukrajinština, urdština a vietnamština (se zadáváním Telex)
+• 27 rozložení klávesnice - angličtina, arabština, estonština-finština, finština, francouzština, hebrejština, hindština, chorvatština, italština, japonština (hiragana), japonština (katakana), korejština, němčina, perština, polština, portugalština, ruština, řečtina, španělština, španělština-katalánština, švédština, tagalog, thajština, ukrajinština, urdština a vietnamština (se zadáváním Telex)
 • Pravidla skládání - Vytvářejte diakritiku pomocí kombinací (např. ' + a = á)
 • Kruhová gesta - Nakreslete kruh pro velká písmena
 • Ovládání kurzoru - Tažením po mezerníku posouváte kurzor, tažením po klávese mazání mažete průběžně

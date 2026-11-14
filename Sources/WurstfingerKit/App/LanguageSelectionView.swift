@@ -79,7 +79,7 @@ private struct LanguageRow: View {
                     .font(.body)
                     .foregroundColor(.primary)
 
-                Text("MessagEase Layout")
+                Text(language.layoutNote ?? String(localized: "MessagEase Layout"))
                     .font(.caption)
                     .foregroundColor(.secondary)
             }

@@ -8,7 +8,7 @@ FUNKCJE:
 
 • Duża siatka klawiszy 3x3 - Zaprojektowana dla kciuków, a nie dla precyzyjnych wskaźników
 • Gesty przesuwania - 8 dodatkowych znaków na każdym klawiszu dzięki przesunięciu
-• 26 układów klawiatury - polski, angielski, arabski, chorwacki, estońsko-fiński, fiński, francuski, grecki, hebrajski, hindi, hiszpański, hiszpańsko-katalański, japoński (hiragana), japoński (katakana), koreański, niemiecki, perski, portugalski, rosyjski, szwedzki, tagalog, tajski, ukraiński, urdu, wietnamski (z metodą Telex) i włoski
+• 27 układów klawiatury - polski, angielski, arabski, chorwacki, estońsko-fiński, fiński, francuski, grecki, hebrajski, hindi, hiszpański, hiszpańsko-katalański, japoński (hiragana), japoński (katakana), koreański, niemiecki, perski, portugalski, rosyjski, szwedzki, tagalog, tajski, ukraiński, urdu, wietnamski (z metodą Telex) i włoski
 • Reguły składania - Twórz akcenty z kombinacji (np. ' + a = á)
 • Gesty kołowe - Narysuj okrąg, aby wpisać wielką literę
 • Sterowanie kursorem - Przeciągnij po spacji, aby przesunąć kursor, lub po klawiszu usuwania, aby kasować w sposób ciągły

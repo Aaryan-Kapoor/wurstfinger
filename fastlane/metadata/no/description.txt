@@ -8,7 +8,7 @@ FUNKSJONER:
 
 • Stort 3x3-tasterutenett - Optimalisert for tomler, ikke for presisjonspekere
 • Sveipebevegelser - 8 ekstra tegn per tast ved å sveipe
-• 26 tastaturoppsett - Arabisk, Engelsk, Estisk-finsk, Finsk, Fransk, Gresk, Hebraisk, Hindi, Italiensk, Japansk (hiragana), Japansk (katakana), Koreansk, Kroatisk, Persisk, Polsk, Portugisisk, Russisk, Spansk, Spansk-katalansk, Svensk, Tagalog, Thai, Tysk, Ukrainsk, Urdu og Vietnamesisk (med Telex-inntasting)
+• 27 tastaturoppsett - Arabisk, Engelsk, Estisk-finsk, Finsk, Fransk, Gresk, Hebraisk, Hindi, Italiensk, Japansk (hiragana), Japansk (katakana), Koreansk, Kroatisk, Persisk, Polsk, Portugisisk, Russisk, Spansk, Spansk-katalansk, Svensk, Tagalog, Thai, Tysk, Ukrainsk, Urdu og Vietnamesisk (med Telex-inntasting)
 • Komponeringsregler - Lag aksenter gjennom kombinasjoner (f.eks. ' + a = á)
 • Sirkelbevegelser - Tegn en sirkel for store bokstaver
 • Markørstyring - Dra på mellomromstasten for å flytte markøren, dra på slettetasten for å slette kontinuerlig

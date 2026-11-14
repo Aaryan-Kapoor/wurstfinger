@@ -34,9 +34,11 @@ extension KeyAction {
         case .switchMode: return .modifier
         case .capitalizeWord: return .modifier
         case .space, .newline: return .whitespace
-        case .deleteBackward, .deleteForward, .deleteWordBackward, .moveCursor,
-             .lineStart, .lineEnd, .documentStart, .documentEnd,
-             .advanceToNextInputMode, .dismissKeyboard, .switchToNextLanguage:
+        case .deleteBackward, .deleteForward, .deleteWordBackward, .deleteWordForward,
+             .moveCursor, .lineStart, .lineEnd, .documentStart, .documentEnd,
+             .lineUp, .lineDown, .cycleWordCase,
+             .advanceToNextInputMode, .dismissKeyboard, .switchToNextLanguage,
+             .switchToPreviousLanguage, .toggleUtilityColumnSide:
             return .utility
         case .tab, .backTab, .escape: return .utility
         case .copy, .paste, .cut, .cutAll: return .utility

@@ -8,7 +8,7 @@ CARACTERÍSTICAS:
 
 • Cuadrícula grande de 3x3 teclas - Optimizada para pulgares, no para punteros de precisión
 • Gestos de deslizamiento - Accede a 8 caracteres adicionales por tecla con solo deslizar
-• 26 diseños de teclado - Español, alemán, árabe, coreano, croata, español-catalán, estonio-finlandés, finlandés, francés, griego, hebreo, hindi, inglés, italiano, japonés (hiragana), japonés (katakana), persa, polaco, portugués, ruso, sueco, tagalo, tailandés, ucraniano, urdu y vietnamita (con entrada Telex)
+• 27 diseños de teclado - Español, alemán, árabe, coreano, croata, español-catalán, estonio-finlandés, finlandés, francés, griego, hebreo, hindi, inglés, italiano, japonés (hiragana), japonés (katakana), persa, polaco, portugués, ruso, sueco, tagalo, tailandés, ucraniano, urdu y vietnamita (con entrada Telex)
 • Reglas de composición - Crea acentos mediante combinaciones (por ejemplo, ' + a = á)
 • Gestos circulares - Dibuja un círculo para escribir con mayúsculas
 • Control del cursor - Desliza el dedo sobre la barra espaciadora para mover el cursor y sobre la tecla de borrar para borrar de manera continua

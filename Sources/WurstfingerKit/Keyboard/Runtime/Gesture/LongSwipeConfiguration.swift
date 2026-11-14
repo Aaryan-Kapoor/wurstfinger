@@ -23,6 +23,13 @@ enum LongSwipeAction: String, CaseIterable, Codable, Sendable {
     case space
     case deleteBackward
     case deleteWordBackward
+    case deleteWordForward
+    case lineUp
+    case lineDown
+    case shiftOn
+    case shiftOff
+    case control
+    case alt
     case lineStart
     case lineEnd
     case documentStart
@@ -40,6 +47,16 @@ enum LongSwipeAction: String, CaseIterable, Codable, Sendable {
         case .space: .space
         case .deleteBackward: .deleteBackward
         case .deleteWordBackward: .deleteWordBackward
+        case .deleteWordForward: .deleteWordForward
+        case .lineUp: .lineUp
+        case .lineDown: .lineDown
+        // The mode switches Flickboard's long swipes reach (shift on and off)
+        // plus the one-shot Ctrl and Alt; `handleClassification` routes a
+        // `switchMode` to the mode machinery instead of the pipeline.
+        case .shiftOn: .switchMode(ModeNames.shifted)
+        case .shiftOff: .switchMode(ModeNames.main)
+        case .control: .switchMode(ModeNames.control)
+        case .alt: .switchMode(ModeNames.alt)
         case .lineStart: .lineStart
         case .lineEnd: .lineEnd
         case .documentStart: .documentStart

@@ -8,7 +8,7 @@ TÍNH NĂNG:
 
 • Lưới phím 3x3 lớn - Tối ưu cho ngón cái, không dành cho con trỏ chính xác
 • Cử chỉ vuốt - Thêm 8 ký tự trên mỗi phím bằng cách vuốt
-• 26 bố cục bàn phím - Việt (với kiểu gõ Telex), Ả Rập, Anh, Ba Lan, Ba Tư, Bồ Đào Nha, Crô-a-ti-a, Do Thái, Đức, Estonia-Phần Lan, Hàn, Hindi, Hy Lạp, Nga, Nhật (Hiragana), Nhật (Katakana), Pháp, Phần Lan, Tagalog, Tây Ban Nha, Tây Ban Nha-Catalan, Thái, Thụy Điển, Ukraina, Urdu và Ý
+• 27 bố cục bàn phím - Việt (với kiểu gõ Telex), Ả Rập, Anh, Ba Lan, Ba Tư, Bồ Đào Nha, Crô-a-ti-a, Do Thái, Đức, Estonia-Phần Lan, Hàn, Hindi, Hy Lạp, Nga, Nhật (Hiragana), Nhật (Katakana), Pháp, Phần Lan, Tagalog, Tây Ban Nha, Tây Ban Nha-Catalan, Thái, Thụy Điển, Ukraina, Urdu và Ý
 • Quy tắc kết hợp - Tạo dấu bằng cách kết hợp phím (ví dụ: ' + a = á)
 • Cử chỉ vòng tròn - Vẽ một vòng tròn để gõ chữ hoa
 • Điều khiển con trỏ - Kéo trên phím cách để di chuyển con trỏ, kéo trên phím xóa để xóa liên tục

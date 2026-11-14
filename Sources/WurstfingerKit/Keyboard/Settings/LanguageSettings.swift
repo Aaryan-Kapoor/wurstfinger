@@ -294,6 +294,24 @@ class LanguageSettings {
         return enabledIds[nextIndex]
     }
 
+    /// Returns the language ID before the current one, wrapping around: the
+    /// way back round the ring `nextLanguageId` walks. If only one language is
+    /// enabled, returns that same language.
+    func previousLanguageId(before currentId: String) -> String {
+        Self.previousLanguageId(before: currentId, in: enabledLanguageIds)
+    }
+
+    nonisolated static func previousLanguageId(before currentId: String, in enabledIds: [String]) -> String {
+        guard enabledIds.count > 1 else {
+            return enabledIds.first ?? currentId
+        }
+        guard let currentIndex = enabledIds.firstIndex(of: currentId) else {
+            return enabledIds[enabledIds.count - 1]
+        }
+        let previousIndex = (currentIndex + enabledIds.count - 1) % enabledIds.count
+        return enabledIds[previousIndex]
+    }
+
     // MARK: - Persistence
 
     private func save() {

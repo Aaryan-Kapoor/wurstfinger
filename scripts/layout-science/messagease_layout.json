@@ -1,0 +1,59 @@
+{
+  "id": "wurstfinger-en-messagease",
+  "grid": [
+    [
+      "a",
+      "n",
+      "i"
+    ],
+    [
+      "h",
+      "o",
+      "r"
+    ],
+    [
+      "t",
+      "e",
+      "s"
+    ]
+  ],
+  "swipes": {
+    "topLeft": {
+      "swipeDownRight": "v"
+    },
+    "topCenter": {
+      "swipeDown": "l"
+    },
+    "topRight": {
+      "swipeDownLeft": "x"
+    },
+    "midLeft": {
+      "swipeRight": "k"
+    },
+    "center": {
+      "swipeDown": "d",
+      "swipeDownLeft": "g",
+      "swipeDownRight": "j",
+      "swipeLeft": "c",
+      "swipeRight": "b",
+      "swipeUp": "u",
+      "swipeUpLeft": "q",
+      "swipeUpRight": "p"
+    },
+    "midRight": {
+      "swipeLeft": "m"
+    },
+    "bottomLeft": {
+      "swipeUpRight": "y"
+    },
+    "bottomCenter": {
+      "swipeRight": "z",
+      "swipeUp": "w"
+    },
+    "bottomRight": {
+      "swipeUpLeft": "f"
+    }
+  },
+  "model": "scripts/layout-science/layouts.py (transcribed from LanguageDefinitions.swift `english`)",
+  "cost_per_char_bits": 1.641092
+}

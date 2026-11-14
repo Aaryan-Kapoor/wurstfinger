@@ -424,7 +424,8 @@ struct ScenarioHomeEndTests {
 
     @Test func otherReturnKeySwipesStayUnbound() {
         let scenario = scenario("abc")
-        for gesture in [GestureType.swipeUp, .swipeDown, .swipeLeft, .swipeRight, .swipeUpRight, .swipeDownLeft] {
+        // Left and right are the word deletes (WordDeleteBindingTests).
+        for gesture in [GestureType.swipeUp, .swipeDown, .swipeUpRight, .swipeDownLeft] {
             #expect(!scenario.swipe(UtilitySlot.return, gesture).dispatched)
         }
         #expect(scenario.text == "abc")

@@ -11,17 +11,31 @@ struct ComposeEngine: Sendable {
     let ruleSet: ComposeRuleSet
     private let accentCycles: [String: [String]]
 
-    init(ruleSet: ComposeRuleSet) {
+    /// - Parameters:
+    ///   - ruleSet: What `compose` looks up.
+    ///   - cycleRules: What the accent cycles are built from; defaults to
+    ///     `ruleSet`. The two differ for the shared engine: the cycles come
+    ///     from the hand-written table only, so that the Unicode-derived dead
+    ///     key rules (`ComposeRuleSet.unicodeMarks`) reach more letters
+    ///     without reordering the variants a 🅒 tap steps through.
+    init(ruleSet: ComposeRuleSet, cycleRules: ComposeRuleSet? = nil) {
         self.ruleSet = ruleSet
-        accentCycles = Self.buildAccentCycles(from: ruleSet)
+        accentCycles = Self.buildAccentCycles(from: cycleRules ?? ruleSet)
     }
 
-    /// Shared instance using global compose rules.
-    static let shared = ComposeEngine(ruleSet: .global)
+    /// Shared instance using global compose rules plus the Unicode-derived
+    /// dead key compositions.
+    static let shared = ComposeEngine(
+        ruleSet: ComposeRuleSet.global.merging(overrides: .unicodeMarks),
+        cycleRules: .global
+    )
 
     /// Creates an engine with global rules merged with language-specific overrides.
     static func withGlobalRules(overrides: ComposeRuleSet) -> ComposeEngine {
-        ComposeEngine(ruleSet: ComposeRuleSet.global.merging(overrides: overrides))
+        ComposeEngine(
+            ruleSet: ComposeRuleSet.global.merging(overrides: .unicodeMarks).merging(overrides: overrides),
+            cycleRules: ComposeRuleSet.global.merging(overrides: overrides)
+        )
     }
 
     // MARK: - Instance Methods

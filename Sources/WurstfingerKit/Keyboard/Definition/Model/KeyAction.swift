@@ -34,6 +34,14 @@ enum KeyAction: Codable, Equatable, Sendable {
     /// Switch to the next enabled language
     case switchToNextLanguage
 
+    /// Switch to the previous enabled language (the way back round the ring
+    /// `switchToNextLanguage` walks).
+    case switchToPreviousLanguage
+
+    /// Move the utility column to the other side of the keyboard (left- and
+    /// right-handed use). The same setting the Size & Position screen writes.
+    case toggleUtilityColumnSide
+
     /// Delete backward
     case deleteBackward
 
@@ -85,8 +93,24 @@ enum KeyAction: Codable, Equatable, Sendable {
     /// Move the cursor to the end of the document.
     case documentEnd
 
+    /// Move the cursor up one hard line (to the previous newline-delimited
+    /// line), keeping its column where the shorter line allows.
+    /// See `AdvancedTextMiddleware.lineJumpOffset`.
+    case lineUp
+
+    /// Move the cursor down one hard line, keeping its column.
+    case lineDown
+
     /// Delete the previous word together with the spaces after it.
     case deleteWordBackward
+
+    /// Delete the next word together with the spaces before it.
+    case deleteWordForward
+
+    /// Step the case of the word before the cursor (or of the selection):
+    /// ascending goes lower → Title → UPPER, descending the way back
+    /// (UPPER → Title → lower). A step past either end does nothing.
+    case cycleWordCase(ascending: Bool)
 
     /// No action (empty slot)
     case none

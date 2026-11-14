@@ -8,7 +8,7 @@ OMINAISUUDET:
 
 • Iso 3x3-näppäinruudukko - Suunniteltu peukaloille, ei tarkkuuszeigereille
 • Pyyhkäisyeleet - 8 lisämerkkiä näppäintä kohden pyyhkäisemällä
-• 26 näppäimistöasettelua - suomi, arabia, englanti, espanja, espanja-katalaani, heprea, hindi, italia, japani (hiragana), japani (katakana), korea, kreikka, kroatia, persia, portugali, puola, ranska, ruotsi, saksa, tagalog, thai, ukraina, urdu, venäjä, vietnam (Telex-syötöllä) ja viro-suomi
+• 27 näppäimistöasettelua - suomi, arabia, englanti, espanja, espanja-katalaani, heprea, hindi, italia, japani (hiragana), japani (katakana), korea, kreikka, kroatia, persia, portugali, puola, ranska, ruotsi, saksa, tagalog, thai, ukraina, urdu, venäjä, vietnam (Telex-syötöllä) ja viro-suomi
 • Yhdistelysäännöt - Luo aksentteja yhdistelmillä (esim. ' + a = á)
 • Ympyräeleet - Piirrä ympyrä saadaksesi isoja kirjaimia
 • Kohdistimen hallinta - Vedä välilyöntinäppäintä siirtääksesi kohdistinta, vedä poistonäppäintä pyyhkiäksesi jatkuvasti

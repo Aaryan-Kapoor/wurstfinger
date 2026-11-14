@@ -59,10 +59,13 @@ struct ComposeDataIntegrityTests {
         }
 
         #expect(!triggers.isEmpty, "Expected layouts to use compose triggers")
+        // The engine's table, not `global` alone: dead keys that only the
+        // Unicode-derived rules compose (¯ ˛ ¸ ˝) count.
+        let composable = ComposeEngine.shared.ruleSet.rules
         for trigger in triggers {
             #expect(
-                rules[trigger] != nil,
-                "Layout uses compose trigger '\(trigger)' but ComposeRuleSet.global has no rules for it"
+                composable[trigger] != nil,
+                "Layout uses compose trigger '\(trigger)' but the compose engine has no rules for it"
             )
         }
     }

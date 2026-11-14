@@ -92,6 +92,12 @@ enum ModeNames {
     static let numeric = "numeric"
     static let symbols = "symbols"
     static let emoji = "emoji"
+    /// One-shot Ctrl: the next key types the terminal control character
+    /// (`KeyboardMode.generateTerminalModifier`).
+    static let control = "control"
+    /// One-shot Alt: the next key types ESC followed by its character, the
+    /// "meta" prefix terminals read as Alt.
+    static let alt = "alt"
 }
 
 /// Identifies which text input method is applied to committed characters.

@@ -286,14 +286,15 @@ struct ReturnKeyHomeEndBindingTests {
     }
 
     @Test func theBindingsCollideWithNothingElseOnTheKey() {
+        // The line jumps plus the word deletes (`WordDeleteBindingTests`).
         let swipes = Set(CommonKeys.return.bindings.keys.filter(\.isSwipe))
-        #expect(swipes == [.swipeUpLeft, .swipeDownRight])
+        #expect(swipes == [.swipeUpLeft, .swipeDownRight, .swipeLeft, .swipeRight])
         #expect(CommonKeys.return.swipeMode.allows(.swipeUpLeft))
         #expect(CommonKeys.return.swipeMode.allows(.swipeDownRight))
     }
 
     @Test func theJumpsAreNamedForVoiceOver() {
         let names = CommonKeys.return.accessibilityActions.map(\.name)
-        #expect(names == ["Line start", "Line end"])
+        #expect(names == ["Delete word", "Delete word ahead", "Line start", "Line end"])
     }
 }
