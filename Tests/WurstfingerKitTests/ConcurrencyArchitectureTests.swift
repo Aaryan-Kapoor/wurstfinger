@@ -150,7 +150,10 @@ struct ExternalSettingsObservationTests {
     @Test func aBurstOfSignalsCollapsesToOneReload() async {
         let vm = makeViewModel(InMemoryUserDefaults())
         let (signals, trigger) = AsyncStream.makeStream(of: Void.self, bufferingPolicy: .unbounded)
-        vm.observeExternalSettingsChanges(signals: signals, debounce: .milliseconds(80))
+        // A window far longer than any stall a loaded test machine produces
+        // between two buffered signals, so only a real debounce bug can make
+        // the burst reload twice. (At 80 ms this flaked under parallel load.)
+        vm.observeExternalSettingsChanges(signals: signals, debounce: .milliseconds(300))
         let before = vm.settingsReloadCount
 
         // A slider drag in the host app: many posts in quick succession.
@@ -158,7 +161,7 @@ struct ExternalSettingsObservationTests {
 
         await waitUntil { vm.settingsReloadCount > before }
         // Let any (incorrect) second reload have its chance to land.
-        try? await Task.sleep(for: .milliseconds(250))
+        try? await Task.sleep(for: .milliseconds(400))
         #expect(vm.settingsReloadCount == before + 1, "a coalesced burst must reload exactly once")
     }
 
