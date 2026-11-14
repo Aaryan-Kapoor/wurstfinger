@@ -22,7 +22,7 @@ struct Scenario {
 @MainActor
 enum Catalog {
     static func all() -> [Scenario] {
-        modes() + languages() + devices() + variants() + states() + typing() + surfaces()
+        modes() + languages() + layouts() + devices() + variants() + states() + typing() + surfaces()
     }
 
     private static func keyboard(
@@ -64,6 +64,51 @@ enum Catalog {
                 $0.enabledLanguages = [language.id, language.id == "en_US" ? "de_DE" : "en_US"]
             }
         }
+    }
+
+    // MARK: 2b. Thumb-Key and custom layouts
+
+    private static func layouts() -> [Scenario] {
+        var scenarios: [Scenario] = []
+        for scheme in [ColorScheme.light, .dark] {
+            let tail = suffix(scheme)
+            scenarios.append(keyboard("layouts", "layout-thumbkey\(tail)") {
+                $0.language = "en_US_thumbkey"
+                $0.scheme = scheme
+            })
+            scenarios.append(keyboard("layouts", "layout-thumbkey-shifted\(tail)") {
+                $0.language = "en_US_thumbkey"
+                $0.mode = ModeNames.shifted
+                $0.scheme = scheme
+            })
+            scenarios.append(keyboard("layouts", "layout-custom\(tail)") {
+                $0.customLayouts = [LayoutSurfaces.sampleLayout()]
+                $0.language = LayoutSurfaces.sampleLayout().id
+                $0.enabledLanguages = ["en_US", LayoutSurfaces.sampleLayout().id]
+                $0.scheme = scheme
+            })
+            scenarios.append(Scenario(group: "layouts", name: "layout-list\(tail)") {
+                LayoutSurfaces.list(scheme: scheme)
+            })
+            scenarios.append(Scenario(group: "layouts", name: "layout-editor\(tail)") {
+                LayoutSurfaces.editor(scheme: scheme)
+            })
+            scenarios.append(Scenario(group: "layouts", name: "layout-key-sheet\(tail)") {
+                LayoutSurfaces.keySheet(scheme: scheme)
+            })
+        }
+        scenarios.append(Scenario(group: "layouts", name: "layout-editor-problem") {
+            LayoutSurfaces.editorWithProblem(scheme: .light)
+        })
+        scenarios.append(Scenario(group: "layouts", name: "layout-languages") {
+            LayoutSurfaces.languages(scheme: .light)
+        })
+        scenarios.append(keyboard("layouts", "layout-custom-typing") {
+            $0.customLayouts = [LayoutSurfaces.sampleLayout()]
+            $0.language = LayoutSurfaces.sampleLayout().id
+            $0.typedText = "Süße Straße"
+        })
+        return scenarios
     }
 
     // MARK: 3. Widths and devices

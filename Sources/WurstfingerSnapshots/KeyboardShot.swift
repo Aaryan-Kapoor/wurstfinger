@@ -61,6 +61,8 @@ struct KeyboardSpec {
     /// Languages enabled in settings. More than one makes the globe key show
     /// the active language's label.
     var enabledLanguages: [String]?
+    /// Custom layouts registered for the picture, so `language` can name one.
+    var customLayouts: [CustomLayout] = []
 }
 
 @MainActor
@@ -75,6 +77,9 @@ enum KeyboardShot {
         store.set(spec.hideExtraSymbols, forKey: SettingsKey.areExtraSymbolLabelsHidden.rawValue)
         store.set(spec.longPressDigits, forKey: SettingsKey.isLongPressDigitEnabled.rawValue)
 
+        if !spec.customLayouts.isEmpty {
+            KeyboardRegistry.replaceCustomLayouts(spec.customLayouts, revision: "snapshot")
+        }
         spec.device.activate()
         var settings: [SettingsKey: Any] = [:]
         if let enabled = spec.enabledLanguages { settings[.enabledLanguageIds] = enabled }
@@ -243,6 +248,11 @@ enum ScenarioEnvironment {
             "refusing to wipe '\(name)': the tool must run against the isolated defaults suite"
         )
         SharedDefaults.store.removePersistentDomain(forName: name)
+        // The custom layouts a previous picture installed: files, library and registry.
+        try? FileManager.default.removeItem(at: CustomLayoutStore.shared.directory)
+        KeyboardRegistry.replaceCustomLayouts([], revision: nil)
+        CustomLayoutLibrary.shared.reload()
+        LanguageSettings.shared.reloadFromStore()
         Device.iPhone15.activate()
     }
 }

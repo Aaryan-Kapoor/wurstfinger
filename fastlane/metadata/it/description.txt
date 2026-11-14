@@ -8,7 +8,7 @@ FUNZIONI:
 
 • Griglia 3x3 di tasti grandi - Ottimizzata per i pollici, non per puntatori di precisione
 • Gesti di scorrimento - 8 caratteri aggiuntivi per ogni tasto scorrendo
-• 26 layout di tastiera - Italiano, Arabo, Coreano, Croato, Ebraico, Estone-finlandese, Finlandese, Francese, Giapponese (Hiragana), Giapponese (Katakana), Greco, Hindi, Inglese, Persiano, Polacco, Portoghese, Russo, Spagnolo, Spagnolo-catalano, Svedese, Tagalog, Tedesco, Thai, Ucraino, Urdu e Vietnamita (con input Telex)
+• 27 layout di tastiera - Italiano, Arabo, Coreano, Croato, Ebraico, Estone-finlandese, Finlandese, Francese, Giapponese (Hiragana), Giapponese (Katakana), Greco, Hindi, Inglese, Inglese (Thumb-Key), Persiano, Polacco, Portoghese, Russo, Spagnolo, Spagnolo-catalano, Svedese, Tagalog, Tedesco, Thai, Ucraino, Urdu e Vietnamita (con input Telex)
 • Regole di composizione - Crea gli accenti combinando i tasti (es. ' + a = á)
 • Gesti circolari - Disegna un cerchio per le lettere maiuscole
 • Controllo del cursore - Trascina sulla barra spaziatrice per spostare il cursore, trascina sul tasto di cancellazione per cancellare in continuo

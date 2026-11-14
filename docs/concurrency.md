@@ -41,7 +41,7 @@ Plain values and pure functions. They can be used from any isolation, which is
 what makes everything else cheap to reason about.
 
 - Definition model: `KeyAction`, `KeyBinding`, `KeyDefinition`, `KeyboardMode`,
-  `KeyboardDefinition`, `GridArrangement`, `KeyPlacement`, `ComposeRuleSet`,
+  `KeyboardDefinition`, `CustomLayout`, `CustomLayoutError`, `CustomLayoutStore`, `GridArrangement`, `KeyPlacement`, `ComposeRuleSet`,
   `LanguageDescriptor`, `LanguageMetadata`, `KeyboardLayoutMetrics`.
 - Gesture values: `GestureFeatures`, `GestureClassification`,
   `GesturePreprocessorConfiguration`, `GestureClassificationThresholds`,
@@ -82,6 +82,7 @@ writes free of observation bookkeeping.
 | --- | --- | --- |
 | `KeyboardRegistry` cache (`LockedCache`) | `Sendable` cache over `OSAllocatedUnfairLock`; the dictionary lock covers only get/insert, the build runs under a per-key lock | a prewarm can build language B while the main thread hits language A |
 | `KeyboardRegistry.prewarm(_:)` | `withDiscardingTaskGroup`, one child per enabled language, `.utility` | turns a language switch into a cache hit |
+| `CustomLayoutRegistry` | `Sendable` class over an `OSAllocatedUnfairLock`: the user's decoded, validated custom layouts. Replaced wholesale when the set changes (host app after an edit; keyboard extension when `customLayoutsRevision` differs, on a settings reload). `KeyboardRegistry.load` builds their definitions lazily through the same `LockedCache` | the JSON is decoded and validated when the set changes, never per keystroke; a hit costs the cache lookup |
 | `KeyboardHealthLog` | `actor` on a utility-QoS `DispatchSerialQueue`; callers `yield` into an `AsyncStream(.bufferingNewest(256))` and never await | file I/O must not sit in the launch or typing path |
 | `DarwinNotificationCenter` | `notify_register_dispatch` wrapped as `AsyncStream<Void>` | cross-process "settings changed" signal |
 
@@ -101,7 +102,9 @@ is never made to wait for a background result.
 | Layout wish (width, aspect ratio, position) | `LayoutSettings` | `layoutMetrics` (pure `KeyboardLayoutMetrics.resolve`) |
 | Haptic intensities | `HapticSettings` | `HapticFeedbackPlayer` |
 | Language selection | `LanguageSettings` (host app and extension each hold one) | `KeyboardViewModel.enabledLanguageIds` |
-| Built definitions | `KeyboardRegistry` cache | `KeyboardRegistry.load(id:)`, synchronous |
+| Built definitions (shipped and custom) | `KeyboardRegistry` cache | `KeyboardRegistry.load(id:)`, synchronous |
+| Custom layouts, as authored | `CustomLayoutRegistry` (files in the app group, `CustomLayoutStore`) | `KeyboardRegistry`, only to build a definition |
+| Custom layouts, host app view | `CustomLayoutLibrary` (`@MainActor @Observable`) | n/a (settings screens) |
 | Solved grid layouts | `GridLayoutSolver` cache | `GridLayoutSolver.solve`, synchronous |
 | Health log | file in the app group, owned by `KeyboardHealthLog` | not at all (write-only from the keyboard) |
 | Long-press timer, trail fade | main-actor `Task`s | n/a |

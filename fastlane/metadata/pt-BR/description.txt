@@ -8,7 +8,7 @@ RECURSOS:
 
 • Grade grande de 3x3 teclas - Otimizada para polegares, não para ponteiros de precisão
 • Gestos de deslize - Acesse 8 caracteres adicionais por tecla deslizando o dedo
-• 26 layouts de teclado - Português, alemão, árabe, coreano, croata, espanhol, espanhol-catalão, estoniano-finlandês, finlandês, francês, grego, hebraico, híndi, inglês, italiano, japonês (hiragana), japonês (katakana), persa, polonês, russo, sueco, tagalo, tailandês, ucraniano, urdu e vietnamita (com entrada Telex)
+• 27 layouts de teclado - Português, alemão, árabe, coreano, croata, espanhol, espanhol-catalão, estoniano-finlandês, finlandês, francês, grego, hebraico, híndi, inglês, inglês (Thumb-Key), italiano, japonês (hiragana), japonês (katakana), persa, polonês, russo, sueco, tagalo, tailandês, ucraniano, urdu e vietnamita (com entrada Telex)
 • Regras de composição - Crie acentos por meio de combinações (por exemplo, ' + a = á)
 • Gestos circulares - Desenhe um círculo para digitar em maiúsculas
 • Controle do cursor - Arraste na barra de espaço para mover o cursor e na tecla de apagar para apagar continuamente

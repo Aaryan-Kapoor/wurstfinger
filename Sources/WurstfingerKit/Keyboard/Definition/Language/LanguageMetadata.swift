@@ -24,16 +24,22 @@ struct LanguageMetadata: Identifiable, Sendable {
     let title: String
     let localeIdentifier: String
 
+    /// Which family of layouts this is (MessagEase, Thumb-Key, or one the user
+    /// made). Shown as the subtitle of a row in the language list; never part
+    /// of identity.
+    let family: LayoutFamily
+
     /// The locale this language types in. Derived, so the identifier stays the
     /// single source of truth.
     var locale: Locale {
         Locale(identifier: localeIdentifier)
     }
 
-    init(id: String, title: String, localeIdentifier: String) {
+    init(id: String, title: String, localeIdentifier: String, family: LayoutFamily = .messagEase) {
         self.id = id
         self.title = title
         self.localeIdentifier = localeIdentifier
+        self.family = family
     }
 
     /// Builds metadata from a descriptor without materialising its layout.
@@ -41,6 +47,7 @@ struct LanguageMetadata: Identifiable, Sendable {
         id = descriptor.id
         title = descriptor.title
         localeIdentifier = descriptor.localeIdentifier
+        family = descriptor.family
     }
 }
 
@@ -59,15 +66,22 @@ extension LanguageMetadata {
         id: "en_US", title: "English", localeIdentifier: "en_US"
     )
 
-    /// All supported languages, derived from `KeyboardRegistry.available` and
-    /// sorted by display title. This is the single source of truth --
-    /// adding a new `KeyboardDefinition` to `LanguageDefinitions.all`
-    /// automatically surfaces it here.
+    /// All selectable layouts — the shipped ones plus the user's custom
+    /// layouts — sorted by display title. This is the single source of truth:
+    /// adding a new `KeyboardDefinition` to `LanguageDefinitions.all`, or a
+    /// custom layout to the registry, automatically surfaces it here.
     ///
     /// Computed on every access so callers always see the current registry
     /// state (important for tests that mutate `KeyboardRegistry`).
     static var allLanguages: [LanguageMetadata] {
-        sortedByTitle(KeyboardRegistry.available)
+        sortedByTitle(KeyboardRegistry.allLanguages)
+    }
+
+    /// The shipped MessagEase languages only, sorted by title: what the system
+    /// language is matched against, so neither a Thumb-Key nor a custom layout
+    /// can be picked as somebody's default merely for sharing a locale.
+    static var systemMatchableLanguages: [LanguageMetadata] {
+        sortedByTitle(KeyboardRegistry.available.filter { $0.family == .messagEase })
     }
 
     /// Display order for the language list: `localizedStandardCompare` puts the

@@ -15,6 +15,14 @@ enum NavigationBarTitleDisplayMode {
     case automatic, inline, large
 }
 
+/// Mirror of `TextInputAutocapitalization`, which SwiftUI marks unavailable on macOS.
+struct TextInputAutocapitalization {
+    static let never = TextInputAutocapitalization()
+    static let words = TextInputAutocapitalization()
+    static let sentences = TextInputAutocapitalization()
+    static let characters = TextInputAutocapitalization()
+}
+
 /// Mirror of `UIKeyboardType`; the Mac has no software keyboard to configure.
 enum UIKeyboardType {
     case `default`, asciiCapable, numbersAndPunctuation, URL, numberPad
@@ -27,6 +35,10 @@ extension View {
     }
 
     func keyboardType(_: UIKeyboardType) -> some View {
+        self
+    }
+
+    func textInputAutocapitalization(_: TextInputAutocapitalization?) -> some View {
         self
     }
 

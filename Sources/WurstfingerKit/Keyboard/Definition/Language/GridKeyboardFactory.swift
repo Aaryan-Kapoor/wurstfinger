@@ -42,6 +42,14 @@ enum GridKeyboardFactory {
     ///   - numericDigits: Digit set (indexed by value 0–9) used in numeric mode.
     ///     Defaults to Western ASCII digits; Arabic, Persian, and Urdu layouts
     ///     should pass their script-specific digit set.
+    ///   - slotDefaults: The shared bindings every slot starts from before the
+    ///     language's overrides land on it. Defaults to the MessagEase
+    ///     punctuation set (`CommonKeys.defaultSlotBindings`); a layout that
+    ///     keeps punctuation elsewhere (Thumb-Key's lives in the numeric mode)
+    ///     passes `CommonKeys.essentialSlotBindings` so its keys carry nothing
+    ///     but what it declares, plus the shift and period essentials. The
+    ///     shift affordance on the midRight key must survive in any set a cased
+    ///     layout uses.
     ///   - inputMethod: Which input method is applied to committed characters.
     ///     Defaults to `.direct`; Vietnamese layouts should pass `.telex` so
     ///     that `SequentialCompositionMiddleware` activates for this keyboard
@@ -56,6 +64,7 @@ enum GridKeyboardFactory {
         circularOverrides: [String: String] = [:],
         composeRuleOverrides: ComposeRuleSet? = nil,
         supportsCapitalization: Bool = true,
+        slotDefaults: [String: [GestureType: KeyBinding]] = CommonKeys.defaultSlotBindings,
         numericBackToAlphaLabel: String = NumericLayouts.defaultBackToAlphaLabel,
         numericDigits: [String] = NumericLayouts.westernDigits,
         inputMethod: InputMethodType = .direct,
@@ -75,8 +84,8 @@ enum GridKeyboardFactory {
             for (colIdx, char) in row.enumerated() {
                 let keyId = GridSlot.allSlots[rowIdx][colIdx]
 
-                // Start with shared defaults for this slot
-                var bindings = CommonKeys.defaultSlotBindings[keyId] ?? [:]
+                // Start with the shared defaults for this slot
+                var bindings = slotDefaults[keyId] ?? [:]
 
                 // Apply language-specific overrides (replace default binding for that gesture).
                 // Letters get an auto-generated uppercase return action — but only where

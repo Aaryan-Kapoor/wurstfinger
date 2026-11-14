@@ -162,6 +162,7 @@ class LanguageSettings {
     /// Detects the system language and returns matching language ID, or English as fallback
     nonisolated static func detectSystemLanguage(preferredLanguages: [String]? = nil) -> String {
         let preferredLanguages = preferredLanguages ?? Locale.preferredLanguages
+        let candidates = LanguageMetadata.systemMatchableLanguages
 
         for languageCode in preferredLanguages {
             let locale = Locale(identifier: languageCode)
@@ -169,11 +170,11 @@ class LanguageSettings {
             let region = locale.region?.identifier ?? ""
 
             let exactId = "\(language)_\(region)"
-            if let match = LanguageMetadata.allLanguages.first(where: { $0.id == exactId }) {
+            if let match = candidates.first(where: { $0.id == exactId }) {
                 return match.id
             }
 
-            if let match = LanguageMetadata.allLanguages.first(where: {
+            if let match = candidates.first(where: {
                 $0.locale.language.languageCode?.identifier == language
             }) {
                 return match.id

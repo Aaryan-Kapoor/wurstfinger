@@ -377,6 +377,11 @@ final class KeyboardViewModel {
         hapticSettings.reload()
         layoutSettings.reload()
 
+        // Custom layouts first: the enabled-language list below is filtered to
+        // layouts the registry knows, so a layout the host app just added must
+        // already be registered. A no-op unless the host app bumped the revision.
+        let staleLayouts = KeyboardRegistry.syncCustomLayouts(defaults: sharedDefaults)
+
         // Equality-guarded: this runs on every in-process defaults write (via
         // the didChangeNotification observer), and an unguarded assignment to
         // an observed property would re-render what reads it each time.
@@ -393,6 +398,12 @@ final class KeyboardViewModel {
             gestureTuning = newTuning
         }
         typingBehavior = TypingBehavior.load(from: sharedDefaults)
+
+        // The layout on screen was edited, or deleted, in the host app: load
+        // what the registry holds now (an English fallback if it is gone).
+        if let active = currentDefinition?.id, staleLayouts.contains(active) {
+            loadDefinition(for: active)
+        }
     }
 
     func switchToNextLanguage() {

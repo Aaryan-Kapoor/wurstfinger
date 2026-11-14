@@ -255,6 +255,7 @@ struct LanguageAlphabetCoverageTests {
 
     private static let inventories: [AlphabetInventory] = [
         AlphabetInventory(id: "en_US", source: "ISO basic Latin alphabet", groups: [latin]),
+        AlphabetInventory(id: "en_US_thumbkey", source: "ISO basic Latin alphabet", groups: [latin]),
         AlphabetInventory(id: "hr_HR", source: "Croatian alphabet (Gaj's Latin)", groups: [latin, "čćđšž"]),
         AlphabetInventory(id: "et_EE", source: "Estonian and Finnish alphabets", groups: [latin, "äöõüšžå"]),
         AlphabetInventory(id: "fi_FI", source: "Finnish alphabet", groups: [latin, "äöå"]),
