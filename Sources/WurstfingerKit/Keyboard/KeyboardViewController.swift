@@ -86,6 +86,10 @@ public final class KeyboardViewController: UIInputViewController {
         // screen (debounced), instead of waiting for the next appearance.
         viewModel.observeExternalSettingsChanges()
 
+        // On-device evidence for responsiveness: touch latency and main-thread
+        // hitches, summarized into the health log at each suspension.
+        InputLatencyProbe.shared.startWatchingMainThread()
+
         // Configure hosting synchronously so the SwiftUI view exists
         // before viewWillAppear sets the height constraint. Deferring via
         // DispatchQueue.main.async caused a race in WebView-based apps where
@@ -256,6 +260,9 @@ public final class KeyboardViewController: UIInputViewController {
             installSuspensionPlaceholder()
             teardownHosting()
         }
+        // The period's touch-latency and hitch summary, queued ahead of the
+        // flushed entry below so it reaches the disk with it.
+        InputLatencyProbe.shared.flush()
         // Flushed, not queued: the suspended process may never run again — a
         // resume-jetsam kills it on wake before an async write would get CPU
         // time — and this entry is the closest guaranteed record of the

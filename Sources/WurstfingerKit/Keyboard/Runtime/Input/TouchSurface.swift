@@ -91,6 +91,7 @@ final class TouchSurfaceView: UIView {
     override func touchesBegan(_ touches: Set<UITouch>, with _: UIEvent?) {
         for touch in touches {
             engine.began(Self.pointerID(touch), at: touch.location(in: self), time: touch.timestamp)
+            InputLatencyProbe.shared.touchHandled(eventTime: touch.timestamp)
         }
     }
 
@@ -111,12 +112,15 @@ final class TouchSurfaceView: UIView {
                 predicted.append(prediction.location(in: self))
             }
             engine.moved(Self.pointerID(touch), samples: samples, predicted: predicted)
+            InputLatencyProbe.shared.touchHandled(eventTime: touch.timestamp)
         }
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with _: UIEvent?) {
         for touch in touches {
             engine.ended(Self.pointerID(touch), at: touch.location(in: self), time: touch.timestamp)
+            // Includes classification, dispatch and `insertText`.
+            InputLatencyProbe.shared.touchHandled(eventTime: touch.timestamp)
         }
     }
 
@@ -184,14 +188,17 @@ final class TouchSurfaceView: NSView {
 
     override func mouseDown(with event: NSEvent) {
         engine.began(Self.mouse, at: location(of: event), time: event.timestamp)
+        InputLatencyProbe.shared.touchHandled(eventTime: event.timestamp)
     }
 
     override func mouseDragged(with event: NSEvent) {
         engine.moved(Self.mouse, samples: [TouchSample(location: location(of: event), time: event.timestamp)])
+        InputLatencyProbe.shared.touchHandled(eventTime: event.timestamp)
     }
 
     override func mouseUp(with event: NSEvent) {
         engine.ended(Self.mouse, at: location(of: event), time: event.timestamp)
+        InputLatencyProbe.shared.touchHandled(eventTime: event.timestamp)
     }
 
     private func location(of event: NSEvent) -> CGPoint {
