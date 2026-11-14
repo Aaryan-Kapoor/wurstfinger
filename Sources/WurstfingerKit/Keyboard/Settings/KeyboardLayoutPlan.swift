@@ -63,6 +63,8 @@ struct KeyboardLayoutPlan: Equatable, Sendable {
         /// or the narrower pane): see `KeyboardViewModel.keyboardWidthCap`.
         var widthCap: CGFloat
         var screen: CGSize
+        /// The row above the keys, if any (`KeyboardLayoutMetrics.accessoryHeight`).
+        var accessoryHeight: CGFloat = 0
     }
 
     static func resolve(_ inputs: Inputs) -> KeyboardLayoutPlan {
@@ -92,18 +94,31 @@ struct KeyboardLayoutPlan: Equatable, Sendable {
             rows: rows,
             availableWidth: available,
             screenHeight: inputs.screen.height,
-            spacing: inputs.spacing
+            spacing: inputs.spacing,
+            accessoryHeight: inputs.accessoryHeight
         )
         return KeyboardLayoutPlan(arrangement: arrangement, metrics: metrics, isSplit: false)
     }
 
-    /// The split: keys keep the size the wish (and the height guard) give them,
-    /// and the empty middle takes whatever width is left — a whole number of
-    /// columns, so the grid stays uniform and the hit map's cell table stays
-    /// exact. The column count is rounded *up*, so the cell is never larger than
-    /// the one the height guard allowed (and so the keyboard fills the container
-    /// instead of being shrunk again), and never more than one column's worth
-    /// smaller.
+    /// How much bigger a split key is than the block's. A split keyboard is
+    /// typed with two thumbs on a large screen held at its sides, where each
+    /// thumb covers only its own half: the keys can grow without the reach
+    /// growing past the thumb, and bigger targets are what a split is for.
+    static let splitKeyScale: CGFloat = 1.2
+
+    /// The share of the container one cluster may span: a thumb resting at the
+    /// edge of a landscape iPad reaches roughly this far in comfort, so keys
+    /// stop growing before the inner column leaves its arc.
+    static let splitClusterShare: CGFloat = 0.36
+
+    /// The split: keys a little larger than the block's (`splitKeyScale`, never
+    /// past what lets a cluster stay within `splitClusterShare` of the width,
+    /// and never past the height guard), and an empty middle taking whatever
+    /// width is left — a whole number of columns, so the grid stays uniform and
+    /// the hit map's cell table stays exact. The column count is rounded *up*,
+    /// so the cell is never larger than the one asked for (and the keyboard
+    /// fills the container instead of being shrunk again), and never more than
+    /// one column's worth smaller.
     private static func resolveSplit(
         _ inputs: Inputs, rows: Int, isNumpadOn: Bool, numpadKeyIds: [String]?
     ) -> KeyboardLayoutPlan {
@@ -118,10 +133,31 @@ struct KeyboardLayoutPlan: Equatable, Sendable {
             rows: rows,
             availableWidth: 0,
             screenHeight: inputs.screen.height,
-            spacing: inputs.spacing
+            spacing: inputs.spacing,
+            accessoryHeight: inputs.accessoryHeight
         )
         let clusterColumns = base.columns + (isNumpadOn ? 1 : 0)
-        let pitch = max(single.cellWidth + inputs.spacing, 1)
+        // The bigger split key, capped twice: by the thumb's reach (the
+        // wider cluster — the letters, or the utility column with the numpad —
+        // within its share) and by the height guard (the block's
+        // height-guarded cell, scaled, may not exceed what the guard allows at
+        // that aspect ratio).
+        let widestCluster = max(base.columns - 1, 1 + (isNumpadOn ? 1 : 0))
+        let reachCap = (available * splitClusterShare - CGFloat(widestCluster - 1) * inputs.spacing
+            - KeyboardConstants.Layout.horizontalPadding) / CGFloat(widestCluster)
+        let heightCapped = KeyboardLayoutMetrics.resolve(
+            wishWidth: single.cellWidth * splitKeyScale * CGFloat(base.columns)
+                + KeyboardLayoutMetrics.horizontalChrome(columns: base.columns, spacing: inputs.spacing),
+            aspectRatio: inputs.aspectRatio,
+            columns: base.columns,
+            rows: rows,
+            availableWidth: 0,
+            screenHeight: inputs.screen.height,
+            spacing: inputs.spacing,
+            accessoryHeight: inputs.accessoryHeight
+        )
+        let cell = max(min(heightCapped.cellWidth, reachCap), single.cellWidth)
+        let pitch = max(cell + inputs.spacing, 1)
         let usable = available - 2 * KeyboardConstants.Layout.horizontalPadding + inputs.spacing
         let fitting = Int((usable / pitch).rounded(.up))
         let gapColumns = max(fitting - clusterColumns, 1)
@@ -142,7 +178,8 @@ struct KeyboardLayoutPlan: Equatable, Sendable {
             rows: rows,
             availableWidth: available,
             screenHeight: inputs.screen.height,
-            spacing: inputs.spacing
+            spacing: inputs.spacing,
+            accessoryHeight: inputs.accessoryHeight
         )
         return KeyboardLayoutPlan(arrangement: arrangement, metrics: metrics, isSplit: true)
     }

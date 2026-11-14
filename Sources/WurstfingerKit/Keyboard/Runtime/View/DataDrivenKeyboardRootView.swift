@@ -61,6 +61,8 @@ struct DataDrivenKeyboardRootView: View {
         )
     }
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         let currentWidth = overrideWidth ?? viewModel.viewWidth
         // Single geometry source: the resolved metrics drive the keyboard
@@ -71,36 +73,49 @@ struct DataDrivenKeyboardRootView: View {
         let metrics = plan?.metrics ?? viewModel.layoutMetrics(forContainerWidth: currentWidth)
         let availableSpace = currentWidth - metrics.keyboardWidth
         let horizontalOffset = availableSpace * (viewModel.keyboardHorizontalPosition - 0.5)
+        // How this frame's geometry change, if any, moves (`LayoutMotion`):
+        // keys glide to their new cells, the width and offset with them.
+        let signature = plan.map(KeyboardGeometrySignature.init)
+        let motion = signature.flatMap { viewModel.layoutMotionClock.motion(for: $0, reduceMotion: reduceMotion) }
 
         ZStack {
             keyboardBackground
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             if let mode = viewModel.activeModeFromDefinition, let plan {
-                KeyboardGridView(
-                    arrangement: plan.arrangement,
-                    keys: mode.keys,
-                    onGesture: { key, gesture, isReturn in
-                        viewModel.handleGesture(gesture, keyId: key.id, isReturn: isReturn)
-                    },
-                    engine: viewModel.touchEngine,
-                    touchActions: viewModel.touchEngineActions,
-                    languageLabel: viewModel.currentLanguageLabel,
-                    isLanguageLabelShown: viewModel.hasMultipleLanguages,
-                    renderSettings: renderSettings,
-                    metrics: metrics,
-                    tuning: viewModel.gestureTuning
-                )
-                // Feel hook: the grid's overlay draws the view model's board.
-                .environment(\.feelBoard, viewModel.feel.board)
-                .environment(\.showsTypedCharacters, !viewModel.fieldTraits.isSensitive)
-                .padding(.horizontal, KeyboardConstants.Layout.horizontalPadding)
-                .padding(.top, KeyboardConstants.Layout.verticalPaddingTop)
-                .padding(.bottom, KeyboardConstants.Layout.verticalPaddingBottom)
+                VStack(spacing: 0) {
+                    if metrics.accessoryHeight > 0 {
+                        KeyboardAccessoryRow(viewModel: viewModel)
+                            .frame(height: metrics.accessoryHeight)
+                    }
+                    KeyboardGridView(
+                        arrangement: plan.arrangement,
+                        keys: mode.keys,
+                        onGesture: { key, gesture, isReturn in
+                            viewModel.handleGesture(gesture, keyId: key.id, isReturn: isReturn)
+                        },
+                        engine: viewModel.touchEngine,
+                        touchActions: viewModel.touchEngineActions,
+                        languageLabel: viewModel.currentLanguageLabel,
+                        isLanguageLabelShown: viewModel.hasMultipleLanguages,
+                        renderSettings: renderSettings,
+                        metrics: metrics,
+                        tuning: viewModel.gestureTuning
+                    )
+                    // Feel hook: the grid's overlay draws the view model's board.
+                    .environment(\.feelBoard, viewModel.feel.board)
+                    .environment(\.showsTypedCharacters, !viewModel.fieldTraits.isSensitive)
+                    .padding(.horizontal, KeyboardConstants.Layout.horizontalPadding)
+                    .padding(.top, KeyboardConstants.Layout.verticalPaddingTop)
+                    .padding(.bottom, KeyboardConstants.Layout.verticalPaddingBottom)
+                }
                 .frame(width: metrics.keyboardWidth)
                 .offset(x: horizontalOffset)
             }
         }
+        // Scoped to the geometry: only a change of `signature` animates, so a
+        // mode switch that keeps every key in place moves nothing.
+        .animation(motion?.animation, value: signature)
         .frame(maxWidth: .infinity)
         // Pin the entire keyboard render tree to physical LTR. Grid slot
         // positions, the horizontalOffset math above, and the atan2 gesture

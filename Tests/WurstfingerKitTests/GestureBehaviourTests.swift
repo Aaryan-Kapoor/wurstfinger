@@ -47,6 +47,24 @@ struct LongPressMigrationTests {
     private let legacyKey = "longPressNumbersEnabled"
     private let pickerKey = "longPressBehaviour"
 
+    /// The keyboard migrates on its own at load, so a user who updates and
+    /// types before opening the app keeps the setting written, not inferred.
+    @MainActor @Test func theKeyboardMigratesWhenItLoads() {
+        let store = InMemoryUserDefaults()
+        store.set(true, forKey: legacyKey)
+        _ = KeyboardViewModel(userDefaults: store, shouldPersistSettings: true)
+        #expect(store.string(forKey: pickerKey) == "digits")
+    }
+
+    /// Previews and screenshots never write to the store.
+    @MainActor @Test func aNonPersistingViewModelLeavesTheStoreAlone() {
+        let store = InMemoryUserDefaults()
+        store.set(true, forKey: legacyKey)
+        let viewModel = KeyboardViewModel(userDefaults: store, shouldPersistSettings: false)
+        #expect(store.object(forKey: pickerKey) == nil)
+        #expect(viewModel.typingBehavior.longPress == .digits, "the legacy value still applies")
+    }
+
     @Test func anOldTrueBecomesDigits() {
         let store = InMemoryUserDefaults()
         store.set(true, forKey: legacyKey)

@@ -38,6 +38,10 @@ struct KeyboardLayoutMetrics: Equatable, Sendable {
     /// guide card all use the one value the rows and the height were resolved
     /// with.
     var keySpacing: CGFloat = KeyboardConstants.Layout.defaultKeySpacing
+    /// Height of the row above the keys (e.g. word completions), 0 when there
+    /// is none. Part of `totalHeight` and of the height guard, so the keys
+    /// shrink to make room rather than the keyboard outgrowing the screen.
+    var accessoryHeight: CGFloat = 0
 
     /// Height of a single grid row (identical to the cell height; rows are
     /// sized from the cells, not the other way around).
@@ -61,7 +65,7 @@ struct KeyboardLayoutMetrics: Equatable, Sendable {
     /// vertical paddings. This is both the SwiftUI content height and the
     /// controller's height-constraint value — identical by construction.
     var totalHeight: CGFloat {
-        cellHeight * CGFloat(rows) + Self.verticalChrome(rows: rows, spacing: keySpacing)
+        cellHeight * CGFloat(rows) + Self.verticalChrome(rows: rows, spacing: keySpacing) + accessoryHeight
     }
 
     /// Absolute floor for the height cap, as a share of the *screen* height:
@@ -111,6 +115,7 @@ struct KeyboardLayoutMetrics: Equatable, Sendable {
     ///   - screenHeight: Screen height in the *current* orientation for the
     ///     height guard. Pass `0` to skip the guard (unknown context).
     ///   - spacing: Gap between keys (`LayoutSettings.keySpacing`).
+    ///   - accessoryHeight: The row above the keys (`accessoryHeight`).
     ///
     /// **Extra columns grow the keyboard; they do not shrink the keys.** The
     /// width wish is a statement about the standard four-column keyboard, so
@@ -127,7 +132,8 @@ struct KeyboardLayoutMetrics: Equatable, Sendable {
         rows: Int = KeyboardConstants.KeyDimensions.totalRows,
         availableWidth: CGFloat,
         screenHeight: CGFloat,
-        spacing: CGFloat = KeyboardConstants.Layout.defaultKeySpacing
+        spacing: CGFloat = KeyboardConstants.Layout.defaultKeySpacing,
+        accessoryHeight: CGFloat = 0
     ) -> KeyboardLayoutMetrics {
         let columns = max(columns, 1)
         let spacing = (spacing.isFinite && spacing >= 0) ? spacing : KeyboardConstants.Layout.defaultKeySpacing
@@ -174,7 +180,9 @@ struct KeyboardLayoutMetrics: Equatable, Sendable {
         // screenHeight - 120 < 0.70·screenHeight), so the floor governs and
         // the very largest wishes still clamp there — Option C cannot make
         // them invariant without letting the keyboard exceed the screen.
-        let verticalChrome = Self.verticalChrome(rows: rows, spacing: spacing)
+        let accessoryHeight = (accessoryHeight.isFinite && accessoryHeight > 0) ? accessoryHeight : 0
+        // The accessory row is constant chrome too: it never scales.
+        let verticalChrome = Self.verticalChrome(rows: rows, spacing: spacing) + accessoryHeight
         if screenHeight > 0 {
             let maxHeight = max(
                 screenHeight - Self.minReservedScreenHeight,
@@ -203,7 +211,8 @@ struct KeyboardLayoutMetrics: Equatable, Sendable {
             cellHeight: cellHeight,
             columns: columns,
             rows: rows,
-            keySpacing: spacing
+            keySpacing: spacing,
+            accessoryHeight: accessoryHeight
         )
     }
 

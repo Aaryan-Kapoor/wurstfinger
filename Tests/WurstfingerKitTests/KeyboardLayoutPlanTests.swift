@@ -213,16 +213,53 @@ struct KeyboardLayoutPlanTests {
 
     // MARK: The split
 
-    @Test func theSplitSpansTheContainerAndKeepsTheKeySize() {
+    @Test func theSplitSpansTheContainerWithBiggerKeys() {
         let plain = KeyboardLayoutPlan.resolve(inputs(container: 1366, screen: ipadLandscape))
         let split = KeyboardLayoutPlan.resolve(inputs(split: true, container: 1366, screen: ipadLandscape))
         #expect(split.isSplit)
         #expect(split.metrics.keyboardWidth == 1366)
-        // Rounded up to whole columns, so a key is never bigger than it would be
-        // in the block, and at most a column's worth of share smaller.
-        #expect(split.metrics.cellWidth <= plain.metrics.cellWidth + 0.0001)
-        #expect(split.metrics.cellWidth > plain.metrics.cellWidth * 0.85)
-        #expect(split.metrics.cellHeight <= plain.metrics.cellHeight + 0.0001)
+        // Bigger than the block's, never past the split scale (rounded up to
+        // whole columns, so at most a column's worth of share below it).
+        #expect(split.metrics.cellWidth > plain.metrics.cellWidth * 1.05)
+        #expect(split.metrics.cellWidth <= plain.metrics.cellWidth * KeyboardLayoutPlan.splitKeyScale + 0.0001)
+    }
+
+    /// The letters cluster stays within a thumb's reach of its edge, however
+    /// large the width wish.
+    @Test(arguments: [380 as CGFloat, 520, 700])
+    func aSplitClusterStaysWithinThumbReach(wish: CGFloat) throws {
+        let split = KeyboardLayoutPlan.resolve(inputs(split: true, wish: wish, container: 1366, screen: ipadLandscape))
+        let cells = GridLayoutSolver.solve(split.arrangement)
+        let topRight = try #require(cells.first { $0.keyId == GridSlot.topRight })
+        let reach = KeyboardConstants.Layout.horizontalPadding
+            + CGFloat(topRight.column + 1) * split.metrics.cellWidth
+            + CGFloat(topRight.column) * split.metrics.keySpacing
+        // One column's rounding of slack above the share.
+        #expect(reach <= 1366 * KeyboardLayoutPlan.splitClusterShare + split.metrics.cellWidth)
+    }
+
+    // MARK: The accessory row
+
+    @Test func theAccessoryRowAddsToTheHeightAndTheKeysKeepTheirSize() {
+        let without = KeyboardLayoutPlan.resolve(inputs(container: 393, screen: CGSize(width: 393, height: 852)))
+        var withRow = inputs(container: 393, screen: CGSize(width: 393, height: 852))
+        withRow.accessoryHeight = 40
+        let plan = KeyboardLayoutPlan.resolve(withRow)
+        #expect(plan.metrics.accessoryHeight == 40)
+        #expect(plan.metrics.cellWidth == without.metrics.cellWidth)
+        #expect(abs(plan.metrics.totalHeight - without.metrics.totalHeight - 40) < 0.001)
+    }
+
+    /// On a short landscape screen the row is paid for by the keys, not by
+    /// the host's text: the keyboard stays within the height guard.
+    @Test func onAShortScreenTheKeysShrinkToMakeRoomForTheRow() {
+        let screen = CGSize(width: 852, height: 393)
+        let without = KeyboardLayoutPlan.resolve(inputs(wish: 700, container: 852, screen: screen))
+        var withRow = inputs(wish: 700, container: 852, screen: screen)
+        withRow.accessoryHeight = 44
+        let plan = KeyboardLayoutPlan.resolve(withRow)
+        #expect(plan.metrics.cellHeight < without.metrics.cellHeight)
+        #expect(plan.metrics.totalHeight <= without.metrics.totalHeight + 0.001)
     }
 
     @Test(arguments: [(852 as CGFloat, 393 as CGFloat), (1133, 744), (1180, 820), (1366, 1024)])

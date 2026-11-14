@@ -25,6 +25,9 @@ public struct WurstfingerApp: App {
         // registering defaults: a registered width would make the key appear
         // present and mask a pending migration.
         LayoutSettings.migrateLegacyScaleIfNeeded(in: SharedDefaults.store)
+        // The old "Numbers on long press" switch becomes the Long Press
+        // picker's value (the keyboard does the same on load).
+        LongPressType.migrateLegacyIfNeeded(in: SharedDefaults.store)
 
         // The onboarding checklist is app-only state; installs from earlier
         // versions still hold it in the shared app-group suite, so move it

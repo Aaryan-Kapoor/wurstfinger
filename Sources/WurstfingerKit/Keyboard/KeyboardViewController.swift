@@ -488,6 +488,7 @@ public final class KeyboardViewController: UIInputViewController {
         if let constraint = heightConstraint {
             if constraint.constant != finalHeight {
                 constraint.constant = finalHeight
+                animateHeightChange()
             }
         } else {
             let constraint = view.heightAnchor.constraint(equalToConstant: finalHeight)
@@ -495,6 +496,40 @@ public final class KeyboardViewController: UIInputViewController {
             constraint.isActive = true
             heightConstraint = constraint
         }
+    }
+
+    /// True while a system transition (rotation) is animating the keyboard's
+    /// frame: the height change rides on it instead of a spring of our own.
+    private var isInSystemTransition = false
+
+    override func viewWillTransition(to size: CGSize, with coordinator: any UIViewControllerTransitionCoordinator) {
+        super.viewWillTransition(to: size, with: coordinator)
+        // The keys settle in exactly the rotation's time, landing with the
+        // keyboard's frame (`LayoutMotionClock`).
+        viewModel.layoutMotionClock.noteSystemTransition(duration: coordinator.transitionDuration)
+        isInSystemTransition = true
+        coordinator.animate(alongsideTransition: nil) { [weak self] _ in
+            self?.isInSystemTransition = false
+        }
+    }
+
+    /// Moves the keyboard's frame to its new height with the same motion the
+    /// SwiftUI keys use for this geometry change, so the top edge and the top
+    /// row arrive together. A rotation's own animation already carries the
+    /// frame; Reduce Motion and the first layout jump.
+    private func animateHeightChange() {
+        guard !isInSystemTransition, view.window != nil,
+              !UIAccessibility.isReduceMotionEnabled,
+              let plan = viewModel.layoutPlan(forContainerWidth: viewModel.viewWidth),
+              let motion = viewModel.layoutMotionClock.motion(
+                  for: KeyboardGeometrySignature(plan), reduceMotion: false
+              )
+        else { return }
+        UIView.animate(
+            springDuration: motion.duration, bounce: 0, initialSpringVelocity: 0, delay: 0,
+            options: [.beginFromCurrentState, .allowUserInteraction],
+            animations: { self.view.superview?.layoutIfNeeded() }
+        )
     }
 
     override func viewWillLayoutSubviews() {

@@ -119,6 +119,12 @@ final class KeyboardViewModel {
     /// put the keyboard on a landscape iPad without touching the process-wide
     /// simulated screen the other suites read. Nil in the app.
     @ObservationIgnored var screenSizeOverride: CGSize?
+    /// Height of the row above the keys (word completions), 0 for none. Set
+    /// by whatever fills that row; the layout plan makes room for it.
+    var accessoryRowHeight: CGFloat = 0
+    /// How geometry changes move (`LayoutMotionClock`), shared by the root
+    /// view and the controller so the keys and the frame move together.
+    @ObservationIgnored let layoutMotionClock = LayoutMotionClock()
     /// Name of the currently active mode in the data-driven definition.
     var activeModeName: String = ModeNames.main {
         didSet { refreshActiveCompiledMode() }
@@ -332,6 +338,14 @@ final class KeyboardViewModel {
         self.shouldPersistSettings = shouldPersistSettings
         self.prewarmsLanguages = prewarmsLanguages
 
+        // The old "Numbers on long press" switch becomes the Long Press
+        // picker's value the first time either the app or the keyboard runs
+        // (whichever is first; the second finds it done). Only a persisting
+        // view model — the real keyboard — writes to the store.
+        if shouldPersistSettings {
+            LongPressType.migrateLegacyIfNeeded(in: defaults)
+        }
+
         // Initialize extracted settings classes
         hapticSettings = HapticSettings(defaults: defaults, shouldPersist: shouldPersistSettings)
         layoutSettings = LayoutSettings(defaults: defaults, shouldPersist: shouldPersistSettings)
@@ -474,7 +488,8 @@ final class KeyboardViewModel {
             spacing: CGFloat(layoutSettings.keySpacing),
             containerWidth: width,
             widthCap: keyboardWidthCap,
-            screen: screen
+            screen: screen,
+            accessoryHeight: accessoryRowHeight
         ))
     }
 
