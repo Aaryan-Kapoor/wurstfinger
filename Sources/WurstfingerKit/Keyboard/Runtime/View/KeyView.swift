@@ -19,7 +19,11 @@ struct KeyRenderSettings: Equatable, Sendable {
     var areLetterLabelsHidden = false
     var areStandardSymbolLabelsHidden = false
     var areExtraSymbolLabelsHidden = false
-    var isLongPressDigitEnabled = false
+    // Long-press behaviour (issue #308): arms the engine's hold timer
+    // (`isLongPressEnabled`); what the hold types is resolved from the typing
+    // snapshot, not rendered.
+    var longPress = LongPressType.default
+    var isLongPressEnabled: Bool { longPress.isEnabled }
     /// Press, release and commit animations and the light effects on keys
     /// (`SettingsKey.keyAnimationsEnabled`).
     var areKeyAnimationsEnabled = true
@@ -472,7 +476,8 @@ struct KeyView: View, Equatable {
         case none
         /// A swipe: its hint is emphasized and the others recede.
         case swipe
-        /// A circle: the centre letter (whose capital a circle types) lights up.
+        /// A circle: the centre letter lights up (a circle acts on the key itself;
+        /// what it will type is on the guide card, resolved per the circle settings).
         case circle
     }
 

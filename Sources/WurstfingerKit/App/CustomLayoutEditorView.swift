@@ -242,7 +242,7 @@ struct CustomKeyEditorView: View {
                 labeledField("Counter-clockwise Circle", gesture: .circularCounterclockwise)
                 labeledField("Long Press", gesture: .longPress)
             } footer: {
-                Text("A long press types its text when “Type Numbers by Holding” is on.")
+                Text("A long press types its text when “Long Press” is on.")
             }
         }
         .navigationTitle("Edit Key")

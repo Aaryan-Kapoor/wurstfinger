@@ -31,10 +31,11 @@ enum AppSurfaces {
         )
     }
 
-    static func settings(scheme: ColorScheme) -> Shot {
+    static func settings(scheme: ColorScheme, longPress: LongPressType = .off) -> Shot {
         ScenarioEnvironment.reset()
         let device = Device.iPhone15
         device.activate()
+        SharedDefaults.store.set(longPress.rawValue, forKey: SettingsKey.longPressBehaviour.rawValue)
         return Shot(
             size: device.size, scheme: scheme,
             content: AnyView(SettingsView().formStyle(.grouped).frame(width: device.width, height: device.size.height)),
@@ -96,6 +97,24 @@ enum AppSurfaces {
             content: AnyView(
                 NavigationStack { StyleSettingsView() }
                     .frame(width: device.width, height: device.size.height)
+            ),
+            hosted: true
+        )
+    }
+
+    /// The circle behaviours (Expert): clockwise a capital, counter-clockwise a digit.
+    static func circles(scheme: ColorScheme) -> Shot {
+        ScenarioEnvironment.reset()
+        let device = Device.iPhone15
+        device.activate()
+        SharedDefaults.store.set(true, forKey: SettingsKey.expertModeEnabled.rawValue)
+        SharedDefaults.store.set(CircleType.uppercase.rawValue, forKey: SettingsKey.clockwiseCircleBehaviour.rawValue)
+        SharedDefaults.store.set(CircleType.digit.rawValue, forKey: SettingsKey.counterclockwiseCircleBehaviour.rawValue)
+        return Shot(
+            size: device.size, scheme: scheme,
+            content: AnyView(
+                NavigationStack { CircleSettingsView() }
+                    .formStyle(.grouped).frame(width: device.width, height: device.size.height)
             ),
             hosted: true
         )

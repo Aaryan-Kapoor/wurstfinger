@@ -233,7 +233,7 @@ struct KeyViewStyleTests {
         #expect(stock.areLetterLabelsHidden == store.bool(forKey: SettingsKey.areLetterLabelsHidden.rawValue))
         #expect(stock.areStandardSymbolLabelsHidden == store.bool(forKey: SettingsKey.areStandardSymbolLabelsHidden.rawValue))
         #expect(stock.areExtraSymbolLabelsHidden == store.bool(forKey: SettingsKey.areExtraSymbolLabelsHidden.rawValue))
-        #expect(stock.isLongPressDigitEnabled == store.bool(forKey: SettingsKey.isLongPressDigitEnabled.rawValue))
+        #expect(stock.longPress == LongPressType.load(from: store))
         // No stored style either, so the enum default is what renders.
         #expect(store.string(forKey: SettingsKey.keyboardStyle.rawValue) == nil)
         #expect(stock.keyboardStyle == .classic)

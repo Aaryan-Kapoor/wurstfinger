@@ -181,38 +181,35 @@ enum GestureCalculations {
         return avgMirrorDistance / maxDisplacement
     }
 
-    /// Calculates turn consistency (how consistently the path turns in one direction)
-    /// 1.0 = all turns same direction (circle), ~0.5 = mixed directions (return swipe)
-    ///
-    /// `turnThreshold` is the minimum turn **angle** in radians (default ~8.6°)
-    /// for a segment pair to count as a turn. Using the angle keeps the cutoff
-    /// scale-invariant; a raw cross product has magnitude `|v1||v2|sin θ` (px²),
-    /// so a fixed cross threshold would make the effective angle depend on
-    /// segment length (large gestures count nearly every wobble, tiny ones none).
-    static func turnConsistency<C: RandomAccessCollection<CGPoint>>(
-        of points: C, turnThreshold: CGFloat = 0.15
-    ) -> CGFloat where C.Index == Int {
-        // Consecutive duplicate samples are skipped as the points stream by; a
-        // repeated point (A→B→B→C) would otherwise split the real A→B / B→C
-        // turn across two zero-length segments and never count it. Only the
-        // last two distinct points are kept — the turn at `corner` needs its
-        // predecessor and successor, and nothing older.
+    /// A path of more samples than this is dense enough for the digitizer's own
+    /// spacing to matter, and `turnConsistency` reads it resampled.
+    private static let turnDenseSampleCount = 16
+
+    /// How many equal steps a dense path is resampled to, at most, and the
+    /// closest two resampled points may sit.
+    private static let turnResampleSteps: CGFloat = 24
+    private static let turnResampleMinimumSpacing: CGFloat = 4
+
+    /// Tallies the direction of each turn along a stream of points. Consecutive
+    /// duplicates are skipped as the points arrive; a repeated point (A→B→B→C)
+    /// would otherwise split the real A→B / B→C turn across two zero-length
+    /// segments and never count it. Only the last two distinct points are kept —
+    /// the turn at `corner` needs its predecessor and successor, nothing older.
+    private struct TurnTally {
         var previous: CGPoint?
         var corner: CGPoint?
-
         var cwCount = 0
         var ccwCount = 0
+        let turnThreshold: CGFloat
 
-        for i in 0 ..< points.count {
-            let p = points[i]
-            if let current = corner, current == p { continue }
+        mutating func add(_ p: CGPoint) {
+            if let current = corner, current == p { return }
             if let before = previous, let current = corner {
                 let v1 = Vector2D(from: before, to: current)
                 let v2 = Vector2D(from: current, to: p)
                 // Skip degenerate segments — turn angle is undefined for zero length.
                 if v1.magnitudeSquared > 0, v2.magnitudeSquared > 0 {
                     let turn = v1.angle(to: v2) // signed radians: + = CCW, - = CW
-
                     if turn > turnThreshold {
                         ccwCount += 1
                     } else if turn < -turnThreshold {
@@ -224,10 +221,62 @@ enum GestureCalculations {
             corner = p
         }
 
-        let totalTurns = cwCount + ccwCount
-        guard totalTurns > 0 else { return 1.0 }
+        /// The share of turns that went the majority way; 1 when none turned.
+        var consistency: CGFloat {
+            let totalTurns = cwCount + ccwCount
+            guard totalTurns > 0 else { return 1.0 }
+            return CGFloat(max(cwCount, ccwCount)) / CGFloat(totalTurns)
+        }
+    }
 
-        return CGFloat(max(cwCount, ccwCount)) / CGFloat(totalTurns)
+    /// Calculates turn consistency (how consistently the path turns in one direction)
+    /// 1.0 = all turns same direction (circle), ~0.5 = mixed directions (return swipe)
+    ///
+    /// A dense path (more than `turnDenseSampleCount` samples) is read
+    /// resampled at equal arc-length steps rather than as it arrived. The
+    /// samples' spacing is the digitizer's, not the gesture's: a slow circle on
+    /// a 120 Hz display has steps of a point or two, where a tenth of a point of
+    /// tremor is a turn of several degrees, so a third of a clean circle's turns
+    /// went the wrong way and it failed the 80% test. At two dozen steps the same
+    /// tremor moves a step's angle by a few degrees against ~15° of real
+    /// turning, which is what the threshold was meant to see. (The gesture lab
+    /// measured it: circles drawn at 120 Hz lost two points of accuracy to this.)
+    /// A path of a handful of samples is already as coarse as that, and is
+    /// counted exactly as it was given.
+    ///
+    /// `turnThreshold` is the minimum turn **angle** in radians (default ~8.6°)
+    /// for a segment pair to count as a turn. Using the angle keeps the cutoff
+    /// scale-invariant; a raw cross product has magnitude `|v1||v2|sin θ` (px²),
+    /// so a fixed cross threshold would make the effective angle depend on
+    /// segment length (large gestures count nearly every wobble, tiny ones none).
+    static func turnConsistency<C: RandomAccessCollection<CGPoint>>(
+        of points: C, turnThreshold: CGFloat = 0.15
+    ) -> CGFloat where C.Index == Int {
+        var tally = TurnTally(turnThreshold: turnThreshold)
+        guard points.count > turnDenseSampleCount else {
+            for i in 0 ..< points.count { tally.add(points[i]) }
+            return tally.consistency
+        }
+
+        let spacing = max(pathLength(of: points) / turnResampleSteps, turnResampleMinimumSpacing)
+        // Walk the polyline, emitting a point every `spacing` of arc length.
+        tally.add(points[0])
+        var walked: CGFloat = 0
+        for i in 1 ..< points.count {
+            var from = points[i - 1]
+            let to = points[i]
+            var remaining = from.distance(to: to)
+            while walked + remaining >= spacing {
+                let t = (spacing - walked) / remaining
+                let next = CGPoint(x: from.x + (to.x - from.x) * t, y: from.y + (to.y - from.y) * t)
+                tally.add(next)
+                from = next
+                remaining = from.distance(to: to)
+                walked = 0
+            }
+            walked += remaining
+        }
+        return tally.consistency
     }
 
     /// Calculates oriented compactness (width/length along principal axis)

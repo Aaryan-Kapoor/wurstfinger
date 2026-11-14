@@ -42,8 +42,8 @@ struct SettingsView: View {
     @AppStorage(SettingsKey.autoCapitalizeEnabled.rawValue, store: SharedDefaults.store)
     private var autoCapitalizeEnabled = false
 
-    @AppStorage(SettingsKey.isLongPressDigitEnabled.rawValue, store: SharedDefaults.store)
-    private var isLongPressDigitEnabled = false
+    @AppStorage(SettingsKey.longPressBehaviour.rawValue, store: SharedDefaults.store)
+    private var longPressRaw = LongPressType.default.rawValue
 
     @AppStorage(SettingsKey.doubleSpacePeriodEnabled.rawValue, store: SharedDefaults.store)
     private var doubleSpacePeriodEnabled = false
@@ -139,11 +139,15 @@ struct SettingsView: View {
                 )
             }
 
-            Toggle(isOn: $isLongPressDigitEnabled) {
+            Picker(selection: $longPressRaw) {
+                Text("Off").tag(LongPressType.off.rawValue)
+                Text("Digits").tag(LongPressType.digits.rawValue)
+                Text("Capitals").tag(LongPressType.capitals.rawValue)
+            } label: {
                 SettingsRow(
-                    icon: "123.rectangle", color: .pink,
-                    title: "Type Numbers by Holding",
-                    subtitle: String(localized: "Hold a letter key to type its digit")
+                    icon: "timer", color: .pink,
+                    title: "Long Press",
+                    subtitle: longPressDescription
                 )
             }
 
@@ -366,6 +370,17 @@ struct SettingsView: View {
             return String(localized: "All labels visible")
         }
         return String(localized: "Hiding \(hidden.joined(separator: ", "))")
+    }
+
+    private var longPressDescription: String {
+        switch LongPressType(rawValue: longPressRaw) ?? .default {
+        case .off:
+            return String(localized: "Holding a key does nothing extra")
+        case .digits:
+            return String(localized: "Hold a letter key to type its digit")
+        case .capitals:
+            return String(localized: "Hold a letter key to type its capital")
+        }
     }
 
     private var cursorMovementTypeDescription: String {

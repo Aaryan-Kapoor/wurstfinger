@@ -137,7 +137,7 @@ struct KeyboardGridView: View {
                     ),
                     keys: keys,
                     tuning: tuning,
-                    isLongPressEnabled: renderSettings.isLongPressDigitEnabled,
+                    isLongPressEnabled: renderSettings.isLongPressEnabled,
                     actions: touchActions
                 ))
                 .accessibilityHidden(true)

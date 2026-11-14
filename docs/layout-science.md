@@ -84,7 +84,7 @@ The weights sum to exactly 1, so every cost below is per typed character, space 
 | space bar | centre of columns 0-2 in row 3, width 3*cw + 2*5 = 275.5 pt | `widthMultiplier` 3 |
 | minSwipeLength | 20 pt (shorter path = tap) | `GestureClassificationThresholds.defaultMinSwipeLength` |
 | return-swipe peak window | 20 %-80 % of the path | `defaultReturnDisplacementStart/End` |
-| circle minimum angular span | 1.5 pi (270 degrees) | `defaultMinAngularSpan` |
+| circle minimum angular span | 255 degrees (was 1.5 pi, 270; measured around the centroid, which sits off an arc's true centre) | `defaultMinAngularSpan` |
 | swipe target | hint position in the key's 3x3 sub-grid: cell/3 per axis step from the key centre (cardinal cell/3, diagonal sqrt(2)*cell/3), lengthened to 20 pt if shorter | `KeyView.hintAlignments`; the 20 pt floor only binds for the 270 pt wish (19.25 pt < 20 pt) |
 
 `maxReturnRatio` (0.5) and `minTurnConsistency` (0.8) gate classification but do not enter the cost.

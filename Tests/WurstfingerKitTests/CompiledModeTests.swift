@@ -134,6 +134,9 @@ struct CompiledModeEquivalenceTests {
                         let actual: OracleCircular = switch outcome {
                         case let .binding(index): .binding(compiledMode.binding(at: index))
                         case let .commitUppercase(text): .uppercase(text)
+                        // Never compiled in (only the setting produces it), so
+                        // reaching it is a mismatch with every oracle outcome.
+                        case .capitalizeWord: .uppercase("<capitalizeWord>")
                         case .none: .none
                         }
                         if actual != expected {

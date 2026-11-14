@@ -66,7 +66,12 @@ struct KeyboardSpec {
     var hideLetters = false
     var hideStandardSymbols = false
     var hideExtraSymbols = false
-    var longPressDigits = false
+    var longPress = LongPressType.off
+    /// Shorthand for the Digits long press, the picture most scenarios want.
+    var longPressDigits: Bool {
+        get { longPress == .digits }
+        set { longPress = newValue ? .digits : .off }
+    }
     /// Keys drawn pressed.
     var pressedKeys: Set<String> = []
     var finger: FingerTrail?
@@ -95,6 +100,8 @@ struct KeyboardSpec {
     var slide: (keyId: String, steps: Int)?
     /// The "Key Animations" setting.
     var keyAnimations = true
+    /// The Expert circle behaviours (expert mode is switched on with them).
+    var circles: (clockwise: CircleType, counterclockwise: CircleType)?
 }
 
 @MainActor
@@ -107,7 +114,7 @@ enum KeyboardShot {
         store.set(spec.hideLetters, forKey: SettingsKey.areLetterLabelsHidden.rawValue)
         store.set(spec.hideStandardSymbols, forKey: SettingsKey.areStandardSymbolLabelsHidden.rawValue)
         store.set(spec.hideExtraSymbols, forKey: SettingsKey.areExtraSymbolLabelsHidden.rawValue)
-        store.set(spec.longPressDigits, forKey: SettingsKey.isLongPressDigitEnabled.rawValue)
+        store.set(spec.longPress.rawValue, forKey: SettingsKey.longPressBehaviour.rawValue)
         store.set(spec.keyAnimations, forKey: SettingsKey.keyAnimationsEnabled.rawValue)
         // The feel shaders, compiled once per run (the app compiles them in
         // the background on first appearance).
@@ -122,7 +129,12 @@ enum KeyboardShot {
         if let enabled = spec.enabledLanguages { settings[.enabledLanguageIds] = enabled }
         // A finger on the keyboard draws its trail, as with the setting on.
         if spec.finger != nil, spec.showsTrail { settings[.gestureTrailEnabled] = true }
-        if spec.longPressDigits { settings[.isLongPressDigitEnabled] = true }
+        if spec.longPress != .off { settings[.longPressBehaviour] = spec.longPress.rawValue }
+        if let circles = spec.circles {
+            settings[.expertModeEnabled] = true
+            settings[.clockwiseCircleBehaviour] = circles.clockwise.rawValue
+            settings[.counterclockwiseCircleBehaviour] = circles.counterclockwise.rawValue
+        }
         if spec.finger?.longSwipes == true {
             settings[.expertModeEnabled] = true
             settings[.isLongSwipeEnabled] = true
@@ -222,7 +234,7 @@ enum TrailDrawing {
         let viewModel = scenario.viewModel
         viewModel.configureTouchEngine(
             containerWidth: scenario.containerWidth,
-            isLongPressEnabled: scenario.defaults.bool(forKey: SettingsKey.isLongPressDigitEnabled.rawValue)
+            isLongPressEnabled: LongPressType.load(from: scenario.defaults).isEnabled
         )
         let engine = viewModel.touchEngine
         guard let frame = engine.hitMap.key(withId: finger.keyId)?.frame else { return }

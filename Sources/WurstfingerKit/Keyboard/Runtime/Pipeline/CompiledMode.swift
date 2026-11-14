@@ -56,6 +56,11 @@ enum CircularOutcome: Sendable, Equatable {
     /// for the definition's locale (so `ß` stays a single `ẞ`). Dispatched as a
     /// bare `.commitText` action with no binding, as the old path did.
     case commitUppercase(String)
+    /// Capitalizes the word before the cursor (`KeyAction.capitalizeWord`),
+    /// typing nothing: what a circle does when its direction is set to
+    /// "Uppercase word". Only ever produced from `.commitUppercase` by the
+    /// setting, never compiled in.
+    case capitalizeWord
     /// Nothing to do: the key declares no circular binding and no letter.
     case none
 }
@@ -123,7 +128,24 @@ struct CompiledMode: Sendable {
     let table: [Int32]
 
     /// Circular outcome per (slot, direction): `slot * 2 + (clockwise ? 0 : 1)`.
+    /// The *default* outcomes (a letter key's circle is its capital); the
+    /// user's circle behaviours pick among the alternatives below at run time.
     let circularTable: [CircularOutcome]
+
+    // The tables below are the *alternatives* the behaviour settings choose
+    // between at run time (`longPressBinding(slot:type:)`, `circular(slot:clockwise:type:)`).
+    // They hold facts about the definition only, never a setting, so the compiled
+    // tables stay valid whatever the user picks — no setting is part of
+    // `KeyboardRegistry.compiledSignature`, the prewarm builds once and a
+    // setting change evicts nothing.
+
+    /// The binding a hold types under the Capitals long press, per slot, or -1
+    /// (`CapitalsLongPressResolver`).
+    let capitalsTable: [Int32]
+
+    /// The digit binding a circle set to Digit types, per slot, or -1
+    /// (`NumericDigitResolver`).
+    let circularDigitTable: [Int32]
 
     /// Compiles `mode`.
     ///
@@ -131,12 +153,15 @@ struct CompiledMode: Sendable {
     ///   - mode: The mode to flatten.
     ///   - fallbackMode: The definition's numeric mode, the ghost keys'
     ///     fallback (`nil` when the definition has none).
+    ///   - shiftedMode: The definition's shifted mode, which supplies the
+    ///     capitals of the Capitals long press (`nil` when it has none: a
+    ///     caseless script).
     ///   - locale: The definition's locale, for the circular uppercase letter.
     ///
     /// The resolver chains are assembled exactly as the view model used to
     /// assemble them at load time: primary, then ghost fallback; and for return
     /// swipes the return-swipe resolver in front of those.
-    init(mode: KeyboardMode, fallbackMode: KeyboardMode?, locale: Locale) {
+    init(mode: KeyboardMode, fallbackMode: KeyboardMode?, shiftedMode: KeyboardMode? = nil, locale: Locale) {
         var base: [GestureResolver] = [PrimaryResolver()]
         if let fallbackMode {
             base.append(GhostKeyResolver(fallbackMode: fallbackMode))
@@ -150,6 +175,10 @@ struct CompiledMode: Sendable {
         let gestureCount = GestureType.count
         var table = [Int32](repeating: -1, count: ids.count * 2 * gestureCount)
         var circularTable = [CircularOutcome](repeating: .none, count: ids.count * 2)
+        var capitalsTable = [Int32](repeating: -1, count: ids.count)
+        var circularDigitTable = [Int32](repeating: -1, count: ids.count)
+        let capitals = shiftedMode.map(CapitalsLongPressResolver.init)
+        let digits = fallbackMode.map(NumericDigitResolver.init)
         var pool = BindingPool()
         var keys: [KeyDefinition] = []
         var slots: [String: Int] = [:]
@@ -176,6 +205,16 @@ struct CompiledMode: Sendable {
             circularTable[slot * 2 + 1] = Self.circularOutcome(
                 for: key, gesture: .circularCounterclockwise, locale: locale, pool: &pool
             )
+
+            if let binding = capitals?.resolve(keyId: id, gesture: .longPress, in: mode) {
+                capitalsTable[slot] = pool.index(of: binding)
+            }
+            // Only a key whose circle falls back to its capital can be set to a
+            // digit; the others keep their declared bindings.
+            if case .commitUppercase = circularTable[slot * 2],
+               let binding = digits?.digit(forKeyId: id) {
+                circularDigitTable[slot] = pool.index(of: binding)
+            }
         }
 
         self.keys = keys
@@ -183,6 +222,8 @@ struct CompiledMode: Sendable {
         self.bindings = pool.bindings
         self.table = table
         self.circularTable = circularTable
+        self.capitalsTable = capitalsTable
+        self.circularDigitTable = circularDigitTable
     }
 
     /// The three branches of the old `handleCircular`, in order. Circles read
@@ -249,6 +290,45 @@ struct CompiledMode: Sendable {
         circularTable[slot * 2 + (clockwise ? 0 : 1)]
     }
 
+    /// What a hold types on the key at `slot` under `type`.
+    ///
+    /// Capitals reads its own table; Off and Digits read the `.longPress` column
+    /// of the binding table — the explicit hold binding or the key's ghost digit.
+    /// Off is the Digits table on purpose: the setting gates whether the touch
+    /// engine arms a timer at all, so resolution under Off is only reached by
+    /// a caller that asks for a hold itself (a test, the scenario harness) and
+    /// wants the layout's answer.
+    @inline(__always)
+    func longPressBinding(slot: Int, type: LongPressType) -> KeyBinding? {
+        guard type == .capitals else {
+            return binding(slot: slot, gesture: .longPress, isReturn: false)
+        }
+        let entry = capitalsTable[slot]
+        return entry < 0 ? nil : bindings[Int(entry)]
+    }
+
+    /// What a circle in the given direction does on the key at `slot` when the
+    /// user chose `type` for that direction.
+    ///
+    /// Only a circle that would type the key's capital is configurable: a key
+    /// that declares its own circular binding (the clipboard's cut-all, the
+    /// numeric mode's superscripts) keeps it. A key with no digit falls back to
+    /// its capital rather than doing nothing.
+    @inline(__always)
+    func circular(slot: Int, clockwise: Bool, type: CircleType) -> CircularOutcome {
+        let outcome = circularTable[slot * 2 + (clockwise ? 0 : 1)]
+        guard type != .uppercase, case .commitUppercase = outcome else { return outcome }
+        switch type {
+        case .uppercase:
+            return outcome
+        case .digit:
+            let entry = circularDigitTable[slot]
+            return entry < 0 ? outcome : .binding(entry)
+        case .uppercaseWord:
+            return .capitalizeWord
+        }
+    }
+
     /// The pooled binding a `CircularOutcome.binding` index refers to.
     @inline(__always)
     func binding(at index: Int32) -> KeyBinding {
@@ -286,14 +366,16 @@ struct CompiledDefinition: Sendable {
     /// The ghost fallback is the definition's numeric mode and the uppercase
     /// letter uses the definition's locale: the same two inputs
     /// `rebuildResolverChain` and `tryCircularUppercase` used to read per call.
+    /// The Capitals long press reads its capitals from the shifted mode.
     /// Compiling the numeric mode against itself as its own fallback is
     /// harmless (a ghost lookup there finds the primary's answer again), and is
     /// what the old chain did too.
     init(_ definition: KeyboardDefinition) {
         let fallback = definition.mode(ModeNames.numeric)
+        let shifted = definition.mode(ModeNames.shifted)
         let locale = definition.locale
         modes = definition.modes.mapValues {
-            CompiledMode(mode: $0, fallbackMode: fallback, locale: locale)
+            CompiledMode(mode: $0, fallbackMode: fallback, shiftedMode: shifted, locale: locale)
         }
     }
 

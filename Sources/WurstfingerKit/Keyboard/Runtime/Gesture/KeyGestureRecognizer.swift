@@ -336,17 +336,21 @@ enum KeyGestureRecognizer {
     /// Classifies already-extracted features. Useful for testing with
     /// synthetic feature vectors.
     nonisolated static func classify(features: GestureFeatures) -> GestureClassification {
-        // Tap
-        if features.isTap {
-            return GestureClassification(gesture: .tap, isReturn: false)
-        }
-
-        // Circular
+        // Circular first: a small circle's farthest point from where it began
+        // can be under the swipe length (a 30 x 16 pt ellipse reads as a tap by
+        // displacement alone), yet it has walked more than twice that length,
+        // and no tap does — a tap's path is a few points of drift. `isCircular`
+        // demands that length, a full turn and a steady direction on top.
         if features.isCircular {
             let gesture: GestureType = features.isClockwise
                 ? .circularClockwise
                 : .circularCounterclockwise
             return GestureClassification(gesture: gesture, isReturn: false)
+        }
+
+        // Tap
+        if features.isTap {
+            return GestureClassification(gesture: .tap, isReturn: false)
         }
 
         // Directional (swipe or return-swipe)

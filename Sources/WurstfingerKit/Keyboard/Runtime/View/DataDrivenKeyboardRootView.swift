@@ -40,8 +40,8 @@ struct DataDrivenKeyboardRootView: View {
     @AppStorage(SettingsKey.areExtraSymbolLabelsHidden.rawValue, store: SharedDefaults.store)
     private var areExtraSymbolLabelsHidden = KeyRenderSettings.stock.areExtraSymbolLabelsHidden
 
-    @AppStorage(SettingsKey.isLongPressDigitEnabled.rawValue, store: SharedDefaults.store)
-    private var isLongPressDigitEnabled = KeyRenderSettings.stock.isLongPressDigitEnabled
+    @AppStorage(SettingsKey.longPressBehaviour.rawValue, store: SharedDefaults.store)
+    private var longPress = KeyRenderSettings.stock.longPress
 
     @AppStorage(SettingsKey.keyAnimationsEnabled.rawValue, store: SharedDefaults.store)
     private var areKeyAnimationsEnabled = KeyRenderSettings.stock.areKeyAnimationsEnabled
@@ -52,7 +52,7 @@ struct DataDrivenKeyboardRootView: View {
             areLetterLabelsHidden: areLetterLabelsHidden,
             areStandardSymbolLabelsHidden: areStandardSymbolLabelsHidden,
             areExtraSymbolLabelsHidden: areExtraSymbolLabelsHidden,
-            isLongPressDigitEnabled: isLongPressDigitEnabled,
+            longPress: longPress,
             areKeyAnimationsEnabled: areKeyAnimationsEnabled
         )
     }

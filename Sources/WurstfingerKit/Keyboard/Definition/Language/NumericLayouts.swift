@@ -255,7 +255,8 @@ enum NumericLayouts {
                 // it maps to this `.digit` tap, so holding a letter key types
                 // its digit without a mode switch and without mirroring the tap
                 // as an explicit long-press binding. Long presses only occur
-                // with the opt-in "Type Numbers by Holding" setting enabled.
+                // with the opt-in Long Press setting on Digits. A circle set to
+                // "Digit" types this same tap (`NumericDigitResolver`).
                 bindings[.tap] = KeyBinding(
                     label: digit, action: .commitText(digit),
                     category: .digit, returnAction: nil, accessibilityLabel: nil
