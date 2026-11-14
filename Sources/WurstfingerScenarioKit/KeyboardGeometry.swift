@@ -60,7 +60,8 @@ enum KeyboardGeometry {
         let originX = free / 2 + free * (viewModel.keyboardHorizontalPosition - 0.5) + padding
         return Layout(
             gridSize: CGSize(width: gridWidth, height: gridHeight),
-            gridOrigin: CGPoint(x: originX, y: KeyboardConstants.Layout.verticalPaddingTop),
+            // The row above the keys (word completions) pushes the grid down.
+            gridOrigin: CGPoint(x: originX, y: metrics.accessoryHeight + KeyboardConstants.Layout.verticalPaddingTop),
             keyboardHeight: metrics.totalHeight,
             keyFrames: frames
         )

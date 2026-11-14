@@ -207,6 +207,11 @@ public final class KeyboardViewController: UIInputViewController {
         // corrected (e.g. caret moved from a sentence start into a word).
         viewModel.refreshAutoCapitalization()
         refreshFieldTraits()
+        // WORD COMPLETIONS hook (iOS-only): the word before the caret changed
+        // under us, and a new field may have turned the row on or off, which
+        // changes the keyboard's height.
+        viewModel.completionsHostTextDidChange()
+        updateKeyboardHeight()
     }
 
     /// Content types whose text must not linger on screen (`FieldTraits`).
@@ -223,8 +228,36 @@ public final class KeyboardViewController: UIInputViewController {
         let isSecure = proxy.isSecureTextEntry ?? false
         let contentType: UITextContentType? = proxy.textContentType ?? nil
         viewModel.fieldTraits = FieldTraits(
-            isSensitive: isSecure || contentType.map(Self.sensitiveContentTypes.contains) == true
+            isSensitive: isSecure || contentType.map(Self.sensitiveContentTypes.contains) == true,
+            suppressesCompletions: Self.completionPolicy(for: proxy).suppressesCompletions
         )
+    }
+
+    /// Content types that say what the field holds, for `CompletionFieldPolicy`.
+    private static let completionContentTypes: [UITextContentType: CompletionFieldPolicy.Content] = [
+        .URL: .url, .emailAddress: .email, .username: .username,
+        .telephoneNumber: .phoneNumber, .postalCode: .postalCode, .oneTimeCode: .code,
+    ]
+
+    /// WORD COMPLETIONS hook (iOS-only): what the host field says about
+    /// suggestions, as the platform-neutral policy (`CompletionFieldPolicy`)
+    /// the view model and its tests understand. Every trait is an optional
+    /// requirement of `UITextInputTraits`.
+    private static func completionPolicy(for proxy: UITextDocumentProxy) -> CompletionFieldPolicy {
+        var policy = CompletionFieldPolicy()
+        switch proxy.keyboardType ?? .default {
+        case .URL: policy.keyboard = .url
+        case .emailAddress: policy.keyboard = .email
+        case .numberPad, .decimalPad, .asciiCapableNumberPad: policy.keyboard = .numeric
+        case .phonePad, .namePhonePad: policy.keyboard = .phone
+        default: break
+        }
+        if let contentType: UITextContentType = proxy.textContentType ?? nil,
+           let content = completionContentTypes[contentType] {
+            policy.content = content
+        }
+        policy.disablesAutocorrection = (proxy.autocorrectionType ?? .default) == .no
+        return policy
     }
 
     /// Loads the keyboard definition only when the inputs that determine it

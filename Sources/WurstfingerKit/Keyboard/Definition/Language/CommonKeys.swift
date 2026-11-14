@@ -192,8 +192,19 @@ enum CommonKeys {
                     label: zeroDigit, action: .commitText(zeroDigit),
                     category: .digit, returnAction: nil, accessibilityLabel: nil
                 ),
+                // Word completions: a swipe down takes the first one (it does
+                // nothing without any). The only vertical swipe the bar has
+                // besides the label toggle on up; unlabelled, the bar has no
+                // room for a hint. Named for VoiceOver's custom actions.
+                .swipeDown: KeyBinding(
+                    label: "", action: .acceptCompletion, category: .utility,
+                    returnAction: nil, accessibilityLabel: String(localized: "Accept suggestion")
+                ),
             ],
-            swipeMode: .none,
+            // Vertical only, for the down-swipe above: the resolvers drop a
+            // swipe a key's mode does not allow, and the engine runs the
+            // bar's slides and up-swipe off `slideType`, not this.
+            swipeMode: .twoWayVertical,
             slideType: .moveCursor,
             style: .spacebar,
             tapCycleActions: nil

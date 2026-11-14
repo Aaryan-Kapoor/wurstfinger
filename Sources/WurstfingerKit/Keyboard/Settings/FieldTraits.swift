@@ -22,6 +22,16 @@ struct FieldTraits: Equatable, Sendable {
     /// pop-up, so flicking stays as easy as anywhere else.
     var isSensitive = false
 
+    /// The host says suggestions have no place in the field: a URL, an email
+    /// address, a number, a username, or autocorrection switched off
+    /// (`CompletionFieldPolicy`).
+    var suppressesCompletions = false
+
+    /// Whether word completions may show here. A sensitive field never gets
+    /// them: the row would spell the beginning of a secret across the
+    /// screen, and the words typed there must not be learned.
+    var allowsCompletions: Bool { !isSensitive && !suppressesCompletions }
+
     static let standard = FieldTraits()
 }
 

@@ -120,6 +120,22 @@ enum AppSurfaces {
         )
     }
 
+    /// The word suggestions screen, with the row switched on.
+    static func wordSuggestions(scheme: ColorScheme) -> Shot {
+        ScenarioEnvironment.reset()
+        let device = Device.iPhone15
+        device.activate()
+        SharedDefaults.store.set(true, forKey: SettingsKey.wordCompletionsEnabled.rawValue)
+        return Shot(
+            size: device.size, scheme: scheme,
+            content: AnyView(
+                NavigationStack { WordSuggestionsSettingsView() }
+                    .formStyle(.grouped).frame(width: device.width, height: device.size.height)
+            ),
+            hosted: true
+        )
+    }
+
     /// The long-swipe settings with the feature switched on.
     static func longSwipes(scheme: ColorScheme) -> Shot {
         ScenarioEnvironment.reset()

@@ -869,11 +869,11 @@ private final class PointerTrack {
 }
 
 private extension SlidePhase {
-    /// A release that types something (the space bar's tap and up-swipe), as
+    /// A release that types something (the space bar's tap, up- and down-swipe), as
     /// opposed to the end of a cursor or delete slide.
     var producesText: Bool {
         switch self {
-        case .tap, .swipeUp: true
+        case .tap, .swipeUp, .swipeDown: true
         default: false
         }
     }

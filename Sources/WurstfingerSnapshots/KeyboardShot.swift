@@ -110,6 +110,14 @@ struct KeyboardSpec {
     var isSplit = false
     /// The Expert circle behaviours (expert mode is switched on with them).
     var circles: (clockwise: CircleType, counterclockwise: CircleType)?
+    /// Word completions to show in the row above the keys (the setting is
+    /// switched on with them). They stand in for what the dictionary would
+    /// return for the typed word, so the picture is the same on every machine.
+    var completionWords: [String]?
+    /// The completion drawn pressed.
+    var pressedCompletion: Int?
+    /// The field is a sensitive one (a password): the row is not shown.
+    var isSensitiveField = false
 }
 
 @MainActor
@@ -147,6 +155,7 @@ enum KeyboardShot {
         settings[.numpadStyle] = spec.numpadStyle.rawValue
         if let spacing = spec.keySpacing { settings[.keySpacing] = spacing }
         if spec.isSplit { settings[.isSplitLayoutEnabled] = true }
+        if spec.completionWords != nil { settings[.wordCompletionsEnabled] = true }
         if spec.finger?.longSwipes == true {
             settings[.expertModeEnabled] = true
             settings[.isLongSwipeEnabled] = true
@@ -155,14 +164,20 @@ enum KeyboardShot {
             language: spec.language,
             containerWidth: spec.device.width,
             autoCapitalize: spec.typedText != nil,
-            settings: settings
+            settings: settings,
+            completionSource: spec.completionWords.map { ScriptedCompletionSource(words: $0) }
         )
         let viewModel = scenario.viewModel
+        if spec.isSensitiveField { viewModel.fieldTraits = FieldTraits(isSensitive: true) }
         viewModel.utilityColumnLeading = spec.utilityColumnLeading
         if let ratio = spec.keyAspectRatio { viewModel.keyAspectRatio = ratio }
         if let width = spec.widthWish { viewModel.keyboardWidth = width }
 
         if let typed = spec.typedText { scenario.type(typed) }
+        // The row as the deferred lookup would have filled it.
+        if let words = spec.completionWords, viewModel.completions.isActive {
+            viewModel.completions.present(words: words)
+        }
         viewModel.switchToMode(spec.mode)
 
         guard let layout = KeyboardGeometry.layout(of: viewModel, containerWidth: spec.device.width) else {
@@ -181,6 +196,7 @@ enum KeyboardShot {
         let keyboard = DataDrivenKeyboardRootView(viewModel: viewModel, overrideWidth: spec.device.width)
             .frame(width: spec.device.width, height: layout.keyboardHeight)
             .environment(\.forcedActiveKeyIds, spec.pressedKeys)
+            .environment(\.forcedPressedCompletion, spec.pressedCompletion)
             // No native views in a headless render; the engine is fed above.
             .environment(\.isTouchSurfaceEnabled, false)
             .environment(\.touchGuideReveal, spec.finger?.paused == true ? .immediately : .never)

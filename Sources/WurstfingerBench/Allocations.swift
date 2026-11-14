@@ -28,13 +28,18 @@ struct BenchRig {
 
     var engine: TouchEngine { viewModel.touchEngine }
 
-    init(isLongPressEnabled: Bool = false, language: String = "de_DE") {
+    /// - Parameter hasCompletions: Switches the word completion row on, over a
+    ///   fixed dictionary, so the rows measure the keystroke path as it is with
+    ///   the feature running.
+    init(isLongPressEnabled: Bool = false, language: String = "de_DE", hasCompletions: Bool = false) {
         let suite = "de.akator.wurstfinger.bench.rig"
         let defaults = UserDefaults(suiteName: suite)!
         defaults.removePersistentDomain(forName: suite)
+        if hasCompletions { defaults.set(true, forKey: SettingsKey.wordCompletionsEnabled.rawValue) }
         viewModel = KeyboardViewModel(userDefaults: defaults, shouldPersistSettings: false)
         target = BenchTextTarget()
         viewModel.bindTextInputTarget(target)
+        if hasCompletions { viewModel.useCompletionSource(BenchCompletionSource()) }
         viewModel.loadDefinition(for: language)
         viewModel.configureTouchEngine(containerWidth: 390, isLongPressEnabled: isLongPressEnabled)
     }
@@ -132,6 +137,18 @@ private func driveDrag(
 @MainActor
 private func drainMainActor() async {
     try? await Task.sleep(for: .milliseconds(300))
+}
+
+/// A dictionary of a few words, so the deferred lookup does what it does with
+/// a real one (a handful of strings back) without depending on the machine.
+@MainActor
+final class BenchCompletionSource: CompletionSource {
+    private let words = ["world", "worldwide", "worry", "worth", "worthy", "wordy"]
+    func supports(_ locale: Locale) -> Bool { true }
+    func completions(for prefix: String, locale: Locale, limit: Int) -> [String] {
+        Array(words.filter { $0.hasPrefix(prefix.lowercased()) }.prefix(limit))
+    }
+    func knows(_ word: String, locale: Locale) -> Bool { true }
 }
 
 @MainActor
@@ -277,6 +294,66 @@ func benchAllocations() async {
     reportAllocations("8h. tap keystroke, long press enabled (timer per down)", countAllocations(iterations: 5000) {
         tap(rig.engine, at: longPressCenter, clock: &clock)
     })
+    await drainMainActor()
+
+    // 8j-8m: the same keystrokes with the word completion row on. The row's
+    // lookup runs on a timer after the keystroke (never inside it); what the
+    // keystroke itself does is bump a counter and, when none is pending,
+    // arm that timer. A tight loop never lets the timer fire, so 8j-8l show
+    // the coalesced case; 8m lets the run loop turn between keystrokes, as
+    // typing does, and so includes arming a fresh timer every time.
+    rig = BenchRig(hasCompletions: true)
+    await KeyboardRegistry.prewarm(["de_DE"])
+    await drainMainActor()
+    let rowFrame = rig.frame(of: GridSlot.topLeft)
+    let rowCenter = CGPoint(x: rowFrame.midX, y: rowFrame.midY)
+    var rowSamples = [TouchSample](repeating: TouchSample(location: rowCenter, time: 0), count: 1)
+    reportAllocations("8j. tap keystroke, completion row on (timer pending)", countAllocations(iterations: 5000) {
+        tap(rig.engine, at: rowCenter, clock: &clock)
+    })
+    reportAllocations("8k. flick keystroke, completion row on (timer pending)", countAllocations(iterations: 5000) {
+        flick(rig.engine, across: rowFrame, samples: &rowSamples, clock: &clock)
+    })
+    await drainMainActor()
+    reportAllocations("8l. deferred lookup itself: WordCompletions.refresh()", countAllocations(iterations: 5000) {
+        rig.viewModel.completions.refresh()
+    })
+
+    rig = BenchRig(isLongPressEnabled: true, hasCompletions: true)
+    await KeyboardRegistry.prewarm(["de_DE"])
+    await drainMainActor()
+    let rowLongFrame = rig.frame(of: GridSlot.topLeft)
+    let rowLongCenter = CGPoint(x: rowLongFrame.midX, y: rowLongFrame.midY)
+    reportAllocations("8j'. tap keystroke, long press and completion row on", countAllocations(iterations: 5000) {
+        tap(rig.engine, at: rowLongCenter, clock: &clock)
+    })
+    await drainMainActor()
+
+    // 8m: real typing, a run-loop turn between keystrokes.
+    rig = BenchRig(hasCompletions: true)
+    await KeyboardRegistry.prewarm(["de_DE"])
+    await drainMainActor()
+    do {
+        let frame = rig.frame(of: GridSlot.topLeft)
+        let center = CGPoint(x: frame.midX, y: frame.midY)
+        var meter = AllocationMeter()
+        for _ in 0 ..< 50 {
+            tap(rig.engine, at: center, clock: &clock)
+            try? await Task.sleep(for: .milliseconds(2))
+        }
+        let iterations = 1500
+        for _ in 0 ..< iterations {
+            meter.start()
+            tap(rig.engine, at: center, clock: &clock)
+            meter.stop()
+            try? await Task.sleep(for: .milliseconds(2))
+        }
+        reportAllocations(
+            "8m. tap keystroke, completion row on, run loop turns between",
+            allocations: Double(meter.allocations) / Double(iterations),
+            bytes: Double(meter.bytes) / Double(iterations)
+        )
+    }
     await drainMainActor()
 }
 

@@ -33,6 +33,80 @@ protocol TimerSource: AnyObject {
     /// seconds have passed, unless the handle is cancelled first. A
     /// non-positive delay still runs asynchronously, never inside the call.
     func schedule(after delay: TimeInterval, _ action: @escaping @MainActor () -> Void) -> TimerHandle
+
+    /// Makes a `Waker` that runs `action` on the main actor, soon after a
+    /// `poke()`, without spending a timer per poke. For work a keystroke
+    /// wants done *after* it (the word completion lookup), where arming a
+    /// fresh timer on every keystroke would put an allocation on the
+    /// keystroke path.
+    func makeWaker(_ action: @escaping @MainActor () -> Void) -> Waker
+}
+
+extension TimerSource {
+    /// A waker built on `schedule(after: 0)`: a poke arms one timer and pokes
+    /// that arrive before it fires share it. What a manual clock wants (a test
+    /// advances it by hand), and what any source gets without overriding.
+    func makeWaker(_ action: @escaping @MainActor () -> Void) -> Waker {
+        let pending = PendingTimer()
+        return Waker(
+            poke: { [self] in
+                guard pending.handle == nil else { return }
+                pending.handle = schedule(after: 0) {
+                    pending.handle = nil
+                    action()
+                }
+            },
+            cancel: {
+                pending.handle?.cancel()
+                pending.handle = nil
+            }
+        )
+    }
+}
+
+/// The timer a `Waker` built on `schedule` has armed, if any.
+@MainActor
+private final class PendingTimer {
+    var handle: TimerHandle?
+}
+
+/// "Run this soon", pokeable from the keystroke path without allocating.
+///
+/// `poke()` asks for one run of the action it was made with, on the main
+/// actor after the current turn; pokes that come in before it runs share it.
+/// The production source backs it with one long-lived task reading an
+/// `AsyncStream` (a poke is a `yield` into a one-element buffer), so a poke
+/// costs no timer and no allocation; the manual clock backs it with
+/// `schedule(after: 0)`.
+@MainActor
+final class Waker {
+    private let onPoke: @MainActor () -> Void
+    private let onCancel: @MainActor () -> Void
+    /// Whatever must live as long as the waker (the task reading the stream;
+    /// its `TaskHandle` cancels it when the waker goes).
+    private let keepAlive: AnyObject?
+
+    init(
+        poke: @escaping @MainActor () -> Void,
+        cancel: @escaping @MainActor () -> Void = {},
+        keepAlive: AnyObject? = nil
+    ) {
+        onPoke = poke
+        onCancel = cancel
+        self.keepAlive = keepAlive
+    }
+
+    /// Asks for the action to run soon. A no-op while a run is already pending.
+    func poke() {
+        onPoke()
+    }
+
+    /// Drops a pending run where the source can (the manual clock's timer).
+    /// The production source cannot take a buffered poke back; callers whose
+    /// action may find nothing to do must tolerate a late run either way.
+    func cancelPending() {
+        onCancel()
+    }
 }
 
 /// An armed timer. Cancelling it is idempotent; a fired timer reads as
@@ -74,6 +148,20 @@ final class SystemTimerSource: TimerSource {
     }
 
     var now: TimeInterval { clock() }
+
+    func makeWaker(_ action: @escaping @MainActor () -> Void) -> Waker {
+        // One element of buffer, newest wins: a poke while a run is pending
+        // changes nothing, and a poke while the action is running asks for one
+        // more run after it.
+        let (stream, continuation) = AsyncStream<Void>.makeStream(bufferingPolicy: .bufferingNewest(1))
+        let reader = TaskHandle(Task { @MainActor in
+            for await _ in stream {
+                guard !Task.isCancelled else { return }
+                action()
+            }
+        })
+        return Waker(poke: { continuation.yield() }, keepAlive: reader)
+    }
 
     func schedule(after delay: TimeInterval, _ action: @escaping @MainActor () -> Void) -> TimerHandle {
         let box = TaskBox()

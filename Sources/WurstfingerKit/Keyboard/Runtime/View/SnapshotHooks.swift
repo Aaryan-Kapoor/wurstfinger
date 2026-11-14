@@ -38,11 +38,21 @@ private struct GestureTrailRecorderOverrideKey: EnvironmentKey {
     static let defaultValue: GestureTrailRecorder? = nil
 }
 
+private struct ForcedPressedCompletionKey: EnvironmentKey {
+    static let defaultValue: Int? = nil
+}
+
 extension EnvironmentValues {
     /// Ids of keys drawn as pressed regardless of touch state.
     var forcedActiveKeyIds: Set<String> {
         get { self[ForcedActiveKeyIdsKey.self] }
         set { self[ForcedActiveKeyIdsKey.self] = newValue }
+    }
+
+    /// Index of the word completion drawn pressed regardless of touch state.
+    var forcedPressedCompletion: Int? {
+        get { self[ForcedPressedCompletionKey.self] }
+        set { self[ForcedPressedCompletionKey.self] = newValue }
     }
 
     /// A trail recorder the key grid uses in place of its own, so the host can

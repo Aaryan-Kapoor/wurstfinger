@@ -56,3 +56,18 @@ should update within a frame or two (Darwin notification, debounced 50 ms), not 
 The health log records the footprint at every lifecycle point. A normal session should stay far below the
 extension's jetsam limit (~48–66 MB depending on device); the `postShedSettled` entry after dismissal shows what
 survives into suspension.
+
+## Word suggestions (`Sources/WurstfingerKit/Keyboard/Runtime/Completion`)
+
+Everything iOS-specific here is unverified on this machine: `SystemCompletionSource`'s `UITextChecker` calls and the
+field mapping in `KeyboardViewController.completionPolicy(for:)`.
+
+| Check | How | Expected |
+| --- | --- | --- |
+| Completions appear | Settings › Word Suggestions on; type "hel" | Up to three words above the keys within a frame or two; `UITextChecker.availableLanguages` contains the layout's language |
+| First lookup per language | Switch language with the globe, type two letters | No visible stall of the next touch (the first lookup loads a dictionary; measured about 300 ms with `NSSpellChecker`). If it stalls, warm the checker at appearance or move lookups off the main actor once `UITextChecker`'s isolation in the SDK is known |
+| Accept | Tap a completion; swipe down on the space bar | Rest of the word and a space; the next space press types nothing, a period removes the space |
+| Hidden fields | Password field, Safari address bar, email field, phone pad, a field with autocorrection off | No row, keyboard height shrinks back; row returns in an ordinary field |
+| Height change | Switch from a note to the address bar | Keyboard height follows without a jump (`textDidChange` calls `updateKeyboardHeight`) |
+| Learned words | Type a name twice, then its first letters | The name is offered; Settings › Clear Learned Words, then reopen the keyboard: gone |
+| VoiceOver | Row buttons read as words with a hint; custom action "Accept suggestion" on the space bar; with gesture typing on, the top word is spoken after a one second pause | As described |

@@ -51,6 +51,9 @@ struct SettingsView: View {
     @AppStorage(SettingsKey.cutAllEnabled.rawValue, store: SharedDefaults.store)
     private var cutAllEnabled = false
 
+    @AppStorage(SettingsKey.wordCompletionsEnabled.rawValue, store: SharedDefaults.store)
+    private var wordCompletionsEnabled = false
+
     @AppStorage(SettingsKey.voiceOverGestureTyping.rawValue, store: SharedDefaults.store)
     private var isVoiceOverGestureTypingEnabled = false
 
@@ -140,6 +143,14 @@ struct SettingsView: View {
                     icon: "text.badge.plus", color: .orange,
                     title: "Text Replacement",
                     subtitle: String(localized: "Expand shortcuts as you type")
+                )
+            }
+
+            NavigationLink(destination: WordSuggestionsSettingsView()) {
+                SettingsRow(
+                    icon: "text.append", color: .blue,
+                    title: "Word Suggestions",
+                    subtitle: wordCompletionsEnabled ? String(localized: "On") : String(localized: "Off")
                 )
             }
 

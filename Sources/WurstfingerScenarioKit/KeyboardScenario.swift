@@ -60,12 +60,19 @@ final class KeyboardScenario {
     ///     want it on.
     ///   - settings: Further settings to store before the view model reads
     ///     them (label toggles, long-press digits, double-space period, ...).
+    ///   - timers: The clock the view model's deadlines run on; a test passes a
+    ///     `ManualTimerSource` to fire the word completion lookup by hand.
+    ///   - completionSource: The dictionary behind the word completion row
+    ///     (`ScriptedCompletionSource` in tests); none by default, which
+    ///     leaves the row off even with the setting on.
     init(
         language: String = "en_US",
         containerWidth: CGFloat = 393,
         autoCapitalize: Bool = true,
         settings: [SettingsKey: Any] = [:],
-        seed: UInt64 = 7
+        seed: UInt64 = 7,
+        timers: (any TimerSource)? = nil,
+        completionSource: (any CompletionSource)? = nil
     ) {
         let defaults = ScenarioDefaults()
         defaults.set(autoCapitalize, forKey: SettingsKey.autoCapitalizeEnabled.rawValue)
@@ -76,9 +83,10 @@ final class KeyboardScenario {
         self.containerWidth = containerWidth
         self.seed = seed
 
-        let viewModel = KeyboardViewModel(userDefaults: defaults, shouldPersistSettings: false)
+        let viewModel = KeyboardViewModel(userDefaults: defaults, shouldPersistSettings: false, timers: timers)
         let target = ScenarioTextTarget()
         viewModel.bindTextInputTarget(target)
+        if let completionSource { viewModel.useCompletionSource(completionSource) }
         viewModel.loadDefinition(for: language)
         // What the controller does on appearance: pick the mode for the
         // (empty) document, so a sentence start comes up shifted.

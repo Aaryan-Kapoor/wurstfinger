@@ -102,6 +102,10 @@ enum KeyboardConstants {
         static let verticalPaddingTop: CGFloat = 4
         /// Bottom padding - accounts for home indicator safe area on notched devices.
         static let verticalPaddingBottom: CGFloat = 10
+        /// Height of the word completion row above the keys, when it is shown
+        /// (`KeyboardViewModel.accessoryRowHeight`). About the system
+        /// keyboard's suggestion bar, a comfortable tap target.
+        static let completionRowHeight: CGFloat = 40
     }
 
     // MARK: - Gesture Recognition
@@ -233,6 +237,12 @@ enum KeyboardConstants {
         /// thumbs and collects incidental upward drift, so the toggle asks for
         /// a longer, more deliberate flick.
         static let swipeUpActivationThreshold: CGFloat = 30
+
+        /// Minimum downward travel to classify a down-swipe on the space bar
+        /// (take the first word completion). The same deliberate 30 pt as the
+        /// up-swipe: the bar lies under the thumbs and a stray drift down must
+        /// not type a word.
+        static let swipeDownActivationThreshold: CGFloat = 30
     }
 
     // MARK: - Delete Key Gestures

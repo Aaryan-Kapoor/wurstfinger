@@ -116,6 +116,18 @@ enum SettingsKey: String, CaseIterable, Sendable {
     /// area) and speaks the character a flick would type, instead of VoiceOver
     /// reading each key. Off by default (`SpokenFeedback`).
     case voiceOverGestureTyping
+    /// Up to three completions of the word before the cursor in a row above the
+    /// keys (`WordCompletions`). Off by default: the row takes height from the
+    /// keys, and a flick keyboard's key size is its muscle memory.
+    case wordCompletionsEnabled
+    /// Remember words the system dictionary does not know (names, jargon) and
+    /// offer them once typed twice. On by default, inside the row's own switch;
+    /// the words never leave the keyboard's container (`LearnedWordStore`).
+    case learnsWords
+    /// Opaque token the host app rewrites when the user clears the learned
+    /// words. The keyboard owns the list (the app cannot reach its container),
+    /// so it wipes it when the token it last saw differs.
+    case learnedWordsClearToken
 }
 
 // MARK: - Haptic Settings

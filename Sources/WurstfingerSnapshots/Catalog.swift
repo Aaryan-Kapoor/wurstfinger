@@ -22,7 +22,7 @@ struct Scenario {
 @MainActor
 enum Catalog {
     static func all() -> [Scenario] {
-        modes() + languages() + layouts() + optimized() + devices() + variants() + layoutOptions() + states() + feel() + typing() + surfaces()
+        modes() + languages() + layouts() + optimized() + devices() + variants() + layoutOptions() + states() + feel() + typing() + completions() + surfaces()
     }
 
     private static func keyboard(
@@ -627,6 +627,85 @@ enum Catalog {
         ]
     }
 
+    // MARK: Word completions
+
+    /// The row above the keys: in both appearances and both styles, with one,
+    /// two and three completions, one pressed, a long word, other languages and
+    /// scripts (German, Arabic right to left), no completions, a sensitive field.
+    private static func completions() -> [Scenario] {
+        let hello = ["hello", "help", "helpful"]
+        var scenarios: [Scenario] = []
+        for scheme in [ColorScheme.light, .dark] {
+            let tail = suffix(scheme)
+            scenarios.append(keyboard("completions", "completions-classic\(tail)") {
+                $0.typedText = "Say hel"
+                $0.completionWords = hello
+                $0.scheme = scheme
+            })
+            scenarios.append(keyboard("completions", "completions-glass\(tail)") {
+                $0.typedText = "Say hel"
+                $0.completionWords = hello
+                $0.style = .liquidGlass
+                $0.backdrop = .colorful
+                $0.scheme = scheme
+            })
+            scenarios.append(keyboard("completions", "completions-pressed\(tail)") {
+                $0.typedText = "Say hel"
+                $0.completionWords = hello
+                $0.pressedCompletion = 1
+                $0.scheme = scheme
+            })
+        }
+        scenarios.append(keyboard("completions", "completions-one") {
+            $0.typedText = "Please read the helpf"
+            $0.completionWords = ["helpful"]
+        })
+        scenarios.append(keyboard("completions", "completions-two") {
+            $0.typedText = "Say hel"
+            $0.completionWords = ["hello", "help"]
+        })
+        scenarios.append(keyboard("completions", "completions-long-words") {
+            $0.typedText = "internat"
+            $0.completionWords = ["internationalization", "international", "internationally"]
+        })
+        scenarios.append(keyboard("completions", "completions-empty") {
+            $0.typedText = "Say "
+            $0.completionWords = []
+        })
+        scenarios.append(keyboard("completions", "completions-german") {
+            $0.language = "de_DE"
+            $0.typedText = "Guten Tag, ich komm"
+            $0.completionWords = ["kommen", "komme", "kommt"]
+        })
+        scenarios.append(keyboard("completions", "completions-arabic") {
+            $0.language = "ar"
+            $0.typedText = "مر"
+            $0.completionWords = ["مرحبا", "مركز", "مرة"]
+        })
+        scenarios.append(keyboard("completions", "completions-hebrew-dark") {
+            $0.language = "he_IL"
+            $0.typedText = "של"
+            $0.completionWords = ["שלום", "שלושה", "שלמה"]
+            $0.scheme = .dark
+        })
+        scenarios.append(keyboard("completions", "completions-sensitive-field") {
+            $0.typedText = "hel"
+            $0.completionWords = hello
+            $0.isSensitiveField = true
+        })
+        scenarios.append(keyboard("completions", "completions-finger-on-space") {
+            $0.typedText = "Say hel"
+            $0.completionWords = hello
+            $0.finger = FingerTrail(keyId: UtilitySlot.space, motion: .press)
+        })
+        scenarios.append(keyboard("completions", "completions-ipad") {
+            $0.device = .iPadLandscape
+            $0.typedText = "Say hel"
+            $0.completionWords = hello
+        })
+        return scenarios
+    }
+
     // MARK: 6. App surfaces
 
     private static func surfaces() -> [Scenario] {
@@ -661,6 +740,9 @@ enum Catalog {
             })
             scenarios.append(Scenario(group: "app", name: "app-style\(tail)") {
                 AppSurfaces.style(scheme: scheme)
+            })
+            scenarios.append(Scenario(group: "app", name: "app-wordsuggestions\(tail)") {
+                AppSurfaces.wordSuggestions(scheme: scheme)
             })
             if scheme == .light {
                 scenarios.append(Scenario(group: "app", name: "app-textreplacement-empty") {

@@ -164,7 +164,7 @@ private final class FuzzHarness {
                 gesture: { [unowned self] key, _ in recordCommit(on: key) },
                 slide: { [unowned self] key, phase in
                     switch phase {
-                    case .tap, .swipeUp: recordCommit(on: key)
+                    case .tap, .swipeUp, .swipeDown: recordCommit(on: key)
                     case .began: markSliding(key)
                     case .changed, .ended, .cancelled: break
                     }

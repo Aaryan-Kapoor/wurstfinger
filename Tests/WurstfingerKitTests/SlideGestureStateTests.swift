@@ -73,7 +73,9 @@ struct SlideGestureStateTests {
         let phase = state.handleEnded(
             translation: CGSize(width: 2, height: 80), configuration: .moveCursor
         )
-        #expect(phase == nil)
+        // Not a tap, and since word completions it is the space bar's
+        // down-swipe (it was dropped before).
+        #expect(phase == .swipeDown)
     }
 
     @Test func diagonalDisplacementBeyondThresholdIsNotATap() {
@@ -190,12 +192,60 @@ struct SlideGestureStateTests {
         #expect(phase == nil)
     }
 
-    @Test func downwardSwipeIsIgnored() {
+    @Test func downwardSwipeOnTheSpaceBarIsASwipeDown() {
         var state = SlideGestureState()
         let translation = CGSize(width: 0, height: upThreshold + 30)
         _ = state.handleChanged(translation: translation, configuration: .moveCursor)
         let phase = state.handleEnded(translation: translation, configuration: .moveCursor)
+        #expect(phase == .swipeDown)
+    }
+
+    @Test func downwardSwipeOnAKeyWithoutOneIsIgnored() {
+        // The delete key has no down-swipe: a pull down still ends as nothing.
+        var state = SlideGestureState()
+        let translation = CGSize(width: 0, height: upThreshold + 30)
+        _ = state.handleChanged(translation: translation, configuration: .delete)
+        let phase = state.handleEnded(translation: translation, configuration: .delete)
         #expect(phase == nil)
+    }
+
+    @Test func downwardSwipeBelowTheThresholdIsIgnored() {
+        var state = SlideGestureState()
+        let translation = CGSize(width: 0, height: KeyboardConstants.SpaceGestures.swipeDownActivationThreshold - 6)
+        _ = state.handleChanged(translation: translation, configuration: .moveCursor)
+        #expect(state.handleEnded(translation: translation, configuration: .moveCursor) == nil)
+    }
+
+    @Test func aPullDownAndBackIsStillATap() {
+        // Out 50 pt and back to the origin: what a tap that wobbled looks like.
+        // It must not become a down-swipe (that would type a word), it stays
+        // what it always was.
+        var state = SlideGestureState()
+        _ = state.handleChanged(translation: CGSize(width: 0, height: 50), configuration: .moveCursor)
+        _ = state.handleChanged(translation: CGSize(width: 0, height: 3), configuration: .moveCursor)
+        let phase = state.handleEnded(translation: CGSize(width: 0, height: 3), configuration: .moveCursor)
+        #expect(phase == .tap)
+    }
+
+    @Test func aDownSwipeWithSidewaysDriftDoesNotLatchTheSlide() {
+        var state = SlideGestureState()
+        var latched = false
+        for step in stride(from: 4, through: 60, by: 4) {
+            let update = state.handleChanged(
+                translation: CGSize(width: CGFloat(step) * 0.35, height: CGFloat(step)), configuration: .moveCursor
+            )
+            latched = latched || update.began
+        }
+        #expect(!latched)
+        let end = CGSize(width: 21, height: 60)
+        #expect(state.handleEnded(translation: end, configuration: .moveCursor) == .swipeDown)
+    }
+
+    @Test func aDominantlyHorizontalDragAfterADownSwipeStillSlides() {
+        var state = SlideGestureState()
+        _ = state.handleChanged(translation: CGSize(width: 0, height: 40), configuration: .moveCursor)
+        let update = state.handleChanged(translation: CGSize(width: 90, height: 40), configuration: .moveCursor)
+        #expect(update.began)
     }
 
     @Test func returnUpSwipeWithDriftAtLiftOffStaysAReturnUpSwipe() {
