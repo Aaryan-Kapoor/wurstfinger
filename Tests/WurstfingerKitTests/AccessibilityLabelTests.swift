@@ -414,3 +414,113 @@ struct NamedAccessibilityBindingTests {
         #expect(danda.accessibilityLabel == nil)
     }
 }
+
+// MARK: - Every character reachable (#231)
+
+/// The generated tier: every character a key types on any gesture is offered
+/// as a "character, gesture" action, so nothing on the keyboard needs a swipe.
+@MainActor
+struct CharacterAccessibilityActionTests {
+    /// What a key's actions and its own activation type, by glyph.
+    private func reachableTexts(of key: KeyDefinition) -> Set<String> {
+        var reachable: Set<String> = []
+        if let tap = key.bindings[.tap]?.action.typedText { reachable.insert(tap) }
+        for action in key.accessibilityActions {
+            if let glyph = action.glyph { reachable.insert(glyph) }
+            // A named action types whatever its binding types.
+            let binding = key.bindings[action.gesture]
+            let dispatched = action.isReturn ? binding?.returnAction : binding?.action
+            if let text = dispatched?.typedText { reachable.insert(text) }
+        }
+        return reachable
+    }
+
+    /// Text a binding types, on the gesture and on its return swipe. A dead key
+    /// counts by the accent it shows.
+    private func typedTexts(of binding: KeyBinding) -> [String] {
+        var texts: [String] = []
+        switch binding.action {
+        case let .commitText(text): texts.append(text)
+        case .compose: texts.append(binding.label)
+        default: break
+        }
+        if case let .commitText(text)? = binding.returnAction { texts.append(text) }
+        return texts.filter { !$0.isEmpty }
+    }
+
+    @Test func everyTypedCharacterIsReachableWithoutGestures() throws {
+        for def in try loadedDefinitions() {
+            for (modeName, mode) in def.modes {
+                for (keyId, key) in mode.keys {
+                    let reachable = reachableTexts(of: key)
+                    for (gesture, binding) in key.bindings where gesture != .tap {
+                        for text in typedTexts(of: binding) where !reachable.contains(text) {
+                            Issue.record("\(def.id)/\(modeName)/\(keyId) \(gesture) types \"\(text)\" unreachably")
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// The curated names are what a user reaches for first; the generated
+    /// characters follow them.
+    @Test func characterActionsFollowTheNamedOnes() throws {
+        for def in try loadedDefinitions() {
+            for (modeName, mode) in def.modes {
+                for (keyId, key) in mode.keys {
+                    let isCharacter = key.accessibilityActions.map { $0.gestureName != nil }
+                    let firstCharacter = isCharacter.firstIndex(of: true) ?? isCharacter.count
+                    #expect(
+                        !isCharacter[firstCharacter...].contains(false),
+                        "\(def.id)/\(modeName)/\(keyId) mixes named actions into the character tier"
+                    )
+                }
+            }
+        }
+    }
+
+    @Test func aCharacterActionIsNamedByItsCharacterAndGesture() throws {
+        let definition = try #require(KeyboardRegistry.load(id: "de_DE"))
+        let topLeft = try #require(definition.modes[ModeNames.main]?.keys[GridSlot.topLeft])
+        let names = topLeft.accessibilityActions.map(\.name)
+        #expect(names.contains("-, swipe right"))
+        #expect(names.contains("÷, swipe right, and back"))
+        let divide = try #require(topLeft.accessibilityActions.first { $0.glyph == "÷" })
+        #expect(divide.isReturn && divide.gesture == .swipeRight)
+    }
+
+    /// End to end through the pipeline, the way the view's action buttons
+    /// dispatch: every letter and digit action types exactly its character.
+    @Test func everyLetterActionTypesItsLetter() throws {
+        let (viewModel, target) = makeViewModel(languageId: "de_DE")
+        let mode = try #require(viewModel.activeModeFromDefinition)
+        var checked = 0
+        for keyId in GridSlot.allSlots.flatMap(\.self) {
+            guard let key = mode.key(for: keyId) else { continue }
+            for action in key.accessibilityActions {
+                guard let glyph = action.glyph,
+                      glyph.allSatisfy({ $0.isLetter || $0.isNumber }),
+                      case .commitText? = (action.isReturn ? key.bindings[action.gesture]?.returnAction
+                                                           : key.bindings[action.gesture]?.action)
+                else { continue }
+                // Mid-word, so auto-capitalization leaves the letter alone.
+                target.events = []
+                target.documentContextBeforeInput = "x"
+                viewModel.handleGesture(action.gesture, keyId: keyId, isReturn: action.isReturn)
+                #expect(target.events == [.insertText(glyph)], "\(keyId) \(action.name)")
+                checked += 1
+            }
+        }
+        #expect(checked >= 20, "only \(checked) letter actions were exercised")
+    }
+
+    @Test func aReturnCharacterActionTypesTheReturnText() throws {
+        let (viewModel, target) = makeViewModel(languageId: "de_DE")
+        let topLeft = try #require(viewModel.activeModeFromDefinition?.key(for: GridSlot.topLeft))
+        let divide = try #require(topLeft.accessibilityActions.first { $0.glyph == "÷" })
+        target.documentContextBeforeInput = "1"
+        viewModel.handleGesture(divide.gesture, keyId: GridSlot.topLeft, isReturn: divide.isReturn)
+        #expect(target.events == [.insertText("÷")])
+    }
+}

@@ -14,8 +14,10 @@ import SwiftUI
 /// reach, including the globe's input-method switch, whose tap is inert by
 /// design. Each labelled binding becomes a named custom action, and a key
 /// with an inert tap additionally overrides the element's default activation
-/// with the gesture it declares. Both dispatch through the same `onGesture`
-/// callback as a real touch, so they share the resolver chain and pipeline.
+/// with the gesture it declares. Every character on the key's other gestures
+/// is offered too, named by character and gesture (#231). All of them
+/// dispatch through the same `onGesture` callback as a real touch, so they
+/// share the resolver chain and pipeline.
 struct KeyAccessibilityActions: ViewModifier {
     let key: KeyDefinition
     let onGesture: (KeyDefinition, GestureType, Bool) -> Void
@@ -23,10 +25,20 @@ struct KeyAccessibilityActions: ViewModifier {
     func body(content: Content) -> some View {
         withActivation(content)
             .accessibilityActions {
-                ForEach(key.accessibilityActions, id: \.gesture) { action in
-                    Button(action.name) { onGesture(key, action.gesture, false) }
+                ForEach(key.accessibilityActions, id: \.name) { action in
+                    Button { onGesture(key, action.gesture, action.isReturn) } label: { label(for: action) }
                 }
             }
+    }
+
+    /// A character action spells its glyph out, so VoiceOver reads "ä, swipe
+    /// down" and names a lone mark ("period") in the user's language instead
+    /// of passing over it; named actions read as written.
+    private func label(for action: KeyAccessibilityAction) -> Text {
+        guard let glyph = action.glyph, let gestureName = action.gestureName else {
+            return Text(verbatim: action.name)
+        }
+        return Text(verbatim: glyph).speechSpellsOutCharacters() + Text(verbatim: ", " + gestureName)
     }
 
     /// Applied only where it is needed: a key whose tap already acts keeps the

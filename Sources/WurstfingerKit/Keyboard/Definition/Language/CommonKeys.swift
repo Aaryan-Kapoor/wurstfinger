@@ -216,13 +216,12 @@ enum CommonKeys {
     /// Each KeyBinding includes both the primary action and an optional return-swipe action.
     ///
     /// **Which of these carry an `accessibilityLabel`, and why so few.** A label
-    /// is the opt-in for a VoiceOver custom action (`KeyDefinition.accessibilityActions`)
-    /// and every named binding becomes a rotor entry on that key, so naming all
-    /// eight directions would put eight to sixteen entries on every letter key —
-    /// exactly what the opt-in exists to prevent. Until swipe outputs can be
-    /// offered as generated, spoken-glyph actions (follow-up design work), only
-    /// bindings that are unreachable without gestures *and* have no workaround
-    /// are named:
+    /// puts a binding in the first, curated tier of VoiceOver custom actions
+    /// (`KeyDefinition.accessibilityActions`), ahead of the generated
+    /// "character, gesture" entries every typed character gets. It is for
+    /// bindings whose glyph does not say what they do, or that a user needs
+    /// first and often — the ones unreachable without gestures *and* without a
+    /// workaround:
     ///
     /// - `,` `.` `?` — sentence punctuation. Auto-capitalization and the
     ///   double-space shortcut can stand in for a period; nothing stands in for
@@ -233,9 +232,9 @@ enum CommonKeys {
     ///   directions are named so that caps lock is not a one-way door: `⇧` in the
     ///   caps-lock mode is a no-op, and `⇩` is the only way back.
     ///
-    /// Letter bindings stay unnamed on purpose: a key's own center letter is
-    /// already reachable by activating it, and naming its other eight directions
-    /// is the flooding case above. Names state the *function*, not the glyph, so
+    /// Letter bindings stay unnamed on purpose: their glyph is their name, and
+    /// the generated tier offers each of them after the curated entries.
+    /// Names state the *function*, not the glyph, so
     /// `GridKeyboardFactory` hands them down when a layout substitutes its own
     /// script's mark (Arabic `،`, Japanese `。`).
     static let defaultSlotBindings: [String: [GestureType: KeyBinding]] = [
