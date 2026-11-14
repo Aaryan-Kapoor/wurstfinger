@@ -141,7 +141,7 @@ struct LongPressNumberPipelineTests {
 
     @Test func longPressOnDeleteReportsUnhandled() {
         let (vm, target) = makeViewModel()
-        // Delete shares SlideGestureHandler with space but has no long-press
+        // Delete shares the slide state machine with space but has no long-press
         // binding; the hold must not be consumed.
         let handled = vm.handleGesture(.longPress, keyId: UtilitySlot.delete, isReturn: false)
         #expect(!handled)

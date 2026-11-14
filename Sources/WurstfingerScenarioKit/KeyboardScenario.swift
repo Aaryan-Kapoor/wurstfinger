@@ -4,13 +4,13 @@
 //
 //  Types on a real keyboard by moving a synthetic finger over it.
 //
-//  Every gesture is a touch path (`TouchPath`) that is fed through the same
-//  recognition code a drag on screen reaches — `KeyGestureSequence` and
-//  `KeyGestureRecognizer.classify` for ordinary keys, `SlideGestureState` for
-//  the space and delete keys — and the result goes to the view model's own
-//  `handleGesture` / `handleSlide`, the entry points the keyboard view calls.
-//  Nothing is handed to the pipeline pre-classified, so recognition,
-//  resolution and the action pipeline are exercised together.
+//  Every gesture is a touch path (`TouchPath`) fed, sample by sample, to the
+//  view model's own `TouchEngine` — the object a touch surface feeds on a
+//  device: it hit-tests the key, tracks the finger, classifies speculatively,
+//  applies the long-press guard and commits in press order, then calls the view
+//  model's `handleGesture` / `handleSlide`. Nothing is handed to the pipeline
+//  pre-classified, so input, recognition, resolution and the action pipeline
+//  are exercised together.
 //
 
 import CoreGraphics
@@ -153,83 +153,98 @@ final class KeyboardScenario {
         return perform(synth.drag(by: translation), on: keyId)
     }
 
-    /// Runs an arbitrary touch path over the key.
+    /// Runs an arbitrary touch path over the key, through the view model's
+    /// real `TouchEngine`: hit test, per-finger track, speculative
+    /// classification, long-press guard, ordered commit, then the view model's
+    /// dispatch — the same calls a touch surface makes.
     @discardableResult
     func perform(_ path: TouchPath, on keyId: String) -> GestureOutcome {
-        guard let key = viewModel.activeModeFromDefinition?.key(for: keyId) else {
-            return GestureOutcome()
-        }
-
-        // A long press fires while the finger still rests on the key. A handled
-        // one consumes the touch: no tap or slide follows on release.
         var outcome = GestureOutcome()
-        if firesLongPress(for: path) {
-            let handled = viewModel.handleGesture(.longPress, keyId: keyId, isReturn: false)
-            if handled {
-                outcome.firedLongPress = true
-                outcome.gesture = .longPress
+        guard viewModel.activeModeFromDefinition?.key(for: keyId) != nil,
+              configureEngine(recordingInto: { outcome = $0(outcome) }),
+              let frame = engine.hitMap.key(withId: keyId)?.frame
+        else { return outcome }
+
+        let origin = CGPoint(x: frame.midX, y: frame.midY)
+        func point(_ sample: CGPoint) -> CGPoint {
+            CGPoint(x: origin.x + sample.x, y: origin.y + sample.y)
+        }
+        touchCount += 1
+        let pointer = PointerID(truncatingIfNeeded: touchCount)
+        let start = clock
+        let interval = 1 / TouchPath.sampleRate
+        engine.began(pointer, at: point(path.samples.first ?? .zero), time: start)
+        for (index, sample) in path.samples.dropFirst().dropLast().enumerated() {
+            engine.moved(pointer, samples: [TouchSample(location: point(sample), time: start + Double(index + 1) * interval)])
+        }
+        // A long press fires while the finger still rests on the key; the
+        // engine's own guard decides whether it was still resting.
+        if path.duration >= viewModel.gestureTuning.longPressDuration {
+            engine.fireLongPressTimer(for: pointer)
+        }
+        engine.ended(pointer, at: point(path.end), time: start + path.duration)
+        clock = start + path.duration + 0.2
+        return outcome
+    }
+
+    /// The engine the scenario types through.
+    var engine: TouchEngine { viewModel.touchEngine }
+
+    /// Synthetic touch clock, advanced past each gesture so consecutive
+    /// gestures never overlap (rollover is tested against the engine itself).
+    private var clock: TimeInterval = 1000
+
+    /// Hands the engine the active mode and callbacks that forward to the view
+    /// model while recording what happened into the outcome.
+    private func configureEngine(recordingInto record: @escaping ((GestureOutcome) -> GestureOutcome) -> Void) -> Bool {
+        guard let mode = viewModel.activeModeFromDefinition,
+              let (geometry, size) = viewModel.gridGeometry(forContainerWidth: containerWidth)
+        else { return false }
+        let viewModel = viewModel
+        var actions = viewModel.touchEngineActions
+        actions.gesture = { key, classification in
+            let dispatched = viewModel.handleGesture(
+                classification.gesture, keyId: key.id, isReturn: classification.isReturn
+            )
+            record { outcome in
+                var outcome = outcome
+                outcome.gesture = classification.gesture
+                outcome.isReturn = classification.isReturn
+                outcome.dispatched = dispatched
+                return outcome
+            }
+        }
+        actions.slide = { key, phase in
+            viewModel.handleSlide(key, phase: phase)
+            record { outcome in
+                var outcome = outcome
+                outcome.slidePhases.append(phase)
                 outcome.dispatched = true
                 return outcome
             }
         }
-
-        if key.slideType != .none {
-            return slide(path, on: key, outcome: outcome)
+        actions.longPress = { key in
+            let handled = viewModel.handleGesture(.longPress, keyId: key.id, isReturn: false)
+            if handled {
+                record { outcome in
+                    var outcome = outcome
+                    outcome.firedLongPress = true
+                    outcome.gesture = .longPress
+                    outcome.dispatched = true
+                    return outcome
+                }
+            }
+            return handled
         }
-
-        var sequence = KeyGestureSequence()
-        for sample in path.samples.dropLast() {
-            _ = sequence.handleChanged(translation: CGSize(width: sample.x, height: sample.y))
-        }
-        let end = path.end
-        // The view model's settings snapshot, exactly as the key view passes
-        // it: the scenario's own defaults, never the real shared store.
-        let classification = sequence.handleEnded(
-            translation: CGSize(width: end.x, height: end.y),
-            aspectRatio: metrics.cellAspectRatio * spanRatio(of: keyId),
-            tuning: viewModel.gestureTuning
+        engine.configure(
+            geometry: geometry,
+            keys: mode.keys,
+            tuning: viewModel.gestureTuning,
+            isLongPressEnabled: defaults.bool(forKey: SettingsKey.isLongPressDigitEnabled.rawValue),
+            actions: actions
         )
-        outcome.gesture = classification.gesture
-        outcome.isReturn = classification.isReturn
-        outcome.dispatched = viewModel.handleGesture(
-            classification.gesture, keyId: keyId, isReturn: classification.isReturn
-        )
-        return outcome
-    }
-
-    private func slide(_ path: TouchPath, on key: KeyDefinition, outcome: GestureOutcome) -> GestureOutcome {
-        var outcome = outcome
-        var state = SlideGestureState()
-        let configuration = SlideGestureConfiguration.for(key.slideType)
-        func report(_ phase: SlidePhase) {
-            outcome.slidePhases.append(phase)
-            viewModel.handleSlide(key, phase: phase)
-        }
-        for sample in path.samples.dropLast() {
-            let update = state.handleChanged(
-                translation: CGSize(width: sample.x, height: sample.y), configuration: configuration
-            )
-            update.phases.forEach(report)
-        }
-        let end = path.end
-        let size = CGSize(width: end.x, height: end.y)
-        // The last sample is delivered as an update as well as the end value.
-        state.handleChanged(translation: size, configuration: configuration).phases.forEach(report)
-        if let phase = state.handleEnded(translation: size, configuration: configuration) {
-            report(phase)
-        }
-        outcome.dispatched = !outcome.slidePhases.isEmpty
-        return outcome
-    }
-
-    /// Whether the long-press timer would fire for this touch: the setting is
-    /// on, the finger rested at least the press duration, and it never left
-    /// its resting position.
-    private func firesLongPress(for path: TouchPath) -> Bool {
-        let tuning = viewModel.gestureTuning
-        return defaults.bool(forKey: SettingsKey.isLongPressDigitEnabled.rawValue)
-            && path.duration >= tuning.longPressDuration
-            && path.maxDisplacement <= tuning.longPressMovementTolerance
+        engine.updateSize(size)
+        return true
     }
 
     // MARK: - Typing text

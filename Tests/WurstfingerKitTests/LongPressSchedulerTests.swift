@@ -2,8 +2,8 @@
 //  LongPressSchedulerTests.swift
 //  WurstfingerTests
 //
-//  Tests for the shared LongPressScheduler extracted from KeyGestureRecognizer
-//  and SlideGestureHandler: the synchronous fire/consume core plus the
+//  Tests for the LongPressScheduler shared by the input engine's flick and
+//  slide tracks: the synchronous fire/consume core plus the
 //  main-actor task timer wiring. `runFire` is synchronous so the guard path
 //  is testable without a real 0.7 s timer.
 //

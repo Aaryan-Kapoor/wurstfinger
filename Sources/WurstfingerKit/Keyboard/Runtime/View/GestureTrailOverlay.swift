@@ -57,8 +57,13 @@ struct GestureTrailOverlay: View {
         // Those frames would build the full ribbon only to fill it at zero
         // opacity; bail before the geometry instead.
         guard !trail.isFinished(at: now) else { return }
-        let points = trail.visiblePoints(at: now)
+        var points = trail.visiblePoints(at: now)
         guard !points.isEmpty else { return }
+        // While the finger is down, run the ribbon out to where the system
+        // predicts it is going, so the head sits under the finger.
+        if trail.releaseTime == nil {
+            points.append(contentsOf: recorder.predicted)
+        }
 
         let path = GestureTrailGeometry.shape(through: points, headWidth: headWidth)
         // One fill of one closed contour, so the alpha is uniform even where

@@ -118,6 +118,24 @@ public final class KeyboardViewController: UIInputViewController {
         // regression in that rebuild shows up in the health log on-device,
         // without a Mac attached.
         KeyboardHealthLog.shared.record("viewDidAppear")
+        stopDelayingTouches()
+    }
+
+    /// Lets touches through to the keyboard the moment they begin.
+    ///
+    /// The window a keyboard extension lives in carries the system's own
+    /// gesture recognizers (the screen-edge and system-gesture gates). With
+    /// their default `delaysTouchesBegan`, UIKit holds a touch back until they
+    /// have decided it is not theirs — for touches near the bottom edge, where
+    /// the space and return keys sit, that is a perceptible fraction of a
+    /// second before the key even lights up. Turning the delay off delivers the
+    /// touch to the input engine immediately; the recognizers still see it and
+    /// still win a real system gesture, which then cancels our touch through
+    /// `touchesCancelled` like any other interruption.
+    private func stopDelayingTouches() {
+        for recognizer in view.window?.gestureRecognizers ?? [] {
+            recognizer.delaysTouchesBegan = false
+        }
     }
 
     /// The complete refresh an appearance owes the keyboard, in the order the
@@ -323,6 +341,10 @@ public final class KeyboardViewController: UIInputViewController {
     /// a rebuild in `viewWillAppear` restores the same keyboard without
     /// reloading the definition. No-op if hosting is already gone.
     private func teardownHosting() {
+        // Fingers still down belong to a surface that is going away: type
+        // what already completed and drop the rest, so no armed long press or
+        // held-back keystroke fires into the next appearance.
+        viewModel.touchEngine.cancelAll()
         guard let controller = hostingController else { return }
         controller.willMove(toParent: nil)
         controller.view.removeFromSuperview()

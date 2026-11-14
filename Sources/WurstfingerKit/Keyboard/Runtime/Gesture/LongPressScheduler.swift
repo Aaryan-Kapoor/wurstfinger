@@ -2,10 +2,8 @@
 //  LongPressScheduler.swift
 //  Wurstfinger
 //
-//  Shared long-press timer + touch-consumption bookkeeping extracted from
-//  KeyGestureRecognizer and SlideGestureHandler. Only the timer lifecycle and
-//  the consumed-touch flag are shared; each recognizer keeps its own distinct
-//  fire-guard predicate (passed as the `fire` closure).
+//  Long-press timer + touch-consumption bookkeeping for one finger of the
+//  input engine. The fire guard is passed in as the `fire` closure.
 //
 
 import Foundation

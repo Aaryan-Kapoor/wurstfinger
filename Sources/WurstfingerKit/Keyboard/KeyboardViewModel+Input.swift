@@ -1,0 +1,102 @@
+//
+//  KeyboardViewModel+Input.swift
+//  Wurstfinger
+//
+//  The view model's side of the input engine: the callbacks the engine
+//  dispatches into, and the side-effect-free resolution behind the live
+//  flick preview.
+//
+
+import CoreGraphics
+import Foundation
+
+extension KeyboardViewModel {
+    func makeTouchEngineActions() -> TouchEngineActions {
+        TouchEngineActions(
+            touchDown: { [weak self] _ in
+                self?.touchDown()
+            },
+            gesture: { [weak self] key, classification in
+                self?.handleGesture(classification.gesture, keyId: key.id, isReturn: classification.isReturn)
+            },
+            slide: { [weak self] key, phase in
+                self?.handleSlide(key, phase: phase)
+            },
+            longPress: { [weak self] key in
+                self?.handleGesture(.longPress, keyId: key.id, isReturn: false) ?? false
+            },
+            previewLabel: { [weak self] key, gesture, isReturn in
+                self?.previewLabel(for: gesture, keyId: key.id, isReturn: isReturn)
+            }
+        )
+    }
+
+    /// What `gesture` on `keyId` would type in the active mode, as its label —
+    /// resolved exactly as `handleGesture` would resolve it, but without
+    /// dispatching anything. Drives the preview bubble while a finger is
+    /// still moving, so it must stay a pure lookup.
+    func previewLabel(for gesture: GestureType, keyId: String, isReturn: Bool) -> String? {
+        guard let mode = activeModeFromDefinition else { return nil }
+        if gesture == .circularClockwise || gesture == .circularCounterclockwise {
+            guard let key = mode.key(for: keyId) else { return nil }
+            let opposite: GestureType = gesture == .circularClockwise
+                ? .circularCounterclockwise : .circularClockwise
+            // Same order as `handleCircular`: explicit binding, the uppercase
+            // centre letter, then the opposite direction.
+            if let binding = key.bindings[gesture] { return binding.label }
+            if let tap = key.bindings[.tap], case let .commitText(text) = tap.action, text.first?.isLetter == true {
+                return text.keyboardUppercased(with: pipelineLocale ?? Locale.current)
+            }
+            return key.bindings[opposite]?.label
+        }
+        let chain = isReturn ? returnSwipeResolverChain : resolverChain
+        guard let binding = chain?.resolve(keyId: keyId, gesture: gesture, in: mode) else { return nil }
+        // Text bindings preview the text they commit, which for a return swipe
+        // (and the shifted forms the resolvers produce) can differ from the
+        // label the key's hint shows.
+        if case let .commitText(text) = binding.action, !text.isEmpty { return text }
+        return binding.label
+    }
+
+    /// The grid geometry the engine hit-tests against at `containerWidth`, and
+    /// the grid's size — computed the way `DataDrivenKeyboardRootView` lays the
+    /// grid out. Hosts without a touch surface (the scenario harness, the
+    /// snapshot tool) configure the engine from this; the keyboard itself gets
+    /// the size from the surface's own bounds.
+    func gridGeometry(forContainerWidth containerWidth: CGFloat) -> (geometry: GridGeometry, size: CGSize)? {
+        guard let arrangement = currentArrangement else { return nil }
+        let metrics = layoutMetrics(forContainerWidth: containerWidth)
+        let cells = GridLayoutSolver.solve(arrangement)
+        let rows = cells.map { $0.row + $0.rowSpan }.max() ?? 0
+        let geometry = GridGeometry(
+            cells: cells,
+            columns: arrangement.columns,
+            rowHeight: metrics.rowHeight,
+            horizontalSpacing: KeyboardConstants.Layout.gridHorizontalSpacing,
+            verticalSpacing: KeyboardConstants.Layout.gridVerticalSpacing,
+            cellAspectRatio: metrics.cellAspectRatio
+        )
+        let size = CGSize(
+            width: metrics.keyboardWidth - 2 * KeyboardConstants.Layout.horizontalPadding,
+            height: CGFloat(rows) * metrics.rowHeight
+                + CGFloat(max(rows - 1, 0)) * KeyboardConstants.Layout.gridVerticalSpacing
+        )
+        return (geometry, size)
+    }
+
+    /// Configures the engine for the active mode without a touch surface (see
+    /// `gridGeometry(forContainerWidth:)`).
+    func configureTouchEngine(containerWidth: CGFloat, isLongPressEnabled: Bool) {
+        guard let mode = activeModeFromDefinition,
+              let (geometry, size) = gridGeometry(forContainerWidth: containerWidth)
+        else { return }
+        touchEngine.configure(
+            geometry: geometry,
+            keys: mode.keys,
+            tuning: gestureTuning,
+            isLongPressEnabled: isLongPressEnabled,
+            actions: touchEngineActions
+        )
+        touchEngine.updateSize(size)
+    }
+}

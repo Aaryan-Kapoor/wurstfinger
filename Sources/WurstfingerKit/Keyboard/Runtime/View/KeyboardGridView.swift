@@ -17,11 +17,13 @@ import SwiftUI
 struct KeyboardGridView: View {
     let arrangement: GridArrangement
     let keys: [String: KeyDefinition]
+    /// Performs a gesture directly; the keys' VoiceOver custom actions use it.
     let onGesture: (KeyDefinition, GestureType, Bool) -> Void
-    var onTouchDown: (() -> Void)?
-    var onSlide: ((KeyDefinition, SlidePhase) -> Void)?
-    /// Forwarded to `KeyView`; returns whether the long press was handled.
-    var onLongPress: ((KeyDefinition) -> Bool)?
+
+    /// The input engine every touch on this grid goes to, and the callbacks it
+    /// dispatches into (both owned by the view model).
+    let engine: TouchEngine
+    let touchActions: TouchEngineActions
     /// Active-language hint for the switch key, supplied by `KeyboardViewModel`
     /// so it reflects the loaded definition rather than re-derived storage.
     var languageLabel: String = ""
@@ -47,19 +49,17 @@ struct KeyboardGridView: View {
     /// Undefaulted for the same reason as `renderSettings` and `metrics`.
     let tuning: GestureTuning
 
-    /// Collects the touch path for the gesture trail. `@State` keeps one
-    /// recorder for the life of the grid. The samples arriving at up to 120 Hz
-    /// cannot re-render the grid and its keys because the recorder's sample
-    /// buffer is unobserved; only `GestureTrailOverlay` reads the one flag
-    /// (`isVisible`) that says whether to draw, so only it is invalidated.
-    @State private var ownTrail = GestureTrailRecorder()
-
     /// A recorder a headless host supplies to draw a trail it feeds itself
     /// (see `SnapshotHooks.swift`); nil in the app.
     @Environment(\.gestureTrailRecorderOverride) private var injectedTrail
 
+    /// Hosts without a real screen (the snapshot tool) cannot render a native
+    /// view, so they switch the touch surface off and drive the engine
+    /// directly (see `SnapshotHooks.swift`).
+    @Environment(\.isTouchSurfaceEnabled) private var isTouchSurfaceEnabled
+
     private var gestureTrail: GestureTrailRecorder {
-        injectedTrail ?? ownTrail
+        injectedTrail ?? engine.trail
     }
 
     var body: some View {
@@ -93,6 +93,30 @@ struct KeyboardGridView: View {
                 headWidth: GestureTrailOverlay.headWidth(for: metrics)
             )
         }
+        .overlay {
+            TouchGuideOverlay(press: engine.press, keys: keys)
+        }
+        // Topmost, so it receives every touch on the grid: one native view for
+        // all fingers instead of a gesture per key (see `TouchEngine`).
+        .overlay {
+            if isTouchSurfaceEnabled {
+                TouchSurface(engine: engine, configuration: TouchSurfaceConfiguration(
+                    geometry: GridGeometry(
+                        cells: cells,
+                        columns: arrangement.columns,
+                        rowHeight: metrics.rowHeight,
+                        horizontalSpacing: KeyboardConstants.Layout.gridHorizontalSpacing,
+                        verticalSpacing: KeyboardConstants.Layout.gridVerticalSpacing,
+                        cellAspectRatio: metrics.cellAspectRatio
+                    ),
+                    keys: keys,
+                    tuning: tuning,
+                    isLongPressEnabled: renderSettings.isLongPressDigitEnabled,
+                    actions: touchActions
+                ))
+                .accessibilityHidden(true)
+            }
+        }
     }
 
     @ViewBuilder
@@ -101,11 +125,7 @@ struct KeyboardGridView: View {
             KeyView(
                 key: key,
                 onGesture: onGesture,
-                onTouchDown: onTouchDown,
-                onSlide: onSlide,
-                onLongPress: onLongPress,
-                gestureTrail: gestureTrail,
-                spanRatio: CGFloat(cell.columnSpan) / CGFloat(cell.rowSpan),
+                pressCell: engine.press.cell(for: key.id),
                 visualInset: visualInset(for: cell, totalRows: totalRows),
                 settings: renderSettings,
                 metrics: metrics,

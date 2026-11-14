@@ -2,7 +2,7 @@
 //  SlideGestureStateTests.swift
 //  WurstfingerTests
 //
-//  Tests for the SlideGestureState machine backing SlideGestureHandler:
+//  Tests for the SlideGestureState machine behind slide keys:
 //  tap/slide classification (including vertical drags) and recovery from
 //  system touch cancellation. These need no SwiftUI rendering.
 //

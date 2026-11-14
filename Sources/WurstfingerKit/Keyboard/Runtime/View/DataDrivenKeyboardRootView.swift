@@ -75,15 +75,8 @@ struct DataDrivenKeyboardRootView: View {
                     onGesture: { key, gesture, isReturn in
                         viewModel.handleGesture(gesture, keyId: key.id, isReturn: isReturn)
                     },
-                    onTouchDown: {
-                        viewModel.touchDown()
-                    },
-                    onSlide: { key, phase in
-                        viewModel.handleSlide(key, phase: phase)
-                    },
-                    onLongPress: { key in
-                        viewModel.handleGesture(.longPress, keyId: key.id, isReturn: false)
-                    },
+                    engine: viewModel.touchEngine,
+                    touchActions: viewModel.touchEngineActions,
                     languageLabel: viewModel.currentLanguageLabel,
                     isLanguageLabelShown: viewModel.hasMultipleLanguages,
                     renderSettings: renderSettings,

@@ -15,6 +15,25 @@ private struct ForcedActiveKeyIdsKey: EnvironmentKey {
     static let defaultValue: Set<String> = []
 }
 
+/// When the guide card shows the touched key's whole map.
+enum TouchGuideReveal: Sendable {
+    /// After the finger has rested for `TouchGuideCard.revealDelay` (the app).
+    case afterPause
+    /// From the first frame: a still of a finger that has paused.
+    case immediately
+    /// Never: a still of a fluent flick, which a renderer that skips the
+    /// delay would otherwise show revealed.
+    case never
+}
+
+private struct TouchGuideRevealKey: EnvironmentKey {
+    static let defaultValue = TouchGuideReveal.afterPause
+}
+
+private struct TouchSurfaceEnabledKey: EnvironmentKey {
+    static let defaultValue = true
+}
+
 private struct GestureTrailRecorderOverrideKey: EnvironmentKey {
     static let defaultValue: GestureTrailRecorder? = nil
 }
@@ -31,5 +50,20 @@ extension EnvironmentValues {
     var gestureTrailRecorderOverride: GestureTrailRecorder? {
         get { self[GestureTrailRecorderOverrideKey.self] }
         set { self[GestureTrailRecorderOverrideKey.self] = newValue }
+    }
+
+    /// Whether the key grid installs its native touch surface. A headless
+    /// renderer cannot draw native views (it would show a placeholder), so it
+    /// turns this off and feeds the view model's `TouchEngine` itself.
+    var isTouchSurfaceEnabled: Bool {
+        get { self[TouchSurfaceEnabledKey.self] }
+        set { self[TouchSurfaceEnabledKey.self] = newValue }
+    }
+
+    /// When guide cards reveal their map. A still picture cannot wait for the
+    /// reveal delay, so headless hosts choose the state they are drawing.
+    var touchGuideReveal: TouchGuideReveal {
+        get { self[TouchGuideRevealKey.self] }
+        set { self[TouchGuideRevealKey.self] = newValue }
     }
 }

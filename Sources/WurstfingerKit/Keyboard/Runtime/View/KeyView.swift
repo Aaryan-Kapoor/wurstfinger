@@ -42,31 +42,26 @@ enum KeyViewBodyCounter {
 ///
 /// Visual appearance is driven by `key.style`. Hints derive directly from
 /// `key.bindings`, so only the gestures actually defined on a key are shown.
-/// Keys with a `slideType` (space, delete) use `SlideGestureHandler` for
-/// continuous drag tracking. All other keys use `KeyGestureRecognizer` for
-/// swipe/tap/circular gesture classification.
+///
+/// A key handles no touches itself: the grid's `TouchSurface` feeds every
+/// finger to the `TouchEngine`, and the key draws the engine's live state from
+/// its own `KeyPressCell` — pressed, and the gesture the finger is heading for,
+/// whose hint it emphasizes. Reading only its own cell is what keeps a touch
+/// from re-rendering any other key.
 struct KeyView: View {
     let key: KeyDefinition
+    /// Performs a gesture on this key; used by the VoiceOver custom actions.
     let onGesture: (KeyDefinition, GestureType, Bool) -> Void
-    var onTouchDown: (() -> Void)?
-    var onSlide: ((KeyDefinition, SlidePhase) -> Void)?
-    /// Handles a long press on this key; returns whether it dispatched an
-    /// action (a handled long press consumes the touch). Long-press detection
-    /// only runs when this is set and the user setting is enabled.
-    var onLongPress: ((KeyDefinition) -> Bool)?
-    /// Shared swipe-trail collector, supplied by `KeyboardGridView`. Forwarded
-    /// to whichever gesture modifier this key uses; nil means no trail
-    /// (previews, tests).
-    var gestureTrail: GestureTrailRecorder?
-    var spanRatio: CGFloat = 1.0
+
+    /// This key's live touch state, from the grid's engine. Nil in hosts with
+    /// no engine (tests), where the key is never pressed.
+    var pressCell: KeyPressCell?
 
     /// Inset between the full touch cell and the key's visible bounds. The cell
     /// supplied by `KeyboardGridLayout` extends halfway into the gap toward each
     /// neighbour so there are no dead zones; insetting the drawn content by the
     /// same amount keeps the visible key exactly where it was. Defaults to zero.
     var visualInset: EdgeInsets = .init()
-
-    @State private var isActive = false
 
     /// Keys a headless host holds in the pressed state (see
     /// `SnapshotHooks.swift`); empty in the app, where only a touch presses.
@@ -128,7 +123,7 @@ struct KeyView: View {
 
     @ViewBuilder
     private var keyContent: some View {
-        let base = ZStack {
+        ZStack {
             background
             label
             hintOverlay
@@ -147,8 +142,8 @@ struct KeyView: View {
         .accessibilityIdentifier(key.id)
         .accessibilityAddTraits(.isButton)
         .modifier(KeyAccessibilityActions(key: key, onGesture: onGesture))
-        // The whole cell is the touch target. Adjacent cells tile the surface
-        // with no gaps, so a plain rectangle covers it fully.
+        // The whole cell is the key's frame for VoiceOver's activation point;
+        // touches themselves are hit-tested by the engine's `KeyHitMap`.
         .contentShape(Rectangle())
         // Pin the key's alignment/padding surface to physical LTR so the
         // directional hints (`hintAlignments` / `hintEdgePadding`, which use
@@ -159,34 +154,6 @@ struct KeyView: View {
         // root pin in DataDrivenKeyboardRootView; nested identical pins are
         // harmless.
         .environment(\.layoutDirection, .leftToRight)
-
-        if usesSlideGesture {
-            base.modifier(SlideGestureHandler(
-                slideType: key.slideType,
-                onSlide: { phase in onSlide?(key, phase) },
-                onTouchDown: { onTouchDown?() },
-                tuning: tuning,
-                onLongPress: longPressHandler,
-                trail: gestureTrail,
-                isActive: $isActive
-            ))
-        } else {
-            base.modifier(KeyGestureRecognizer(
-                onGestureRecognized: { classification in
-                    onGesture(key, classification.gesture, classification.isReturn)
-                },
-                onTouchDown: { onTouchDown?() },
-                // Account for the spanned cell: a multi-row/-column key is not
-                // 1×1, so scale the rendered cell aspect ratio (from the same
-                // metrics that size the cell) by columnSpan/rowSpan (spanRatio)
-                // to classify swipes against the real geometry.
-                aspectRatio: metrics.cellAspectRatio * spanRatio,
-                tuning: tuning,
-                onLongPress: longPressHandler,
-                trail: gestureTrail,
-                isActive: $isActive
-            ))
-        }
     }
 
     // MARK: - Style
@@ -267,26 +234,21 @@ struct KeyView: View {
     }
 
     /// Background fill for the key.
+    /// An opaque step up from the idle fill in both appearances. (The pressed
+    /// fill used to be `tertiarySystemFill`, a translucent gray that over the
+    /// black keyboard background landed within a few percent of the idle key
+    /// in dark mode — the press was all but invisible.)
     static func backgroundColor(for style: KeyStyle, active: Bool = false) -> Color {
         if active {
-            return Color(.tertiarySystemFill)
+            return Color(.systemGray4)
         }
         return Color(.secondarySystemBackground)
     }
 
-    // MARK: - Gesture Selection
-
-    /// Whether this key uses slide gesture handling instead of standard
-    /// gesture classification.
-    private var usesSlideGesture: Bool {
-        key.slideType != .none
-    }
-
-    /// Long-press handler for the gesture recognizer, or nil when the
-    /// opt-in setting is off or no handler is wired up (preview contexts).
-    private var longPressHandler: (() -> Bool)? {
-        guard settings.isLongPressDigitEnabled, let onLongPress else { return nil }
-        return { onLongPress(key) }
+    /// Whether the key is drawn pressed: a finger is on it, or a headless host
+    /// holds it down (`SnapshotHooks.swift`).
+    private var isPressed: Bool {
+        (pressCell?.isPressed ?? false) || forcedActiveKeyIds.contains(key.id)
     }
 
     // MARK: - View Construction
@@ -296,11 +258,10 @@ struct KeyView: View {
         let shape = RoundedRectangle(cornerRadius: KeyboardConstants.KeyDimensions.cornerRadius)
         switch settings.keyboardStyle {
         case .classic:
-            shape.fill(Self.backgroundColor(
-                for: key.style, active: isActive || forcedActiveKeyIds.contains(key.id)
-            ))
+            shape.fill(Self.backgroundColor(for: key.style, active: isPressed))
         case .liquidGlass:
             shape.fill(.bar)
+                .overlay(shape.fill(Color.primary.opacity(isPressed ? 0.16 : 0)))
                 .overlay(
                     shape.strokeBorder(Color.primary.opacity(0.1), lineWidth: 0.5)
                 )
@@ -317,19 +278,22 @@ struct KeyView: View {
             EmptyView()
         } else {
             let font = Font.system(size: scaledFontSize, weight: .semibold, design: .rounded)
-            if let sfName = Self.sfSymbolMap[primaryLabel] {
-                Image(systemName: sfName)
-                    .font(font)
-                    .foregroundColor(.primary)
-            } else {
-                Text(primaryLabel)
-                    .font(font)
-                    .foregroundColor(.primary)
-                    // Multi-character labels ("123") outgrow the cell before
-                    // the size cap does; shrink instead of wrapping.
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
+            Group {
+                if let sfName = Self.sfSymbolMap[primaryLabel] {
+                    Image(systemName: sfName)
+                        .font(font)
+                } else {
+                    Text(primaryLabel)
+                        .font(font)
+                        // Multi-character labels ("123") outgrow the cell before
+                        // the size cap does; shrink instead of wrapping.
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                }
             }
+            .foregroundStyle(centerStyle)
+            .opacity(guidance == .swipe ? 0.35 : 1)
+            .animation(Self.guidanceAnimation, value: guidance)
         }
     }
 
@@ -411,6 +375,35 @@ struct KeyView: View {
         }
     }
 
+    // MARK: - Guidance
+
+    /// What the finger on this key is heading for, from the engine's
+    /// speculative classification. Reading `pressCell` here is what subscribes
+    /// this key — and only this key — to its own guidance changes.
+    private enum Guidance: Equatable {
+        case none
+        /// A swipe: its hint is emphasized and the others recede.
+        case swipe
+        /// A circle: the centre letter (whose capital a circle types) lights up.
+        case circle
+    }
+
+    private var guidance: Guidance {
+        switch pressCell?.candidate {
+        case nil: .none
+        case .circularClockwise?, .circularCounterclockwise?: .circle
+        default: .swipe
+        }
+    }
+
+    /// Short enough to read as instant, long enough not to flicker when a
+    /// flick's direction settles.
+    static let guidanceAnimation = Animation.easeOut(duration: 0.08)
+
+    private var centerStyle: AnyShapeStyle {
+        guidance == .circle ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(Color.primary)
+    }
+
     private var hintOverlay: some View {
         // Scale padding proportionally with font size
         let fontRatio = scaledHintFontSize / KeyboardConstants.FontSizes.hintReferenceFontSize
@@ -440,15 +433,38 @@ struct KeyView: View {
                         }
                     } else if !binding.label.isEmpty || Self.hintIcon(for: binding.action) != nil,
                               isLabelVisible(binding) {
-                        hintContent(for: binding)
+                        let isTarget = pressCell?.candidate == gesture
+                        // The hint the finger is heading for grows and takes
+                        // the accent colour; the rest recede, so the eye finds
+                        // the target without searching.
+                        hintContent(for: binding, isTarget: isTarget)
                             .fixedSize()
+                            .scaleEffect(isTarget ? 1.5 : 1, anchor: Self.hintAnchor(for: gesture))
+                            .opacity(guidance != .none && !isTarget ? 0.3 : 1)
                             .padding(Self.hintEdgePadding(for: gesture, horizontal: hPad, vertical: vPad))
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: alignment)
                     }
                 }
             }
         }
+        .animation(Self.guidanceAnimation, value: pressCell?.candidate)
         .allowsHitTesting(false)
+    }
+
+    /// The point an emphasized hint grows from: its own corner or edge, so it
+    /// swells toward the key's centre instead of out of the key.
+    static func hintAnchor(for gesture: GestureType) -> UnitPoint {
+        switch gesture {
+        case .swipeUp: .top
+        case .swipeDown: .bottom
+        case .swipeLeft: .leading
+        case .swipeRight: .trailing
+        case .swipeUpLeft: .topLeading
+        case .swipeUpRight: .topTrailing
+        case .swipeDownLeft: .bottomLeading
+        case .swipeDownRight: .bottomTrailing
+        default: .center
+        }
     }
 
     /// Whether the icon is a "globe-style" hint (globe, dismiss) that gets
@@ -461,18 +477,18 @@ struct KeyView: View {
     }
 
     @ViewBuilder
-    private func hintContent(for binding: KeyBinding) -> some View {
+    private func hintContent(for binding: KeyBinding, isTarget: Bool = false) -> some View {
         if let iconName = Self.hintIcon(for: binding.action) {
             if Self.isGlobeStyleIcon(for: binding.action) {
                 // Globe / dismiss: larger, bolder for discoverability
                 Image(systemName: iconName)
                     .font(.system(size: scaledHintFontSize * 0.75, weight: .medium))
-                    .foregroundStyle(Color.primary.opacity(0.5))
+                    .foregroundStyle(isTarget ? Color.accentColor : Color.primary.opacity(0.5))
             } else {
                 // Copy / paste / cut: smaller, lighter to avoid visual clutter
                 Image(systemName: iconName)
                     .font(.system(size: scaledHintFontSize * 0.6, weight: .regular))
-                    .foregroundStyle(Color.secondary.opacity(0.45))
+                    .foregroundStyle(isTarget ? Color.accentColor : Color.secondary.opacity(0.45))
             }
         } else {
             // Text hint — letters get higher prominence than symbols
@@ -480,12 +496,12 @@ struct KeyView: View {
             Text(binding.label)
                 .font(.system(
                     size: scaledHintFontSize,
-                    weight: isLetter ? .medium : .regular,
+                    weight: isTarget ? .bold : isLetter ? .medium : .regular,
                     design: .rounded
                 ))
                 .foregroundStyle(
-                    isLetter
-                        ? Color.primary.opacity(0.65)
+                    isTarget ? Color.accentColor
+                        : isLetter ? Color.primary.opacity(0.65)
                         : Color.secondary.opacity(0.55)
                 )
                 .minimumScaleFactor(0.6)

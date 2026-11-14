@@ -34,6 +34,9 @@ struct FingerTrail {
 
     var keyId: String
     var motion: Motion
+    /// The finger has rested long enough for the guide card to reveal the
+    /// key's whole map.
+    var paused = false
 }
 
 /// Everything that distinguishes one keyboard picture from another.
@@ -78,6 +81,8 @@ enum KeyboardShot {
         spec.device.activate()
         var settings: [SettingsKey: Any] = [:]
         if let enabled = spec.enabledLanguages { settings[.enabledLanguageIds] = enabled }
+        // A finger on the keyboard draws its trail, as with the setting on.
+        if spec.finger != nil { settings[.gestureTrailEnabled] = true }
         let scenario = KeyboardScenario(
             language: spec.language,
             containerWidth: spec.device.width,
@@ -96,20 +101,18 @@ enum KeyboardShot {
             return Shot(size: .zero, content: AnyView(EmptyView()))
         }
 
-        var keepAlive: [AnyObject] = [scenario]
-        // The key under a finger is drawn pressed, as it is on a device.
-        var pressed = spec.pressedKeys
-        var recorder: GestureTrailRecorder?
+        let keepAlive: [AnyObject] = [scenario]
+        // A finger goes through the view model's real input engine — pressed
+        // key, emphasized hint, guide card and trail all come from it.
         if let finger = spec.finger {
-            let drawn = TrailDrawing.draw(finger, layout: layout)
-            keepAlive.append(contentsOf: drawn.keepAlive)
-            recorder = drawn.recorder
-            pressed.insert(finger.keyId)
+            TrailDrawing.touch(finger, on: scenario)
         }
         let keyboard = DataDrivenKeyboardRootView(viewModel: viewModel, overrideWidth: spec.device.width)
             .frame(width: spec.device.width, height: layout.keyboardHeight)
-            .environment(\.forcedActiveKeyIds, pressed)
-            .environment(\.gestureTrailRecorderOverride, recorder)
+            .environment(\.forcedActiveKeyIds, spec.pressedKeys)
+            // No native views in a headless render; the engine is fed above.
+            .environment(\.isTouchSurfaceEnabled, false)
+            .environment(\.touchGuideReveal, spec.finger?.paused == true ? .immediately : .never)
 
         let fieldHeight: CGFloat = spec.typedText == nil ? 0 : 96
         let width = spec.device.width
@@ -161,23 +164,18 @@ private struct TypedTextBox: View {
     }
 }
 
-/// Feeds a finger's path through the real `GestureTrailRecorder`.
+/// Puts a finger on the keyboard through the view model's real `TouchEngine`:
+/// down on the key, then along the path, and not lifted.
 @MainActor
 enum TrailDrawing {
-    struct Drawn {
-        var recorder: GestureTrailRecorder
-        var keepAlive: [AnyObject]
-    }
-
-    static func draw(_ finger: FingerTrail, layout: KeyboardGeometry.Layout) -> Drawn {
-        // The recorder reads the "gesture trail" setting from the store it is
-        // given at the start of every touch; a private one switches it on.
-        let defaults = ScenarioDefaults()
-        defaults.set(true, forKey: SettingsKey.gestureTrailEnabled.rawValue)
-        let recorder = GestureTrailRecorder(defaults: defaults)
-        let token = GestureTrailToken()
-
-        let frame = layout.keyFrames[finger.keyId] ?? .zero
+    static func touch(_ finger: FingerTrail, on scenario: KeyboardScenario) {
+        let viewModel = scenario.viewModel
+        viewModel.configureTouchEngine(
+            containerWidth: scenario.containerWidth,
+            isLongPressEnabled: scenario.defaults.bool(forKey: SettingsKey.isLongPressDigitEnabled.rawValue)
+        )
+        let engine = viewModel.touchEngine
+        guard let frame = engine.hitMap.key(withId: finger.keyId)?.frame else { return }
         let origin = CGPoint(x: frame.midX, y: frame.midY)
         var synthesizer = TouchSynthesizer(keySize: frame.size, jitter: 0.4, seed: 11)
 
@@ -206,11 +204,11 @@ enum TrailDrawing {
         }
 
         let points = path.offset(by: origin)
-        recorder.begin(at: points[0], from: token)
-        for point in points.dropFirst() {
-            recorder.extend(to: point, from: token)
+        let start = ProcessInfo.processInfo.systemUptime
+        engine.began(1, at: points[0], time: start)
+        for (index, point) in points.dropFirst().enumerated() {
+            engine.moved(1, samples: [TouchSample(location: point, time: start + Double(index + 1) / TouchPath.sampleRate)])
         }
-        return Drawn(recorder: recorder, keepAlive: [token, defaults])
     }
 
     private static func unitVector(_ gesture: GestureType, in size: CGSize) -> CGPoint {

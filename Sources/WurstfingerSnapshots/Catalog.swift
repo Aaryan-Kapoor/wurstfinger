@@ -142,6 +142,37 @@ enum Catalog {
                 $0.finger = FingerTrail(keyId: GridSlot.center, motion: .drag(.swipeUpRight, keyWidths: 0.6))
             })
         }
+        for scheme in [ColorScheme.light, .dark] {
+            let tail = suffix(scheme)
+            scenarios.append(keyboard("guide", "guide-flick-right\(tail)") {
+                $0.scheme = scheme
+                $0.finger = FingerTrail(keyId: GridSlot.center, motion: .drag(.swipeRight, keyWidths: 0.5))
+            })
+            scenarios.append(keyboard("guide", "guide-paused-center\(tail)") {
+                $0.scheme = scheme
+                $0.finger = FingerTrail(keyId: GridSlot.center, motion: .press, paused: true)
+            })
+        }
+        scenarios.append(keyboard("guide", "guide-paused-heading-downleft") {
+            $0.finger = FingerTrail(keyId: GridSlot.midRight, motion: .drag(.swipeDownLeft, keyWidths: 0.45), paused: true)
+        })
+        scenarios.append(keyboard("guide", "guide-top-row-beside") {
+            $0.finger = FingerTrail(keyId: GridSlot.topLeft, motion: .drag(.swipeDown, keyWidths: 0.5), paused: true)
+        })
+        scenarios.append(keyboard("guide", "guide-return-swipe") {
+            $0.finger = FingerTrail(keyId: GridSlot.center, motion: .returnSwipe(.swipeUp, keyWidths: 0.8))
+        })
+        scenarios.append(keyboard("guide", "guide-circle") {
+            $0.finger = FingerTrail(keyId: GridSlot.center, motion: .circle(clockwise: true, fraction: 0.95))
+        })
+        scenarios.append(keyboard("guide", "guide-shifted") {
+            $0.mode = ModeNames.shifted
+            $0.finger = FingerTrail(keyId: GridSlot.bottomRight, motion: .drag(.swipeUp, keyWidths: 0.5))
+        })
+        scenarios.append(keyboard("guide", "guide-ipad") {
+            $0.device = .iPadLandscape
+            $0.finger = FingerTrail(keyId: GridSlot.center, motion: .drag(.swipeUpLeft, keyWidths: 0.4), paused: true)
+        })
         scenarios.append(keyboard("states", "state-press-dot") {
             $0.finger = FingerTrail(keyId: GridSlot.midRight, motion: .press)
         })

@@ -202,6 +202,16 @@ final class KeyboardViewModel {
     @ObservationIgnored let shouldPersistSettings: Bool
     /// Where copy, cut and paste go (see `Clipboard`).
     @ObservationIgnored let clipboard: any Clipboard
+
+    /// The input engine every touch on this keyboard runs through. Owned here
+    /// rather than by a view, so it outlives view re-creation and the
+    /// controller can cancel touches in flight when the keyboard goes away.
+    @ObservationIgnored let touchEngine = TouchEngine()
+
+    /// The engine's callbacks into this view model, built once: the closures
+    /// hold the view model weakly and never change, so handing them to the
+    /// engine on every layout update allocates nothing.
+    @ObservationIgnored lazy var touchEngineActions: TouchEngineActions = makeTouchEngineActions()
     @ObservationIgnored var isSpaceDragging = false
     @ObservationIgnored var spaceDragResidual: CGFloat = 0
     /// Peak signed displacement during the current space drag. Used by the

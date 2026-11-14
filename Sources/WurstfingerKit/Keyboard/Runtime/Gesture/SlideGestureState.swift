@@ -1,13 +1,12 @@
 //
-//  SlideGestureHandler.swift
+//  SlideGestureState.swift
 //  Wurstfinger
 //
-//  Gesture handler for keys with slide behavior (space, delete).
-//  Reports continuous drag deltas during the gesture, and classifies
-//  taps/swipes at the end.
+//  Touch state for keys with slide behavior (space, delete): continuous drag
+//  deltas during the gesture, and tap/swipe classification at the end.
 //
 
-import SwiftUI
+import CoreGraphics
 
 /// Phase of a slide gesture lifecycle.
 enum SlidePhase: Equatable, Sendable {
@@ -74,7 +73,7 @@ struct SlideGestureConfiguration: Equatable, Sendable {
     }
 }
 
-/// State machine backing `SlideGestureHandler`.
+/// One finger's slide state machine on a space or delete key (see `TouchEngine`).
 ///
 /// Extracted as a pure value type so tap/slide classification and
 /// cancellation recovery can be unit-tested without rendering SwiftUI views.
@@ -212,188 +211,5 @@ struct SlideGestureState: Sendable {
         lastTranslationX = 0
         upwardPeakY = 0
         maxDisplacement = 0
-    }
-}
-
-/// Gesture handler for keys with `slideType != .none`.
-///
-/// Unlike `KeyGestureRecognizer` (which classifies the full gesture at the
-/// end), this modifier reports continuous drag deltas for cursor movement
-/// and progressive deletion. If the drag never exceeds the activation
-/// threshold, the gesture is classified as a tap.
-struct SlideGestureHandler: ViewModifier {
-    let slideType: SlideType
-    let onSlide: (SlidePhase) -> Void
-    let onTouchDown: () -> Void
-    /// Same contract as `KeyGestureRecognizer.onLongPress`: fires after the
-    /// finger has rested for `KeyboardConstants.LongPress.duration` without
-    /// sliding or moving beyond the tolerance; returns whether it was
-    /// handled. A handled long press consumes the touch (no tap, no slide
-    /// on release). `nil` disables detection.
-    var onLongPress: (() -> Bool)?
-
-    /// Long-press timing from the user's resolved gesture settings (see
-    /// `KeyGestureRecognizer.tuning`).
-    let tuning: GestureTuning
-
-    /// Collects the touch path for the gesture trail overlay. Nil disables the
-    /// feed entirely (previews and tests); when set, the recorder itself
-    /// decides whether the user has the trail turned on.
-    var trail: GestureTrailRecorder?
-
-    @Binding var isActive: Bool
-
-    @State private var state = SlideGestureState()
-    @State private var longPress: LongPressScheduler
-    /// Identifies this key's touch sequence to the shared trail recorder.
-    @State private var trailToken = GestureTrailToken()
-
-    /// True while a touch sequence is in flight. Unlike `@State`, SwiftUI
-    /// guarantees `@GestureState` is reset when the system cancels the
-    /// touches (incoming call, edge swipe, keyboard dismissal), where
-    /// `onEnded` is never called — the reset is our cancellation signal.
-    @GestureState private var sequenceInFlight = false
-
-    /// - Parameter longPress: The scheduler this handler arms. Same contract
-    ///   and same reason for being injectable as
-    ///   `KeyGestureRecognizer.init(…)`: it is the only handle a unit test has
-    ///   on the `onDisappear` → `abandonSequence()` teardown, which mutation
-    ///   testing found unpinned (review 2026-08-09, finding 15).
-    init(
-        slideType: SlideType,
-        onSlide: @escaping (SlidePhase) -> Void,
-        onTouchDown: @escaping () -> Void,
-        tuning: GestureTuning,
-        onLongPress: (() -> Bool)? = nil,
-        trail: GestureTrailRecorder? = nil,
-        isActive: Binding<Bool>,
-        longPress: LongPressScheduler = LongPressScheduler()
-    ) {
-        self.slideType = slideType
-        self.onSlide = onSlide
-        self.onTouchDown = onTouchDown
-        self.tuning = tuning
-        self.onLongPress = onLongPress
-        self.trail = trail
-        _isActive = isActive
-        _longPress = State(initialValue: longPress)
-    }
-
-    func body(content: Content) -> some View {
-        content
-            .gesture(
-                // The coordinate space affects only `value.location`, which the
-                // trail records. `value.translation` is a delta, so the slide
-                // state machine reads the same values in any space.
-                DragGesture(minimumDistance: 0, coordinateSpace: GestureTrailRecorder.coordinateSpace)
-                    .updating($sequenceInFlight) { _, inFlight, _ in
-                        inFlight = true
-                    }
-                    .onChanged { value in
-                        // A fired long press owns the rest of this touch:
-                        // don't feed the state machine, or the movement would
-                        // start a cursor slide after the digit was typed. The
-                        // trail already froze when the press fired.
-                        if longPress.consumedTouch {
-                            isActive = true
-                            return
-                        }
-                        let update = state.handleChanged(
-                            translation: value.translation,
-                            configuration: configuration
-                        )
-                        if update.isTouchDown {
-                            trail?.begin(at: value.location, from: trailToken)
-                            onTouchDown()
-                            scheduleLongPress()
-                        } else {
-                            trail?.extend(to: value.location, from: trailToken)
-                            if longPress.isScheduled,
-                               state.isSliding
-                               || state.maxDisplacement > tuning.longPressMovementTolerance {
-                                longPress.cancel()
-                            }
-                        }
-                        for phase in update.phases {
-                            onSlide(phase)
-                        }
-                        isActive = true
-                    }
-                    .onEnded { value in
-                        longPress.cancel()
-                        if longPress.consumedTouch {
-                            // Reset silently: no phase is reported, so the
-                            // release produces neither a tap nor a slide end.
-                            longPress.clearConsumed()
-                            _ = state.handleCancelled()
-                            isActive = false
-                            return
-                        }
-                        if let phase = state.handleEnded(
-                            translation: value.translation,
-                            configuration: configuration
-                        ) {
-                            onSlide(phase)
-                        }
-                        trail?.finish(from: trailToken)
-                        isActive = false
-                    }
-            )
-            .onChange(of: sequenceInFlight) { _, inFlight in
-                // A normal end already reset the state machine in `onEnded`;
-                // if the sequence stops while a drag is still marked as in
-                // flight, the system cancelled the touches.
-                guard !inFlight else { return }
-                if let phase = abandonSequence() { onSlide(phase) }
-                isActive = false
-            }
-            // A key removed mid-gesture reaches neither `onEnded` nor the
-            // cancel path, so it hands its touch back here — trail included,
-            // and before the armed long press can fire into the next mode. No
-            // phase is reported: the consumer's drag flags are re-initialized
-            // by the next `.began`, exactly like the consumed-long-press branch.
-            .onDisappear {
-                _ = abandonSequence()
-            }
-    }
-
-    /// Drops everything the in-flight touch owns: the armed long press, the
-    /// drag state, and the trail. Returns the phase the consumer must hear
-    /// about (`.cancelled` while a drag was in flight), or nil.
-    private func abandonSequence() -> SlidePhase? {
-        longPress.abandon()
-        let phase = state.handleCancelled()
-        trail?.cancel(from: trailToken)
-        return phase
-    }
-
-    // MARK: - Long Press
-
-    /// Arms the shared scheduler with this handler's fire guard. The guard
-    /// reads live `@State` (`state`) at fire time through the property
-    /// wrapper; `!state.isSliding` is the one condition `KeyGestureRecognizer`
-    /// does not share, because only slide keys can latch a slide. A fired
-    /// press has typed its digit, so its trail freezes and fades like any
-    /// other completed keystroke.
-    ///
-    /// What an armed timer may still do across a mode switch that keeps this
-    /// key alive is bounded in `KeyGestureRecognizer.scheduleLongPress()` —
-    /// the space bar's zero binding is one of the two actions that bound
-    /// reaches.
-    private func scheduleLongPress() {
-        guard onLongPress != nil else { return }
-        let tolerance = tuning.longPressMovementTolerance
-        longPress.schedule(after: tuning.longPressDuration) {
-            let fired = state.dragStarted
-                && !state.isSliding
-                && state.maxDisplacement <= tolerance
-                && onLongPress?() == true
-            if fired { trail?.finish(from: trailToken) }
-            return fired
-        }
-    }
-
-    private var configuration: SlideGestureConfiguration {
-        .for(slideType)
     }
 }

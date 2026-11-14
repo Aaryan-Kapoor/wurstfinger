@@ -11,29 +11,26 @@ import Foundation
 import Observation
 import SwiftUI
 
-/// Identity of one gesture modifier, used to decide which touch sequence owns
-/// the shared trail. Each recognizer holds its own in `@State`, so it is stable
-/// for as long as that key exists. It has no state and observes nothing; only
-/// its object identity matters (the recorder compares tokens with `===`).
+/// Identity of one finger's track in the input engine, used to decide which
+/// touch sequence owns the shared trail. Each pooled track holds its own for
+/// its lifetime. It has no state and observes nothing; only its object identity
+/// matters (the recorder compares tokens with `===`).
 final class GestureTrailToken {}
 
 /// Per-keyboard collector for the gesture trail.
 ///
-/// Owned by `KeyboardGridView`, fed by the gesture modifiers with positions in
-/// the shared `coordinateSpace`, and read by `GestureTrailOverlay`.
+/// Owned by the `TouchEngine`, fed with positions in the grid's coordinate
+/// space, and read by `GestureTrailOverlay`.
 ///
 /// It tracks only `isVisible`, which flips at most twice per gesture. The
 /// sample buffer itself is a plain, unobserved property that the overlay
 /// re-reads every frame from its `TimelineView`. Observing per sample would
-/// invalidate every reader at the drag sample rate — up to 120 Hz — and the
-/// grid owns this object, so that would re-render all ~40 keys per sample.
-/// With Observation only a view whose body *reads* `isVisible` (the overlay) is
-/// invalidated by its flips; the grid never reads it, so the old
-/// `GestureTrailStore` indirection (a non-publishing holder that kept the grid
-/// from subscribing) is no longer needed.
+/// invalidate every reader at the drag sample rate — up to 240 Hz. With
+/// Observation only a view whose body *reads* `isVisible` (the overlay) is
+/// invalidated by its flips.
 ///
-/// Main-actor: it is fed by the gesture modifiers on the main thread and its
-/// fade-out is a main-actor task.
+/// Main-actor: it is fed by the input engine (`TouchEngine`, which owns it) on
+/// the main thread, and its fade-out is a main-actor task.
 @MainActor
 @Observable
 final class GestureTrailRecorder {
@@ -74,7 +71,7 @@ final class GestureTrailRecorder {
     /// half-recorded trail behind.
     @ObservationIgnored private var isRecording = false
 
-    /// The gesture modifier whose touch sequence currently owns the trail.
+    /// The engine track whose touch sequence currently owns the trail.
     ///
     /// One recorder is shared by every key, and on a thumb keyboard two touch
     /// sequences overlap routinely. Without an owner the second thumb's touch
@@ -115,6 +112,19 @@ final class GestureTrailRecorder {
         trail.extend(to: location, time: now())
     }
 
+    /// Where the system predicts the finger will be over the next frame or two
+    /// (`UIEvent.predictedTouches`). Drawn ahead of the live trail so the
+    /// ribbon keeps up with the finger instead of trailing it by a frame;
+    /// never recorded, and dropped as soon as the touch ends.
+    @ObservationIgnored private(set) var predicted: [CGPoint] = []
+
+    /// Replaces the predicted tail of the sequence started by `begin`.
+    func predict(_ points: [CGPoint], from token: GestureTrailToken) {
+        guard owner === token, isRecording else { return }
+        predicted.removeAll(keepingCapacity: true)
+        predicted.append(contentsOf: points)
+    }
+
     /// Ends the current touch: the trail freezes where the finger left it and
     /// fades out. A tap freezes as its dot, which is the only feedback this
     /// keyboard gives for a press — it has no key pop-up.
@@ -123,6 +133,7 @@ final class GestureTrailRecorder {
         // Released before the `isRecording` check so a touch taken while the
         // setting was off still hands the trail back to the next gesture.
         owner = nil
+        predicted.removeAll(keepingCapacity: true)
         guard isRecording else { return }
         isRecording = false
         trail.release(at: now())
@@ -140,6 +151,7 @@ final class GestureTrailRecorder {
         guard owner === token else { return }
         owner = nil
         isRecording = false
+        predicted.removeAll(keepingCapacity: true)
         fadeOut?.cancel()
         fadeOut = nil
         trail.clear()

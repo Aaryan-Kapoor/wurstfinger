@@ -44,6 +44,10 @@ extension NSColor {
         dynamic(light: rgb(199, 199, 204), dark: rgb(72, 72, 74))
     }
 
+    static var systemGray4: NSColor {
+        dynamic(light: rgb(209, 209, 214), dark: rgb(58, 58, 60))
+    }
+
     static var systemGray5: NSColor {
         dynamic(light: rgb(229, 229, 234), dark: rgb(44, 44, 46))
     }
