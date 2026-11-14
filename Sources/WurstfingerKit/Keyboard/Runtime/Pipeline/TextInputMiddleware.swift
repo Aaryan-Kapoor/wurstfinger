@@ -8,7 +8,8 @@
 import Foundation
 
 /// Applies text-mutating actions (`.commitText`, `.deleteBackward`,
-/// `.space`, `.newline`, `.moveCursor`) to the injected target.
+/// `.space`, `.newline`, `.moveCursor`, `.tab`, `.escape`, `.backTab`) to the
+/// injected target.
 ///
 /// Non-text actions (mode switches, haptics, capitalization) pass through
 /// unchanged so later middlewares can react to them.
@@ -48,9 +49,17 @@ struct TextInputMiddleware: ActionMiddleware {
             target.insertText("\n")
         case let .moveCursor(offset):
             target.adjustTextPosition(byCharacterOffset: offset)
+        case .tab:
+            target.insertText("\t")
+        case .backTab:
+            // ESC [ Z: what a terminal emulator receives for Shift-Tab.
+            target.insertText("\u{1B}[Z")
+        case .escape:
+            target.insertText("\u{1B}")
         case .compose, .cycleAccents, .switchMode, .capitalizeWord,
              .advanceToNextInputMode, .dismissKeyboard, .deleteForward,
-             .copy, .paste, .cut, .cutAll, .none, .switchToNextLanguage:
+             .copy, .paste, .cut, .cutAll, .none, .switchToNextLanguage,
+             .lineStart, .lineEnd, .documentStart, .documentEnd, .deleteWordBackward:
             break
         }
     }

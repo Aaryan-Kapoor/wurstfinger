@@ -392,7 +392,7 @@ final class KeyboardViewModel {
         if gestureTuning != newTuning {
             gestureTuning = newTuning
         }
-        typingBehavior = TypingBehavior.load(from: sharedDefaults)
+        typingBehavior = TypingBehavior.load(from: sharedDefaults, reusing: typingBehavior)
     }
 
     func switchToNextLanguage() {

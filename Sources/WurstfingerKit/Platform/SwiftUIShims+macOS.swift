@@ -21,7 +21,17 @@ enum UIKeyboardType {
     case phonePad, namePhonePad, emailAddress, decimalPad, twitter, webSearch
 }
 
+/// Mirror of `TextInputAutocapitalization`, which SwiftUI marks unavailable
+/// on macOS.
+enum TextInputAutocapitalization {
+    case never, words, sentences, characters
+}
+
 extension View {
+    func textInputAutocapitalization(_: TextInputAutocapitalization?) -> some View {
+        self
+    }
+
     func navigationBarTitleDisplayMode(_: NavigationBarTitleDisplayMode) -> some View {
         self
     }

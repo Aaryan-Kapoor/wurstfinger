@@ -161,6 +161,28 @@ enum Catalog {
             $0.keyAspectRatio = 1.4
             $0.finger = FingerTrail(keyId: GridSlot.center, motion: .drag(.swipeUpRight, keyWidths: 0.6))
         })
+        // Long swipes: the trail keeps its grey until the finger is far enough
+        // that letting go would fire one, then turns to the accent colour.
+        for scheme in [ColorScheme.light, .dark] {
+            let tail = suffix(scheme)
+            scenarios.append(keyboard("states", "state-longswipe-short\(tail)") {
+                $0.scheme = scheme
+                $0.finger = FingerTrail(
+                    keyId: GridSlot.center, motion: .drag(.swipeRight, keyWidths: 1.0), longSwipes: true
+                )
+            })
+            scenarios.append(keyboard("states", "state-longswipe-armed\(tail)") {
+                $0.scheme = scheme
+                $0.finger = FingerTrail(
+                    keyId: GridSlot.center, motion: .drag(.swipeRight, keyWidths: 2.0), longSwipes: true
+                )
+            })
+        }
+        scenarios.append(keyboard("states", "state-longswipe-armed-diagonal") {
+            $0.finger = FingerTrail(
+                keyId: GridSlot.center, motion: .drag(.swipeUpLeft, keyWidths: 2.0), longSwipes: true
+            )
+        })
         scenarios.append(keyboard("states", "state-flick-liquidglass") {
             $0.style = .liquidGlass
             $0.backdrop = .colorful
@@ -208,6 +230,17 @@ enum Catalog {
             scenarios.append(Scenario(group: "app", name: "app-settings\(tail)") {
                 AppSurfaces.settings(scheme: scheme)
             })
+            scenarios.append(Scenario(group: "app", name: "app-textreplacement\(tail)") {
+                AppSurfaces.textReplacement(scheme: scheme)
+            })
+            scenarios.append(Scenario(group: "app", name: "app-longswipes\(tail)") {
+                AppSurfaces.longSwipes(scheme: scheme)
+            })
+            if scheme == .light {
+                scenarios.append(Scenario(group: "app", name: "app-textreplacement-empty") {
+                    AppSurfaces.textReplacement(scheme: .light, isEmpty: true)
+                })
+            }
         }
         return scenarios
     }

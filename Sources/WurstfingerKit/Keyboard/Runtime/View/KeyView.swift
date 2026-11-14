@@ -48,6 +48,11 @@ enum KeyViewBodyCounter {
 struct KeyView: View {
     let key: KeyDefinition
     let onGesture: (KeyDefinition, GestureType, Bool) -> Void
+    /// Receives the full classification of a completed swipe, so long swipes
+    /// (which depend on the displacement, not just the direction) can be
+    /// resolved before the key's own binding. When nil the key reports through
+    /// `onGesture` alone.
+    var onClassification: ((KeyDefinition, GestureClassification) -> Void)?
     var onTouchDown: (() -> Void)?
     var onSlide: ((KeyDefinition, SlidePhase) -> Void)?
     /// Handles a long press on this key; returns whether it dispatched an
@@ -59,6 +64,10 @@ struct KeyView: View {
     /// (previews, tests).
     var gestureTrail: GestureTrailRecorder?
     var spanRatio: CGFloat = 1.0
+
+    /// The key's rendered size in points (spanned cells included), for
+    /// measuring a swipe in key sizes. Nil falls back to one grid cell.
+    var keySize: CGSize?
 
     /// Inset between the full touch cell and the key's visible bounds. The cell
     /// supplied by `KeyboardGridLayout` extends halfway into the gap toward each
@@ -173,7 +182,11 @@ struct KeyView: View {
         } else {
             base.modifier(KeyGestureRecognizer(
                 onGestureRecognized: { classification in
-                    onGesture(key, classification.gesture, classification.isReturn)
+                    if let onClassification {
+                        onClassification(key, classification)
+                    } else {
+                        onGesture(key, classification.gesture, classification.isReturn)
+                    }
                 },
                 onTouchDown: { onTouchDown?() },
                 // Account for the spanned cell: a multi-row/-column key is not
@@ -184,6 +197,7 @@ struct KeyView: View {
                 tuning: tuning,
                 onLongPress: longPressHandler,
                 trail: gestureTrail,
+                keySize: keySize ?? CGSize(width: metrics.cellWidth, height: metrics.cellHeight),
                 isActive: $isActive
             ))
         }

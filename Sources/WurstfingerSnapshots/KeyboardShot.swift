@@ -34,6 +34,9 @@ struct FingerTrail {
 
     var keyId: String
     var motion: Motion
+    /// Long swipes are on, so the trail turns the accent colour while a
+    /// release would fire one (`LongSwipeConfiguration.isArmed`).
+    var longSwipes = false
 }
 
 /// Everything that distinguishes one keyboard picture from another.
@@ -207,8 +210,17 @@ enum TrailDrawing {
 
         let points = path.offset(by: origin)
         recorder.begin(at: points[0], from: token)
+        // The same per-sample call the key's gesture recognizer makes.
+        let longSwipe = LongSwipeConfiguration(isEnabled: finger.longSwipes)
         for point in points.dropFirst() {
             recorder.extend(to: point, from: token)
+            recorder.setLongSwipeArmed(
+                longSwipe.isArmed(
+                    translation: CGSize(width: point.x - origin.x, height: point.y - origin.y),
+                    keySize: frame.size
+                ),
+                from: token
+            )
         }
         return Drawn(recorder: recorder, keepAlive: [token, defaults])
     }

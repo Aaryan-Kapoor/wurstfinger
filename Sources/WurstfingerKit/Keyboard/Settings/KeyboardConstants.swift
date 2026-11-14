@@ -180,6 +180,11 @@ enum KeyboardConstants {
         /// Opacity of the ribbon. Translucent enough to keep the key labels
         /// underneath readable while the finger passes over them.
         static let opacity: Double = 0.38
+
+        /// Opacity while a long swipe is armed (the trail is in the accent
+        /// colour). Stronger than `opacity`: a tinted ribbon at the neutral
+        /// opacity is easy to miss under a thumb.
+        static let armedOpacity: Double = 0.62
     }
 
     // MARK: - Long Press

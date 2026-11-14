@@ -75,6 +75,9 @@ struct DataDrivenKeyboardRootView: View {
                     onGesture: { key, gesture, isReturn in
                         viewModel.handleGesture(gesture, keyId: key.id, isReturn: isReturn)
                     },
+                    onClassification: { key, classification in
+                        viewModel.handleClassification(classification, keyId: key.id)
+                    },
                     onTouchDown: {
                         viewModel.touchDown()
                     },

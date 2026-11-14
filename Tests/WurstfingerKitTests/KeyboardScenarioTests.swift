@@ -380,3 +380,173 @@ struct TouchPathTests {
         #expect(abs(layout.keyboardHeight - scenario.metrics.totalHeight) < 0.001)
     }
 }
+
+// MARK: - Home / End (#77)
+
+@Suite(.serialized)
+@MainActor
+struct ScenarioHomeEndTests {
+    private func scenario(_ text: String, cursorBack: Int = 0) -> KeyboardScenario {
+        let scenario = KeyboardScenario(language: "en_US", autoCapitalize: false)
+        scenario.target.reset(to: text)
+        if cursorBack > 0 { scenario.target.adjustTextPosition(byCharacterOffset: -cursorBack) }
+        return scenario
+    }
+
+    @Test func swipingUpLeftOnReturnJumpsToTheStartOfTheLine() {
+        let scenario = scenario("first line\nsecond line")
+        let outcome = scenario.swipe(UtilitySlot.return, .swipeUpLeft)
+        #expect(outcome.gesture == .swipeUpLeft)
+        #expect(outcome.dispatched)
+        #expect(scenario.cursor == 11)
+        #expect(scenario.text == "first line\nsecond line")
+    }
+
+    @Test func swipingDownRightOnReturnJumpsToTheEndOfTheLine() {
+        let scenario = scenario("first line\nsecond line", cursorBack: 17) // inside "first line"
+        scenario.swipe(UtilitySlot.return, .swipeDownRight)
+        #expect(scenario.cursor == 10)
+    }
+
+    @Test func theReturnSwipeGoesToTheStartOrEndOfTheDocument() {
+        let scenario = scenario("one\ntwo\nthree", cursorBack: 5)
+        scenario.returnSwipe(UtilitySlot.return, .swipeUpLeft)
+        #expect(scenario.cursor == 0)
+        scenario.returnSwipe(UtilitySlot.return, .swipeDownRight)
+        #expect(scenario.cursor == scenario.text.count)
+    }
+
+    @Test func aPlainTapOnReturnStillTypesANewline() {
+        let scenario = scenario("abc")
+        scenario.tap(UtilitySlot.return)
+        #expect(scenario.text == "abc\n")
+    }
+
+    @Test func otherReturnKeySwipesStayUnbound() {
+        let scenario = scenario("abc")
+        for gesture in [GestureType.swipeUp, .swipeDown, .swipeLeft, .swipeRight, .swipeUpRight, .swipeDownLeft] {
+            #expect(!scenario.swipe(UtilitySlot.return, gesture).dispatched)
+        }
+        #expect(scenario.text == "abc")
+    }
+
+    @Test func jumpsDoNotChangeShiftState() {
+        let scenario = KeyboardScenario(language: "en_US", autoCapitalize: true)
+        scenario.type("Hello")
+        let mode = scenario.mode
+        scenario.swipe(UtilitySlot.return, .swipeUpLeft)
+        #expect(scenario.mode == mode)
+    }
+}
+
+// MARK: - Long swipes (#79)
+
+@Suite(.serialized)
+@MainActor
+struct ScenarioLongSwipeTests {
+    private func scenario(
+        enabled: Bool = true, _ extra: [SettingsKey: Any] = [:]
+    ) -> KeyboardScenario {
+        var settings: [SettingsKey: Any] = [
+            .expertModeEnabled: true, .isLongSwipeEnabled: enabled,
+        ]
+        for (key, value) in extra { settings[key] = value }
+        return KeyboardScenario(language: "en_US", autoCapitalize: false, settings: settings)
+    }
+
+    @Test func aTwoKeyFlickRightTypesATabInsteadOfTheKeysSwipe() {
+        let scenario = scenario()
+        let outcome = scenario.swipe(GridSlot.topLeft, .swipeRight, fraction: 2.2)
+        #expect(outcome.firedLongSwipe)
+        #expect(abs(outcome.displacementInKeys.dx - 2.2) < 0.05)
+        #expect(scenario.text == "\t")
+    }
+
+    @Test func theSameFlickAtOrdinaryLengthTypesTheKeysOwnSwipe() {
+        let scenario = scenario()
+        let outcome = scenario.swipe(GridSlot.topLeft, .swipeRight)
+        #expect(!outcome.firedLongSwipe)
+        #expect(scenario.text == "-")
+    }
+
+    @Test func withLongSwipesOffAFarFlickIsStillOrdinary() {
+        let scenario = scenario(enabled: false)
+        let outcome = scenario.swipe(GridSlot.topLeft, .swipeRight, fraction: 2.2)
+        #expect(!outcome.firedLongSwipe)
+        #expect(scenario.text == "-")
+    }
+
+    @Test func flickingLeftDeletesTheWordBeforeTheCursor() {
+        let scenario = scenario()
+        scenario.target.reset(to: "good morning")
+        scenario.swipe(GridSlot.center, .swipeLeft, fraction: 2)
+        #expect(scenario.text == "good ")
+    }
+
+    @Test func flickingUpSendsEscape() {
+        let scenario = scenario()
+        scenario.swipe(GridSlot.midRight, .swipeUp, fraction: 2)
+        #expect(scenario.text == "\u{1B}")
+    }
+
+    @Test func flickingUpLeftSendsShiftTab() {
+        let scenario = scenario()
+        scenario.swipe(GridSlot.center, .swipeUpLeft, fraction: 2)
+        #expect(scenario.text == "\u{1B}[Z")
+    }
+
+    @Test func flickingDownSendsReturn() {
+        let scenario = scenario()
+        scenario.swipe(GridSlot.center, .swipeDown, fraction: 2)
+        #expect(scenario.text == "\n")
+    }
+
+    @Test func theDiagonalsJumpToTheLineEdges() {
+        let scenario = scenario()
+        scenario.target.reset(to: "alpha\nbeta gamma")
+        scenario.target.adjustTextPosition(byCharacterOffset: -3)
+        scenario.swipe(GridSlot.center, .swipeUpRight, fraction: 2)
+        #expect(scenario.cursor == 6)
+        scenario.swipe(GridSlot.center, .swipeDownRight, fraction: 2)
+        #expect(scenario.cursor == scenario.text.count)
+    }
+
+    @Test func aLongSwipeWorksOnAnyKeyIncludingOnesWithNoBindingThere() {
+        let scenario = scenario()
+        let outcome = scenario.swipe(UtilitySlot.symbols, .swipeRight, fraction: 2)
+        #expect(outcome.firedLongSwipe)
+        #expect(scenario.text == "\t")
+        #expect(scenario.mode == ModeNames.main)
+    }
+
+    @Test func aDirectionCanBeReassigned() {
+        let scenario = scenario([.longSwipeRight: LongSwipeAction.space.rawValue])
+        scenario.swipe(GridSlot.center, .swipeRight, fraction: 2)
+        #expect(scenario.text == " ")
+    }
+
+    @Test func aDirectionSetToNoneKeepsTheKeysSwipe() {
+        let scenario = scenario([.longSwipeRight: LongSwipeAction.none.rawValue])
+        let outcome = scenario.swipe(GridSlot.topLeft, .swipeRight, fraction: 2)
+        #expect(!outcome.firedLongSwipe)
+        #expect(scenario.text == "-")
+    }
+
+    @Test func aRaisedThresholdNeedsALongerFlick() {
+        let scenario = scenario([.longSwipeThreshold: 2.5])
+        #expect(!scenario.swipe(GridSlot.topLeft, .swipeRight, fraction: 2).firedLongSwipe)
+        #expect(scenario.swipe(GridSlot.topLeft, .swipeRight, fraction: 2.9).firedLongSwipe)
+    }
+
+    @Test func aFarReturnSwipeIsNotALongSwipe() {
+        let scenario = scenario()
+        let outcome = scenario.returnSwipe(GridSlot.topCenter, .swipeRight)
+        #expect(!outcome.firedLongSwipe)
+    }
+
+    @Test func aTapAndACircleAreNeverLongSwipes() {
+        let scenario = scenario()
+        #expect(!scenario.tap(GridSlot.center).firedLongSwipe)
+        #expect(!scenario.circle(GridSlot.center).firedLongSwipe)
+    }
+}

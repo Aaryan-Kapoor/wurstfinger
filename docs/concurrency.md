@@ -95,8 +95,8 @@ is never made to wait for a background result.
 | State | Lives in | Read by the touch path via |
 | --- | --- | --- |
 | Active mode, current definition, locale | `KeyboardViewModel` (`@MainActor @Observable`) | direct property access |
-| Gesture thresholds, preprocessor config, long-press timing, trail on/off | `KeyboardViewModel.gestureTuning` (`GestureTuning`, `Sendable`) | the value threaded to the recognizers; **never `UserDefaults`** |
-| Auto-capitalize, double-space period, cut-all, cursor-movement style | `KeyboardViewModel.typingBehavior` (`TypingBehavior`, `Sendable`) | direct property access |
+| Gesture thresholds, preprocessor config, long-press timing, trail on/off, long-swipe distance and actions | `KeyboardViewModel.gestureTuning` (`GestureTuning`, `Sendable`) | the value threaded to the recognizers; **never `UserDefaults`** |
+| Auto-capitalize, double-space period, cut-all, cursor-movement style, text-replacement table (decoded once per change, dictionary lookup per word) | `KeyboardViewModel.typingBehavior` (`TypingBehavior`, `Sendable`) | direct property access |
 | Per-key render settings (label visibility, style) | `@AppStorage` in `DataDrivenKeyboardRootView`, passed down as `KeyRenderSettings` | n/a (rendering) |
 | Layout wish (width, aspect ratio, position) | `LayoutSettings` | `layoutMetrics` (pure `KeyboardLayoutMetrics.resolve`) |
 | Haptic intensities | `HapticSettings` | `HapticFeedbackPlayer` |

@@ -18,6 +18,8 @@ struct KeyboardGridView: View {
     let arrangement: GridArrangement
     let keys: [String: KeyDefinition]
     let onGesture: (KeyDefinition, GestureType, Bool) -> Void
+    /// Forwarded to `KeyView`: the full classification of a completed swipe.
+    var onClassification: ((KeyDefinition, GestureClassification) -> Void)?
     var onTouchDown: (() -> Void)?
     var onSlide: ((KeyDefinition, SlidePhase) -> Void)?
     /// Forwarded to `KeyView`; returns whether the long press was handled.
@@ -101,11 +103,16 @@ struct KeyboardGridView: View {
             KeyView(
                 key: key,
                 onGesture: onGesture,
+                onClassification: onClassification,
                 onTouchDown: onTouchDown,
                 onSlide: onSlide,
                 onLongPress: onLongPress,
                 gestureTrail: gestureTrail,
                 spanRatio: CGFloat(cell.columnSpan) / CGFloat(cell.rowSpan),
+                keySize: CGSize(
+                    width: metrics.cellWidth * CGFloat(cell.columnSpan),
+                    height: metrics.cellHeight * CGFloat(cell.rowSpan)
+                ),
                 visualInset: visualInset(for: cell, totalRows: totalRows),
                 settings: renderSettings,
                 metrics: metrics,

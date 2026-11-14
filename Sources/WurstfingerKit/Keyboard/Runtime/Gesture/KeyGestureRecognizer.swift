@@ -15,6 +15,13 @@ import SwiftUI
 struct GestureClassification: Sendable {
     let gesture: GestureType
     let isReturn: Bool
+
+    /// Where the finger ended, relative to where it landed, in key sizes:
+    /// x in key widths, y in key heights, so a flick across a whole key reads
+    /// 1.0 on its axis whatever the key's shape. Zero when the classifier was
+    /// not told the key's size. Long swipes are decided from this
+    /// (`LongSwipeConfiguration.action(for:)`).
+    var displacementInKeys: CGVector = .zero
 }
 
 /// Touch-sequence state backing `KeyGestureRecognizer`.
@@ -54,14 +61,19 @@ struct KeyGestureSequence: Sendable {
     /// Records the final sample and classifies the completed sequence against
     /// an already-resolved settings snapshot — the production path, which never
     /// touches `UserDefaults`.
+    ///
+    /// `keySize` is the key's rendered size in points; with it the result
+    /// carries the finger's displacement in key sizes (see
+    /// `GestureClassification.displacementInKeys`).
     mutating func handleEnded(
         translation: CGSize,
         aspectRatio: CGFloat,
-        tuning: GestureTuning
+        tuning: GestureTuning,
+        keySize: CGSize = .zero
     ) -> GestureClassification {
         let samples = recordFinalSample(translation: translation)
         return KeyGestureRecognizer.classify(
-            positions: samples, aspectRatio: aspectRatio, tuning: tuning
+            positions: samples, aspectRatio: aspectRatio, tuning: tuning, keySize: keySize
         )
     }
 
@@ -135,6 +147,10 @@ struct KeyGestureRecognizer: ViewModifier {
     /// decides whether the user has the trail turned on.
     var trail: GestureTrailRecorder?
 
+    /// The key's rendered size in points, for measuring a swipe in key sizes
+    /// (long swipes). `.zero` when unknown, which switches the feedback off.
+    var keySize: CGSize = .zero
+
     @State private var sequence = KeyGestureSequence()
     @State private var longPress: LongPressScheduler
     /// Identifies this key's touch sequence to the shared trail recorder.
@@ -162,6 +178,7 @@ struct KeyGestureRecognizer: ViewModifier {
         tuning: GestureTuning,
         onLongPress: (() -> Bool)? = nil,
         trail: GestureTrailRecorder? = nil,
+        keySize: CGSize = .zero,
         isActive: Binding<Bool>,
         longPress: LongPressScheduler = LongPressScheduler()
     ) {
@@ -171,6 +188,7 @@ struct KeyGestureRecognizer: ViewModifier {
         self.tuning = tuning
         self.onLongPress = onLongPress
         self.trail = trail
+        self.keySize = keySize
         _isActive = isActive
         _longPress = State(initialValue: longPress)
     }
@@ -200,6 +218,14 @@ struct KeyGestureRecognizer: ViewModifier {
                         } else {
                             trail?.extend(to: value.location, from: trailToken)
                         }
+                        // Long swipes: tint the trail while a release would
+                        // fire one. Skipped (no work at all) when they are off.
+                        if tuning.longSwipe.isEnabled {
+                            trail?.setLongSwipeArmed(
+                                tuning.longSwipe.isArmed(translation: value.translation, keySize: keySize),
+                                from: trailToken
+                            )
+                        }
                         if isTouchDown {
                             onTouchDown()
                             scheduleLongPress()
@@ -225,7 +251,8 @@ struct KeyGestureRecognizer: ViewModifier {
                         let classification = sequence.handleEnded(
                             translation: value.translation,
                             aspectRatio: aspectRatio,
-                            tuning: tuning
+                            tuning: tuning,
+                            keySize: keySize
                         )
                         signposter.endInterval(InputSignposts.classify, classifyInterval)
                         trail?.finish(from: trailToken)
@@ -323,15 +350,20 @@ struct KeyGestureRecognizer: ViewModifier {
     /// Classifies a sequence of touch positions into a `GestureType` against a
     /// resolved settings snapshot. The production entry point: pure arithmetic
     /// over `positions`, no store access.
+    ///
+    /// `keySize` (points) is only needed for the displacement in key sizes the
+    /// result carries; leave it `.zero` where long swipes are not in play.
     nonisolated static func classify(
         positions: [CGPoint],
         aspectRatio: CGFloat = 1.0,
-        tuning: GestureTuning
+        tuning: GestureTuning,
+        keySize: CGSize = .zero
     ) -> GestureClassification {
         classify(
             positions: positions,
             config: tuning.config.with(aspectRatio: aspectRatio),
-            thresholds: tuning.thresholds
+            thresholds: tuning.thresholds,
+            keySize: keySize
         )
     }
 
@@ -356,13 +388,36 @@ struct KeyGestureRecognizer: ViewModifier {
     nonisolated static func classify(
         positions: [CGPoint],
         config: GesturePreprocessorConfiguration,
-        thresholds: GestureClassificationThresholds
+        thresholds: GestureClassificationThresholds,
+        keySize: CGSize = .zero
     ) -> GestureClassification {
         let preprocessor = GesturePreprocessor(config: config)
-        let processed = preprocessor.preprocess(positions)
+        let cleaned = preprocessor.cleaned(positions)
+        let processed = cleaned.count >= 2 ? preprocessor.smoothSavitzkyGolay(cleaned) : cleaned
         let features = GestureFeatures.extract(from: processed, thresholds: thresholds)
 
-        return classify(features: features)
+        var classification = classify(features: features)
+        classification.displacementInKeys = displacementInKeys(
+            of: cleaned, aspectRatio: config.aspectRatio, keySize: keySize
+        )
+        return classification
+    }
+
+    /// Where a cleaned (aspect-normalised, unsmoothed) path ends relative to
+    /// where it began, in key sizes. The preprocessor divided x by the aspect
+    /// ratio, so it is multiplied back here before dividing by the key's width.
+    /// Unsmoothed on purpose: the live check that tints the trail judges the
+    /// raw finger position, and a release must agree with it.
+    nonisolated static func displacementInKeys(
+        of cleaned: [CGPoint], aspectRatio: CGFloat, keySize: CGSize
+    ) -> CGVector {
+        guard let first = cleaned.first, let last = cleaned.last,
+              keySize.width > 0, keySize.height > 0
+        else { return .zero }
+        return CGVector(
+            dx: (last.x - first.x) * aspectRatio / keySize.width,
+            dy: (last.y - first.y) / keySize.height
+        )
     }
 
     /// Classifies already-extracted features. Useful for testing with

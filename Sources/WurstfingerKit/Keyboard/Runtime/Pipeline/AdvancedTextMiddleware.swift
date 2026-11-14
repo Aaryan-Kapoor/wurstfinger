@@ -57,9 +57,132 @@ struct AdvancedTextMiddleware: ActionMiddleware {
             handleCut(target: target)
         case .cutAll:
             handleCutAll(target: target)
+        case .lineStart:
+            moveCursor(to: .lineStart, target: target)
+        case .lineEnd:
+            moveCursor(to: .lineEnd, target: target)
+        case .documentStart:
+            moveCursor(to: .documentStart, target: target)
+        case .documentEnd:
+            moveCursor(to: .documentEnd, target: target)
+        case .deleteWordBackward:
+            deleteWordBackward(target: target)
         default:
             break
         }
+    }
+
+    // MARK: - Cursor Jumps (Home / End)
+
+    /// Where a cursor jump ends up.
+    enum JumpTarget {
+        case lineStart, lineEnd, documentStart, documentEnd
+
+        /// Whether the jump runs forward (towards the end of the text).
+        var isForward: Bool {
+            switch self {
+            case .lineEnd, .documentEnd: true
+            case .lineStart, .documentStart: false
+            }
+        }
+
+        /// Whether a newline stops the jump (line jumps) or not (document
+        /// jumps, which only stop at the document's edge).
+        var stopsAtNewline: Bool {
+            switch self {
+            case .lineStart, .lineEnd: true
+            case .documentStart, .documentEnd: false
+            }
+        }
+    }
+
+    /// Upper bound on read-and-move rounds of one jump. Each round crosses one
+    /// context window (the proxy exposes a few hundred characters at most), so
+    /// the cap bounds the host round-trips a very long line can cost.
+    static let maxJumpRounds = 64
+
+    /// Moves the cursor to the start or end of the line or document.
+    ///
+    /// The proxy exposes only a bounded window of text around the cursor, so
+    /// one read may not reach the line's end: when the window holds no
+    /// newline, the cursor moves to the window's edge, the context is read
+    /// again, and the walk continues. It stops at a newline, at the edge of
+    /// the document (empty context), when the context stops changing (the host
+    /// has not applied the move yet, or the text is repetitive enough that a
+    /// move looks like none), or after `maxJumpRounds`. In the worst case the
+    /// cursor lands at the edge of the window it could see, never past a
+    /// newline.
+    private func moveCursor(to jump: JumpTarget, target: TextInputTarget) {
+        var previous: (before: String?, after: String?)?
+        for _ in 0 ..< Self.maxJumpRounds {
+            let before = target.documentContextBeforeInput
+            let after = target.documentContextAfterInput
+            if let previous, previous.before == before, previous.after == after { return }
+            previous = (before, after)
+
+            let offset = Self.jumpOffset(jump, before: before ?? "", after: after ?? "")
+            guard offset.distance != 0 else { return }
+            target.adjustTextPosition(byCharacterOffset: offset.distance)
+            if offset.isFinal { return }
+        }
+    }
+
+    /// The signed UTF-16 distance one jump round moves, and whether it reaches
+    /// the destination (a newline, or the document's edge when the context is
+    /// all there is) or only the edge of the visible window.
+    static func jumpOffset(
+        _ jump: JumpTarget, before: String, after: String
+    ) -> (distance: Int, isFinal: Bool) {
+        if jump.isForward {
+            var distance = 0
+            for character in after {
+                if jump.stopsAtNewline, character.isNewline { return (distance, true) }
+                distance += character.utf16.count
+            }
+            return (distance, false)
+        }
+        var distance = 0
+        for character in before.reversed() {
+            if jump.stopsAtNewline, character.isNewline { return (-distance, true) }
+            distance += character.utf16.count
+        }
+        return (-distance, false)
+    }
+
+    // MARK: - Delete Word
+
+    /// Deletes the word before the cursor together with the whitespace after
+    /// it, using the word boundary the space bar's discrete cursor movement
+    /// uses (`KeyboardViewModel.backwardWordOffset`): skip the trailing
+    /// whitespace, then the run of non-whitespace.
+    private func deleteWordBackward(target: TextInputTarget) {
+        // A selection is deleted as one unit, exactly like a plain delete.
+        if let selected = target.selectedText, !selected.isEmpty {
+            target.deleteBackward()
+            return
+        }
+        guard let context = target.documentContextBeforeInput, !context.isEmpty else { return }
+        for _ in 0 ..< Self.wordLength(endingAt: context) {
+            target.deleteBackward()
+        }
+    }
+
+    /// Number of grapheme clusters from the end of `context` back to the start
+    /// of the previous word: trailing whitespace, then the word. `deleteBackward`
+    /// removes clusters, so this counts clusters (the cursor jumps count
+    /// UTF-16 units instead).
+    static func wordLength(endingAt context: String) -> Int {
+        var count = 0
+        var seenWord = false
+        for character in context.reversed() {
+            if character.isWhitespace {
+                if seenWord { break }
+            } else {
+                seenWord = true
+            }
+            count += 1
+        }
+        return count
     }
 
     // MARK: - Delete Forward

@@ -53,6 +53,15 @@ final class GestureTrailRecorder {
     /// grid; the overlay re-reads it each frame.
     @ObservationIgnored private(set) var trail = GestureTrail()
 
+    /// Whether letting go right now would fire a long swipe (issue #79); the
+    /// overlay draws the trail in the accent colour while it is true. Set by
+    /// the gesture driver on every drag sample (`setLongSwipeArmed`) from the
+    /// pure check `LongSwipeConfiguration.isArmed`, kept after release so a
+    /// long swipe that fired fades out in the colour it was armed in, and
+    /// cleared with the trail. Unobserved for the same reason as `trail`: it
+    /// changes at the sample rate, and the overlay re-reads it every frame.
+    @ObservationIgnored private(set) var isLongSwipeArmed = false
+
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let now: () -> TimeInterval
 
@@ -115,6 +124,14 @@ final class GestureTrailRecorder {
         trail.extend(to: location, time: now())
     }
 
+    /// Tells the recorder whether the touch that `token` owns is currently past
+    /// the long-swipe threshold. Ignored from any other touch and while the
+    /// trail is not being recorded, like `extend`.
+    func setLongSwipeArmed(_ isArmed: Bool, from token: GestureTrailToken) {
+        guard owner === token, isRecording else { return }
+        isLongSwipeArmed = isArmed
+    }
+
     /// Ends the current touch: the trail freezes where the finger left it and
     /// fades out. A tap freezes as its dot, which is the only feedback this
     /// keyboard gives for a press — it has no key pop-up.
@@ -143,6 +160,7 @@ final class GestureTrailRecorder {
         fadeOut?.cancel()
         fadeOut = nil
         trail.clear()
+        isLongSwipeArmed = false
         setVisible(false)
     }
 
@@ -152,6 +170,7 @@ final class GestureTrailRecorder {
         fadeOut?.cancel()
         fadeOut = nil
         trail.clear()
+        isLongSwipeArmed = false
         setVisible(false)
         // The setting is sampled per touch from the snapshot the grid keeps
         // current (a host-app toggle reaches it through the settings reload),
@@ -176,6 +195,7 @@ final class GestureTrailRecorder {
             guard !Task.isCancelled, let self else { return }
             fadeOut = nil
             trail.clear()
+            isLongSwipeArmed = false
             setVisible(false)
         }
     }

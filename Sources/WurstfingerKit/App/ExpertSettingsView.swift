@@ -81,6 +81,16 @@ struct ExpertSettingsView: View {
                 returnSwipeDetectionSection
 
                 Section {
+                    NavigationLink("Long Swipes") {
+                        LongSwipeSettingsView()
+                    }
+                } header: {
+                    Label("Actions", systemImage: "arrow.up.right.and.arrow.down.left")
+                } footer: {
+                    Text("A swipe that travels several keys fires a global action such as Escape or Tab.")
+                }
+
+                Section {
                     NavigationLink("Gesture Playground") {
                         GesturePlaygroundView()
                     }

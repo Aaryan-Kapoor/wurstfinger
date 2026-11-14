@@ -173,6 +173,24 @@ extension KeyboardViewModel {
             ))
         }
 
+        // 3c. Text replacement (issue #259). After composition, so a boundary
+        //     produced by a dead key is already final, and before the text
+        //     input types the boundary, so the phrase lands in front of it.
+        //     Reads the table from the settings snapshot on use (the pipeline
+        //     is not rebuilt when the shortcuts change) and is inert while
+        //     the table is empty. Before double-space: the expansion ends in a
+        //     word, never a space, so the two cannot both claim a keystroke.
+        middlewares.append(TextReplacementMiddleware(
+            table: { [weak self] in self?.typingBehavior.textReplacements ?? .empty },
+            locale: { [weak self] in self?.pipelineLocale ?? Locale.current },
+            documentContextBefore: { [weak self] in
+                self?.textInputTarget?.documentContextBeforeInput
+            },
+            selectedText: { [weak self] in self?.textInputTarget?.selectedText },
+            deleteBackward: { [weak self] in self?.textInputTarget?.deleteBackward() },
+            insertText: { [weak self] text in self?.textInputTarget?.insertText(text) }
+        ))
+
         // 4. Advanced text (delete-forward, capitalize, clipboard). The
         //    clipboard confirmation tick fires from the middleware's success
         //    paths (not upfront in the haptic middleware) so guarded no-ops
@@ -326,6 +344,33 @@ extension KeyboardViewModel {
             endKeystrokeInterval()
         }
         return performGesture(gesture, keyId: keyId, isReturn: isReturn)
+    }
+
+    /// Entry point for a completed swipe-or-tap classification: resolves a
+    /// long swipe first, and otherwise hands the gesture to `handleGesture`.
+    ///
+    /// A long swipe (issue #79) is a flick that travelled past the user's
+    /// threshold in key sizes; it fires the global action configured for its
+    /// direction and the key's own binding is not consulted at all — that is
+    /// the point, it works the same on every key. The decision is a pure
+    /// function of the classification and the `gestureTuning` snapshot, so it
+    /// adds no store read and no suspension to the touch path.
+    @discardableResult
+    func handleClassification(_ classification: GestureClassification, keyId: String) -> Bool {
+        guard let action = gestureTuning.longSwipe.action(for: classification) else {
+            return handleGesture(classification.gesture, keyId: keyId, isReturn: classification.isReturn)
+        }
+        let signposter = InputSignposts.signposter
+        let dispatch = signposter.beginInterval(InputSignposts.dispatch)
+        defer {
+            signposter.endInterval(InputSignposts.dispatch, dispatch)
+            endKeystrokeInterval()
+        }
+        dispatchAction(action)
+        // A confirmation tick: the touch-down tap already fired, and a long
+        // swipe is a deliberate "do something else" like a mode switch.
+        feedbackStateChange()
+        return true
     }
 
     private func performGesture(_ gesture: GestureType, keyId: String, isReturn: Bool) -> Bool {
