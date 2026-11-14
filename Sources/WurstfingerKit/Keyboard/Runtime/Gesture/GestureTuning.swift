@@ -44,6 +44,12 @@ struct GestureTuning: Sendable, Equatable {
     /// settings instead of costing the touch a defaults lookup.
     var isTrailEnabled: Bool
 
+    /// Long swipes (issue #79): enabled, distance and per-direction actions.
+    /// In the snapshot because both halves of the feature read it on the touch
+    /// path — the recognizer decides when the trail changes colour, and the
+    /// view model decides what a release does.
+    var longSwipe = LongSwipeConfiguration()
+
     /// Stock settings: what an untouched installation (or expert mode off)
     /// classifies with.
     static let `default` = GestureTuning(
@@ -63,7 +69,8 @@ struct GestureTuning: Sendable, Equatable {
             thresholds: .fromUserDefaults(store: store),
             longPressDuration: KeyboardConstants.LongPress.duration,
             longPressMovementTolerance: KeyboardConstants.LongPress.movementTolerance,
-            isTrailEnabled: store.bool(forKey: SettingsKey.gestureTrailEnabled.rawValue)
+            isTrailEnabled: store.bool(forKey: SettingsKey.gestureTrailEnabled.rawValue),
+            longSwipe: LongSwipeConfiguration.load(from: store)
         )
     }
 }
@@ -85,16 +92,21 @@ struct TypingBehavior: Sendable, Equatable {
     var cutAllEnabled = false
     /// How the space bar moves the cursor.
     var cursorMovement: CursorMovementType = .continuous
+    /// The text-replacement shortcuts. Decoded and indexed here, once, so the
+    /// keystroke that ends a word only does a dictionary lookup.
+    var textReplacements = TextReplacementTable.empty
 
     /// Resolves the toggles from a defaults store. Call when settings change,
-    /// never per keystroke.
-    static func load(from store: UserDefaults = SharedDefaults.store) -> TypingBehavior {
+    /// never per keystroke. `previous` lets a reload that finds the same
+    /// shortcut JSON reuse its decoded table.
+    static func load(from store: UserDefaults = SharedDefaults.store, reusing previous: TypingBehavior? = nil) -> TypingBehavior {
         TypingBehavior(
             autoCapitalizeEnabled: store.bool(forKey: SettingsKey.autoCapitalizeEnabled.rawValue),
             doubleSpacePeriodEnabled: store.bool(forKey: SettingsKey.doubleSpacePeriodEnabled.rawValue),
             cutAllEnabled: store.bool(forKey: SettingsKey.cutAllEnabled.rawValue),
             cursorMovement: store.string(forKey: SettingsKey.cursorMovementStyle.rawValue)
-                .flatMap(CursorMovementType.init(rawValue:)) ?? .continuous
+                .flatMap(CursorMovementType.init(rawValue:)) ?? .continuous,
+            textReplacements: TextReplacementTable.load(from: store, reusing: previous?.textReplacements)
         )
     }
 }

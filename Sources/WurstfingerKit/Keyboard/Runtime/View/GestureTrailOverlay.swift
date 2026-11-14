@@ -68,7 +68,13 @@ struct GestureTrailOverlay: View {
         let path = GestureTrailGeometry.shape(through: points, headWidth: headWidth)
         // One fill of one closed contour, so the alpha is uniform even where
         // the path crosses itself.
-        context.opacity = KeyboardConstants.GestureTrail.opacity * trail.fadeOpacity(at: now)
-        context.fill(path, with: .color(.primary))
+        // A long swipe that will fire on release reads in the accent colour,
+        // and a little stronger than the neutral trail so the change registers.
+        let isArmed = recorder.isLongSwipeArmed
+        let opacity = isArmed
+            ? KeyboardConstants.GestureTrail.armedOpacity
+            : KeyboardConstants.GestureTrail.opacity
+        context.opacity = opacity * trail.fadeOpacity(at: now)
+        context.fill(path, with: .color(isArmed ? .accentColor : .primary))
     }
 }

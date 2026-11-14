@@ -123,6 +123,14 @@ struct SettingsView: View {
                 )
             }
 
+            NavigationLink(destination: TextReplacementView()) {
+                SettingsRow(
+                    icon: "text.badge.plus", color: .orange,
+                    title: "Text Replacement",
+                    subtitle: String(localized: "Expand shortcuts as you type")
+                )
+            }
+
             Toggle(isOn: $isLongPressDigitEnabled) {
                 SettingsRow(
                     icon: "123.rectangle", color: .pink,

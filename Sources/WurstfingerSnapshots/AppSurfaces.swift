@@ -41,4 +41,48 @@ enum AppSurfaces {
             hosted: true
         )
     }
+
+    /// The text-replacement list, filled with a few shortcuts (or empty).
+    static func textReplacement(scheme: ColorScheme, isEmpty: Bool = false) -> Shot {
+        ScenarioEnvironment.reset()
+        let device = Device.iPhone15
+        device.activate()
+        if !isEmpty {
+            SharedDefaults.store.set(
+                TextReplacementTable.encode([
+                    TextReplacementEntry(shortcut: "omw", phrase: "On my way!"),
+                    TextReplacementEntry(shortcut: "gm", phrase: "Good morning"),
+                    TextReplacementEntry(shortcut: "addr", phrase: "Musterstraße 1, 10115 Berlin"),
+                    TextReplacementEntry(shortcut: "sig", phrase: "Best regards,\nRobert"),
+                    TextReplacementEntry(shortcut: "brb", phrase: "Be right back"),
+                ]),
+                forKey: SettingsKey.textReplacements.rawValue
+            )
+        }
+        return Shot(
+            size: device.size, scheme: scheme,
+            content: AnyView(
+                NavigationStack { TextReplacementView() }
+                    .formStyle(.grouped).frame(width: device.width, height: device.size.height)
+            ),
+            hosted: true
+        )
+    }
+
+    /// The long-swipe settings with the feature switched on.
+    static func longSwipes(scheme: ColorScheme) -> Shot {
+        ScenarioEnvironment.reset()
+        let device = Device.iPhone15
+        device.activate()
+        SharedDefaults.store.set(true, forKey: SettingsKey.expertModeEnabled.rawValue)
+        SharedDefaults.store.set(true, forKey: SettingsKey.isLongSwipeEnabled.rawValue)
+        return Shot(
+            size: device.size, scheme: scheme,
+            content: AnyView(
+                NavigationStack { LongSwipeSettingsView() }
+                    .formStyle(.grouped).frame(width: device.width, height: device.size.height)
+            ),
+            hosted: true
+        )
+    }
 }

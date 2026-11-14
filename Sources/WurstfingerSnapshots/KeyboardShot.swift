@@ -37,6 +37,9 @@ struct FingerTrail {
     /// The finger has rested long enough for the guide card to reveal the
     /// key's whole map.
     var paused = false
+    /// Long swipes are on, so the trail turns the accent colour while a
+    /// release would fire one (`LongSwipeConfiguration.isArmed`).
+    var longSwipes = false
 }
 
 /// Everything that distinguishes one keyboard picture from another.
@@ -83,6 +86,10 @@ enum KeyboardShot {
         if let enabled = spec.enabledLanguages { settings[.enabledLanguageIds] = enabled }
         // A finger on the keyboard draws its trail, as with the setting on.
         if spec.finger != nil { settings[.gestureTrailEnabled] = true }
+        if spec.finger?.longSwipes == true {
+            settings[.expertModeEnabled] = true
+            settings[.isLongSwipeEnabled] = true
+        }
         let scenario = KeyboardScenario(
             language: spec.language,
             containerWidth: spec.device.width,

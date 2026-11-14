@@ -212,18 +212,25 @@ struct GesturePreprocessor {
     /// Main preprocessing pipeline
     func preprocess(_ points: [CGPoint]) -> [CGPoint] {
         guard points.count >= 2 else { return points }
+        // Step 4: Savitzky-Golay smoothing, over the cleaned and normalized path.
+        return smoothSavitzkyGolay(cleaned(points))
+    }
+
+    /// Steps 1-3 of the pipeline: jitter and outlier filtering and aspect
+    /// ratio normalization, without the smoothing. The path as the finger
+    /// travelled it, which is what a distance measurement wants: smoothing
+    /// pulls the end of a path back by a point or two.
+    func cleaned(_ points: [CGPoint]) -> [CGPoint] {
+        guard points.count >= 2 else { return points }
 
         // Step 1: Jitter filter
         let dejittered = filterJitter(points)
 
         // Step 2: Outlier filter
-        let cleaned = filterOutliers(dejittered)
+        let filtered = filterOutliers(dejittered)
 
         // Step 3: Aspect ratio correction (normalize horizontal movement)
-        let normalized = normalizeAspectRatio(cleaned)
-
-        // Step 4: Savitzky-Golay smoothing
-        return smoothSavitzkyGolay(normalized)
+        return normalizeAspectRatio(filtered)
     }
 
     // MARK: - Step 1: Jitter Filter

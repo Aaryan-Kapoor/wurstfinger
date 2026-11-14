@@ -31,6 +31,11 @@ struct GestureOutcome: Equatable {
     var firedLongPress = false
     /// Whether the view model resolved the gesture to a binding.
     var dispatched = false
+    /// Where the finger ended, in key sizes (see `GestureClassification`).
+    var displacementInKeys: CGVector = .zero
+    /// Whether the flick was a long swipe, which fires a global action instead
+    /// of the key's own binding.
+    var firedLongSwipe = false
 }
 
 @MainActor
@@ -203,13 +208,14 @@ final class KeyboardScenario {
         let viewModel = viewModel
         var actions = viewModel.touchEngineActions
         actions.gesture = { key, classification in
-            let dispatched = viewModel.handleGesture(
-                classification.gesture, keyId: key.id, isReturn: classification.isReturn
-            )
+            let firedLongSwipe = viewModel.gestureTuning.longSwipe.action(for: classification) != nil
+            let dispatched = viewModel.handleClassification(classification, keyId: key.id)
             record { outcome in
                 var outcome = outcome
                 outcome.gesture = classification.gesture
                 outcome.isReturn = classification.isReturn
+                outcome.displacementInKeys = classification.displacementInKeys
+                outcome.firedLongSwipe = firedLongSwipe
                 outcome.dispatched = dispatched
                 return outcome
             }

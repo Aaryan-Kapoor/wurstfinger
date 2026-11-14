@@ -17,7 +17,7 @@ extension KeyboardViewModel {
                 self?.touchDown()
             },
             gesture: { [weak self] key, classification in
-                self?.handleGesture(classification.gesture, keyId: key.id, isReturn: classification.isReturn)
+                self?.handleClassification(classification, keyId: key.id)
             },
             slide: { [weak self] key, phase in
                 self?.handleSlide(key, phase: phase)
@@ -25,10 +25,20 @@ extension KeyboardViewModel {
             longPress: { [weak self] key in
                 self?.handleGesture(.longPress, keyId: key.id, isReturn: false) ?? false
             },
-            previewLabel: { [weak self] key, gesture, isReturn in
-                self?.previewLabel(for: gesture, keyId: key.id, isReturn: isReturn)
+            previewLabel: { [weak self] key, classification in
+                self?.previewLabel(for: classification, keyId: key.id)
             }
         )
+    }
+
+    /// What releasing with `classification` on `keyId` would do, as the guide
+    /// card shows it: a long swipe's action glyph when one would fire (it takes
+    /// precedence, as in `handleClassification`), otherwise the key's binding.
+    func previewLabel(for classification: GestureClassification, keyId: String) -> String? {
+        if let action = gestureTuning.longSwipe.action(for: classification) {
+            return action.previewGlyph
+        }
+        return previewLabel(for: classification.gesture, keyId: keyId, isReturn: classification.isReturn)
     }
 
     /// What `gesture` on `keyId` would type in the active mode, as its label —
@@ -98,5 +108,38 @@ extension KeyboardViewModel {
             actions: touchEngineActions
         )
         touchEngine.updateSize(size)
+    }
+}
+
+extension KeyAction {
+    /// A compact glyph for an action that types no text of its own, for the
+    /// guide card. Text actions show their text instead.
+    var previewGlyph: String {
+        switch self {
+        case let .commitText(text): text
+        case .tab: "⇥"
+        case .backTab: "⇤"
+        case .escape: "⎋"
+        case .newline: "⏎"
+        case .space: "␣"
+        case .deleteBackward: "⌫"
+        case .deleteForward: "⌦"
+        case .deleteWordBackward: "⌫⌫"
+        case .lineStart: "⇱"
+        case .lineEnd: "⇲"
+        case .documentStart: "⤒"
+        case .documentEnd: "⤓"
+        case .dismissKeyboard: "⌄"
+        case .copy: "⧉"
+        case .paste: "⎘"
+        case .cut, .cutAll: "✂"
+        case let .moveCursor(offset): offset < 0 ? "◂" : "▸"
+        case .advanceToNextInputMode, .switchToNextLanguage: "🌐"
+        case .capitalizeWord: "Aa"
+        case let .switchMode(mode): mode
+        case let .compose(trigger): trigger
+        case .cycleAccents: "◌́"
+        case .none: ""
+        }
     }
 }

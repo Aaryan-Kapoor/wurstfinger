@@ -31,6 +31,9 @@ struct KeyHitMap: Sendable, Equatable {
         /// Width over height of the key as drawn, which the classifier uses to
         /// normalize swipe angles (a span of 2×1 is twice as wide).
         let aspectRatio: CGFloat
+        /// The key's drawn size (spans and the gaps inside them included), the
+        /// unit long swipes are measured in.
+        let size: CGSize
     }
 
     let keys: [Key]
@@ -76,11 +79,18 @@ struct KeyHitMap: Sendable, Equatable {
             horizontalSpacing: horizontalSpacing,
             verticalSpacing: verticalSpacing
         )
+        let columnWidth = columns > 0
+            ? max((size.width - CGFloat(columns - 1) * horizontalSpacing) / CGFloat(columns), 0)
+            : 0
         keys = zip(cells, frames).map { cell, frame in
             Key(
                 id: cell.keyId,
                 frame: frame,
-                aspectRatio: cellAspectRatio * CGFloat(cell.columnSpan) / CGFloat(max(cell.rowSpan, 1))
+                aspectRatio: cellAspectRatio * CGFloat(cell.columnSpan) / CGFloat(max(cell.rowSpan, 1)),
+                size: CGSize(
+                    width: CGFloat(cell.columnSpan) * columnWidth + CGFloat(cell.columnSpan - 1) * horizontalSpacing,
+                    height: CGFloat(cell.rowSpan) * rowHeight + CGFloat(cell.rowSpan - 1) * verticalSpacing
+                )
             )
         }
         self.size = size
@@ -88,9 +98,6 @@ struct KeyHitMap: Sendable, Equatable {
         self.rows = rows
         self.horizontalSpacing = horizontalSpacing
         self.verticalSpacing = verticalSpacing
-        let columnWidth = columns > 0
-            ? max((size.width - CGFloat(columns - 1) * horizontalSpacing) / CGFloat(columns), 0)
-            : 0
         columnPitch = columnWidth + horizontalSpacing
         rowPitch = rowHeight + verticalSpacing
 

@@ -53,8 +53,29 @@ enum CommonKeys {
         accessibilityLabel: String(localized: "Delete")
     )
 
+    /// Home / End on the return key, after the Android MessagEase gestures
+    /// (issue #77): a swipe toward the top-left corner jumps to the start of
+    /// the line, toward the bottom-right corner to its end. The return swipe
+    /// (out and back) of each goes the whole way, to the start or end of the
+    /// document. The return key has no other swipe bindings, so nothing
+    /// collides; the labels are empty because the key has no room for hints
+    /// next to its glyph. The names exist for VoiceOver, which lists them as
+    /// custom actions.
+    static let lineJumpBindings: [GestureType: KeyBinding] = [
+        .swipeUpLeft: KeyBinding(
+            label: "", action: .lineStart, category: .utility,
+            returnAction: .documentStart, accessibilityLabel: String(localized: "Line start")
+        ),
+        .swipeDownRight: KeyBinding(
+            label: "", action: .lineEnd, category: .utility,
+            returnAction: .documentEnd, accessibilityLabel: String(localized: "Line end")
+        ),
+    ]
+
     static let `return` = KeyDefinition.utility(
         UtilitySlot.return, label: "↵", action: .newline,
+        swipeMode: .eightWay,
+        swipes: lineJumpBindings,
         accessibilityLabel: String(localized: "New line")
     )
 

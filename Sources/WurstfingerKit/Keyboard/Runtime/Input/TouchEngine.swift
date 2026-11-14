@@ -25,16 +25,17 @@ struct TouchSample: Sendable, Equatable {
 struct TouchEngineActions {
     /// A finger landed on a key (haptic, signpost).
     var touchDown: (KeyDefinition) -> Void = { _ in }
-    /// A flick key's gesture completed.
+    /// A flick key's gesture completed. The full classification, so long
+    /// swipes (which depend on the distance, not just the direction) resolve.
     var gesture: (KeyDefinition, GestureClassification) -> Void = { _, _ in }
     /// A slide key (space, delete) reported a phase.
     var slide: (KeyDefinition, SlidePhase) -> Void = { _, _ in }
     /// The finger rested long enough for a long press; returns whether it was
     /// handled. Only consulted while long presses are enabled.
     var longPress: (KeyDefinition) -> Bool = { _ in false }
-    /// What a gesture on a key would type, for the live preview — resolved
-    /// without dispatching anything.
-    var previewLabel: (KeyDefinition, GestureType, Bool) -> String? = { _, _, _ in nil }
+    /// What a classification on a key would type or do, for the live preview —
+    /// resolved without dispatching anything.
+    var previewLabel: (KeyDefinition, GestureClassification) -> String? = { _, _ in nil }
 }
 
 /// The keyboard's input engine.
@@ -177,7 +178,7 @@ final class TouchEngine {
 
         let track = pool.popLast() ?? PointerTrack()
         track.start(
-            id: id, key: key, origin: location, aspectRatio: hit.aspectRatio,
+            id: id, key: key, origin: location, aspectRatio: hit.aspectRatio, keySize: hit.size,
             sequence: nextSequence, time: time
         )
         nextSequence &+= 1
@@ -205,6 +206,17 @@ final class TouchEngine {
             }
         }
         trail.predict(predicted, from: track.trailToken)
+        // Long swipes: the trail takes the accent colour while letting go
+        // would fire one. No work at all while they are off.
+        if tuning.longSwipe.isEnabled, case .flick = track.kind, let last = samples.last {
+            let translation = track.translation(to: last.location)
+            trail.setLongSwipeArmed(
+                tuning.longSwipe.isArmed(
+                    translation: CGSize(width: translation.x, height: translation.y), keySize: track.keySize
+                ),
+                from: track.trailToken
+            )
+        }
         if track.longPress.isScheduled, !track.isResting(within: tuning.longPressMovementTolerance) {
             track.longPress.cancel()
         }
@@ -234,7 +246,8 @@ final class TouchEngine {
             let classification = track.flick.handleEnded(
                 translation: CGSize(width: translation.x, height: translation.y),
                 aspectRatio: track.aspectRatio,
-                tuning: tuning
+                tuning: tuning,
+                keySize: track.keySize
             )
             signposter.endInterval(InputSignposts.classify, interval)
             trail.finish(from: track.trailToken)
@@ -284,14 +297,21 @@ final class TouchEngine {
     private func speculate(_ track: PointerTrack) {
         guard case .flick = track.kind else { return }
         let classification = KeyGestureRecognizer.classify(
-            positions: track.flick.path, aspectRatio: track.aspectRatio, tuning: tuning
+            positions: track.flick.path, aspectRatio: track.aspectRatio, tuning: tuning, keySize: track.keySize
         )
         let candidate: GestureType? = classification.gesture == .tap ? nil : classification.gesture
-        guard candidate != track.candidate || classification.isReturn != track.candidateIsReturn else { return }
+        // A swipe that crosses the long-swipe threshold keeps its direction but
+        // changes what it does, so that counts as a new target too.
+        let isLongSwipe = tuning.longSwipe.isEnabled && tuning.longSwipe.action(for: classification) != nil
+        guard candidate != track.candidate
+            || classification.isReturn != track.candidateIsReturn
+            || isLongSwipe != track.candidateIsLongSwipe
+        else { return }
         track.candidate = candidate
         track.candidateIsReturn = classification.isReturn
+        track.candidateIsLongSwipe = isLongSwipe
         press.setCandidate(candidate, isReturn: classification.isReturn, keyId: track.keyId)
-        let label = candidate.flatMap { actions.previewLabel(track.key, $0, classification.isReturn) }
+        let label = candidate == nil ? nil : actions.previewLabel(track.key, classification)
         press.updateGuide(touchID: track.sequence) { guide in
             guide.candidate = candidate
             guide.isReturn = classification.isReturn
@@ -475,6 +495,7 @@ private final class PointerTrack {
     var key = KeyDefinition.idle
     private(set) var origin: CGPoint = .zero
     private(set) var aspectRatio: CGFloat = 1
+    private(set) var keySize: CGSize = .zero
     private(set) var sequence: UInt64 = 0
     private(set) var pressTime: TimeInterval = 0
     private(set) var kind = Kind.flick
@@ -486,9 +507,10 @@ private final class PointerTrack {
 
     var candidate: GestureType?
     var candidateIsReturn = false
+    var candidateIsLongSwipe = false
 
     func start(
-        id: PointerID, key: KeyDefinition, origin: CGPoint, aspectRatio: CGFloat,
+        id: PointerID, key: KeyDefinition, origin: CGPoint, aspectRatio: CGFloat, keySize: CGSize,
         sequence: UInt64, time: TimeInterval
     ) {
         self.id = id
@@ -496,6 +518,7 @@ private final class PointerTrack {
         keyId = key.id
         self.origin = origin
         self.aspectRatio = aspectRatio
+        self.keySize = keySize
         self.sequence = sequence
         pressTime = time
         kind = key.slideType == .none ? .flick : .slide(.for(key.slideType))
@@ -549,6 +572,7 @@ private final class PointerTrack {
         longPress.clearConsumed()
         candidate = nil
         candidateIsReturn = false
+        candidateIsLongSwipe = false
         key = .idle
         keyId = ""
     }

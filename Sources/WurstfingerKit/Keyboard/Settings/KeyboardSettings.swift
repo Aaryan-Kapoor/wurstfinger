@@ -65,6 +65,18 @@ enum SettingsKey: String, CaseIterable, Sendable {
     /// redrawing costs battery, so experienced users are not made to pay for
     /// it. Off also keeps the keyboard visually identical to before.
     case gestureTrailEnabled
+    /// Long swipes (Expert): a flick past `longSwipeThreshold` key sizes fires
+    /// a global action chosen per direction instead of the key's own swipe.
+    /// Off by default.
+    case isLongSwipeEnabled
+    /// Distance, in key sizes, past which a flick is a long swipe.
+    case longSwipeThreshold
+    /// The `LongSwipeAction` raw value chosen for each of the eight directions.
+    case longSwipeUp, longSwipeDown, longSwipeLeft, longSwipeRight
+    case longSwipeUpLeft, longSwipeUpRight, longSwipeDownLeft, longSwipeDownRight
+    /// The user's text-replacement shortcuts, a JSON array of
+    /// `{shortcut, phrase}` objects (see `TextReplacementTable`).
+    case textReplacements
 }
 
 // MARK: - Haptic Settings

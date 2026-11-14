@@ -41,10 +41,14 @@ struct AutoCapitalizationMiddleware: ActionMiddleware {
     static func affectsCapitalization(_ action: KeyAction) -> Bool {
         switch action {
         case .commitText, .space, .newline, .deleteBackward, .deleteForward,
-             .compose, .cycleAccents, .paste, .cut, .cutAll:
+             .compose, .cycleAccents, .paste, .cut, .cutAll, .tab,
+             .deleteWordBackward:
             true
+        // Terminal control sequences and cursor jumps leave the sentence state
+        // alone: an Esc or a Home does not start a new sentence.
         case .moveCursor, .switchMode, .capitalizeWord, .advanceToNextInputMode,
-             .dismissKeyboard, .copy, .none, .switchToNextLanguage:
+             .dismissKeyboard, .copy, .none, .switchToNextLanguage,
+             .backTab, .escape, .lineStart, .lineEnd, .documentStart, .documentEnd:
             false
         }
     }

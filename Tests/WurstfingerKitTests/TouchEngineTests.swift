@@ -63,7 +63,7 @@ private final class EngineHarness {
                     events.append(.longPress(key.id))
                     return longPressHandled
                 },
-                previewLabel: { key, gesture, _ in key.bindings[gesture]?.label }
+                previewLabel: { key, classification in key.bindings[classification.gesture]?.label }
             )
         )
         engine.updateSize(CGSize(width: 300, height: 240))
