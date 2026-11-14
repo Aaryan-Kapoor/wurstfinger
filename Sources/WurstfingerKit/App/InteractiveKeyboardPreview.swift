@@ -163,10 +163,11 @@ struct InteractiveKeyboardPreview: View {
             }
             .frame(height: previewHeight)
             .clipShape(RoundedRectangle(cornerRadius: 12))
-            .animation(.easeInOut(duration: 0.2), value: aspectRatio)
-            .animation(.easeInOut(duration: 0.2), value: width)
-            .animation(.easeInOut(duration: 0.2), value: position)
-            .animation(.easeInOut(duration: 0.2), value: keySpacing)
+            // The keys move by the keyboard's own layout motion (the root
+            // view's `LayoutMotion`); the frame follows them the way the
+            // keyboard's frame follows a resize, so a slider drag tracks the
+            // thumb without the frame lagging the keys.
+            .animation(LayoutMotion.follow.animation, value: previewHeight)
         }
     }
 }
