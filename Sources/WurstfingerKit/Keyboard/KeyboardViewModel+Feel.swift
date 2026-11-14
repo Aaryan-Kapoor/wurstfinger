@@ -130,13 +130,14 @@ extension KeyboardViewModel {
               let slot = compiled.slot(for: keyId)
         else { return nil }
         if gesture.isCircular {
-            switch compiled.circular(slot: slot, clockwise: gesture == .circularClockwise) {
+            switch resolvedCircle(in: compiled, slot: slot, gesture: gesture) {
             case let .binding(index): return compiled.binding(at: index).action
             case let .commitUppercase(text): return .commitText(text)
+            case .capitalizeWord: return .capitalizeWord(uppercased: true)
             case .none: return nil
             }
         }
-        return compiled.binding(slot: slot, gesture: gesture, isReturn: isReturn)?.action
+        return resolvedBinding(in: compiled, slot: slot, gesture: gesture, isReturn: isReturn)?.action
     }
 
     /// The glyph lifting off the guide card for `commit`, from the cell the

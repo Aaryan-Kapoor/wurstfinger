@@ -75,7 +75,7 @@
 //
 //  - **Tap**: maxDisplacement < minSwipeLength (20pt by default)
 //  - **Return-swipe**: returnRatio < 0.5 AND maxDisplacement in middle of path
-//  - **Circular**: angularSpan > 270° AND consistent turn direction AND enough
+//  - **Circular**: angularSpan > 255° AND consistent turn direction AND enough
 //    oriented compactness (a circle, not a narrow arc)
 //  - **Swipe**: Everything else, direction from maxDisplacementAngle
 //
@@ -711,10 +711,19 @@ struct GestureClassificationThresholds: Sendable, Equatable {
     static let defaultReturnDisplacementStart: CGFloat = 0.2
     static let defaultReturnDisplacementEnd: CGFloat = 0.8
     static let defaultMinCircularity: CGFloat = 0.3
-    static let defaultMinAngularSpan: CGFloat = .pi * 1.5 // 270°
+    /// 255°, not a full 270: the span is measured around the path's centroid,
+    /// which sits off the true centre of an open arc, so a thumb's C-shaped
+    /// 270-300° circle measures 245-270° and a good share of the short ones fell
+    /// under the line. 255° is where the gesture lab's circles stop being lost
+    /// without the returns (whose loops measure over 350°) being let in, and it
+    /// stays above what a 200° arc measures (252°). See `GestureLab`.
+    static let defaultMinAngularSpan: CGFloat = .pi * 255 / 180
     static let defaultMinPathSeparation: CGFloat = 0.5
     static let defaultMinTurnConsistency: CGFloat = 0.8 // 80% turns in same direction
-    static let defaultMinOrientedCompactness: CGFloat = 0.4 // width must be at least 40% of length
+    /// Width must be at least 45% of length. Raised from 40% with the span: a
+    /// return swipe whose way back runs wide of the way out is a thin loop
+    /// (compactness 0.40-0.44 in the lab), a circle is rounder.
+    static let defaultMinOrientedCompactness: CGFloat = 0.45
 
     // MARK: - Value Ranges
 

@@ -562,7 +562,7 @@ struct ViewModelFeelTests {
     }
 
     @Test func aLongPressDigitArmsTheRing() throws {
-        let scenario = KeyboardScenario(autoCapitalize: false, settings: [.isLongPressDigitEnabled: true])
+        let scenario = KeyboardScenario(autoCapitalize: false, settings: [.longPressBehaviour: LongPressType.digits.rawValue])
         let viewModel = scenario.viewModel
         viewModel.configureTouchEngine(containerWidth: scenario.containerWidth, isLongPressEnabled: true)
         let engine = viewModel.touchEngine
@@ -576,7 +576,7 @@ struct ViewModelFeelTests {
     }
 
     @Test func keysWithoutAHoldBindingGetNoRing() throws {
-        let scenario = KeyboardScenario(autoCapitalize: false, settings: [.isLongPressDigitEnabled: true])
+        let scenario = KeyboardScenario(autoCapitalize: false, settings: [.longPressBehaviour: LongPressType.digits.rawValue])
         let viewModel = scenario.viewModel
         viewModel.configureTouchEngine(containerWidth: scenario.containerWidth, isLongPressEnabled: true)
         let engine = viewModel.touchEngine

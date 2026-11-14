@@ -49,9 +49,17 @@ enum SettingsKey: String, CaseIterable, Sendable {
     case areLetterLabelsHidden = "hideLetters"
     case areStandardSymbolLabelsHidden = "hideStandardSymbols"
     case areExtraSymbolLabelsHidden = "hideExtraSymbols"
-    /// Holding a letter key types the digit that key carries in numeric
-    /// mode, without switching to it.
+    /// Legacy: holding a letter key types the digit that key carries in
+    /// numeric mode, without switching to it. Replaced by `longPressBehaviour`;
+    /// only read to migrate (`LongPressType.migrateLegacyIfNeeded`) and kept in
+    /// the store for downgrade safety.
     case isLongPressDigitEnabled = "longPressNumbersEnabled"
+    /// What holding a key does: nothing, the key's digit, or its capital
+    /// (`LongPressType` raw value, issue #308).
+    case longPressBehaviour
+    /// What a circle on a letter key types, per direction (Expert,
+    /// `CircleType` raw value).
+    case clockwiseCircleBehaviour, counterclockwiseCircleBehaviour
     /// Typing a second consecutive space inserts a period followed by a
     /// space (the iOS "." Shortcut), when the character before the pending
     /// space is a letter or digit.

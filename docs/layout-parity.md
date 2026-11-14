@@ -26,8 +26,8 @@ not closed (reason in section 6) · ★ Wurstfinger only.
 | Tap | ✓ | ✓ |
 | 8 swipes | ✓ | ✓ |
 | Return swipe (out and back, finger ends past half way back) | "shift" flick: the shifted form of that direction (uppercase letters, shifted symbols), also the word-case and Shift-Tab variants | ✓ `KeyBinding.returnAction`; threshold `maxReturnRatio` 0.5 |
-| Circle, either direction | uppercase of the centre letter (default) or its digit (setting) | ✓ uppercase of the centre letter; explicit symbols in the numeric mode ◐ digits come from hold or the numeric mode |
-| Hold | the key's digit (default on) | ✓ the key's digit, off by default (*Type Numbers by Holding*) |
+| Circle, either direction | uppercase of the centre letter (default) or its digit (setting) | ✓ uppercase of the centre letter by default; Expert *Circles* sets each direction to uppercase, the key's digit, or *Uppercase Word* (capitalize the word before the cursor); explicit symbols in the numeric mode |
+| Hold | the key's digit (default on) | ✓ *Long Press*: Off (default), Digits (the key's digit), or Capitals (the key's capital, from the shifted mode) |
 | Long swipe (opt-in) | right Space, left Delete, down Enter, up Esc, ↗ Shift on, ↙ Shift off, ↘ Tab, ↖ Shift-Tab | ✓ opt-in, per-direction choice; **＋** *Shift on*, *Shift off*, *Delete word ahead*, *Line up*, *Line down*, *Ctrl*, *Alt* added to the choices (Space, Delete, Enter, Esc, Tab, Shift-Tab were there). The *defaults* stay what they were: they only apply to users who enabled long swipes without choosing, and changing them would silently remap those users |
 | Fast action (repeat while dragging) | Space ← →, Backspace ← → | ✓ space-bar slide (continuous or discrete), delete-key slide |
 
@@ -194,7 +194,7 @@ reads the existing table and only ever adds entries.
 | Enter ↖ ↗: emoji; shifted: emoji search | ✗ (6); globe ← reaches the system emoji keyboard |
 | Enter ↓: zalgo mode | ✗ (6) |
 | Space tap | ✓ |
-| Space hold: `0` | ✓ (with *Type Numbers by Holding*) |
+| Space hold: `0` | ✓ (with *Long Press* → Digits) |
 | Space ← →: move the cursor; shifted: by word | ✓ space-bar slide; the discrete mode's return swipe moves a word |
 | Space ↑: show / hide symbols on the keys | ✓ space-bar up swipe (return swipe hides letters too) |
 | Space ↖: Alt toggle; ↗: Ctrl toggle; ↗ shifted: Escape | **＋** Ctrl: `123` ↖, Alt: `123` ←, one-shot modes (7); ◐ Escape is the up long swipe |

@@ -390,20 +390,21 @@ struct SettingsKeyTests {
         defaults.set(true, forKey: "hideExtraSymbols")
         defaults.set(true, forKey: "longPressNumbersEnabled")
 
-        // Reads the four values the way `DataDrivenKeyboardRootView` does:
-        // by the rawValue of the case.
+        // Reads the values the way `DataDrivenKeyboardRootView` does: by the
+        // rawValue of the case. The legacy long-press flag is read by the
+        // migration, which turns it into the picker's Digits.
         let settings = KeyRenderSettings(
             areLetterLabelsHidden: defaults.bool(forKey: SettingsKey.areLetterLabelsHidden.rawValue),
             areStandardSymbolLabelsHidden: defaults.bool(forKey: SettingsKey.areStandardSymbolLabelsHidden.rawValue),
             areExtraSymbolLabelsHidden: defaults.bool(forKey: SettingsKey.areExtraSymbolLabelsHidden.rawValue),
-            isLongPressDigitEnabled: defaults.bool(forKey: SettingsKey.isLongPressDigitEnabled.rawValue)
+            longPress: LongPressType.load(from: defaults)
         )
 
-        // All four default to false, so reading true proves the stored value
+        // All of them default to off, so reading on proves the stored value
         // was found under its pinned key rather than falling back.
         #expect(settings.areLetterLabelsHidden)
         #expect(settings.areStandardSymbolLabelsHidden)
         #expect(settings.areExtraSymbolLabelsHidden)
-        #expect(settings.isLongPressDigitEnabled)
+        #expect(settings.longPress == .digits)
     }
 }

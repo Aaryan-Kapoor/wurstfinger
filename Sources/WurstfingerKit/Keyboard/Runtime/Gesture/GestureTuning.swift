@@ -95,6 +95,13 @@ struct TypingBehavior: Sendable, Equatable {
     /// The text-replacement shortcuts. Decoded and indexed here, once, so the
     /// keystroke that ends a word only does a dictionary lookup.
     var textReplacements = TextReplacementTable.empty
+    /// What holding a key types (issue #308). The touch engine's timer is armed
+    /// from the render settings; this is what the hold resolves to when it fires
+    /// and what the guide previews.
+    var longPress = LongPressType.default
+    /// What a circle on a letter key types, per direction (Expert).
+    var clockwiseCircle = CircleType.default
+    var counterclockwiseCircle = CircleType.default
 
     /// Resolves the toggles from a defaults store. Call when settings change,
     /// never per keystroke. `previous` lets a reload that finds the same
@@ -106,7 +113,10 @@ struct TypingBehavior: Sendable, Equatable {
             cutAllEnabled: store.bool(forKey: SettingsKey.cutAllEnabled.rawValue),
             cursorMovement: store.string(forKey: SettingsKey.cursorMovementStyle.rawValue)
                 .flatMap(CursorMovementType.init(rawValue:)) ?? .continuous,
-            textReplacements: TextReplacementTable.load(from: store, reusing: previous?.textReplacements)
+            textReplacements: TextReplacementTable.load(from: store, reusing: previous?.textReplacements),
+            longPress: LongPressType.load(from: store),
+            clockwiseCircle: CircleType.load(.clockwiseCircleBehaviour, from: store),
+            counterclockwiseCircle: CircleType.load(.counterclockwiseCircleBehaviour, from: store)
         )
     }
 }

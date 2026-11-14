@@ -246,7 +246,7 @@ final class KeyboardScenario {
             geometry: geometry,
             keys: mode.keys,
             tuning: viewModel.gestureTuning,
-            isLongPressEnabled: defaults.bool(forKey: SettingsKey.isLongPressDigitEnabled.rawValue),
+            isLongPressEnabled: LongPressType.load(from: defaults).isEnabled,
             actions: actions
         )
         engine.updateSize(size)

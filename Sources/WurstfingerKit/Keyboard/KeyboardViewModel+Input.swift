@@ -64,14 +64,16 @@ extension KeyboardViewModel {
         else { return nil }
         if gesture.isCircular {
             // Same outcome `performGesture` would dispatch: explicit binding,
-            // the uppercase centre letter, then the opposite direction.
-            switch compiled.circular(slot: slot, clockwise: gesture == .circularClockwise) {
+            // the uppercase centre letter (or the digit / word capitalization
+            // the user set for this direction), then the opposite direction.
+            switch resolvedCircle(in: compiled, slot: slot, gesture: gesture) {
             case let .binding(index): return compiled.binding(at: index).label
             case let .commitUppercase(text): return text
+            case .capitalizeWord: return KeyAction.capitalizeWord(uppercased: true).previewGlyph
             case .none: return nil
             }
         }
-        guard let binding = compiled.binding(slot: slot, gesture: gesture, isReturn: isReturn) else { return nil }
+        guard let binding = resolvedBinding(in: compiled, slot: slot, gesture: gesture, isReturn: isReturn) else { return nil }
         // Text bindings preview the text they commit, which for a return swipe
         // (and the shifted forms the resolvers produce) can differ from the
         // label the key's hint shows.

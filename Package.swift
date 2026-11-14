@@ -97,6 +97,8 @@ let package = Package(
       name: "WurstfingerBench",
       dependencies: [
         "WurstfingerKit",
+        // The gesture lab (`--lab`): labelled synthetic thumbs and its confusion matrix.
+        "WurstfingerScenarioKit",
         .target(name: "WurstfingerBenchAllocCounter", condition: .when(platforms: [.macOS])),
       ],
       path: "Sources/WurstfingerBench"

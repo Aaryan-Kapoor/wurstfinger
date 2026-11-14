@@ -232,7 +232,7 @@ struct ScenarioModeTests {
     @Test func longPressTypesTheDigitWhenEnabled() {
         let scenario = KeyboardScenario(
             language: "en_US", autoCapitalize: false,
-            settings: [.isLongPressDigitEnabled: true]
+            settings: [.longPressBehaviour: LongPressType.digits.rawValue]
         )
         let outcome = scenario.longPress(GridSlot.topLeft)
         #expect(outcome.firedLongPress)

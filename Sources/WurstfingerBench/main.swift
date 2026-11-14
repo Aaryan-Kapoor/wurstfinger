@@ -9,7 +9,8 @@
 //
 //  (`--timers` runs only the timer section; `--bodies` additionally needs a debug build, where the KeyView body
 //  counter exists: `swift run WurstfingerBench --bodies`. `--alloc`, `--memory` and `--switch` run
-//  only the allocation, memory and mode-switch sections.)
+//  only the allocation, memory and mode-switch sections. `--lab` prints the gesture accuracy lab's
+//  confusion matrices — accuracy, not time.)
 //
 //  Every section prints p50 / p99 / max in nanoseconds per operation, so the
 //  numbers before and after the Swift 6 port are directly comparable.
@@ -22,6 +23,7 @@ import Foundation
 import AppKit
 import SwiftUI
 @testable import WurstfingerKit
+@testable import WurstfingerScenarioKit
 
 // MARK: - Sections
 
@@ -359,6 +361,18 @@ if onlyBodies {
     exit(0)
 }
 #endif
+
+if arguments.contains("--lab") {
+    // Labelled synthetic thumbs through the production classifier; see
+    // `GestureLab` in the scenario kit and `GestureLabTests` for the floors.
+    let count = 2000
+    print(GestureLab(profile: .clean).matrix(count: count).render(title: "Gesture lab: clean thumb, \(count) per class\n"))
+    print("")
+    let realistic = GestureLab(profile: .realistic).matrix(count: count)
+    print(realistic.render(title: "Gesture lab: realistic thumb, \(count) per class\n"))
+    for c in realistic.worstConfusions() { print("  meant \(c.meant) said \(c.said): \(c.count)") }
+    exit(0)
+}
 
 if arguments.contains("--render") {
     for stats in await MainActor.run(body: { benchRender(iterations: 60) }) { stats.report() }

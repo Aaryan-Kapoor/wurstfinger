@@ -2899,144 +2899,6 @@
       },
       "comment": "Toggle subtitle: explains double-space to period"
     },
-    "Type Numbers by Holding": {
-      "extractionState": "manual",
-      "localizations": {
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "كتابة الأرقام بالضغط المطوّل"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ziffern durch Halten"
-          }
-        },
-        "el": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Αριθμοί με παρατεταμένο πάτημα"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Números manteniendo pulsado"
-          }
-        },
-        "fa": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "تایپ اعداد با نگه‌داشتن"
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Numerot pitkällä painalluksella"
-          }
-        },
-        "fil": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mga numero sa pagpindot nang matagal"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Chiffres par appui long"
-          }
-        },
-        "he": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ספרות בלחיצה ארוכה"
-          }
-        },
-        "hi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "दबाकर रखने से अंक"
-          }
-        },
-        "hr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Brojke dugim pritiskom"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Numeri tenendo premuto"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "長押しで数字を入力"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "길게 눌러 숫자 입력"
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cyfry przez przytrzymanie"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Números mantendo premido"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ввод цифр удержанием"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Siffror med långt tryck"
-          }
-        },
-        "th": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "พิมพ์ตัวเลขด้วยการกดค้าง"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Введення цифр утриманням"
-          }
-        },
-        "ur": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "دبا کر رکھنے سے ہندسے"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nhập số bằng cách giữ phím"
-          }
-        }
-      },
-      "comment": "Toggle title: type digits by long-pressing letter keys"
-    },
     "Hold a letter key to type its digit": {
       "extractionState": "manual",
       "localizations": {
@@ -28634,143 +28496,6 @@
         }
       }
     },
-    "A long press types its text when “Type Numbers by Holding” is on.": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ein langer Druck gibt seinen Text ein, wenn „Ziffern durch Halten“ aktiviert ist."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Un appui long saisit son texte lorsque « Chiffres par appui long » est activé."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Una pulsación larga escribe su texto cuando «Números manteniendo pulsado» está activado."
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Una pressione prolungata digita il suo testo quando «Numeri tenendo premuto» è attivo."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Долгое нажатие вводит свой текст, когда включено «Ввод цифр удержанием»."
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Długie naciśnięcie wpisuje swój tekst, gdy włączona jest opcja „Cyfry przez przytrzymanie”."
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ett långt tryck skriver sin text när ”Siffror med långt tryck” är på."
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pitkä painallus kirjoittaa tekstinsä, kun ”Numerot pitkällä painalluksella” on päällä."
-          }
-        },
-        "hr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dugi pritisak upisuje svoj tekst kada je uključeno „Brojke dugim pritiskom”."
-          }
-        },
-        "he": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "לחיצה ארוכה מקלידה את הטקסט שלה כשהאפשרות ״ספרות בלחיצה ארוכה״ פועלת."
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nhấn giữ sẽ nhập văn bản của nó khi “Nhập số bằng cách giữ phím” được bật."
-          }
-        },
-        "fil": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tina-type ng matagal na pindot ang text nito kapag naka-on ang “Mga numero sa pagpindot nang matagal”."
-          }
-        },
-        "el": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Το παρατεταμένο πάτημα πληκτρολογεί το κείμενό του όταν είναι ενεργό το «Αριθμοί με παρατεταμένο πάτημα»."
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Um toque longo escreve o seu texto quando «Números mantendo premido» está ativo."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Довге натискання вводить свій текст, коли ввімкнено «Введення цифр утриманням»."
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "تكتب الضغطة المطولة نصها عندما يكون «كتابة الأرقام بالضغط المطوّل» قيد التشغيل."
-          }
-        },
-        "fa": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "وقتی «تایپ اعداد با نگه‌داشتن» روشن باشد، فشار طولانی متن خود را تایپ می‌کند."
-          }
-        },
-        "ur": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "جب «دبا کر رکھنے سے ہندسے» آن ہو تو دیر تک دبانا اپنا متن ٹائپ کرتا ہے۔"
-          }
-        },
-        "th": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "การกดค้างจะพิมพ์ข้อความของมันเมื่อเปิด “พิมพ์ตัวเลขด้วยการกดค้าง”"
-          }
-        },
-        "hi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "“दबाकर रखने से अंक” चालू होने पर देर तक दबाना अपना पाठ टाइप करता है।"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "「長押しで数字を入力」がオンのとき、長押しでそのテキストが入力されます。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "“길게 눌러 숫자 입력”이(가) 켜져 있으면 길게 눌러 해당 텍스트를 입력합니다."
-          }
-        }
-      }
-    },
     "Remove Symbol": {
       "extractionState": "manual",
       "localizations": {
@@ -35635,6 +35360,1513 @@
         }
       },
       "comment": "Settings: explanation under the split toggle"
+    },
+    "Digits": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ziffern"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chiffres"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dígitos"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cifre"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Цифры"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cyfry"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Siffror"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Numerot"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Znamenke"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ספרות"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chữ số"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mga digit"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ψηφία"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dígitos"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Цифри"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الأرقام"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ارقام"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ہندسے"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ตัวเลข"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "अंक"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "数字"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "숫자"
+          }
+        }
+      }
+    },
+    "Capitals": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Großbuchstaben"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Majuscules"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mayúsculas"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maiuscole"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Заглавные"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wielkie litery"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Versaler"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Isot kirjaimet"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Velika slova"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "אותיות רישיות"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chữ hoa"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Malalaking titik"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Κεφαλαία"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maiúsculas"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Великі літери"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الأحرف الكبيرة"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "حروف بزرگ"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "بڑے حروف"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ตัวพิมพ์ใหญ่"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "बड़े अक्षर"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "大文字"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "대문자"
+          }
+        }
+      }
+    },
+    "Hold a letter key to type its capital": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Halte eine Buchstabentaste, um ihren Großbuchstaben einzugeben"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maintenez une touche de lettre pour saisir sa majuscule"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mantén pulsada una letra para escribir su mayúscula"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tieni premuto un tasto lettera per digitare la maiuscola"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Удерживайте клавишу с буквой, чтобы ввести заглавную"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Przytrzymaj klawisz litery, aby wpisać wielką literę"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Håll in en bokstavstangent för att skriva versalen"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pidä kirjainta pohjassa saadaksesi sen ison kirjaimen"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Držite tipku sa slovom za unos velikog slova"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "החזק מקש אות כדי להקליד את האות הרישית שלה"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Giữ phím chữ cái để gõ chữ hoa của nó"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pindutin nang matagal ang letra para i-type ang malaking titik nito"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Κρατήστε ένα γράμμα για να πληκτρολογήσετε το κεφαλαίο του"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mantenha uma tecla de letra premida para escrever a maiúscula"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Утримуйте клавішу з літерою, щоб ввести велику"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اضغط مطوّلاً على حرف لكتابة الحرف الكبير"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "کلید حرف را نگه دارید تا حرف بزرگ آن تایپ شود"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "حرف کی کلید کو دبائے رکھیں تاکہ اس کا بڑا حرف ٹائپ ہو"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "กดตัวอักษรค้างไว้เพื่อพิมพ์ตัวพิมพ์ใหญ่"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "अक्षर की कुंजी को दबाए रखें, उसका बड़ा अक्षर टाइप होगा"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文字キーを長押しすると大文字を入力します"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "글자 키를 길게 누르면 대문자가 입력됩니다"
+          }
+        }
+      }
+    },
+    "Holding a key does nothing extra": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Halten einer Taste bewirkt nichts Besonderes"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maintenir une touche ne fait rien de plus"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mantener pulsada una tecla no hace nada extra"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tenere premuto un tasto non fa nulla di speciale"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Удержание клавиши ничего не меняет"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Przytrzymanie klawisza nic nie zmienia"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Att hålla in en tangent gör ingenting extra"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pitkä painallus ei tee mitään erikoista"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dugi pritisak tipke ne radi ništa posebno"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "החזקת מקש אינה עושה דבר מיוחד"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Giữ phím không có tác dụng gì thêm"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Walang karagdagang ginagawa ang matagal na pagpindot"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Το παρατεταμένο πάτημα δεν κάνει κάτι επιπλέον"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manter uma tecla premida não faz nada extra"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Утримання клавіші нічого не змінює"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الضغط المطوّل على المفتاح لا يفعل شيئاً إضافياً"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "نگه داشتن کلید کار اضافه‌ای انجام نمی‌دهد"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "کلید دبائے رکھنے سے کوئی اضافی کام نہیں ہوتا"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "การกดค้างไม่มีผลพิเศษใด ๆ"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "कुंजी को दबाए रखने पर कोई अतिरिक्त क्रिया नहीं होती"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "長押ししても特別なことは起こりません"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "길게 눌러도 추가 동작이 없습니다"
+          }
+        }
+      }
+    },
+    "Circles": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kreise"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cercles"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Círculos"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cerchi"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Круги"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koła"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cirklar"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ympyrät"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Krugovi"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "מעגלים"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vòng tròn"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mga bilog"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Κύκλοι"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Círculos"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Кола"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الدوائر"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "دایره‌ها"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "دائرے"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "วงกลม"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "गोले"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "円"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "원"
+          }
+        }
+      }
+    },
+    "Uppercase": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Großbuchstabe"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Majuscule"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mayúscula"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maiuscola"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Заглавная буква"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wielka litera"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Versal"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Iso kirjain"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Veliko slovo"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "אות רישית"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chữ hoa"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Malaking titik"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Κεφαλαίο"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maiúscula"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Велика літера"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "حرف كبير"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "حرف بزرگ"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "بڑا حرف"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ตัวพิมพ์ใหญ่"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "बड़ा अक्षर"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "大文字"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "대문자"
+          }
+        }
+      }
+    },
+    "Digit": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ziffer"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chiffre"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dígito"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cifra"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Цифра"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cyfra"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Siffra"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Numero"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Znamenka"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ספרה"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chữ số"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Digit"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ψηφίο"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dígito"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Цифра"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "رقم"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "رقم"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ہندسہ"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ตัวเลข"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "अंक"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "数字"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "숫자"
+          }
+        }
+      }
+    },
+    "Uppercase Word": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wort in Großbuchstaben"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mot en majuscules"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Palabra en mayúsculas"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parola in maiuscolo"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Слово заглавными"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Słowo wielkimi literami"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ordet med versaler"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sana isoilla kirjaimilla"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Riječ velikim slovima"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "מילה באותיות רישיות"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Viết hoa từ"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salita sa malalaking titik"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Λέξη με κεφαλαία"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Palavra em maiúsculas"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Слово великими літерами"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الكلمة بأحرف كبيرة"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "کلمه با حروف بزرگ"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لفظ بڑے حروف میں"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "คำตัวพิมพ์ใหญ่"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "शब्द बड़े अक्षरों में"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "単語を大文字に"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "단어 대문자로"
+          }
+        }
+      }
+    },
+    "Choose what a circle on a letter key types. Keys with a circle of their own, like the clipboard key, keep it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lege fest, was ein Kreis auf einer Buchstabentaste eingibt. Tasten mit eigenem Kreis, etwa die Zwischenablage-Taste, behalten ihn."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisissez ce qu'un cercle sur une touche de lettre saisit. Les touches ayant leur propre cercle, comme celle du presse-papiers, le conservent."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elige qué escribe un círculo sobre una tecla de letra. Las teclas con su propio círculo, como la del portapapeles, lo conservan."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scegli cosa digita un cerchio su un tasto lettera. I tasti con un cerchio proprio, come quello degli appunti, lo mantengono."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выберите, что вводит круг на клавише с буквой. Клавиши со своим кругом, например клавиша буфера обмена, сохраняют его."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wybierz, co wpisuje koło narysowane na klawiszu litery. Klawisze z własnym kołem, jak klawisz schowka, zachowują je."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Välj vad en cirkel på en bokstavstangent skriver. Tangenter med egen cirkel, som urklippstangenten, behåller den."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Valitse, mitä kirjainnäppäimen päälle piirretty ympyrä kirjoittaa. Näppäimet, joilla on oma ympyränsä, kuten leikepöytänäppäin, säilyttävät sen."
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odaberite što krug na tipki sa slovom upisuje. Tipke s vlastitim krugom, poput tipke međuspremnika, zadržavaju ga."
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "בחר מה מעגל על מקש אות מקליד. מקשים עם מעגל משלהם, כמו מקש הלוח, שומרים עליו."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chọn nội dung được gõ khi vẽ vòng tròn trên phím chữ cái. Các phím có vòng tròn riêng, như phím bảng nhớ tạm, vẫn giữ nguyên."
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Piliin kung ano ang i-ta-type ng bilog sa isang letrang key. Pinananatili ito ng mga key na may sariling bilog, gaya ng clipboard key."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Επιλέξτε τι πληκτρολογεί ένας κύκλος σε πλήκτρο γράμματος. Τα πλήκτρα με δικό τους κύκλο, όπως του προχείρου, τον διατηρούν."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Escolha o que um círculo numa tecla de letra escreve. As teclas com círculo próprio, como a da área de transferência, mantêm-no."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Виберіть, що вводить коло на клавіші з літерою. Клавіші зі своїм колом, як-от клавіша буфера обміну, зберігають його."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اختر ما يكتبه الدوران على مفتاح حرف. المفاتيح التي لها دائرة خاصة بها، مثل مفتاح الحافظة، تحتفظ بها."
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "انتخاب کنید دایره روی کلید حرف چه چیزی تایپ کند. کلیدهایی که دایره‌ی خودشان را دارند، مانند کلید کلیپ‌بورد، آن را نگه می‌دارند."
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "منتخب کریں کہ حرف کی کلید پر دائرہ کیا ٹائپ کرے۔ جن کلیدوں کا اپنا دائرہ ہے، جیسے کلپ بورڈ کی کلید، وہ اسے برقرار رکھتی ہیں۔"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "เลือกสิ่งที่วงกลมบนปุ่มตัวอักษรจะพิมพ์ ปุ่มที่มีวงกลมของตัวเอง เช่น ปุ่มคลิปบอร์ด จะคงไว้ตามเดิม"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "चुनें कि अक्षर की कुंजी पर गोला बनाने से क्या टाइप हो। जिन कुंजियों का अपना गोला है, जैसे क्लिपबोर्ड कुंजी, वे उसे बनाए रखती हैं।"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文字キー上で円を描いたときに入力する内容を選びます。クリップボードキーなど、独自の円を持つキーはそのままです。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "글자 키에서 원을 그릴 때 입력할 내용을 선택하세요. 클립보드 키처럼 자체 원 동작이 있는 키는 그대로 유지됩니다."
+          }
+        }
+      }
+    },
+    "Digit types the number the key carries in the numeric layout. Uppercase Word capitalizes the word before the cursor.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "„Ziffer“ gibt die Zahl ein, die die Taste im Zahlenlayout trägt. „Wort in Großbuchstaben“ setzt das Wort vor dem Cursor in Großbuchstaben."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "« Chiffre » saisit le nombre que porte la touche dans la disposition numérique. « Mot en majuscules » met en majuscules le mot avant le curseur."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "«Dígito» escribe el número que la tecla tiene en la disposición numérica. «Palabra en mayúsculas» pone en mayúsculas la palabra anterior al cursor."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "«Cifra» digita il numero che il tasto ha nel layout numerico. «Parola in maiuscolo» scrive in maiuscolo la parola prima del cursore."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "«Цифра» вводит число, которое клавиша имеет в цифровой раскладке. «Слово заглавными» переводит слово перед курсором в верхний регистр."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "„Cyfra” wpisuje liczbę, którą klawisz ma w układzie numerycznym. „Słowo wielkimi literami” zamienia słowo przed kursorem na wielkie litery."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "”Siffra” skriver den siffra tangenten har i sifferlayouten. ”Ordet med versaler” gör ordet före markören till versaler."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "”Numero” kirjoittaa näppäimen numeron numeroasettelussa. ”Sana isoilla kirjaimilla” muuttaa kohdistimen edellä olevan sanan isoiksi kirjaimiksi."
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "„Znamenka” upisuje broj koji tipka ima u numeričkom rasporedu. „Riječ velikim slovima” pretvara riječ ispred kursora u velika slova."
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "״ספרה״ מקלידה את המספר שהמקש נושא בפריסה המספרית. ״מילה באותיות רישיות״ הופכת את המילה שלפני הסמן לאותיות רישיות."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“Chữ số” gõ số mà phím mang trong bố cục số. “Viết hoa từ” viết hoa từ đứng trước con trỏ."
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ita-type ng “Digit” ang numerong dala ng key sa numeric layout. Gagawing malalaking titik ng “Salita sa malalaking titik” ang salita bago ang cursor."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Το «Ψηφίο» πληκτρολογεί τον αριθμό που έχει το πλήκτρο στη διάταξη αριθμών. Το «Λέξη με κεφαλαία» κάνει κεφαλαία τη λέξη πριν από τον δρομέα."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“Dígito” escreve o número que a tecla tem no teclado numérico. “Palavra em maiúsculas” coloca em maiúsculas a palavra antes do cursor."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "«Цифра» вводить число, яке клавіша має в цифровій розкладці. «Слово великими літерами» робить слово перед курсором великими літерами."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "«رقم» يكتب العدد الذي يحمله المفتاح في تخطيط الأرقام. «الكلمة بأحرف كبيرة» يحوّل الكلمة قبل المؤشر إلى أحرف كبيرة."
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "«رقم» عددی را که کلید در چیدمان اعداد دارد تایپ می‌کند. «کلمه با حروف بزرگ» کلمه‌ی قبل از مکان‌نما را با حروف بزرگ می‌کند."
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "«ہندسہ» وہ عدد ٹائپ کرتا ہے جو کلید کے پاس عددی ترتیب میں ہے۔ «لفظ بڑے حروف میں» کرسر سے پہلے کے لفظ کو بڑے حروف میں کر دیتا ہے۔"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“ตัวเลข” จะพิมพ์ตัวเลขที่ปุ่มมีในเลย์เอาต์ตัวเลข ส่วน “คำตัวพิมพ์ใหญ่” จะทำให้คำก่อนเคอร์เซอร์เป็นตัวพิมพ์ใหญ่"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“अंक” वह संख्या टाइप करता है जो कुंजी के पास संख्या लेआउट में है। “शब्द बड़े अक्षरों में” कर्सर से पहले के शब्द को बड़े अक्षरों में कर देता है।"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「数字」はそのキーが数字レイアウトで持つ数を入力します。「単語を大文字に」はカーソルの前の単語を大文字にします。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "‘숫자’는 숫자 배열에서 해당 키가 가진 숫자를 입력합니다. ‘단어 대문자로’는 커서 앞의 단어를 대문자로 바꿉니다."
+          }
+        }
+      }
+    },
+    "A long press types its text when “Long Press” is on.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein langer Druck gibt seinen Text ein, wenn „Langer Druck“ aktiviert ist."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un appui long saisit son texte lorsque « Appui long » est activé."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Una pulsación larga escribe su texto cuando «Pulsación larga» está activado."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Una pressione prolungata digita il suo testo quando «Pressione prolungata» è attivo."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Долгое нажатие вводит свой текст, когда включено «Долгое нажатие»."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Długie naciśnięcie wpisuje swój tekst, gdy włączona jest opcja „Długie naciśnięcie”."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ett långt tryck skriver sin text när ”Långt tryck” är på."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pitkä painallus kirjoittaa tekstinsä, kun ”Pitkä painallus” on päällä."
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dugi pritisak upisuje svoj tekst kada je uključeno „Dugi pritisak”."
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "לחיצה ארוכה מקלידה את הטקסט שלה כשהאפשרות ״לחיצה ארוכה״ פועלת."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nhấn giữ sẽ nhập văn bản của nó khi “Nhấn giữ” được bật."
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tina-type ng matagal na pindot ang text nito kapag naka-on ang “Matagal na Pindot”."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Το παρατεταμένο πάτημα πληκτρολογεί το κείμενό του όταν είναι ενεργό το «Παρατεταμένο πάτημα»."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Um toque longo escreve o seu texto quando «Toque longo» está ativo."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Довге натискання вводить свій текст, коли ввімкнено «Довге натискання»."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تكتب الضغطة المطولة نصها عندما يكون «ضغطة مطولة» قيد التشغيل."
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "وقتی «فشار طولانی» روشن باشد، فشار طولانی متن خود را تایپ می‌کند."
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "جب «دیر تک دبانا» آن ہو تو دیر تک دبانا اپنا متن ٹائپ کرتا ہے۔"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "การกดค้างจะพิมพ์ข้อความของมันเมื่อเปิด “กดค้าง”"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“देर तक दबाना” चालू होने पर देर तक दबाना अपना पाठ टाइप करता है।"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「長押し」がオンのとき、長押しでそのテキストが入力されます。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“길게 누르기”이(가) 켜져 있으면 길게 눌러 해당 텍스트를 입력합니다."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

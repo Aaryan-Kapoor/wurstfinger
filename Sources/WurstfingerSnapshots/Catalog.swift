@@ -442,6 +442,15 @@ enum Catalog {
                 keyId: GridSlot.center, motion: .drag(.swipeUpLeft, keyWidths: 2.0), longSwipes: true
             )
         })
+        // Circle behaviours: the guide card shows what the circle will type.
+        scenarios.append(keyboard("states", "state-circle-digit") {
+            $0.circles = (.digit, .uppercaseWord)
+            $0.finger = FingerTrail(keyId: GridSlot.topLeft, motion: .circle(clockwise: true, fraction: 0.8))
+        })
+        scenarios.append(keyboard("states", "state-circle-word") {
+            $0.circles = (.digit, .uppercaseWord)
+            $0.finger = FingerTrail(keyId: GridSlot.topLeft, motion: .circle(clockwise: false, fraction: 0.8))
+        })
         scenarios.append(keyboard("states", "state-flick-liquidglass") {
             $0.style = .liquidGlass
             $0.backdrop = .colorful
@@ -497,6 +506,13 @@ enum Catalog {
             scenarios.append(keyboard("feel", "feel-longpress-ring\(tail)") {
                 $0.scheme = scheme
                 $0.longPressDigits = true
+                $0.finger = FingerTrail(keyId: GridSlot.center, motion: .press)
+                $0.showsTrail = false
+                $0.feelStill = 0.62
+            })
+            scenarios.append(keyboard("feel", "feel-longpress-capitals\(tail)") {
+                $0.scheme = scheme
+                $0.longPress = .capitals
                 $0.finger = FingerTrail(keyId: GridSlot.center, motion: .press)
                 $0.showsTrail = false
                 $0.feelStill = 0.62
@@ -630,6 +646,12 @@ enum Catalog {
             })
             scenarios.append(Scenario(group: "app", name: "app-textreplacement\(tail)") {
                 AppSurfaces.textReplacement(scheme: scheme)
+            })
+            scenarios.append(Scenario(group: "app", name: "app-settings-capitals\(tail)") {
+                AppSurfaces.settings(scheme: scheme, longPress: .capitals)
+            })
+            scenarios.append(Scenario(group: "app", name: "app-circles\(tail)") {
+                AppSurfaces.circles(scheme: scheme)
             })
             scenarios.append(Scenario(group: "app", name: "app-longswipes\(tail)") {
                 AppSurfaces.longSwipes(scheme: scheme)

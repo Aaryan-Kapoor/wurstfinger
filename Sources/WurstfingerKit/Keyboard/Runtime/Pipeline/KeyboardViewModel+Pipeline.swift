@@ -425,13 +425,13 @@ extension KeyboardViewModel {
         // type, as before (a circle never falls through to the tap on release).
         if gesture.isCircular {
             if let slot = compiled.slot(for: keyId) {
-                handleCircular(compiled.circular(slot: slot, clockwise: gesture == .circularClockwise), in: compiled)
+                handleCircular(resolvedCircle(in: compiled, slot: slot, gesture: gesture), in: compiled)
             }
             return true
         }
 
         guard let slot = compiled.slot(for: keyId),
-              let binding = compiled.binding(slot: slot, gesture: gesture, isReturn: isReturn)
+              let binding = resolvedBinding(in: compiled, slot: slot, gesture: gesture, isReturn: isReturn)
         else { return false }
 
         // Mode and language switches bypass the pipeline, so their
@@ -479,14 +479,17 @@ extension KeyboardViewModel {
 
     /// Performs a circular gesture's compiled outcome: an explicit binding
     /// (e.g. superscripts in numeric mode), the uppercase centre character, or
-    /// the opposite direction's binding. The order was decided at compile time
-    /// (`CompiledMode.circular(slot:clockwise:)`).
+    /// the opposite direction's binding — or, where the user set that direction
+    /// to another behaviour, the key's digit or "capitalize the word". The order
+    /// was decided at compile time (`CompiledMode.circular(slot:clockwise:type:)`).
     private func handleCircular(_ outcome: CircularOutcome, in compiled: CompiledMode) {
         switch outcome {
         case let .binding(index):
             dispatchBinding(compiled.binding(at: index))
         case let .commitUppercase(text):
             dispatchAction(.commitText(text))
+        case .capitalizeWord:
+            dispatchAction(.capitalizeWord(uppercased: true))
         case .none:
             break
         }
