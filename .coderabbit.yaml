@@ -19,28 +19,34 @@ reviews:
     enabled: true
     drafts: false
   path_instructions:
-    - path: "wurstfingerKeyboard/**/*.swift"
+    - path: "Sources/WurstfingerKit/Keyboard/**/*.swift"
       instructions: |
         This is a MessagEase-inspired iOS keyboard extension written in SwiftUI.
         All text manipulation must go through textDocumentProxy methods.
         Pay attention to gesture handling, compose rules, and return swipes.
         Ensure locale-aware uppercasing (German: de_DE).
-    - path: "wurstfingerTests/**/*.swift"
+    - path: "Tests/**/*.swift"
       instructions: |
         Tests use Apple's Swift Testing framework (@Test, #expect, #require).
         Do NOT enforce a "test" prefix on method names — Swift Testing discovers
         tests via the @Test attribute, not by naming convention.
         The "testFeatureExpectation()" naming style is optional, not required.
-    - path: "wurstfingerUITests/**/*.swift"
+    - path: "UITests/**/*.swift"
       instructions: |
         UI tests verify the keyboard in real text input scenarios.
+    - path: "{Package.swift,Bundler.toml,Bundling/**,scripts/bundle-ios.sh,scripts/lib/ios-bundle.sh,scripts/xcstrings_to_strings.py}"
+      instructions: |
+        Swift Bundler has no app-extension support, so the iOS keyboard extension
+        is assembled by scripts/bundle-ios.sh. Keep it bash 3.2 compatible and
+        its Python 3.9 compatible and standard-library only. Signing is per
+        target (appex first, then the app), never `codesign --deep`.
     - path: "CHANGELOG.md"
       instructions: |
         Verify that CHANGELOG.md is updated when code changes are made.
         New entries should be added under the "## Unreleased" section.
         Follow the existing format: "### Fixed", "### Added", "### Changed".
   path_filters:
-    - "!**/*.xcodeproj/**"
+    - "!.build/**"
     - "!**/xcuserdata/**"
     - "!**/xcshareddata/**"
 chat:

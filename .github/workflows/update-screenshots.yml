@@ -6,9 +6,8 @@ on:
       - main
       - develop
     paths:
-      - 'wurstfinger/**/*.swift'
-      - 'wurstfingerKeyboard/**/*.swift'
-      - 'scripts/**'
+      - 'Sources/**/*.swift'
+      - 'Package.swift'
       - '.github/workflows/update-screenshots.yml'
   workflow_dispatch:
 
@@ -28,7 +27,7 @@ jobs:
         uses: actions/cache@v5
         with:
           path: venv
-          key: ${{ runner.os }}-venv-${{ hashFiles('scripts/generate-screenshots.sh') }}
+          key: ${{ runner.os }}-venv-pillow-numpy-v1
 
       - name: Install Python dependencies
         run: |
@@ -37,8 +36,8 @@ jobs:
           pip install --upgrade pip
           pip install Pillow numpy
 
-      # The image default (Xcode 16.4 on macos-15) ships an older simulator
-      # set; select the newest installed Xcode 26 to match local development.
+      # Render with the same Xcode 26 toolchain the app is built with, not the
+      # image default (Xcode 16.4 on macos-15).
       - name: Select Xcode 26
         run: |
           XCODE_APP=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -n 1)
@@ -51,21 +50,45 @@ jobs:
           sudo xcode-select -s "$XCODE_APP/Contents/Developer"
           xcodebuild -version
 
-      # No boot step here: the script resolves one UDID and boots exactly that
-      # device itself. A separate name-based warm-boot can pick the same-named
-      # device of a *different* iOS runtime on multi-runtime runner images,
-      # leaving the script's target shutdown (SimError 405).
-
       - name: Save existing screenshots for comparison
         run: |
           mkdir -p /tmp/old-screenshots
           cp docs/images/*.webp /tmp/old-screenshots/ 2>/dev/null || true
 
-      - name: Generate screenshots
+      # No simulator: WurstfingerSnapshots renders the keyboard showcase views
+      # with SwiftUI's ImageRenderer on the Mac, one PNG per scenario.
+      # TODO: confirm against the tool's --help once it has merged: this relies
+      # on `--out`/`--filter`, and on the PNG names being the docs/images names
+      # (keyboard-lower-light.png -> docs/images/keyboard-lower-light.webp).
+      - name: Render screenshots
+        run: swift run -c release WurstfingerSnapshots --out "$RUNNER_TEMP/keyboard-png" --filter KeyboardShowcaseView
+        timeout-minutes: 25
+
+      - name: Convert screenshots to WebP
         run: |
           source venv/bin/activate
-          ./scripts/generate-screenshots.sh
-        timeout-minutes: 25
+          python3 - << 'PYEOF'
+          import os
+          from pathlib import Path
+          from PIL import Image
+
+          source = Path(os.environ["RUNNER_TEMP"]) / "keyboard-png"
+          pngs = sorted(source.rglob("*.png"))
+          if not pngs:
+              raise SystemExit(f"no PNGs rendered into {source}")
+          Path("docs/images").mkdir(parents=True, exist_ok=True)
+          for png in pngs:
+              image = Image.open(png)
+              if image.mode != "RGB":
+                  # Flatten transparency onto white, as the old pipeline did.
+                  background = Image.new("RGB", image.size, (255, 255, 255))
+                  image = image.convert("RGBA")
+                  background.paste(image, mask=image.split()[-1])
+                  image = background
+              target = Path("docs/images") / f"{png.stem}.webp"
+              image.save(target, "WEBP", quality=85)
+              print(f"  created {target} ({image.width}x{image.height})")
+          PYEOF
 
       - name: Check for visual screenshot changes
         id: check_changes

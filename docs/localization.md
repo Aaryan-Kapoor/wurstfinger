@@ -1,7 +1,7 @@
 # Localization Scope
 
-The app UI ships in 23 languages: English plus the 22 in the project's
-`knownRegions` (`de fr es it ru pl sv fi hr he vi fil el pt uk ar fa ur th hi
+The app UI ships in 23 languages: English plus the 22 the catalogs
+translate into (`de fr es it ru pl sv fi hr he vi fil el pt uk ar fa ur th hi
 ja ko`). This document records where the strings live and which screens are
 deliberately left in English.
 
@@ -9,16 +9,23 @@ deliberately left in English.
 
 | Catalog | Holds |
 | --- | --- |
-| `wurstfinger/Localizable.xcstrings` | Everything the host app displays: settings, onboarding, the test area — plus the keyboard's own strings, because the app renders real keyboards in its previews and showcase. |
-| `wurstfingerKeyboard/Localizable.xcstrings` | Only the strings the keyboard extension itself displays, today the VoiceOver labels of the utility keys. |
+| `Sources/Wurstfinger/Resources/Localizable.xcstrings` | Everything the host app displays: settings, onboarding, the test area — plus the keyboard's own strings, because the app renders real keyboards in its previews and showcase. |
+| `Sources/WurstfingerKeyboard/Resources/Localizable.xcstrings` | Only the strings the keyboard extension itself displays, today the VoiceOver labels of the utility keys. |
 
-Sources under `wurstfingerKeyboard/` compile into **both** products, so a
-string used there is looked up in whichever bundle is running and must exist in
-**both** catalogs. A string that only ever appears in settings therefore belongs
-in the host target — that is why `KeyboardStyle.displayName` lives in
-`StyleSettingsView.swift` and `HapticIntensityLevel.displayName` in
-`HapticSettingsView.swift`, next to the screens that show them, rather than
-next to the enums in `wurstfingerKeyboard/Settings/`.
+The code in `Sources/WurstfingerKit/Keyboard/` is linked into **both**
+executables, so a string used there is looked up in whichever bundle is running
+and must exist in **both** catalogs. A string that only ever appears in
+settings therefore belongs in the host app's catalog — that is why
+`KeyboardStyle.displayName` lives in `StyleSettingsView.swift` and
+`HapticIntensityLevel.displayName` in `HapticSettingsView.swift`, next to the
+screens that show them, rather than next to the enums in
+`Sources/WurstfingerKit/Keyboard/Settings/`.
+
+Every lookup goes through `Bundle.main`. On iOS, `scripts/bundle-ios.sh`
+therefore compiles each catalog into `<locale>.lproj/Localizable.strings` at the
+root of its own bundle (the app and the keyboard extension) with
+`scripts/xcstrings_to_strings.py`, instead of relying on SwiftPM resource
+bundles. On macOS, Swift Bundler compiles the app's catalog itself.
 
 ## English-only screens
 

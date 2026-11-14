@@ -79,43 +79,112 @@ are English only — see [Localization Scope](docs/localization.md).
 
 ## Getting Started
 
+Wurstfinger is a Swift package. There is no Xcode project: the app and its
+keyboard extension are built with [Swift Bundler](https://github.com/moreSwift/swift-bundler),
+and `scripts/bundle-ios.sh` assembles the iOS keyboard extension, which Swift
+Bundler cannot do on its own.
+
 ### Prerequisites
 
-- Xcode 16 (or newer)
-- iOS 17 SDK
+- A Swift 6 toolchain (Xcode 16 or newer, or the open-source toolchain)
+- [Swift Bundler](https://github.com/moreSwift/swift-bundler) 3.0 — the
+  commit CI builds is pinned in `.github/actions/setup-swift-bundler/action.yml`:
 
-### Building
+  ```bash
+  brew install mint
+  mint install moreSwift/swift-bundler@d97771d6af71784497749b34c4f71460abf9aa4b
+  ```
 
-Open the project in Xcode:
+- **Xcode, for iOS only.** The iOS SDKs, the simulator and `actool` ship with
+  Xcode (26 for the Icon Composer app icon); the Command Line Tools are enough
+  for everything else on this page.
+
+### Building the macOS app
+
+The quickest way to try the keyboard needs no simulator. The package also
+builds a Mac app whose **Test** tab hosts the live keyboard in a window:
 
 ```bash
-xed wurstfinger/wurstfinger.xcodeproj
+swift bundler run Wurstfinger
 ```
 
-or build from the command line on macOS:
+`swift bundler bundle Wurstfinger` builds the same app without launching it,
+into `.build/bundler/apps/Wurstfinger/Wurstfinger.app`.
 
-```bash
-cd wurstfinger/wurstfinger
-xcodebuild -scheme Wurstfinger -destination 'platform=iOS Simulator,name=iPhone 16' build
-```
+> **Note:** SwiftUI's `#Preview` macro is implemented by a compiler plugin that
+> only ships with Xcode, so `Package.swift` compiles previews out when no Xcode
+> is selected (the sources guard them with `#if !WURSTFINGER_NO_PREVIEWS`).
+> CI runners have Xcode, so nothing changes there. Set
+> `WURSTFINGER_NO_PREVIEWS=1` or `=0` in the environment to force the choice.
 
 ### Running Tests
 
-The project includes unit tests for gesture handling and compose logic. Run
-all tests with:
+The project includes unit tests for gesture handling, compose logic and
+localization. They run on the Mac, with no simulator:
 
 ```bash
-cd wurstfinger/wurstfinger
-xcodebuild test -scheme Wurstfinger -destination 'platform=iOS Simulator,name=iPhone 16' -only-testing:WurstfingerTests
+swift test --parallel
 ```
 
-> **Note:** Some tests require an available iOS Simulator. Adjust the
-> destination to match your local simulator name if necessary.
->
-> **Note:** The screenshot-generating UI tests (`ScreenshotTests`,
-> `wurstfingerUITestsLaunchTests`) skip themselves unless the test runner sees
-> `GENERATE_SCREENSHOTS=1`. Pass `TEST_RUNNER_GENERATE_SCREENSHOTS=1` to
-> `xcodebuild` — `scripts/generate-screenshots.sh` does this for you.
+> **Note:** The XCUITest sources in `UITests/` are not part of the package and
+> do not run under `swift test`. Screenshots no longer come from UI tests: see
+> [Screenshots](#screenshots).
+
+### Building and Installing for iOS
+
+```bash
+scripts/bundle-ios.sh --simulator --install --launch
+```
+
+This needs Xcode. The script:
+
+1. Runs `swift bundler bundle Wurstfinger -p iOSSimulator`, which builds the app
+   and the `WurstfingerKeyboard` executable (Bundler.toml lists it as a
+   dependency of the iOS app).
+2. Assembles `PlugIns/WurstfingerKeyboard.appex` around that executable, renders
+   its `Info.plist` from `Bundling/Keyboard-Info.plist`, compiles both
+   `Localizable.xcstrings` catalogs into `<locale>.lproj/Localizable.strings`
+   (`scripts/xcstrings_to_strings.py`) and installs the privacy manifests and
+   the icons.
+3. Signs the extension, then the app, with their entitlements (ad hoc on the
+   simulator).
+4. Installs and launches the app on a simulator (`--simulator "iPhone 16"`
+   picks one by name; the default is the first available iPhone).
+
+`--dry-run` prints every command instead of running it. Without Xcode the
+script stops at its preflight check and says so. The assembly steps themselves
+need no Xcode, and `scripts/test-bundle-assembly.sh` runs them on a fake app
+layout.
+
+### Installing the Keyboard
+
+1. Run the app on a device or simulator as above.
+2. The app includes an interactive onboarding guide that walks you through:
+   - Adding the keyboard in **Settings › General › Keyboard › Keyboards**
+   - Enabling "Allow Full Access" for cursor control and deletion features
+   - Testing the keyboard in the practice view
+
+### Screenshots
+
+The README and App Store screenshots are rendered headlessly on the Mac, with
+SwiftUI's `ImageRenderer`, by the `WurstfingerSnapshots` tool:
+
+```bash
+swift run WurstfingerSnapshots --out /tmp/wurstfinger-snapshots
+```
+
+The `Update Screenshots` workflow regenerates `docs/images/` from it, and
+`Generate App Store Screenshots` writes the sets `deliver` uploads to
+`fastlane/screenshots/` (`scripts/stage-appstore-screenshots.sh`).
+
+### Releasing
+
+Releases follow [RELEASE.md](RELEASE.md). The version lives in `Bundler.toml`.
+On a published release the `App Store Release` workflow runs
+`fastlane ios release`, and the nightly `iOS Beta` workflow runs
+`fastlane ios beta`. Both lanes sign with `match`, call
+`scripts/bundle-ios.sh --device --ipa` to build the signed IPA, and upload it
+with `upload_to_testflight(ipa:)` / `upload_to_app_store(ipa:)`.
 
 ### Linting
 
@@ -135,26 +204,24 @@ run this from the repository root:
 markdownlint-cli2 "**/*.md"
 ```
 
-### Installing the Keyboard
-
-1. Build and run the `Wurstfinger` scheme on a device or simulator.
-2. The app includes an interactive onboarding guide that walks you through:
-   - Adding the keyboard in **Settings › General › Keyboard › Keyboards**
-   - Enabling "Allow Full Access" for cursor control and deletion features
-   - Testing the keyboard in the practice view
-
 ### Project Layout
 
 ```text
 wurstfinger/
 ├─ README.md
 ├─ LICENSE
-├─ wurstfinger/                # Xcode project root
-│  ├─ wurstfinger.xcodeproj    # Project file
-│  ├─ wurstfinger/             # Host app (minimal)
-│  ├─ wurstfingerKeyboard/     # Keyboard extension sources
-│  ├─ wurstfingerTests/        # Swift Testing unit tests
-│  └─ wurstfingerUITests/      # UI + screenshot tests
+├─ Package.swift               # SwiftPM manifest
+├─ Bundler.toml                # Swift Bundler: bundle id, version, Info.plist, iOS overlays
+├─ Bundling/                   # Keyboard Info.plist template, entitlements, icon, asset catalog
+├─ Sources/
+│  ├─ WurstfingerKit/          # App and keyboard code, in one module
+│  ├─ Wurstfinger/             # App executable and its Localizable.xcstrings
+│  └─ WurstfingerKeyboard/     # Keyboard extension executable and its Localizable.xcstrings
+├─ Tests/
+│  └─ WurstfingerKitTests/     # Swift Testing unit tests
+├─ UITests/                    # XCUITest sources (Xcode only, not built by SwiftPM)
+├─ scripts/                    # bundle-ios.sh, bundle assembly test, naming checker, hooks
+└─ fastlane/                   # Lanes, match config, store metadata
 ```
 
 Naming across the codebase follows [`docs/GLOSSARY.md`](docs/GLOSSARY.md) — the canonical

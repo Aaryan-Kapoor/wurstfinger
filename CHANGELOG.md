@@ -8,6 +8,7 @@
 
 ### Changed
 
+- Build system: Xcode project replaced by SwiftPM + Swift Bundler. The app, the keyboard and the tests are now a Swift package (`swift build`, `swift test`); `swift bundler run Wurstfinger` builds a Mac app whose Test tab hosts the live keyboard, the fastest way to try the keyboard without a simulator. iOS builds go through `scripts/bundle-ios.sh`, which also assembles the keyboard extension and the IPA that fastlane uploads. Screenshots are now rendered headlessly by `WurstfingerSnapshots` instead of UI tests on a simulator
 - The names the codebase uses internally now match the glossary everywhere: the backlog it was measured against is down to zero. Nothing about the keyboard's behaviour changes, and the settings you have set stay set — the four renamed settings flags keep the storage keys they have always been written under, and a test holds that in place
 
 ### Fixed

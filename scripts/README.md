@@ -1,67 +1,93 @@
 # Scripts
 
-Developer tooling: screenshot generation, the naming checker, and the git hooks
-that run them.
+Developer tooling: the iOS bundling scripts, screenshot staging, the naming
+checker, and the git hooks that run them.
 
-## generate-screenshots.sh
+## bundle-ios.sh
 
-Automatically generates screenshots of the keyboard for documentation purposes.
-
-### Usage
+Builds the iOS app with Swift Bundler and assembles the keyboard extension that
+Swift Bundler has no support for. Needs Xcode (iOS SDK, simulator, `actool`).
 
 ```bash
-cd wurstfinger/wurstfinger
-./scripts/generate-screenshots.sh
+scripts/bundle-ios.sh --simulator --install --launch      # build, install and start on a simulator
+scripts/bundle-ios.sh --simulator "iPhone 16" --install   # a named simulator
+scripts/bundle-ios.sh --dry-run                           # print every command, run none
+scripts/bundle-ios.sh --device --configuration release --ipa build/Wurstfinger.ipa \
+    --identity "Apple Distribution" --build-number 42 \
+    --app-profile app.mobileprovision --keyboard-profile keyboard.mobileprovision
 ```
 
-The `ScreenshotTests` skip themselves unless the test runner sees
-`GENERATE_SCREENSHOTS=1`, so a plain `xcodebuild test` does not pay for ~15 app
-relaunches. The script passes it as `TEST_RUNNER_GENERATE_SCREENSHOTS=1`; add
-the same setting when invoking `xcodebuild` by hand.
+The steps, in order:
 
-### What it does
+1. Preflight: the iOS SDK must be installed, else the script exits and says that
+   iOS needs Xcode.
+2. `swift bundler bundle Wurstfinger -p iOSSimulator|iOS`. The iOS overlay in
+   `Bundler.toml` lists `WurstfingerKeyboard` as a dependency, so Swift Bundler
+   builds it too and copies the executable next to the app's.
+3. The executable moves into `PlugIns/WurstfingerKeyboard.appex`, whose
+   `Info.plist` is rendered from `Bundling/Keyboard-Info.plist` (bundle id,
+   version and build, executable, platform, minimum OS).
+4. Both `Localizable.xcstrings` catalogs become `<locale>.lproj/Localizable.strings`
+   (plus `.stringsdict` for plurals) at the root of the app and of the appex,
+   with `xcstrings_to_strings.py`: every lookup goes through `Bundle.main`, so
+   it cannot rely on SwiftPM resource bundles. The privacy manifests are copied
+   to the same roots, and the SwiftPM resource bundles are dropped (unless
+   `Sources` starts using `Bundle.module`).
+5. Icons: `actool` compiles `Bundling/Assets.xcassets` and
+   `Bundling/AppIcon.icon` and its partial `Info.plist` is merged into the
+   app's. Without `actool`, loose PNGs are cut from `Bundling/AppIcon.png` with
+   `sips`, which is fine for a simulator but not for an upload.
+6. Signing: the extension first, then the app, each with its own entitlements,
+   never `--deep`. The simulator uses an ad-hoc signature; `--device` signs with
+   `--identity`, embeds the two provisioning profiles, and merges the profile's
+   team and application identifiers into the entitlements.
+7. `--install`/`--launch` use `xcrun simctl`; `--ipa OUT` zips
+   `Payload/Wurstfinger.app`.
+8. `plutil -lint` on both `Info.plist`s and `codesign --verify --deep --strict`.
 
-1. Runs UI tests (`ScreenshotTests`) that capture the keyboard in different states
-2. Uses English keyboard layout for consistency
-3. Automatically crops screenshots to keyboard area only
-4. Converts screenshots to WebP format for optimal file size
-5. Exports screenshots to `docs/images/`
-6. Screenshots are captured for:
-   - Lower case layout (light & dark theme)
-   - Numbers layer (light & dark theme)
+The functions live in `lib/ios-bundle.sh`. `SWIFT_BUNDLER` names the Swift
+Bundler executable if it is not `swift-bundler` on `PATH`. The scripts run on
+the bash 3.2 that macOS ships.
 
-### Requirements
+## test-bundle-assembly.sh
 
-- Xcode 16+
-- An available iPhone simulator (the script picks the first non-SE iPhone it finds)
-- `xcpretty` gem (install with `gem install xcpretty`)
-- Python 3 with Pillow and NumPy (install with `pip3 install Pillow numpy`)
+Runs steps 3 to 6 (extension, strings, privacy, icons, ad-hoc signing) on a fake
+app layout, with placeholder executables, and asserts the result: the structure,
+both `Info.plist`s, a valid `Localizable.strings` for every locale of both
+catalogs, and the signatures. It also dry-runs `bundle-ios.sh`. Needs macOS but
+no Xcode; CI runs it before the real simulator build.
 
-### Output
+```bash
+scripts/test-bundle-assembly.sh          # --keep leaves the fake app behind
+```
 
-Screenshots are saved to `../docs/images/` as WebP files:
+## xcstrings_to_strings.py
 
-- `keyboard-lower-light.webp` - Lower case layout (light theme)
-- `keyboard-lower-dark.webp` - Lower case layout (dark theme)
-- `keyboard-numbers-light.webp` - Numbers layer (light theme)
-- `keyboard-numbers-dark.webp` - Numbers layer (dark theme)
+Compiles a String Catalog into `<locale>.lproj/Localizable.strings` and
+`Localizable.stringsdict`, the way Xcode would. Source strings stand in for
+missing translations, `shouldTranslate: false` entries are skipped, and plural
+variations become `.stringsdict`. Python 3.9+, standard library only.
 
-All screenshots are automatically cropped to show only the keyboard area.
+```bash
+python3 scripts/xcstrings_to_strings.py Sources/Wurstfinger/Resources/Localizable.xcstrings out/
+python3 scripts/xcstrings_to_strings.py Sources/Wurstfinger/Resources/Localizable.xcstrings --list-locales
+python3 -m unittest discover -s scripts -p 'test_xcstrings*.py'
+```
 
-## Screenshot Implementation Details
+## stage-appstore-screenshots.sh
 
-The screenshot system consists of:
+Lays PNGs rendered by `swift run WurstfingerSnapshots --out DIR` out as
+`fastlane/screenshots/<locale>/<size>_<NN>.png`, the flat layout `deliver`
+uploads. The size prefix (`69` for 6.9", `65` for 6.5") comes from each PNG's
+pixel width, so an unexpected size fails the script instead of shipping.
 
-1. **KeyboardShowcaseView.swift** - Special view that displays the keyboard with minimal spacing
-2. **ScreenshotTests.swift** - UI tests that capture screenshots in different states
-3. **wurstfingerApp.swift** - Launch argument support for screenshot mode
-4. **generate-screenshots.sh** - Script that orchestrates everything and converts to WebP
+```bash
+scripts/stage-appstore-screenshots.sh DIR [fastlane/screenshots]
+```
 
-The app enters "screenshot mode" when launched with the `SCREENSHOT_MODE` argument, which displays a minimal keyboard preview. Environment variables control the appearance:
-
-- `FORCE_LANGUAGE` - Sets keyboard language (e.g., "en_US")
-- `FORCE_LAYER` - Sets keyboard layer ("lower", "upper", "numbers", "symbols")
-- `FORCE_APPEARANCE` - Sets theme ("light", "dark")
+Screenshots are rendered on the Mac with `ImageRenderer`: no simulator, no UI
+tests. The old simulator scripts (`generate-screenshots.sh`,
+`generate-appstore-screenshots.sh`, `lib/simulator-capture.sh`) are gone.
 
 ## check_naming.py
 

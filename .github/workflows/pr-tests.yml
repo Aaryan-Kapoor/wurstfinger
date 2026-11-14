@@ -86,53 +86,53 @@ jobs:
         run: periphery scan --disable-update-check
 
   test:
-    runs-on: macos-latest
+    # macos-15 carries Xcode 26 next to the default, which the Icon Composer
+    # icon needs (older actool cannot compile AppIcon.icon).
+    runs-on: macos-15
 
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Install xcpretty
-        run: gem install xcpretty
-
-      - name: Boot Simulator
-        id: sim
-        timeout-minutes: 5
+      - name: Select Xcode 26
         run: |
-          SIMULATOR_ID=$(xcrun simctl list devices available | grep "iPhone 16" | grep -v "Plus\|Pro" | head -1 | grep -oE '\([A-F0-9-]+\)' | tr -d '()')
-          if [ -z "$SIMULATOR_ID" ]; then
-            echo "iPhone 16 simulator not found, using iPhone 15"
-            SIMULATOR_ID=$(xcrun simctl list devices available | grep "iPhone 15" | grep -v "Plus\|Pro" | head -1 | grep -oE '\([A-F0-9-]+\)' | tr -d '()')
-          fi
-          if [ -z "$SIMULATOR_ID" ]; then
-            echo "::error::No compatible iPhone simulator found (iPhone 16 or iPhone 15)"
-            xcrun simctl list devices available
+          XCODE_APP=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -n 1)
+          if [ -z "$XCODE_APP" ]; then
+            echo "::error::No Xcode 26 installation found on the runner image"
+            ls -d /Applications/Xcode*.app
             exit 1
           fi
-          echo "Using simulator: $SIMULATOR_ID"
-          echo "simulator_id=$SIMULATOR_ID" >> "$GITHUB_OUTPUT"
-          xcrun simctl boot "$SIMULATOR_ID" || true
-          xcrun simctl bootstatus "$SIMULATOR_ID"
+          echo "Selecting $XCODE_APP"
+          sudo xcode-select -s "$XCODE_APP/Contents/Developer"
+          xcodebuild -version
 
-      - name: Build and Run Tests
+      - name: Set up Swift Bundler
+        uses: ./.github/actions/setup-swift-bundler
+
+      - name: Build
         timeout-minutes: 30
-        run: |
-          set -o pipefail && xcodebuild test \
-            -scheme Wurstfinger \
-            -project Wurstfinger.xcodeproj \
-            -destination 'platform=iOS Simulator,id=${{ steps.sim.outputs.simulator_id }}' \
-            -only-testing:WurstfingerTests \
-            -parallel-testing-enabled NO \
-            -resultBundlePath TestResults.xcresult \
-            CODE_SIGNING_ALLOWED=NO \
-            | xcpretty --color --report html --output TestResults.html
+        run: swift build
 
-      - name: Upload Test Results
+      - name: Run Unit Tests
+        timeout-minutes: 30
+        run: swift test --parallel
+
+      # The keyboard extension is assembled by our own scripts (Swift Bundler
+      # has no extension support). This checks the assembly on a fake layout.
+      - name: Test the Bundle Assembly
+        run: scripts/test-bundle-assembly.sh
+
+      # The real thing, as a smoke test: Swift Bundler builds the app and the
+      # keyboard for the simulator, then the script assembles and signs it.
+      - name: Bundle the iOS App (Simulator)
+        timeout-minutes: 30
+        run: scripts/bundle-ios.sh --simulator --configuration debug
+
+      - name: Upload the Simulator App
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: test-results
-          path: |
-            TestResults.xcresult
-            TestResults.html
-          retention-days: 30
+          name: Wurstfinger-simulator-app
+          path: .build/bundler/apps/Wurstfinger/Wurstfinger.app
+          retention-days: 7
+          if-no-files-found: ignore

@@ -37,9 +37,9 @@ enum UITestApp {
     static let englishLocaleArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
 
     /// Environment variable that opts a run into screenshot generation.
-    /// `scripts/lib/simulator-capture.sh` sets it via xcodebuild's
-    /// `TEST_RUNNER_` prefix, which xcodebuild forwards to the test runner
-    /// with the prefix stripped.
+    /// Pass it as `TEST_RUNNER_GENERATE_SCREENSHOTS=1` to xcodebuild, which
+    /// forwards `TEST_RUNNER_`-prefixed settings to the test runner with the
+    /// prefix stripped.
     static let screenshotGenerationVariable = "GENERATE_SCREENSHOTS"
 
     /// An unlaunched app configured with the isolated store plus `arguments`.

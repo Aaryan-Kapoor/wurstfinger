@@ -18,7 +18,9 @@ private struct ScreenshotConfiguration {
 /// Screenshot generators. They relaunch the app 15 times with hard sleeps and
 /// produce attachments rather than assertions, so they opt out of a plain
 /// `xcodebuild test` and only run when `GENERATE_SCREENSHOTS=1` reaches the
-/// test runner — see `scripts/lib/simulator-capture.sh`.
+/// test runner. The simulator scripts that set it are gone: screenshots are
+/// rendered by `WurstfingerSnapshots` now, and these tests only remain for an
+/// Xcode project that hosts them.
 final class ScreenshotTests: XCTestCase {
     var app: XCUIApplication!
 

@@ -27,6 +27,10 @@ jobs:
           sudo xcode-select -s "$XCODE_APP/Contents/Developer"
           xcodebuild -version
 
+      # scripts/bundle-ios.sh (called by fastlane) builds with Swift Bundler.
+      - name: Set up Swift Bundler
+        uses: ./.github/actions/setup-swift-bundler
+
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
