@@ -44,6 +44,11 @@ struct TouchGuideOverlay: View {
                 )
                 // A new touch is a new card, which restarts the reveal delay.
                 .id(guide.touchID)
+                // Feel: in on the first frame, out with a short fade.
+                .transition(.asymmetric(
+                    insertion: .identity,
+                    removal: .opacity.animation(FeelMotion.guideLeave)
+                ))
             }
         }
         // The card positions itself in the grid's coordinate space, so the

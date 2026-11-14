@@ -82,7 +82,13 @@ struct HapticSettingsView: View {
                             VStack(alignment: .leading, spacing: 8) {
                                 Toggle("Key Clicks", isOn: $areKeyClicksEnabled)
                                     .font(.headline)
-                                Text("Plays the keyboard click on every key, and stays silent in silent mode.")
+                                    .onChange(of: areKeyClicksEnabled) { _, isOn in
+                                        if isOn { HapticPreview.playKeySounds() }
+                                    }
+                                Text(
+                                    // swiftlint:disable:next line_length
+                                    "Each key plays its own note, higher toward the top right, on its own instrument for letters, digits, punctuation, space and delete. Silent in silent mode."
+                                )
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -192,21 +198,54 @@ struct HapticSettingsView: View {
     }
 }
 
-/// Plays, from the settings screen, exactly what the keyboard plays for a
-/// cue at the stored settings: the Core Haptics pattern when Detailed Haptics
-/// is on, the generator pulse otherwise. One player for the screen's
-/// lifetime, re-read from the store before each preview (the sliders write
-/// it through `@AppStorage`).
+/// Plays, from the settings screen, exactly what the keyboard plays at the
+/// stored settings: the derived stroke of a key in the middle of the
+/// keyboard (`FeelVoiceModel`) through Core Haptics when Detailed Haptics is
+/// on, the generator pulse otherwise. One player for the screen's lifetime,
+/// re-read from the store before each preview (the sliders write it through
+/// `@AppStorage`).
 @MainActor
 enum HapticPreview {
     private static let settings = HapticSettings(defaults: SharedDefaults.store, shouldPersist: false)
     private static let player = HapticFeedbackPlayer(settings: settings)
 
+    /// A letter key in the middle of a keyboard, and the space bar.
+    private static func voice(_ role: KeyRole) -> KeyVoice {
+        let frame = role == .space
+            ? CGRect(x: 0, y: 0.75, width: 0.75, height: 0.25)
+            : CGRect(x: 0.25, y: 0.25, width: 0.25, height: 0.25)
+        return FeelVoiceModel.voice(role: role, keyFrame: frame, gridSize: CGSize(width: 1, height: 1), mode: ModeNames.main)
+    }
+
     static func play(_ cue: HapticCue) {
         settings.reload()
         player.refreshIfSettingsChanged()
         player.prepareIfNeeded()
-        player.play(cue)
+        switch cue {
+        case .touchDown:
+            player.play(FeelVoiceModel.touchDown(voice(.letter)), as: cue)
+        case let .cursorTick(pace):
+            player.play(FeelVoiceModel.slideStep(.moveCursor, voice: voice(.space), direction: 1, pace: pace, step: 1), as: cue)
+        default:
+            player.play(cue)
+        }
+    }
+
+    /// Three keys from the bottom left to the top right of the keyboard, as
+    /// they sound when typed: what turning Key Clicks on means.
+    static func playKeySounds() {
+        let grid = CGSize(width: 1, height: 1)
+        func note(_ x: CGFloat, _ y: CGFloat) -> Float {
+            FeelVoiceModel.voice(role: .letter, keyFrame: CGRect(x: x, y: y, width: 0, height: 0), gridSize: grid, mode: ModeNames.main).pitch
+        }
+        let phrase = FeelStroke(
+            FeelHit(pitch: note(0.12, 0.62), weight: 0.62, timbre: .wood),
+            FeelHit(delay: 0.14, pitch: note(0.37, 0.37), weight: 0.62, timbre: .wood),
+            FeelHit(delay: 0.28, pitch: note(0.62, 0.12), weight: 0.62, timbre: .wood)
+        )
+        Task {
+            if await KeySoundEngine.shared.start() { KeySoundEngine.shared.play(phrase) }
+        }
     }
 }
 

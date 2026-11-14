@@ -28,14 +28,20 @@ struct BenchRig {
 
     var engine: TouchEngine { viewModel.touchEngine }
 
-    /// - Parameter hasCompletions: Switches the word completion row on, over a
-    ///   fixed dictionary, so the rows measure the keystroke path as it is with
-    ///   the feature running.
-    init(isLongPressEnabled: Bool = false, language: String = "de_DE", hasCompletions: Bool = false) {
+    /// - Parameters:
+    ///   - hasCompletions: Switches the word completion row on, over a fixed
+    ///     dictionary, so the rows measure the keystroke path as it is with the
+    ///     feature running.
+    ///   - keyClicks: Switches key sounds on (the derived stroke per touch).
+    init(
+        isLongPressEnabled: Bool = false, language: String = "de_DE",
+        hasCompletions: Bool = false, keyClicks: Bool = false
+    ) {
         let suite = "de.akator.wurstfinger.bench.rig"
         let defaults = UserDefaults(suiteName: suite)!
         defaults.removePersistentDomain(forName: suite)
         if hasCompletions { defaults.set(true, forKey: SettingsKey.wordCompletionsEnabled.rawValue) }
+        defaults.set(keyClicks, forKey: SettingsKey.keyClicksEnabled.rawValue)
         viewModel = KeyboardViewModel(userDefaults: defaults, shouldPersistSettings: false)
         target = BenchTextTarget()
         viewModel.bindTextInputTarget(target)
@@ -297,21 +303,20 @@ func benchAllocations() async {
     await drainMainActor()
 
     // 8j-8m: the same keystrokes with the word completion row on. The row's
-    // lookup runs on a timer after the keystroke (never inside it); what the
-    // keystroke itself does is bump a counter and, when none is pending,
-    // arm that timer. A tight loop never lets the timer fire, so 8j-8l show
-    // the coalesced case; 8m lets the run loop turn between keystrokes, as
-    // typing does, and so includes arming a fresh timer every time.
+    // lookup runs after the keystroke (never inside it), woken by a poke of
+    // one long-lived waker. A tight loop never lets the waker run, so 8j-8l
+    // show the coalesced case; 8m lets the run loop turn between keystrokes,
+    // as typing does, and so includes resuming the waker every time.
     rig = BenchRig(hasCompletions: true)
     await KeyboardRegistry.prewarm(["de_DE"])
     await drainMainActor()
     let rowFrame = rig.frame(of: GridSlot.topLeft)
     let rowCenter = CGPoint(x: rowFrame.midX, y: rowFrame.midY)
     var rowSamples = [TouchSample](repeating: TouchSample(location: rowCenter, time: 0), count: 1)
-    reportAllocations("8j. tap keystroke, completion row on (timer pending)", countAllocations(iterations: 5000) {
+    reportAllocations("8j. tap keystroke, completion row on (lookup pending)", countAllocations(iterations: 5000) {
         tap(rig.engine, at: rowCenter, clock: &clock)
     })
-    reportAllocations("8k. flick keystroke, completion row on (timer pending)", countAllocations(iterations: 5000) {
+    reportAllocations("8k. flick keystroke, completion row on (lookup pending)", countAllocations(iterations: 5000) {
         flick(rig.engine, across: rowFrame, samples: &rowSamples, clock: &clock)
     })
     await drainMainActor()
@@ -354,6 +359,31 @@ func benchAllocations() async {
             bytes: Double(meter.bytes) / Double(iterations)
         )
     }
+
+    // 8n / 8o: the same keystrokes with key clicks on: the derived stroke and
+    // the notes handed to the audio thread's queue (the audio graph itself is
+    // not started; the queue is emptied as the render thread would).
+    rig = BenchRig(keyClicks: true)
+    await KeyboardRegistry.prewarm(["de_DE"])
+    await drainMainActor()
+    let sounds = KeySoundEngine.shared
+    sounds.markRunningForMeasurement()
+    let clickFrame = rig.frame(of: GridSlot.center)
+    let clickCenter = CGPoint(x: clickFrame.midX, y: clickFrame.midY)
+    reportAllocations("8n. tap keystroke, key clicks on (derived note queued)", countAllocations(iterations: 5000) {
+        tap(rig.engine, at: clickCenter, clock: &clock)
+        sounds.drainForMeasurement()
+    })
+    reportAllocations("8o. flick keystroke, key clicks on (two notes queued)", countAllocations(iterations: 5000) {
+        flick(rig.engine, across: clickFrame, samples: &samples, clock: &clock)
+        sounds.drainForMeasurement()
+    })
+    let voices = countAllocations(iterations: 20_000) {
+        let voice = rig.viewModel.keyVoice(for: rig.viewModel.activeModeFromDefinition!.keys[GridSlot.center]!)
+        let stroke = FeelVoiceModel.commit(.returnSwipe, voice: voice, direction: .swipeUp, isReturn: true, reach: 0.4, typing: nil)
+        sink.withLock { $0 &+= stroke.count }
+    }
+    reportAllocations("8p. derive a key voice + a return-swipe stroke", voices)
     await drainMainActor()
 }
 

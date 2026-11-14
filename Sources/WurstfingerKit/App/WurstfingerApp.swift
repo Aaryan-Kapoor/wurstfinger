@@ -45,6 +45,11 @@ public struct WurstfingerApp: App {
         // updates live instead of at its next appearance.
         SettingsChangeBroadcaster.start()
 
+        // Feel hook: load (or compile) the feel shaders now, in the
+        // background, and leave them in the app group's cache, so the keyboard
+        // extension finds them there and never compiles (`FeelShaderStore`).
+        FeelShaders.shared.prepare()
+
         // Determine screenshot mode from launch arguments
         let args = ProcessInfo.processInfo.arguments
         if args.contains("APPSTORE_SCREENSHOT_MODE") {

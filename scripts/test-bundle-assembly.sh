@@ -114,8 +114,25 @@ check "build number is a number" test -n "$(printf '%s' "$BUILD" | grep -E '^[0-
 
 # ---- assemble --------------------------------------------------------------------------------
 
+# Stand-ins for Xcode's Metal toolchain: the "compiler" copies the source it
+# is given, the "linker" copies that, so the metallib the assembly installs is
+# exactly the source it extracted.
+mkdir -p "$TMP/bin"
+cat >"$TMP/bin/metal" <<'STUB'
+#!/usr/bin/env bash
+# metal -c SOURCE -o AIR [flags]
+cp "$2" "$4"
+STUB
+cat >"$TMP/bin/metallib" <<'STUB'
+#!/usr/bin/env bash
+# metallib AIR -o LIB
+cp "$1" "$3"
+STUB
+chmod +x "$TMP/bin/metal" "$TMP/bin/metallib"
+
 echo "Assembling"
-ios_assemble "$APP" "$APP_ID" "$VERSION" "99" simulator "$WORK" >"$TMP/assemble.log" 2>&1 ||
+METAL="$TMP/bin/metal" METALLIB="$TMP/bin/metallib" \
+    ios_assemble "$APP" "$APP_ID" "$VERSION" "99" simulator "$WORK" >"$TMP/assemble.log" 2>&1 ||
     {
         cat "$TMP/assemble.log"
         fail "ios_assemble ran"
@@ -160,6 +177,21 @@ else
     check "loose icon AppIcon60x60@2x.png" test -f "$APP/AppIcon60x60@2x.png"
     check_eq "icon is 120 px wide" "120" "$(sips -g pixelWidth "$APP/AppIcon60x60@2x.png" | awk '/pixelWidth/ { print $2 }')"
     check "iPad icon 76x76@2x" test -f "$APP/AppIcon76x76@2x.png"
+fi
+
+echo "Feel shaders"
+check "app carries FeelShaders.metallib" test -s "$APP/FeelShaders.metallib"
+check "appex carries FeelShaders.metallib" test -s "$APPEX/FeelShaders.metallib"
+check "extracted source starts at the Metal include" grep -q '^#include <metal_stdlib>' "$APPEX/FeelShaders.metallib"
+check "extracted source carries every function" bash -c "grep -q feelKeySheen '$APPEX/FeelShaders.metallib' && grep -q feelRipple '$APPEX/FeelShaders.metallib' && grep -q feelTrailInk '$APPEX/FeelShaders.metallib'"
+check "extracted source is unindented, without the Swift around it" bash -c "! grep -q 'static let metal' '$APPEX/FeelShaders.metallib' && ! grep -q '^    #include' '$APPEX/FeelShaders.metallib'"
+mkdir -p "$TMP/no-toolchain/PlugIns/$KEYBOARD_NAME.appex"
+if xcrun --sdk iphonesimulator --find metal >/dev/null 2>&1; then
+    pass "a Metal toolchain is installed: the skip path is not exercised here"
+else
+    check "without a Metal toolchain the step is skipped, not failed" \
+        bash -c "source '$SCRIPT_DIR/lib/ios-bundle.sh'; ios_compile_shaders '$TMP/no-toolchain' iphonesimulator '$TMP/no-toolchain-work' 2>/dev/null"
+    check "and leaves no metallib behind" test ! -e "$TMP/no-toolchain/FeelShaders.metallib"
 fi
 
 echo "Localized strings"

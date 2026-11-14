@@ -162,6 +162,35 @@ final class HapticFeedbackPlayer {
         lastPrepared = ContinuousClock.now
     }
 
+    /// Plays a derived stroke (`FeelVoiceModel`) for the moment `cue` names:
+    /// each hit as a click from Core Haptics' bank, at the strength of the
+    /// cue's channel. Where the bank cannot play, the cue's designed pattern
+    /// plays instead, and without Core Haptics its generator pulse — so a
+    /// derived moment is never silent where the plain one would not be.
+    ///
+    /// Allocation-free: the stroke has fixed storage and is walked with a
+    /// non-escaping closure; each hit is one `start` on a prebuilt player.
+    func play(_ stroke: FeelStroke, as cue: HapticCue) {
+        guard isAccessGranted else { return }
+        let intensity = settings.intensity(for: cue.channel)
+        guard intensity > 0 else { return }
+        if isDetailedActive, let detailed, detailed.isReady {
+            let gain = HapticGain.gain(for: intensity)
+            let shift = HapticGain.sharpnessShift(for: intensity)
+            var played = false
+            stroke.forEach { hit in
+                let isPlayed = detailed.playClick(
+                    intensity: hit.intensity * gain,
+                    sharpness: hit.sharpness + shift,
+                    after: TimeInterval(hit.delay)
+                )
+                played = played || isPlayed
+            }
+            if played { return }
+        }
+        play(cue)
+    }
+
     /// Stops a playing or scheduled cue (the long-press swell when the finger
     /// moves or lifts first).
     func stop(_ cue: HapticCue) {

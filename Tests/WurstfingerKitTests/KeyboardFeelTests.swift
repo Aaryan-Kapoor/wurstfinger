@@ -31,6 +31,10 @@ private func makeFeel() -> (KeyboardFeel, RecordingHapticRenderer, TestClock) {
     return (KeyboardFeel(haptics: player, now: { clock.now }), renderer, clock)
 }
 
+/// A letter key's voice and a stroke, for calls that need one.
+private let testVoice = KeyVoice(pitch: 7, weight: 0.6, timbre: .wood)
+private let testStroke = FeelVoiceModel.touchDown(testVoice)
+
 private func candidate(_ gesture: GestureType?, isReturn: Bool = false, isLongSwipe: Bool = false) -> GestureCandidate {
     GestureCandidate(gesture: gesture, isReturn: isReturn, isLongSwipe: isLongSwipe)
 }
@@ -67,34 +71,34 @@ struct FeelCandidateTests {
 
     @Test func detentsAreSpacedSoABorderDoesNotRattle() {
         let (feel, renderer, clock) = makeFeel()
-        feel.candidateChanged(from: .tap, to: candidate(.swipeUp))
+        feel.candidateChanged(from: .tap, to: candidate(.swipeUp), voice: testVoice)
         clock.now += 0.01
-        feel.candidateChanged(from: candidate(.swipeUp), to: candidate(.swipeUpRight))
+        feel.candidateChanged(from: candidate(.swipeUp), to: candidate(.swipeUpRight), voice: testVoice)
         clock.now += 0.01
-        feel.candidateChanged(from: candidate(.swipeUpRight), to: candidate(.swipeUp))
+        feel.candidateChanged(from: candidate(.swipeUpRight), to: candidate(.swipeUp), voice: testVoice)
         #expect(renderer.playedCues == [.directionDetent])
         clock.now += KeyboardFeel.detentSpacing
-        feel.candidateChanged(from: candidate(.swipeUp), to: candidate(.swipeUpRight))
+        feel.candidateChanged(from: candidate(.swipeUp), to: candidate(.swipeUpRight), voice: testVoice)
         #expect(renderer.playedCues == [.directionDetent, .directionDetent])
     }
 
     @Test func thresholdsAreNeverSwallowedBySpacing() {
         let (feel, renderer, _) = makeFeel()
-        feel.candidateChanged(from: .tap, to: candidate(.swipeRight))
-        feel.candidateChanged(from: candidate(.swipeRight), to: candidate(.swipeRight, isLongSwipe: true))
+        feel.candidateChanged(from: .tap, to: candidate(.swipeRight), voice: testVoice)
+        feel.candidateChanged(from: candidate(.swipeRight), to: candidate(.swipeRight, isLongSwipe: true), voice: testVoice)
         #expect(renderer.playedCues == [.directionDetent, .longSwipeArmed])
     }
 
     @Test func aReleaseClicksAndPops() {
         let (feel, renderer, _) = makeFeel()
         let pop = FeelBoard.Pop(text: "p", keyFrame: CGRect(x: 0, y: 0, width: 50, height: 50), gesture: .swipeUp)
-        feel.released(.swipe, pop: pop)
+        feel.released(.swipe, stroke: testStroke, pop: pop)
         #expect(renderer.playedCues.isEmpty, "nothing goes out before the keystroke is handed on")
         #expect(feel.board.pops.isEmpty)
         feel.flushRelease()
-        feel.released(.tap, pop: nil)
+        feel.released(.tap, stroke: testStroke, pop: nil)
         feel.flushRelease()
-        feel.released(.longSwipe, clicks: false, pop: nil)
+        feel.released(.longSwipe, stroke: testStroke, clicks: false, pop: nil)
         feel.flushRelease()
         feel.flushRelease()
         #expect(renderer.playedCues == [.commit(.swipe), .commit(.tap)])
@@ -137,7 +141,7 @@ struct FeelLongPressTests {
     @Test func firingResolvesTheSwellWithAClickAndAPop() {
         let (feel, renderer, _) = makeFeel()
         feel.longPressArmed(keyId: "e", keyFrame: frame, delay: 0.7)
-        feel.longPressFired(keyId: "e", pop: FeelBoard.Pop(text: "5", keyFrame: frame, gesture: .tap))
+        feel.longPressFired(keyId: "e", stroke: testStroke, pop: FeelBoard.Pop(text: "5", keyFrame: frame, gesture: .tap))
         #expect(renderer.stopped == [.longPressRamp])
         #expect(renderer.playedCues.last == .commit(.longPress))
         #expect(feel.board.ring?.hasFired == true)
@@ -161,7 +165,7 @@ struct FeelSlideTests {
 
     @Test func everyStepMovesTheRatchetAndTicks() {
         let (feel, renderer, clock) = makeFeel()
-        feel.slideBegan(.moveCursor, keyId: "space", keyFrame: frame)
+        feel.slideBegan(.moveCursor, keyId: "space", keyFrame: frame, voice: testVoice)
         for _ in 0 ..< 3 {
             clock.now += 0.2
             feel.slideStep(.moveCursor, direction: 1)
@@ -175,7 +179,7 @@ struct FeelSlideTests {
 
     @Test func fasterSlidesTickLighter() {
         let (feel, renderer, clock) = makeFeel()
-        feel.slideBegan(.moveCursor, keyId: "space", keyFrame: frame)
+        feel.slideBegan(.moveCursor, keyId: "space", keyFrame: frame, voice: testVoice)
         feel.slideStep(.moveCursor, direction: -1)
         clock.now += 0.07
         feel.slideStep(.moveCursor, direction: -1)
@@ -191,7 +195,7 @@ struct FeelSlideTests {
 
     @Test func stepsInOneBurstShareATick() {
         let (feel, renderer, clock) = makeFeel()
-        feel.slideBegan(.delete, keyId: "delete", keyFrame: frame)
+        feel.slideBegan(.delete, keyId: "delete", keyFrame: frame, voice: testVoice)
         feel.slideStep(.delete, direction: -1)
         feel.slideStep(.delete, direction: -1)
         feel.slideStep(.delete, direction: -1)
@@ -437,7 +441,7 @@ struct ViewModelFeelTests {
         let tapText = try #require(center.bindings[.tap]?.label)
 
         let tap = viewModel.commitFeel(for: GestureClassification(gesture: .tap, isReturn: false), keyId: GridSlot.center)
-        #expect(tap == CommitFeel(commitType: .tap, popText: tapText))
+        #expect(tap == CommitFeel(commitType: .tap, popText: tapText, action: .commitText(tapText)))
 
         let swipeGesture = try #require(KeyView.hintGestureOrder.first { center.bindings[$0] != nil })
         let swipe = viewModel.commitFeel(for: GestureClassification(gesture: swipeGesture, isReturn: false), keyId: GridSlot.center)
@@ -446,7 +450,7 @@ struct ViewModelFeelTests {
         let circle = viewModel.commitFeel(
             for: GestureClassification(gesture: .circularClockwise, isReturn: false), keyId: GridSlot.center
         )
-        #expect(circle == CommitFeel(commitType: .circle, popText: tapText.uppercased()))
+        #expect(circle == CommitFeel(commitType: .circle, popText: tapText.uppercased(), action: .commitText(tapText.uppercased())))
     }
 
     @Test func spacesAndUnboundDirectionsPopNothing() throws {
@@ -502,7 +506,7 @@ struct ViewModelFeelTests {
         let classification = GestureClassification(gesture: .swipeLeft, isReturn: false, displacementInKeys: CGVector(dx: -3, dy: 0))
         let action = try #require(tuning.longSwipe.action(for: classification))
         let feel = scenario.viewModel.commitFeel(for: classification, keyId: GridSlot.center)
-        #expect(feel == CommitFeel(commitType: .longSwipe, popText: action.previewGlyph, isAction: true))
+        #expect(feel == CommitFeel(commitType: .longSwipe, popText: action.previewGlyph, isAction: true, action: action))
     }
 
     /// Down-left dismisses by default: the pipeline's dismissal cue confirms

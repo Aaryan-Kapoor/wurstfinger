@@ -28,6 +28,8 @@ CFBundleDisplayName = "Wurstfinger"
 CFBundleVersion = "2"
 ITSAppUsesNonExemptEncryption = false
 UIApplicationSupportsIndirectInputEvents = true
+# Feel: lets the settings preview keyboard run at 120 Hz on ProMotion iPhones.
+CADisableMinimumFrameDurationOnPhone = true
 UILaunchScreen = {}
 UISupportedInterfaceOrientations = [
   "UIInterfaceOrientationPortrait",
@@ -53,6 +55,8 @@ CFBundleDisplayName = "Wurstfinger"
 CFBundleVersion = "2"
 ITSAppUsesNonExemptEncryption = false
 UIApplicationSupportsIndirectInputEvents = true
+# Feel: lets the settings preview keyboard run at 120 Hz on ProMotion iPhones.
+CADisableMinimumFrameDurationOnPhone = true
 UILaunchScreen = {}
 UISupportedInterfaceOrientations = [
   "UIInterfaceOrientationPortrait",

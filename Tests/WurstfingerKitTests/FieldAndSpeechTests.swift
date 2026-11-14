@@ -24,7 +24,7 @@ private final class Recorder {
             isActive: { [unowned self] in isVoiceOverRunning },
             announce: { [unowned self] in spoken.append($0) }
         )
-        viewModel.keyClicks = KeyClickPlayer { [unowned self] in clicks.append($0) }
+        viewModel.keyClicks = KeyClickPlayer { [unowned self] click, _ in clicks.append(click) }
     }
 }
 

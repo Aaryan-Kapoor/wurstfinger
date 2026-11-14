@@ -22,14 +22,44 @@ struct CommitFeel: Equatable, Sendable {
     /// pipeline confirms with its own cue (dismissal, a mode or language
     /// switch), so one release never plays two patterns.
     var clicks = true
+    /// What the release does, for the instrument of its stroke (a flick that
+    /// types punctuation sounds glassy on a letter key).
+    var action: KeyAction?
 }
 
 extension KeyboardViewModel {
+    // MARK: - Voices
+
+    /// A key's voice in the current layout and mode: its role, the centre of
+    /// its touch frame within the grid, the active mode
+    /// (`FeelVoiceModel.voice`). Arithmetic and two lookups (the key's tap
+    /// binding, its frame by id) — cheap enough for every touch, and nothing
+    /// to rebuild when the layout changes.
+    func keyVoice(for key: KeyDefinition) -> KeyVoice {
+        let hitMap = touchEngine.hitMap
+        let frame = hitMap.key(withId: key.id)?.frame ?? .zero
+        return FeelVoiceModel.voice(role: KeyRole(key: key), keyFrame: frame, gridSize: hitMap.size, mode: activeModeName)
+    }
+
+    /// Plays `stroke` as a key sound when key clicks are on (`KeyClickPlayer`).
+    private func sound(_ stroke: FeelStroke?, as click: KeyClick) {
+        guard let stroke, stroke.isAudible, typingBehavior.areKeyClicksEnabled else { return }
+        keyClicks.play(click, stroke)
+    }
+
     // MARK: - Engine hooks
 
+    /// A finger landed on `key`: its own voice, felt and (with key clicks
+    /// on) heard — one stroke for both, so they agree.
+    func feelTouchDown(_ key: KeyDefinition) {
+        let stroke = FeelVoiceModel.touchDown(keyVoice(for: key))
+        feel.touchDown(stroke, mode: activeModeName)
+        sound(stroke, as: KeyClick(for: key))
+    }
+
     /// The speculative target of a flick changed.
-    func feelCandidateChanged(on _: KeyDefinition, from old: GestureCandidate, to new: GestureCandidate) {
-        feel.candidateChanged(from: old, to: new)
+    func feelCandidateChanged(on key: KeyDefinition, from old: GestureCandidate, to new: GestureCandidate) {
+        feel.candidateChanged(from: old, to: new, voice: keyVoice(for: key))
     }
 
     /// A finger lifted: resolves the click and pop for what it will commit,
@@ -41,7 +71,37 @@ extension KeyboardViewModel {
     /// happens.
     func feelReleased(_ key: KeyDefinition, classification: GestureClassification) {
         guard let commit = commitFeel(for: classification, keyId: key.id) else { return }
-        feel.released(commit.commitType, clicks: commit.clicks, pop: pop(commit, key: key, gesture: classification.gesture))
+        let displacement = classification.displacementInKeys
+        let stroke = FeelVoiceModel.commit(
+            commit.commitType, voice: keyVoice(for: key), direction: classification.gesture,
+            isReturn: classification.isReturn, reach: hypot(displacement.dx, displacement.dy),
+            typing: commit.action
+        )
+        feel.released(
+            commit.commitType, stroke: stroke, clicks: commit.clicks,
+            pop: pop(commit, key: key, gesture: classification.gesture)
+        )
+        feel.releaseClick = KeyClick(typing: commit.action)
+    }
+
+    /// The release recorded by `feelReleased` has been handed on: its click,
+    /// pop and sound go out now, after the text.
+    func feelFlushRelease() {
+        sound(feel.flushRelease(), as: feel.releaseClick)
+    }
+
+    // MARK: - Lifecycle
+
+    /// Starts the key sounds' audio graph when the keyboard appears, if key
+    /// clicks are on (in the background; nothing waits for it).
+    func prepareKeySounds() {
+        if typingBehavior.areKeyClicksEnabled { KeySoundEngine.shared.prepare() }
+    }
+
+    /// The keyboard went away: stop the audio graph and the frame-rate boost.
+    func suspendFeel() {
+        KeySoundEngine.shared.suspend()
+        feel.boost.stop()
     }
 
     /// A long press was armed, cancelled or fired on `key`.
@@ -59,10 +119,15 @@ extension KeyboardViewModel {
             guard isTyping(.longPress, keyId: key.id) else { return }
             let text = previewLabel(for: .longPress, keyId: key.id, isReturn: false)
             let commit = text.map { CommitFeel(commitType: .longPress, popText: $0) }
-            feel.longPressFired(
-                keyId: key.id,
+            let typed = resolvedAction(for: .longPress, keyId: key.id, isReturn: false)
+            let stroke = FeelVoiceModel.commit(
+                .longPress, voice: keyVoice(for: key), direction: .longPress, isReturn: false, reach: 0, typing: typed
+            )
+            let played = feel.longPressFired(
+                keyId: key.id, stroke: stroke,
                 pop: commit.flatMap { pop($0, key: key, gesture: .tap) }
             )
+            sound(played, as: KeyClick(typing: typed))
         }
     }
 
@@ -70,12 +135,15 @@ extension KeyboardViewModel {
 
     /// A space or delete slide started moving.
     func feelSlideBegan(_ slideType: SlideType, key: KeyDefinition) {
-        feel.slideBegan(slideType, keyId: key.id, keyFrame: touchEngine.hitMap.key(withId: key.id)?.frame)
+        feel.slideBegan(
+            slideType, keyId: key.id, keyFrame: touchEngine.hitMap.key(withId: key.id)?.frame,
+            voice: keyVoice(for: key)
+        )
     }
 
     /// One caret step or one deleted character.
     func feelSlideStep(_ slideType: SlideType, direction: Int) {
-        feel.slideStep(slideType, direction: direction)
+        sound(feel.slideStep(slideType, direction: direction), as: slideType == .delete ? .delete : .modifier)
     }
 
     func feelSlideEnded() {
@@ -83,9 +151,14 @@ extension KeyboardViewModel {
     }
 
     /// A state change the user should feel (mode, language, dismissal,
-    /// clipboard).
+    /// clipboard). A mode change plays the step from the mode of the latest
+    /// touch-down into the one now active.
     func feel(_ cue: HapticCue) {
-        feel.play(cue)
+        if cue == .modeSwitch {
+            sound(feel.modeChanged(to: activeModeName), as: .modifier)
+        } else {
+            sound(feel.play(cue), as: .modifier)
+        }
     }
 
     // MARK: - Resolution
@@ -99,7 +172,7 @@ extension KeyboardViewModel {
         if let action = gestureTuning.longSwipe.action(for: classification) {
             return CommitFeel(
                 commitType: .longSwipe, popText: action.previewGlyph, isAction: true,
-                clicks: HapticCue.forPipelineAction(action) == nil
+                clicks: HapticCue.forPipelineAction(action) == nil, action: action
             )
         }
         let gesture = classification.gesture
@@ -120,11 +193,11 @@ extension KeyboardViewModel {
             // has no use for) types nothing, so its release clicks for nothing.
             return nil
         case let .commitText(text):
-            return CommitFeel(commitType: commitType, popText: text.isEmpty || text == " " ? nil : text)
+            return CommitFeel(commitType: commitType, popText: text.isEmpty || text == " " ? nil : text, action: action)
         case let .compose(trigger):
-            return CommitFeel(commitType: commitType, popText: trigger)
+            return CommitFeel(commitType: commitType, popText: trigger, action: action)
         default:
-            return CommitFeel(commitType: commitType, popText: nil)
+            return CommitFeel(commitType: commitType, popText: nil, action: action)
         }
     }
 
@@ -138,7 +211,7 @@ extension KeyboardViewModel {
     /// The action `gesture` on `keyId` resolves to in the active mode, as
     /// `performGesture` resolves it (circles included) — a lookup in the
     /// compiled tables, like the guide's preview.
-    private func resolvedAction(for gesture: GestureType, keyId: String, isReturn: Bool) -> KeyAction? {
+    func resolvedAction(for gesture: GestureType, keyId: String, isReturn: Bool) -> KeyAction? {
         guard let compiled = activeCompiledMode,
               let slot = compiled.slot(for: keyId)
         else { return nil }

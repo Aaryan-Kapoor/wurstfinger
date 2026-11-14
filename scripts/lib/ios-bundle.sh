@@ -16,11 +16,13 @@
 #     Info.plist, Assets.car, icons       app (Swift Bundler + actool/sips)
 #     <locale>.lproj/Localizable.strings  app strings (xcstrings_to_strings.py)
 #     PrivacyInfo.xcprivacy
+#     FeelShaders.metallib                the feel shaders, when a Metal toolchain exists
 #     PlugIns/WurstfingerKeyboard.appex/
 #       WurstfingerKeyboard               moved here from the app root
 #       Info.plist                        rendered from Bundling/Keyboard-Info.plist
 #       <locale>.lproj/Localizable.strings
 #       PrivacyInfo.xcprivacy
+#       FeelShaders.metallib
 #
 # Every command that changes the filesystem goes through `run`, so with
 # DRY_RUN=1 the whole sequence prints instead of executing.
@@ -47,6 +49,7 @@ ICON_ASSETS="$REPO_ROOT/Bundling/Assets.xcassets"
 ICON_COMPOSER="$REPO_ROOT/Bundling/AppIcon.icon"
 ICON_PNG="$REPO_ROOT/Bundling/AppIcon.png"
 STRINGS_CONVERTER="$REPO_ROOT/scripts/xcstrings_to_strings.py"
+SHADER_SOURCE="$REPO_ROOT/Sources/WurstfingerKit/Keyboard/Runtime/View/Shaders/FeelShaderSource.swift"
 BUNDLER_TOML="$REPO_ROOT/Bundler.toml"
 
 # ---- output helpers ----------------------------------------------------------
@@ -225,6 +228,58 @@ ios_prune_resource_bundles() {
     done
 }
 
+# ---- feel shaders --------------------------------------------------------------
+
+# Writes the Metal source embedded in FeelShaderSource.swift (the lines between
+# its begin/end marker comments, indentation removed) to OUT.
+#   ios_extract_shader_source SWIFT_FILE OUT
+ios_extract_shader_source() {
+    local swift="$1" out="$2"
+    if [ "$DRY_RUN" = 1 ]; then
+        note "extract the Metal source between the wurstfinger-feel-shaders markers of $swift into $out"
+        return 0
+    fi
+    awk '/wurstfinger-feel-shaders: begin/ { inside = 1 }
+         inside { sub(/^    /, ""); print }
+         /wurstfinger-feel-shaders: end/ { inside = 0 }' "$swift" >"$out"
+    [ -s "$out" ] || die "no Metal source between the markers in $swift"
+}
+
+# Compiles the feel shaders into FeelShaders.metallib with Xcode's Metal
+# toolchain and puts it in the app and the keyboard appex, where FeelShaders
+# loads it before anything else: no iPhone, however old, then compiles shaders
+# at runtime. Without the toolchain (Command Line Tools only, or Xcode 26
+# without `xcodebuild -downloadComponent MetalToolchain`) the step is skipped
+# with a warning: the app compiles the shaders at runtime instead and caches
+# them. METAL and METALLIB override the two tools (the assembly test uses
+# stand-ins).
+#   ios_compile_shaders APP SDK WORKDIR       SDK is iphoneos or iphonesimulator
+ios_compile_shaders() {
+    local app="$1" sdk="$2" work="$3"
+    local appex="$app/PlugIns/$KEYBOARD_NAME.appex"
+    local metal="${METAL:-}" metallib="${METALLIB:-}"
+    if [ -z "$metal" ] && xcrun --sdk "$sdk" --find metal >/dev/null 2>&1; then metal="xcrun --sdk $sdk metal"; fi
+    if [ -z "$metallib" ] && xcrun --sdk "$sdk" --find metallib >/dev/null 2>&1; then metallib="xcrun --sdk $sdk metallib"; fi
+    # Xcode 26 ships `metal` as a shim that only fails when run, until the
+    # toolchain is downloaded: found is not enough, it has to answer.
+    # shellcheck disable=SC2086
+    if [ -n "$metal" ] && [ "$DRY_RUN" != 1 ] && [ -z "${METAL:-}" ] && ! $metal -v >/dev/null 2>&1; then metal=""; fi
+    if [ -z "$metal" ] || [ -z "$metallib" ]; then
+        warn "no Metal toolchain for $sdk: FeelShaders.metallib is not built (the app compiles the shaders at runtime and caches them)"
+        return 0
+    fi
+    local minimum="-mios-version-min=$MINIMUM_OS_VERSION"
+    if [ "$sdk" = iphonesimulator ]; then minimum="-mios-simulator-version-min=$MINIMUM_OS_VERSION"; fi
+    run mkdir -p "$work"
+    ios_extract_shader_source "$SHADER_SOURCE" "$work/FeelShaders.metal"
+    # shellcheck disable=SC2086 # $metal / $metallib may be "xcrun --sdk ... metal"
+    run $metal -c "$work/FeelShaders.metal" -o "$work/FeelShaders.air" "$minimum"
+    # shellcheck disable=SC2086
+    run $metallib "$work/FeelShaders.air" -o "$work/FeelShaders.metallib"
+    run cp "$work/FeelShaders.metallib" "$app/FeelShaders.metallib"
+    run cp "$work/FeelShaders.metallib" "$appex/FeelShaders.metallib"
+}
+
 # ---- icons and accent colour -------------------------------------------------
 
 ios_have_actool() { xcrun --find actool >/dev/null 2>&1; }
@@ -308,6 +363,9 @@ ios_assemble() {
     ios_install_privacy "$APP_PRIVACY" "$app"
     ios_install_privacy "$KEYBOARD_PRIVACY" "$appex"
     ios_prune_resource_bundles "$app"
+
+    step "Feel shaders"
+    ios_compile_shaders "$app" "$sdk" "$work/shaders"
 
     step "Icons and accent colour"
     ios_install_icons "$app" "$sdk" "$work"

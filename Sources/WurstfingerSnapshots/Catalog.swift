@@ -463,6 +463,34 @@ enum Catalog {
 
     private static func feel() -> [Scenario] {
         var scenarios: [Scenario] = []
+        // The derived voices: what each key sounds and feels like, per mode.
+        for mode in [ModeNames.main, ModeNames.shifted, ModeNames.numeric] {
+            scenarios.append(Scenario(group: "feel", name: "feel-voicemap-\(mode)") {
+                FeelVoiceMap.make(mode: mode)
+            })
+        }
+        scenarios.append(Scenario(group: "feel", name: "feel-voicemap-thumbkey") {
+            FeelVoiceMap.make(language: "en_US_thumbkey")
+        })
+        // Frame strips of the transient animations, posed at fractions of
+        // their run: the lit bubble lifting off, the long-press ring filling.
+        for fraction in [0.0, 0.15, 0.35, 0.6, 0.85] {
+            scenarios.append(keyboard("feel", "feel-strip-pop-\(Int(fraction * 100))") {
+                $0.finger = FingerTrail(
+                    keyId: GridSlot.center, motion: .drag(.swipeUpRight, keyWidths: 0.6), lifts: true
+                )
+                $0.showsTrail = false
+                $0.feelStill = fraction
+            })
+        }
+        for fraction in [0.1, 0.4, 0.7, 1.0] {
+            scenarios.append(keyboard("feel", "feel-strip-ring-\(Int(fraction * 100))") {
+                $0.longPressDigits = true
+                $0.finger = FingerTrail(keyId: GridSlot.center, motion: .press)
+                $0.showsTrail = false
+                $0.feelStill = fraction
+            })
+        }
         // A press off-centre, so the light visibly starts at the finger.
         let press = FingerTrail(keyId: GridSlot.center, motion: .press, touchOffset: CGVector(dx: -0.2, dy: -0.16))
         for scheme in [ColorScheme.light, .dark] {

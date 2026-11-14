@@ -41,6 +41,16 @@ func runSnapshots() -> Int32 {
         FileHandle.standardError.write(Data("error: \(error)\n\n\(Options.usage)\n".utf8))
         return 2
     }
+    if let path = options.soundDemo {
+        do {
+            let result = try SoundDemo.render(to: URL(fileURLWithPath: path))
+            print("\(result.strokes) strokes, \(String(format: "%.1f", result.seconds)) s -> \(path)")
+            return 0
+        } catch {
+            FileHandle.standardError.write(Data("sound demo failed: \(error)\n".utf8))
+            return 1
+        }
+    }
     if options.showHelp {
         print(Options.usage)
         return 0

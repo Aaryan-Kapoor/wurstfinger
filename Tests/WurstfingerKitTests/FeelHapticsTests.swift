@@ -47,6 +47,17 @@ final class RecordingHapticRenderer: HapticRenderer {
     func resumeIfNeeded() {
         resumeCount += 1
     }
+
+    /// Whether the fake plays derived hits from a click bank (off by default,
+    /// so strokes fall back to their cue's pattern as without a bank).
+    var acceptsClicks = false
+    private(set) var clicks: [(intensity: Float, sharpness: Float, delay: TimeInterval)] = []
+
+    func playClick(intensity: Float, sharpness: Float, after delay: TimeInterval) -> Bool {
+        guard acceptsClicks else { return false }
+        clicks.append((intensity, sharpness, delay))
+        return true
+    }
 }
 
 /// Records the generator pulses the player falls back to.

@@ -37416,139 +37416,139 @@
         }
       }
     },
-    "Plays the keyboard click on every key, and stays silent in silent mode.": {
+    "Each key plays its own note, higher toward the top right, on its own instrument for letters, digits, punctuation, space and delete. Silent in silent mode.": {
       "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Spielt bei jeder Taste den Tastaturklick ab und bleibt im Stummmodus still."
+            "value": "Jede Taste spielt ihren eigenen Ton, höher nach oben rechts, mit eigenem Instrument für Buchstaben, Ziffern, Satzzeichen, Leertaste und Löschen. Im Stummmodus still."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Joue le clic du clavier à chaque touche, et reste silencieux en mode silencieux."
+            "value": "Chaque touche joue sa propre note, plus aiguë vers le haut à droite, avec son propre instrument pour les lettres, chiffres, ponctuation, espace et suppression. Muet en mode silencieux."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reproduce el clic del teclado en cada tecla y permanece en silencio en el modo silencio."
+            "value": "Cada tecla toca su propia nota, más aguda hacia arriba a la derecha, con su propio instrumento para letras, números, puntuación, espacio y borrar. En silencio con el modo silencio."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Riproduce il clic della tastiera a ogni tasto e resta muto in modalità silenziosa."
+            "value": "Ogni tasto suona la sua nota, più acuta verso l'alto a destra, con un suo strumento per lettere, cifre, punteggiatura, spazio e cancella. Muto in modalità silenziosa."
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Воспроизводит щелчок клавиатуры на каждой клавише и молчит в бесшумном режиме."
+            "value": "Каждая клавиша звучит своей нотой — выше к верхнему правому углу, своим инструментом для букв, цифр, знаков, пробела и удаления. Беззвучно в бесшумном режиме."
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Odtwarza kliknięcie klawiatury przy każdym klawiszu i milknie w trybie cichym."
+            "value": "Każdy klawisz gra własną nutę, wyższą ku górze i w prawo, własnym instrumentem dla liter, cyfr, interpunkcji, spacji i usuwania. Cicho w trybie wyciszenia."
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Spelar tangentbordsklicket för varje tangent och är tyst i ljudlöst läge."
+            "value": "Varje tangent spelar sin egen ton, högre uppåt till höger, med eget instrument för bokstäver, siffror, skiljetecken, mellanslag och radera. Tyst i tyst läge."
           }
         },
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Toistaa näppäimistön napsautuksen jokaisesta näppäimestä ja on hiljaa äänettömässä tilassa."
+            "value": "Jokainen näppäin soittaa oman sävelensä, korkeamman ylös oikealle, omalla soittimellaan kirjaimille, numeroille, välimerkeille, välilyönnille ja poistolle. Hiljaisessa tilassa äänetön."
           }
         },
         "hr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reproducira klik tipkovnice na svakoj tipki i šuti u tihom načinu."
+            "value": "Svaka tipka svira svoj ton, viši prema gore desno, vlastitim instrumentom za slova, brojke, interpunkciju, razmak i brisanje. Tiho u nečujnom načinu."
           }
         },
         "he": {
           "stringUnit": {
             "state": "translated",
-            "value": "משמיע את צליל ההקלדה בכל מקש, ושותק במצב שקט."
+            "value": "כל מקש מנגן צליל משלו, גבוה יותר כלפי מעלה וימינה, בכלי משלו לאותיות, ספרות, פיסוק, רווח ומחיקה. שקט במצב שקט."
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Phát tiếng bấm bàn phím ở mỗi phím và im lặng ở chế độ im lặng."
+            "value": "Mỗi phím phát nốt riêng, cao dần về phía trên bên phải, với nhạc cụ riêng cho chữ, số, dấu câu, phím cách và xóa. Im lặng ở chế độ im lặng."
           }
         },
         "fil": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nagpe-play ng click ng keyboard sa bawat key, at tahimik kapag naka-silent mode."
+            "value": "Bawat key ay may sariling nota, mas mataas pataas pakanan, at sariling instrumento para sa titik, numero, bantas, space at delete. Tahimik sa silent mode."
           }
         },
         "el": {
           "stringUnit": {
             "state": "translated",
-            "value": "Παίζει τον ήχο του πληκτρολογίου σε κάθε πλήκτρο και μένει σιωπηλό στην αθόρυβη λειτουργία."
+            "value": "Κάθε πλήκτρο παίζει τη δική του νότα, ψηλότερη προς τα πάνω δεξιά, με δικό του όργανο για γράμματα, ψηφία, στίξη, διάστημα και διαγραφή. Σιωπηλό σε αθόρυβη λειτουργία."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reproduz o clique do teclado em cada tecla e fica em silêncio no modo silencioso."
+            "value": "Cada tecla toca sua própria nota, mais aguda para cima e à direita, com seu próprio instrumento para letras, dígitos, pontuação, espaço e apagar. Silencioso no modo silencioso."
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Відтворює клацання клавіатури на кожній клавіші й мовчить у безшумному режимі."
+            "value": "Кожна клавіша звучить своєю нотою — вищою до верхнього правого кута, своїм інструментом для літер, цифр, розділових знаків, пробілу й видалення. Беззвучно в беззвучному режимі."
           }
         },
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "يشغّل نقرة لوحة المفاتيح مع كل مفتاح، ويبقى صامتًا في الوضع الصامت."
+            "value": "يعزف كل مفتاح نغمته الخاصة، أعلى نحو الأعلى يمينًا، بآلة خاصة للحروف والأرقام وعلامات الترقيم والمسافة والحذف. صامت في الوضع الصامت."
           }
         },
         "fa": {
           "stringUnit": {
             "state": "translated",
-            "value": "صدای کلیک صفحه‌کلید را برای هر کلید پخش می‌کند و در حالت بی‌صدا ساکت می‌ماند."
+            "value": "هر کلید نت خودش را می‌نوازد، بالاتر به سمت بالا و راست، با سازی جدا برای حروف، ارقام، نشانه‌ها، فاصله و حذف. در حالت بی‌صدا ساکت است."
           }
         },
         "ur": {
           "stringUnit": {
             "state": "translated",
-            "value": "ہر کلید پر کی بورڈ کی کلک چلاتا ہے، اور خاموش موڈ میں خاموش رہتا ہے۔"
+            "value": "ہر کلید اپنا سُر بجاتی ہے، اوپر دائیں جانب بلند تر، حروف، ہندسوں، اوقاف، اسپیس اور ڈیلیٹ کے لیے اپنے ساز کے ساتھ۔ خاموش موڈ میں خاموش۔"
           }
         },
         "th": {
           "stringUnit": {
             "state": "translated",
-            "value": "เล่นเสียงคลิกแป้นพิมพ์ทุกครั้งที่กดปุ่ม และเงียบเมื่ออยู่ในโหมดเงียบ"
+            "value": "แต่ละปุ่มเล่นโน้ตของตัวเอง สูงขึ้นไปทางขวาบน และมีเครื่องดนตรีของตัวเองสำหรับตัวอักษร ตัวเลข เครื่องหมายวรรคตอน เว้นวรรค และลบ เงียบในโหมดเงียบ"
           }
         },
         "hi": {
           "stringUnit": {
             "state": "translated",
-            "value": "हर की पर कीबोर्ड क्लिक बजाता है, और साइलेंट मोड में चुप रहता है।"
+            "value": "हर कुंजी अपना सुर बजाती है, ऊपर दाईं ओर ऊँचा, अक्षरों, अंकों, विराम चिह्नों, स्पेस और डिलीट के लिए अपने वाद्य के साथ। साइलेंट मोड में शांत।"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "キーを押すたびにキーボードのクリック音を鳴らします。消音モードでは鳴りません。"
+            "value": "キーごとに固有の音が鳴ります。右上ほど高く、文字・数字・記号・スペース・削除はそれぞれ別の楽器です。消音モードでは鳴りません。"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "키를 누를 때마다 키보드 클릭 소리를 재생하며, 무음 모드에서는 소리가 나지 않습니다."
+            "value": "키마다 고유한 음을 냅니다. 오른쪽 위로 갈수록 높고, 문자·숫자·문장 부호·스페이스·삭제마다 다른 악기입니다. 무음 모드에서는 소리가 나지 않습니다."
           }
         }
       }

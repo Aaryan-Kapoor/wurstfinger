@@ -67,20 +67,31 @@ enum SpokenTarget: Equatable, Sendable {
     case name(String)
 }
 
-/// The sound a key makes on touch-down when key clicks are on, matching the
-/// system keyboard's three: letters, delete, and the keys that change mode
-/// or move around (space, return, shift, 123, globe).
+/// The family of a key sound, matching the system keyboard's three: letters,
+/// delete, and the keys that change mode or move around (space, return,
+/// shift, 123, globe). The keyboard's own sounds are derived per key and
+/// gesture (`FeelStroke`); the family is what the system-sound fallback plays
+/// and what tests check.
 enum KeyClick: Equatable, Sendable {
     case character
     case delete
     case modifier
 
     init(for key: KeyDefinition) {
-        switch key.bindings[.tap]?.action {
+        if key.slideType == .delete {
+            self = .delete
+            return
+        }
+        self.init(typing: key.bindings[.tap]?.action)
+    }
+
+    /// The family of a sound for what `action` does.
+    init(typing action: KeyAction?) {
+        switch action {
         case .deleteBackward?, .deleteWordBackward?, .deleteForward?, .deleteWordForward?:
             self = .delete
         case .space?, .newline?, .switchMode?, .advanceToNextInputMode?, .dismissKeyboard?,
-             .switchToNextLanguage?, .switchToPreviousLanguage?, .none?:
+             .switchToNextLanguage?, .switchToPreviousLanguage?, .none?, nil:
             self = .modifier
         default:
             self = .character
@@ -97,18 +108,32 @@ enum KeyClick: Equatable, Sendable {
     }
 }
 
-/// Plays key clicks. A value of a closure so a test can count them.
+/// Plays key sounds. A value of a closure so a test can count them: it gets
+/// the family and the derived stroke of each sound.
 @MainActor
 struct KeyClickPlayer {
-    var play: (KeyClick) -> Void
+    var play: (KeyClick, FeelStroke) -> Void
+
+    /// The keyboard's own instruments (`KeySoundEngine`), at the pitch each
+    /// moment derives — falling back to the system's keyboard sound for the
+    /// family while the audio graph is starting or could not start. Both need
+    /// Full Access in a keyboard extension; without it the controller marks
+    /// the engine as such and nothing plays.
+    static let synthesized = KeyClickPlayer { click, stroke in
+        let engine = KeySoundEngine.shared
+        guard engine.isAccessGranted else { return }
+        if !engine.play(stroke) {
+            KeyClickPlayer.system.play(click, stroke)
+        }
+    }
 
     /// The system's keyboard sounds. They play only with Full Access, and
     /// follow the ring / silent switch like every system sound.
-    static let system = KeyClickPlayer { click in
+    static let system = KeyClickPlayer { click, _ in
         #if os(iOS)
         AudioServicesPlaySystemSound(SystemSoundID(click.systemSoundID))
         #endif
     }
 
-    static let silent = KeyClickPlayer { _ in }
+    static let silent = KeyClickPlayer { _, _ in }
 }
