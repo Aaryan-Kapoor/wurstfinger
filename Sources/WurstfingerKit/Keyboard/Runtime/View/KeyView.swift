@@ -106,7 +106,7 @@ struct KeyTypography: Equatable {
 
     /// Emoji sizes relative to the text they replace; see `hintEmoji`.
     static let emojiHintScale: CGFloat = 0.74
-    static let emojiCenterScale: CGFloat = 0.68
+    static let emojiCenterScale: CGFloat = 0.58
 
     /// The size of the centre label of a primary key (the letters).
     private static func primaryLabelSize(metrics: KeyboardLayoutMetrics) -> CGFloat {
