@@ -384,4 +384,25 @@ struct CompiledDefinition: Sendable {
     func mode(_ name: String) -> CompiledMode? {
         modes[name]
     }
+
+    /// These tables with the modes `names` compiled again from `definition`,
+    /// the others shared. For the one mode whose content changes while the
+    /// keyboard is up: the emoji pages' recent key (`EmojiLayouts`), rebuilt
+    /// when the mode is entered, not per keystroke.
+    func replacing(_ names: [String], from definition: KeyboardDefinition) -> CompiledDefinition {
+        let fallback = definition.mode(ModeNames.numeric)
+        let shifted = definition.mode(ModeNames.shifted)
+        var updated = modes
+        for name in names {
+            guard let mode = definition.mode(name) else { continue }
+            updated[name] = CompiledMode(
+                mode: mode, fallbackMode: fallback, shiftedMode: shifted, locale: definition.locale
+            )
+        }
+        return CompiledDefinition(modes: updated)
+    }
+
+    private init(modes: [String: CompiledMode]) {
+        self.modes = modes
+    }
 }

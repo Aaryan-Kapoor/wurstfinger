@@ -161,6 +161,7 @@ extension KeyAction {
             switch mode {
             case ModeNames.control: TerminalModifier.control.backLabel
             case ModeNames.alt: TerminalModifier.alt.backLabel
+            case ModeNames.emoji: "\u{1F600}"
             default: mode
             }
         case let .compose(trigger): trigger

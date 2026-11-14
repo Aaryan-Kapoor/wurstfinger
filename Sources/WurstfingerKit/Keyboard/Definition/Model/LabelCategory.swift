@@ -48,6 +48,9 @@ extension LabelCategory {
     /// standard set.
     static func classify(_ text: String) -> LabelCategory {
         guard let first = text.first else { return .extraSymbol }
+        // EMOJI MODE: a pictograph is the content of the emoji mode, not a symbol
+        // to practise from memory, so no hide toggle takes it away.
+        if EmojiText.isEmoji(text) { return .functional }
         if first.isLetter { return .letter }
         if first.isNumber { return .number }
         if standardSymbolCharacters.contains(first) { return .standardSymbol }
@@ -62,7 +65,7 @@ extension LabelCategory {
         switch binding.resolvedCategory {
         case .letter: .letter
         case .digit: .number
-        case .modifier, .utility, .whitespace: .functional
+        case .modifier, .utility, .whitespace, .emoji: .functional
         case .compose:
             // The accent-cycle key (🅒) is a control and stays visible; compose
             // *triggers* (´ ¨ ~ ° …) read as symbols and hide with the symbol

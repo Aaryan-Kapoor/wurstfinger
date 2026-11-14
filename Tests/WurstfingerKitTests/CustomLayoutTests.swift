@@ -39,9 +39,11 @@ struct CustomLayoutDefinitionTests {
         #expect(definition.id == "custom-test-layout")
         #expect(definition.title == "Test layout")
         #expect(definition.validate().isEmpty)
-        // An ASCII-letter layout also gets the one-shot Ctrl and Alt modes.
+        // An ASCII-letter layout also gets the one-shot Ctrl and Alt modes, and
+        // every layout the two emoji pages.
         #expect(definition.modes.keys.sorted() == [
-            ModeNames.alt, ModeNames.capsLock, ModeNames.control, ModeNames.main, ModeNames.numeric, ModeNames.shifted,
+            ModeNames.alt, ModeNames.capsLock, ModeNames.control, ModeNames.emoji, ModeNames.emojiMore,
+            ModeNames.main, ModeNames.numeric, ModeNames.shifted,
         ])
 
         let main = try #require(definition.modes[ModeNames.main])

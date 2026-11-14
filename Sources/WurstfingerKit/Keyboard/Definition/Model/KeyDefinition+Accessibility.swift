@@ -122,7 +122,9 @@ extension KeyDefinition {
             name: glyph + ", " + gestureName,
             gesture: gesture,
             isReturn: isReturn,
-            glyph: action == .cycleAccents ? nil : glyph,
+            // An emoji is no glyph to spell out: left whole, VoiceOver names it in
+            // the user's language, and a ZWJ sequence is not read piece by piece.
+            glyph: action == .cycleAccents || EmojiText.isEmoji(glyph) ? nil : glyph,
             gestureName: gestureName
         )
     }

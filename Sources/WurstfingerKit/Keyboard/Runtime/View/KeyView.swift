@@ -54,6 +54,12 @@ struct KeyTypography: Equatable {
     let hintRegular: Font
     let hintMedium: Font
     let hintBold: Font
+    /// Emoji hints and the emoji on a key's centre (EMOJI MODE): smaller than the
+    /// text at the same slot. A colour glyph is as wide as it is tall, about
+    /// 1.2 times its point size, and nine of them share one key: a hint sized
+    /// like a letter's would run into the centre emoji and its neighbours.
+    let hintEmoji: Font
+    let centerEmoji: Font
     /// The language code on the globe key.
     let languageLabel: Font
     /// Globe / dismiss icons, larger for discoverability.
@@ -87,6 +93,8 @@ struct KeyTypography: Equatable {
         hintRegular = .system(size: hintSize, weight: .regular, design: .rounded)
         hintMedium = .system(size: hintSize, weight: .medium, design: .rounded)
         hintBold = .system(size: hintSize, weight: .bold, design: .rounded)
+        hintEmoji = .system(size: hintSize * Self.emojiHintScale)
+        centerEmoji = .system(size: Self.primaryLabelSize(metrics: metrics) * Self.emojiCenterScale)
         languageLabel = .system(size: hintSize * 0.75, weight: .semibold, design: .rounded)
         globeIcon = .system(size: hintSize * 0.75, weight: .medium)
         symbolIcon = .system(size: hintSize * 0.6, weight: .regular)
@@ -94,6 +102,21 @@ struct KeyTypography: Equatable {
         let fontRatio = hintSize / KeyboardConstants.FontSizes.hintReferenceFontSize
         hintHorizontalPadding = KeyboardConstants.FontSizes.hintBaseHorizontalPadding * fontRatio
         hintVerticalPadding = KeyboardConstants.FontSizes.hintBaseVerticalPadding * fontRatio
+    }
+
+    /// Emoji sizes relative to the text they replace; see `hintEmoji`.
+    static let emojiHintScale: CGFloat = 0.74
+    static let emojiCenterScale: CGFloat = 0.68
+
+    /// The size of the centre label of a primary key (the letters).
+    private static func primaryLabelSize(metrics: KeyboardLayoutMetrics) -> CGFloat {
+        KeyView.clampedFontSize(
+            base: KeyView.baseFontSize(for: .primary),
+            metrics: metrics,
+            minimum: KeyboardConstants.FontSizes.mainLabelMinSize,
+            maximum: KeyboardConstants.FontSizes.mainLabelMaxSize,
+            cellFraction: KeyboardConstants.FontSizes.mainLabelMaxCellFraction
+        )
     }
 
     func label(for style: KeyStyle) -> Font {
@@ -381,7 +404,8 @@ struct KeyView: View, Equatable {
             // The centre label is hidden by the label-visibility setting.
             EmptyView()
         } else {
-            let font = typography.label(for: key.style)
+            // EMOJI MODE: an emoji is drawn smaller than a letter (`KeyTypography.centerEmoji`).
+            let font = EmojiText.isEmoji(primaryLabel) ? typography.centerEmoji : typography.label(for: key.style)
             Group {
                 if let sfName = Self.sfSymbolMap[primaryLabel] {
                     Image(systemName: sfName)

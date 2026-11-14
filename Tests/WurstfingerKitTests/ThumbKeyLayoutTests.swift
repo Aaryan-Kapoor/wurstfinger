@@ -111,9 +111,11 @@ struct ThumbKeyLayoutTests {
 
     @Test func definitionIsStructurallyValid() {
         #expect(Self.thumbKey.validate().isEmpty)
-        // ASCII letters, so the one-shot Ctrl and Alt modes are generated too.
+        // ASCII letters, so the one-shot Ctrl and Alt modes are generated too;
+        // the two emoji pages come with every layout.
         #expect(Self.thumbKey.modes.keys.sorted() == [
-            ModeNames.alt, ModeNames.capsLock, ModeNames.control, ModeNames.main, ModeNames.numeric, ModeNames.shifted,
+            ModeNames.alt, ModeNames.capsLock, ModeNames.control, ModeNames.emoji, ModeNames.emojiMore,
+            ModeNames.main, ModeNames.numeric, ModeNames.shifted,
         ])
     }
 

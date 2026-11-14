@@ -198,6 +198,10 @@ enum GridKeyboardFactory {
             ),
         ]
 
+        // EMOJI MODE hook: the two emoji pages, in every layout (the symbols key
+        // above carries the gesture that enters them).
+        modes.merge(EmojiLayouts.modes(backToAlphaLabel: numericBackToAlphaLabel)) { current, _ in current }
+
         if supportsCapitalization {
             // Generate the shifted base once and derive both shifted + caps lock.
             let shiftedBase = baseMode.generateShifted(locale: locale)

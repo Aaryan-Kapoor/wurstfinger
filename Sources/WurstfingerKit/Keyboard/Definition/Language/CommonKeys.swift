@@ -132,6 +132,17 @@ enum CommonKeys {
         .circularCounterclockwise: cutAll,
     ]
 
+    // EMOJI MODE: the gesture that enters it, on the key that stands for "123",
+    // so it works from the letters and from the shifted and caps-lock modes
+    // (generated from this one). Down-right is one of the key's two free
+    // gestures; the other, right, would put the hint on top of the "123" label,
+    // and the bottom-right corner is empty. The hint is drawn, so the way in is
+    // discoverable.
+    static let emojiEntry = KeyBinding(
+        label: "\u{1F600}", action: .switchMode(ModeNames.emoji), category: .modifier,
+        returnAction: nil, accessibilityLabel: String(localized: "Emoji")
+    )
+
     /// Switches to the numeric mode. The label is the glyph sequence "123",
     /// which VoiceOver reads as the *number* one hundred twenty-three, so the
     /// tap carries a semantic name — as every neighbouring utility key does.
@@ -150,6 +161,7 @@ enum CommonKeys {
     /// does not have fails validation.
     static func symbols(withTerminalModes: Bool) -> KeyDefinition {
         var swipes = clipboardBindings
+        swipes[.swipeDownRight] = emojiEntry // EMOJI MODE hook
         swipes[.swipeDownLeft] = KeyBinding(
             label: "", action: .toggleUtilityColumnSide, category: .utility,
             returnAction: nil, accessibilityLabel: String(localized: "Mirror keyboard")

@@ -128,6 +128,9 @@ enum SettingsKey: String, CaseIterable, Sendable {
     /// words. The keyboard owns the list (the app cannot reach its container),
     /// so it wipes it when the token it last saw differs.
     case learnedWordsClearToken
+    // EMOJI MODE: the recent key's nine emoji, newest first (`EmojiRecents`).
+    // Read when settings reload, written when the emoji mode is left.
+    case emojiRecents
 }
 
 // MARK: - Haptic Settings

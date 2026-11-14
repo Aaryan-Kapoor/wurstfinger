@@ -311,6 +311,9 @@ public final class KeyboardViewController: UIInputViewController {
             // Feel hook: let go of the Taptic Engine; the next appearance
             // starts it again.
             viewModel.suspendHaptics()
+            // The emoji typed this visit, should the process be killed while
+            // the emoji mode is still up (it is otherwise saved on leaving it).
+            viewModel.saveEmojiRecents()
             KeyboardRegistry.evictAll(except: selectedLanguageId)
             // The memoized grid layouts hold arrangement storage shared with the
             // definitions just evicted, so dropping them is part of the same
