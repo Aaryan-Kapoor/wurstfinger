@@ -12,6 +12,9 @@ struct Options {
     var listOnly = false
     var scale: CGFloat = 3
     var showHelp = false
+    /// Render the derived key sounds of a typed phrase to this WAV file
+    /// instead of taking pictures.
+    var soundDemo: String?
 
     static let usage = """
     Usage: swift run WurstfingerSnapshots [options]
@@ -23,6 +26,7 @@ struct Options {
       --filter TEXT      Only scenarios whose name contains TEXT (case-insensitive)
       --list             Print the scenario names and exit
       --scale N          Render scale, pixels per point (default 3)
+      --sound-demo FILE  Render the key sounds of a typed phrase to a WAV file
       -h, --help         Show this help
 
     For the speed of an optimised build:
@@ -61,6 +65,7 @@ struct Options {
                     throw ParseError.badValue(argument, text)
                 }
                 options.scale = CGFloat(scale)
+            case "--sound-demo": options.soundDemo = try value(for: argument)
             case "-h", "--help": options.showHelp = true
             // Added by the launcher so the tool runs against a throwaway
             // defaults suite (see `main.swift`).

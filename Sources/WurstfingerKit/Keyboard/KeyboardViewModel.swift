@@ -198,7 +198,7 @@ final class KeyboardViewModel {
     /// Who speaks gesture targets under VoiceOver (see `SpokenFeedback`).
     @ObservationIgnored var spokenFeedback = SpokenFeedback.voiceOver
     /// Who plays key clicks (see `KeyClickPlayer`).
-    @ObservationIgnored var keyClicks = KeyClickPlayer.system
+    @ObservationIgnored var keyClicks = KeyClickPlayer.synthesized
 
     /// How many times `reloadSettings()` has run. Lets tests and the bench
     /// observe that a signal produced exactly one reload (the debounce).
@@ -583,9 +583,12 @@ final class KeyboardViewModel {
     /// The interval costs nothing unless Instruments is recording.
     func touchDown(_ key: KeyDefinition? = nil) {
         beginKeystrokeInterval()
-        feedbackTap()
-        guard let key else { return }
-        if typingBehavior.areKeyClicksEnabled { keyClicks.play(KeyClick(for: key)) }
+        guard let key else {
+            feedbackTap()
+            return
+        }
+        // Feel hook: the key's own derived haptic and key sound.
+        feelTouchDown(key)
         if typingBehavior.isVoiceOverGestureTypingEnabled {
             speakTarget(.tap, on: key, label: previewLabel(for: .tap, keyId: key.id, isReturn: false))
         }
@@ -611,17 +614,20 @@ final class KeyboardViewModel {
     /// keyboard appears); the player re-warms on each touch-down after a pause.
     func prepareHaptics() {
         hapticPlayer.prepareIfNeeded()
+        prepareKeySounds() // Feel hook
     }
 
     /// Releases the Taptic Engine while the keyboard is off screen.
     func suspendHaptics() {
         hapticPlayer.suspend()
+        suspendFeel() // Feel hook
     }
 
     /// Whether the keyboard has Full Access, which haptics require in an
     /// extension (set by the controller).
     func setHapticAccess(_ isGranted: Bool) {
         hapticPlayer.isAccessGranted = isGranted
+        KeySoundEngine.shared.isAccessGranted = isGranted // Feel hook: audio needs it too
     }
 
     func feedbackDrag() {

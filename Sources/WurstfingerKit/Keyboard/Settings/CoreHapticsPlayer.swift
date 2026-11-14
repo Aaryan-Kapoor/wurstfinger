@@ -43,10 +43,67 @@ protocol HapticRenderer: AnyObject {
     /// to start, or the system stopped it while the app was suspended). Cheap
     /// when there is nothing to do: called on touch-down.
     func resumeIfNeeded()
+
+    /// Plays one click of about `intensity` and `sharpness` (already at the
+    /// user's strength) `delay` seconds from now — a derived hit
+    /// (`FeelHit`), from a bank of prebuilt one-click players. Returns false
+    /// when it could not (the caller falls back).
+    @discardableResult
+    func playClick(intensity: Float, sharpness: Float, after delay: TimeInterval) -> Bool
 }
 
 extension HapticRenderer {
     func resumeIfNeeded() {}
+
+    func playClick(intensity _: Float, sharpness _: Float, after _: TimeInterval) -> Bool { false }
+}
+
+/// The grid of one-click players that derived hits are played from.
+///
+/// A derived hit can have any intensity and sharpness, and a
+/// `CHHapticPatternPlayer` cannot be built per keystroke (it parses a pattern
+/// and talks to the haptic server). So the plane is cut into cells at the
+/// resolution a finger can tell apart — eight intensities, roughly a third
+/// louder each, and six sharpnesses — and one player per cell is built ahead
+/// of time. A hit plays the nearest cell. Each cell has two players used in
+/// turn, so a hit scheduled a few milliseconds ahead (the echo of a return
+/// swipe) is not cut off by the next keystroke landing on the same cell.
+///
+/// Independent of the user's strength (the gain is applied to the hit before
+/// it is quantized), so moving a slider never rebuilds the bank.
+struct HapticClickBank: Equatable, Sendable {
+    static let intensities: [Float] = [0.1, 0.16, 0.24, 0.34, 0.46, 0.6, 0.76, 0.94]
+    static let sharpnesses: [Float] = [0.1, 0.28, 0.46, 0.64, 0.82, 1.0]
+    /// Players per cell.
+    static let alternates = 2
+
+    static var cellCount: Int { intensities.count * sharpnesses.count }
+
+    /// The cell nearest to a hit; nil for a hit too faint to feel.
+    static func cell(intensity: Float, sharpness: Float) -> Int? {
+        guard intensity >= intensities[0] * 0.5 else { return nil }
+        let row = nearest(intensity, in: intensities)
+        let column = nearest(sharpness, in: sharpnesses)
+        return row * sharpnesses.count + column
+    }
+
+    /// The intensity and sharpness a cell plays.
+    static func parameters(of cell: Int) -> (intensity: Float, sharpness: Float) {
+        (intensities[cell / sharpnesses.count], sharpnesses[cell % sharpnesses.count])
+    }
+
+    private static func nearest(_ value: Float, in levels: [Float]) -> Int {
+        var best = 0
+        var distance = Float.greatestFiniteMagnitude
+        for index in levels.indices {
+            let d = abs(levels[index] - value)
+            if d < distance {
+                distance = d
+                best = index
+            }
+        }
+        return best
+    }
 }
 
 /// The engine's lifecycle as plain data: when it may start, restart or give
@@ -173,6 +230,11 @@ final class CoreHapticsRenderer: HapticRenderer {
     private var engine: CHHapticEngine?
     private var players: [HapticCue: CHHapticPatternPlayer] = [:]
     private var patterns: [HapticCue: HapticPatternSpec] = [:]
+    /// `HapticClickBank.cellCount × alternates` one-click players, cell-major;
+    /// empty until the engine exists.
+    private var clicks: [CHHapticPatternPlayer] = []
+    /// Which alternate each cell plays next.
+    private var nextAlternate: [UInt8] = []
 
     /// Whether this device has a Taptic Engine Core Haptics can drive.
     static var isSupportedByHardware: Bool {
@@ -201,6 +263,24 @@ final class CoreHapticsRenderer: HapticRenderer {
             // stopped handler has not run yet, and when it does it finds the
             // engine already idle and leaves the restart to us). Treat it as
             // not running and start it again.
+            if lifecycle.playFailed() { startIfNeeded() }
+            return false
+        }
+    }
+
+    @discardableResult
+    func playClick(intensity: Float, sharpness: Float, after delay: TimeInterval) -> Bool {
+        guard state == .running, let engine, !clicks.isEmpty,
+              let cell = HapticClickBank.cell(intensity: intensity, sharpness: sharpness)
+        else { return false }
+        let alternate = Int(nextAlternate[cell])
+        nextAlternate[cell] = UInt8((alternate + 1) % HapticClickBank.alternates)
+        let player = clicks[cell * HapticClickBank.alternates + alternate]
+        let time = delay > 0 ? engine.currentTime + delay : CHHapticTimeImmediate
+        do {
+            try player.start(atTime: time)
+            return true
+        } catch {
             if lifecycle.playFailed() { startIfNeeded() }
             return false
         }
@@ -288,13 +368,21 @@ final class CoreHapticsRenderer: HapticRenderer {
     /// start again, as Apple requires.
     private func engineReset() {
         guard lifecycle.reset() else { return }
+        // Every player died with the server, the click bank's included.
+        clicks.removeAll()
         startIfNeeded()
         rebuildPlayers()
+    }
+
+    fileprivate func setClickBank(_ bank: [CHHapticPatternPlayer]) {
+        clicks = bank
+        nextAlternate = [UInt8](repeating: 0, count: HapticClickBank.cellCount)
     }
 
     private func rebuildPlayers() {
         players.removeAll(keepingCapacity: true)
         guard let engine, state != .unavailable else { return }
+        if clicks.isEmpty { rebuildClickBank(on: engine) }
         for (cue, spec) in patterns {
             guard let pattern = try? CHHapticPattern(spec) else { continue }
             // The ramp is scheduled ahead and cancelled when the finger moves,
@@ -304,6 +392,26 @@ final class CoreHapticsRenderer: HapticRenderer {
                 : try? engine.makePlayer(with: pattern)
             if let player { players[cue] = player }
         }
+    }
+}
+
+extension CoreHapticsRenderer {
+    /// Builds the click bank: one single-transient player per cell and
+    /// alternate. Gain-independent, so only the engine's own resets rebuild it.
+    fileprivate func rebuildClickBank(on engine: CHHapticEngine) {
+        var bank: [CHHapticPatternPlayer] = []
+        bank.reserveCapacity(HapticClickBank.cellCount * HapticClickBank.alternates)
+        for cell in 0 ..< HapticClickBank.cellCount {
+            let (intensity, sharpness) = HapticClickBank.parameters(of: cell)
+            let spec = HapticPatternSpec(events: [.click(intensity, sharpness: sharpness)])
+            for _ in 0 ..< HapticClickBank.alternates {
+                guard let pattern = try? CHHapticPattern(spec), let player = try? engine.makePlayer(with: pattern) else {
+                    return // a partial bank would play some hits and drop others: none at all
+                }
+                bank.append(player)
+            }
+        }
+        setClickBank(bank)
     }
 }
 

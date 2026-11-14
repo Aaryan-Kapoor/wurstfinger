@@ -14,18 +14,36 @@ import SwiftUI
 /// in:** a pressed key, the lit target of a flick and the typed text appear
 /// on the first frame; only their *exit* and the *movement between* targets
 /// are animated. **Springs, not curves,** for anything a finger drives: a
-/// spring picks up from wherever an interrupted animation left off, so a fast
-/// typist re-pressing a key mid-release never sees a jump.
+/// spring picks up from wherever an interrupted animation left off, velocity
+/// included, so a fast typist re-pressing a key mid-release never sees a jump.
 ///
-/// Each spring is given as (response, damping fraction): response is roughly
-/// the time to settle, damping below 1 allows a little overshoot.
+/// Every spring is one of five, given as (duration, bounce) — the same terms
+/// as the layout's `LayoutMotion` — so the keyboard moves with one character:
+/// `track` follows a finger, `settle` brings something to rest, `land` lets
+/// something arrive with a little life, `unfold` opens something larger, and
+/// `detent` is the one snappy, springy one, for the slide ratchet.
 enum FeelMotion {
+    // MARK: The springs
+
+    /// Following a finger: the target hint swelling, the lit cell moving
+    /// between map cells. Fast and barely bouncy, so it keeps up with a flick
+    /// without swinging past it.
+    static let track = Animation.spring(duration: 0.18, bounce: 0.15)
+    /// Coming to rest: a key back up after the finger lifts. Quick enough to
+    /// be back before the next keystroke at 8–10 keys a second.
+    static let settle = Animation.spring(duration: 0.24, bounce: 0.15)
+    /// Arriving with a little life: the lit cell's first appearance.
+    static let land = Animation.spring(duration: 0.2, bounce: 0.25)
+    /// Opening up: the guide card's full map after a pause.
+    static let unfold = Animation.spring(duration: 0.28, bounce: 0.15)
+    /// A ratchet pawl: one slide step passing.
+    static let detent = Animation.spring(duration: 0.14, bounce: 0.3)
+
     // MARK: Keys
 
-    /// A key coming back up after the finger lifts. Damped enough that the
-    /// 3 % scale and the fill never visibly bounce, quick enough to be back
-    /// before the next keystroke at 8–10 keys a second.
-    static let keyRelease = Animation.spring(response: 0.24, dampingFraction: 0.82)
+    /// A key coming back up after the finger lifts (`settle`). Damped enough
+    /// that the 3.5 % sink and the fill never visibly bounce.
+    static let keyRelease = settle
     /// The same release under Reduce Motion: the fill fades, nothing moves.
     static let keyReleaseReduced = Animation.easeOut(duration: 0.14)
 
@@ -33,10 +51,8 @@ enum FeelMotion {
     /// not as "shrunk", and the hints near its edge must stay put.
     static let pressedScale: CGFloat = 0.965
 
-    /// The flick's target hint swelling and the others receding. Fast and
-    /// barely underdamped: the target reads at once and settles without a
-    /// visible wobble while the finger is still moving.
-    static let hintEmphasis = Animation.spring(response: 0.18, dampingFraction: 0.84)
+    /// The flick's target hint swelling and the others receding (`track`).
+    static let hintEmphasis = track
 
     /// Labels and hints changing with the mode (shift, numbers, symbols) or
     /// the language: a short cross-fade (glyphs morph where SwiftUI can
@@ -54,14 +70,18 @@ enum FeelMotion {
 
     /// The lit target appearing on the card: it swells from 55 % toward the
     /// key it belongs to, slightly underdamped so it lands with a little life.
-    static let guideAppear = Animation.spring(response: 0.2, dampingFraction: 0.74)
+    static let guideAppear = land
     /// The lit target sliding from one map cell to the next as the direction
     /// changes. Close to critical damping: it must track the finger, not
     /// swing past it.
-    static let guideMove = Animation.spring(response: 0.18, dampingFraction: 0.86)
+    static let guideMove = track
     /// The whole map unfolding after the finger rests (after
     /// `TouchGuideCard.revealDelay`).
-    static let guideReveal = Animation.spring(response: 0.28, dampingFraction: 0.86)
+    static let guideReveal = unfold
+    /// The card leaving when the finger lifts: a quick fade, so a revealed
+    /// map does not blink out, and a lit bubble overlaps the pop that lifts
+    /// off from it for a frame or two instead of jumping.
+    static let guideLeave = Animation.easeOut(duration: 0.1)
     /// The map's scale before it unfolds.
     static let guideRevealScale: CGFloat = 0.92
 
@@ -90,7 +110,7 @@ enum FeelMotion {
     /// One detent of the slide ratchet passing. Underdamped like a real
     /// ratchet pawl; short enough that at 60 steps a second the strip still
     /// reads as moving, not as vibrating.
-    static let ratchetStep = Animation.spring(response: 0.14, dampingFraction: 0.7)
+    static let ratchetStep = detent
     static let ratchetFade = Animation.easeOut(duration: 0.18)
 }
 

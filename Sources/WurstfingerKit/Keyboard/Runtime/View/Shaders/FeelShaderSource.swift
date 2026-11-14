@@ -22,7 +22,12 @@ enum FeelShaderSource {
     /// is handed it.
     static let functionNames: Set<String> = ["feelKeySheen", "feelRipple", "feelTrailInk"]
 
+    /// The source. `scripts/bundle-ios.sh` compiles exactly the lines between
+    /// the two marker comments into `FeelShaders.metallib` with Xcode's Metal
+    /// toolchain, so keep them, and keep the source free of backslashes (the
+    /// script copies the text verbatim, it does not undo Swift escapes).
     static let metal = """
+    // wurstfinger-feel-shaders: begin
     #include <metal_stdlib>
     using namespace metal;
 
@@ -78,5 +83,6 @@ enum FeelShaderSource {
         half3 rgb = mix(tint.rgb, half3(1.0), half(core * 0.35));
         return half4(rgb * half(a), half(a)) * tint.a;
     }
+    // wurstfinger-feel-shaders: end
     """
 }

@@ -133,8 +133,11 @@ struct KeyPressFeel: ViewModifier {
     private var isMotionAllowed: Bool { isAnimated && !reduceMotion }
 
     /// The ripple runs on glass only: on an opaque cap a refraction has
-    /// nothing to bend and reads as a glitch.
-    private var isRippleWanted: Bool { isMotionAllowed && keyboardStyle == .liquidGlass }
+    /// nothing to bend and reads as a glitch. And only where the shader tier
+    /// allows its offscreen pass (`FeelShaderTier`).
+    private var isRippleWanted: Bool {
+        isMotionAllowed && keyboardStyle == .liquidGlass && FeelShaders.shared.allowsRipple
+    }
 
     func body(content: Content) -> some View {
         // Only a key that has been pressed reads the library, so its one-time
@@ -143,8 +146,12 @@ struct KeyPressFeel: ViewModifier {
         let anchor = UnitPoint(x: touchPoint.x, y: touchPoint.y)
         content
             .contentTransition(.interpolate)
-            .animation(isAnimated ? FeelMotion.labelSwap : nil, value: key)
-            .modifier(GlassRipple(library: library, touchPoint: touchPoint, trigger: pressCount))
+            // Keyed by the key's label, not the whole definition: a mode or
+            // language switch changes it on every key that changes, and
+            // comparing a string per key per update is far cheaper than
+            // comparing every binding (the mode-switch invalidation, S2).
+            .animation(isAnimated ? FeelMotion.labelSwap : nil, value: key.bindings[.tap]?.label)
+            .modifier(GlassRipple(isWanted: isRippleWanted, library: library, touchPoint: touchPoint, trigger: pressCount))
             .scaleEffect(isPressed && isMotionAllowed ? FeelMotion.pressedScale : 1, anchor: anchor)
             .animation(isPressed || !isMotionAllowed ? nil : FeelMotion.keyRelease, value: isPressed)
             .onChange(of: isPressed) { _, pressed in
@@ -157,7 +164,14 @@ struct KeyPressFeel: ViewModifier {
 /// (`feelRipple`). A keyframe animation restarted by `trigger`; the
 /// distortion is switched off whenever it is not running, so an idle key
 /// costs no offscreen pass.
+///
+/// The view structure depends only on `isWanted` (the style and the motion
+/// settings), never on whether the shader library has arrived: switching
+/// structure on a key's first press rebuilt its whole subtree in the very
+/// frame the press had to show. Without a library the distortion simply stays
+/// disabled.
 private struct GlassRipple: ViewModifier {
+    let isWanted: Bool
     let library: ShaderLibrary?
     let touchPoint: CGPoint
     let trigger: Int
@@ -165,13 +179,17 @@ private struct GlassRipple: ViewModifier {
     /// A headless pose of the ripple (see `feelStillFrame`).
     @Environment(\.feelStillFrame) private var stillFrame
 
+    /// Stands in for the library while it is not there: never compiled, since
+    /// the effect is disabled then.
+    private nonisolated static let placeholder = ShaderLibrary(data: Data())
+
     func body(content: Content) -> some View {
-        if let library, let stillFrame {
-            content.visualEffect { effect, proxy in
+        if isWanted, let stillFrame {
+            content.visualEffect { [library] effect, proxy in
                 Self.ripple(effect, library: library, touchPoint: touchPoint, progress: stillFrame, size: proxy.size)
             }
-        } else if let library {
-            content.keyframeAnimator(initialValue: CGFloat(1), trigger: trigger) { view, progress in
+        } else if isWanted {
+            content.keyframeAnimator(initialValue: CGFloat(1), trigger: trigger) { [library, touchPoint] view, progress in
                 view.visualEffect { effect, proxy in
                     Self.ripple(effect, library: library, touchPoint: touchPoint, progress: progress, size: proxy.size)
                 }
@@ -185,17 +203,17 @@ private struct GlassRipple: ViewModifier {
     }
 
     private nonisolated static func ripple(
-        _ effect: EmptyVisualEffect, library: ShaderLibrary, touchPoint: CGPoint, progress: CGFloat, size: CGSize
+        _ effect: EmptyVisualEffect, library: ShaderLibrary?, touchPoint: CGPoint, progress: CGFloat, size: CGSize
     ) -> some VisualEffect {
         effect.distortionEffect(
-            library.feelRipple(
+            (library ?? placeholder).feelRipple(
                 .float2(touchPoint.x * size.width, touchPoint.y * size.height),
                 .float(progress),
                 .float(max(size.width, size.height) * 1.1),
                 .float(FeelMotion.rippleAmplitude)
             ),
             maxSampleOffset: CGSize(width: FeelMotion.rippleAmplitude, height: FeelMotion.rippleAmplitude),
-            isEnabled: progress > 0 && progress < 1
+            isEnabled: library != nil && progress > 0 && progress < 1
         )
     }
 }

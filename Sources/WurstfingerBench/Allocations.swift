@@ -28,10 +28,11 @@ struct BenchRig {
 
     var engine: TouchEngine { viewModel.touchEngine }
 
-    init(isLongPressEnabled: Bool = false, language: String = "de_DE") {
+    init(isLongPressEnabled: Bool = false, language: String = "de_DE", keyClicks: Bool = false) {
         let suite = "de.akator.wurstfinger.bench.rig"
         let defaults = UserDefaults(suiteName: suite)!
         defaults.removePersistentDomain(forName: suite)
+        defaults.set(keyClicks, forKey: SettingsKey.keyClicksEnabled.rawValue)
         viewModel = KeyboardViewModel(userDefaults: defaults, shouldPersistSettings: false)
         target = BenchTextTarget()
         viewModel.bindTextInputTarget(target)
@@ -277,6 +278,32 @@ func benchAllocations() async {
     reportAllocations("8h. tap keystroke, long press enabled (timer per down)", countAllocations(iterations: 5000) {
         tap(rig.engine, at: longPressCenter, clock: &clock)
     })
+    await drainMainActor()
+
+    // 8j / 8k: the same keystrokes with key clicks on: the derived stroke and
+    // the notes handed to the audio thread's queue (the audio graph itself is
+    // not started; the queue is emptied as the render thread would).
+    rig = BenchRig(keyClicks: true)
+    await KeyboardRegistry.prewarm(["de_DE"])
+    await drainMainActor()
+    let sounds = KeySoundEngine.shared
+    sounds.markRunningForMeasurement()
+    let clickFrame = rig.frame(of: GridSlot.center)
+    let clickCenter = CGPoint(x: clickFrame.midX, y: clickFrame.midY)
+    reportAllocations("8j. tap keystroke, key clicks on (derived note queued)", countAllocations(iterations: 5000) {
+        tap(rig.engine, at: clickCenter, clock: &clock)
+        sounds.drainForMeasurement()
+    })
+    reportAllocations("8k. flick keystroke, key clicks on (two notes queued)", countAllocations(iterations: 5000) {
+        flick(rig.engine, across: clickFrame, samples: &samples, clock: &clock)
+        sounds.drainForMeasurement()
+    })
+    let voices = countAllocations(iterations: 20_000) {
+        let voice = rig.viewModel.keyVoice(for: rig.viewModel.activeModeFromDefinition!.keys[GridSlot.center]!)
+        let stroke = FeelVoiceModel.commit(.returnSwipe, voice: voice, direction: .swipeUp, isReturn: true, reach: 0.4, typing: nil)
+        sink.withLock { $0 &+= stroke.count }
+    }
+    reportAllocations("8l. derive a key voice + a return-swipe stroke", voices)
     await drainMainActor()
 }
 

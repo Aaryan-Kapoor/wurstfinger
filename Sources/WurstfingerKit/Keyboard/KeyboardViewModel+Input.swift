@@ -50,7 +50,7 @@ extension KeyboardViewModel {
                 self?.feelReleased(key, classification: classification)
             },
             releaseHandled: { [weak self] in
-                self?.feel.flushRelease()
+                self?.feelFlushRelease()
             },
             longPressPhase: { [weak self] key, phase in
                 self?.feelLongPress(key, phase: phase)
