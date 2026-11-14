@@ -8,7 +8,7 @@ FUNKTIONER:
 
 • Stort 3x3-tangentrutnät - Optimerat för tummar, inte för precisionspekare
 • Svepgester - 8 extra tecken per tangent genom att svepa
-• 27 tangentbordslayouter - Svenska, Arabiska, Engelska, Engelska (Thumb-Key), Estniska-finska, Finska, Franska, Grekiska, Hebreiska, Hindi, Italienska, Japanska (hiragana), Japanska (katakana), Koreanska, Kroatiska, Persiska, Polska, Portugisiska, Ryska, Spanska, Spanska-katalanska, Tagalog, Thai, Tyska, Ukrainska, Urdu och vietnamesiska (med Telex-inmatning)
+• 28 tangentbordslayouter - Svenska, Arabiska, Engelska, Engelska (Thumb-Key), Estniska-finska, Finska, Franska, Grekiska, Hebreiska, Hindi, Italienska, Japanska (hiragana), Japanska (katakana), Koreanska, Kroatiska, Persiska, Polska, Portugisiska, Ryska, Spanska, Spanska-katalanska, Tagalog, Thai, Tyska, Ukrainska, Urdu och vietnamesiska (med Telex-inmatning)
 • Kompositionsregler - Skapa accenter genom kombinationer (t.ex. ' + a = á)
 • Cirkelgester - Rita en cirkel för versaler
 • Markörstyrning - Dra på mellanslagstangenten för att flytta markören, dra på raderingstangenten för att radera kontinuerligt

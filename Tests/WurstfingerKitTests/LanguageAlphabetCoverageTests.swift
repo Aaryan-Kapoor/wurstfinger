@@ -256,6 +256,8 @@ struct LanguageAlphabetCoverageTests {
     private static let inventories: [AlphabetInventory] = [
         AlphabetInventory(id: "en_US", source: "ISO basic Latin alphabet", groups: [latin]),
         AlphabetInventory(id: "en_US_thumbkey", source: "ISO basic Latin alphabet", groups: [latin]),
+        // Same alphabet, different slots: every letter keeps a key of its own.
+        AlphabetInventory(id: "en_US_optimized", source: "ISO basic Latin alphabet", groups: [latin]),
         AlphabetInventory(id: "hr_HR", source: "Croatian alphabet (Gaj's Latin)", groups: [latin, "čćđšž"]),
         AlphabetInventory(id: "et_EE", source: "Estonian and Finnish alphabets", groups: [latin, "äöõüšžå"]),
         AlphabetInventory(id: "fi_FI", source: "Finnish alphabet", groups: [latin, "äöå"]),
@@ -295,9 +297,10 @@ struct LanguageAlphabetCoverageTests {
             // The modified vowels have no keys either: Telex types them as
             // aa/ee/oo (circumflex) and aw/ow/uw (breve and horn), which
             // TelexTypingTests pins. The circumflex three double as compose-key
-            // output; the breve and horn three are only on the accent cycle,
-            // because neither `˘` nor a horn trigger is bound anywhere.
-            indirectRoutes: [.composeKey: "âêô", .accentCycle: "ăơư"]
+            // output, and ă now does too: the breve is a bound dead key (`˘`,
+            // up-right on the top-left key). The horn pair ơ ư is only on the
+            // accent cycle, because no horn trigger is bound anywhere.
+            indirectRoutes: [.composeKey: "âêăô", .accentCycle: "ơư"]
         ),
         AlphabetInventory(id: "ru_RU", source: "Russian alphabet", groups: ["абвгдеёжзийклмнопрстуфхцчшщъыьэюя"]),
         AlphabetInventory(id: "uk_UA", source: "Ukrainian alphabet", groups: ["абвгґдеєжзиіїйклмнопрстуфхцчшщьюя"]),

@@ -22,7 +22,7 @@ struct Scenario {
 @MainActor
 enum Catalog {
     static func all() -> [Scenario] {
-        modes() + languages() + layouts() + devices() + variants() + states() + typing() + surfaces()
+        modes() + languages() + layouts() + optimized() + devices() + variants() + states() + typing() + surfaces()
     }
 
     private static func keyboard(
@@ -109,6 +109,34 @@ enum Catalog {
             $0.typedText = "Süße Straße"
         })
         return scenarios
+    }
+
+    // MARK: 2c. English (Optimized)
+
+    /// The measured English layout next to the language sweep's plain shot: its
+    /// hints in both appearances, the shifted mode (the four moved letters in
+    /// capitals), and a sentence typed through the real engine.
+    private static func optimized() -> [Scenario] {
+        let id = "en_US_optimized"
+        return [
+            keyboard("optimized", "optimized-main") { $0.language = id },
+            keyboard("optimized", "optimized-main-dark") {
+                $0.language = id
+                $0.scheme = .dark
+            },
+            keyboard("optimized", "optimized-shifted") {
+                $0.language = id
+                $0.mode = ModeNames.shifted
+            },
+            keyboard("optimized", "optimized-typing") {
+                $0.language = id
+                $0.typedText = "Hello, Hazel! Zeal aside, a lazy hill."
+            },
+            keyboard("optimized", "optimized-two-english-layouts") {
+                $0.language = id
+                $0.enabledLanguages = ["en_US", id]
+            },
+        ]
     }
 
     // MARK: 3. Widths and devices

@@ -3,7 +3,8 @@
 //  Wurstfinger
 //
 //  Handles text actions that require more than a simple proxy call:
-//  delete-forward, capitalize-word, word-cursor movement, and clipboard.
+//  delete-forward, capitalize-word, word-cursor movement, line movement,
+//  and clipboard.
 //
 
 import Foundation
@@ -67,6 +68,14 @@ struct AdvancedTextMiddleware: ActionMiddleware {
             moveCursor(to: .documentEnd, target: target)
         case .deleteWordBackward:
             deleteWordBackward(target: target)
+        case .deleteWordForward:
+            deleteWordForward(target: target)
+        case .lineUp:
+            moveToAdjacentLine(up: true, target: target)
+        case .lineDown:
+            moveToAdjacentLine(up: false, target: target)
+        case let .cycleWordCase(ascending):
+            cycleWordCase(target: target, ascending: ascending)
         default:
             break
         }
@@ -149,6 +158,56 @@ struct AdvancedTextMiddleware: ActionMiddleware {
         return (-distance, false)
     }
 
+    // MARK: - Line Up / Line Down
+
+    /// Moves the cursor one hard line up or down, keeping its column.
+    ///
+    /// A hard line is delimited by newline characters; a wrapped paragraph is
+    /// one line, because the proxy knows nothing about how the host wraps it.
+    /// The move is a single `adjustTextPosition` computed from one read of the
+    /// context, so it does not depend on the host applying an intermediate
+    /// move before the next read — the property the multi-round jumps above
+    /// have to work around. When there is no line in that direction the
+    /// cursor goes to the edge of the document instead, as arrow-up on the
+    /// first line does in a text editor.
+    private func moveToAdjacentLine(up: Bool, target: TextInputTarget) {
+        let before = target.documentContextBeforeInput ?? ""
+        let after = target.documentContextAfterInput ?? ""
+        if let distance = Self.lineJumpOffset(up: up, before: before, after: after) {
+            if distance != 0 { target.adjustTextPosition(byCharacterOffset: distance) }
+        } else {
+            moveCursor(to: up ? .documentStart : .documentEnd, target: target)
+        }
+    }
+
+    /// The signed UTF-16 distance from the cursor to the same column on the
+    /// adjacent line, or `nil` when the context shows no line break in that
+    /// direction (the cursor is on the first or last line, or the line is
+    /// longer than the window the proxy exposes).
+    ///
+    /// The column is the number of characters between the start of the cursor's
+    /// line and the cursor; it is clamped to the length of the target line, so
+    /// moving from the end of a long line onto a short one lands at the short
+    /// line's end. Columns count grapheme clusters, distances sum UTF-16 units.
+    static func lineJumpOffset(up: Bool, before: String, after: String) -> Int? {
+        let behind = Array(before)
+        let ahead = Array(after)
+        let column = behind.lastIndex(where: \.isNewline).map { behind.count - $0 - 1 } ?? behind.count
+        if up {
+            // The newline that ends the previous line.
+            guard let breakIndex = behind.lastIndex(where: \.isNewline) else { return nil }
+            let lineStart = behind[..<breakIndex].lastIndex(where: \.isNewline).map { $0 + 1 } ?? 0
+            let previousLength = breakIndex - lineStart
+            let landing = lineStart + min(column, previousLength)
+            return -behind[landing...].reduce(0) { $0 + $1.utf16.count }
+        }
+        guard let breakIndex = ahead.firstIndex(where: \.isNewline) else { return nil }
+        let nextStart = breakIndex + 1
+        let nextEnd = ahead[nextStart...].firstIndex(where: \.isNewline) ?? ahead.count
+        let landing = nextStart + min(column, nextEnd - nextStart)
+        return ahead[..<landing].reduce(0) { $0 + $1.utf16.count }
+    }
+
     // MARK: - Delete Word
 
     /// Deletes the word before the cursor together with the whitespace after
@@ -183,6 +242,45 @@ struct AdvancedTextMiddleware: ActionMiddleware {
             count += 1
         }
         return count
+    }
+
+    /// Deletes the word after the cursor together with the whitespace before
+    /// it: the mirror of `deleteWordBackward`, using the boundary the space
+    /// bar's discrete forward movement uses (`KeyboardViewModel.forwardWordOffset`).
+    ///
+    /// Deletion only runs backwards, so the cursor first steps over the span
+    /// and then deletes it, the way `deleteForward` does for one character.
+    private func deleteWordForward(target: TextInputTarget) {
+        if let selected = target.selectedText, !selected.isEmpty {
+            target.deleteBackward()
+            return
+        }
+        guard let context = target.documentContextAfterInput, !context.isEmpty else { return }
+        let span = Self.wordSpan(startingAt: context)
+        guard span.clusters > 0 else { return }
+        target.adjustTextPosition(byCharacterOffset: span.utf16Length)
+        for _ in 0 ..< span.clusters {
+            target.deleteBackward()
+        }
+    }
+
+    /// The span from the start of `context` over leading whitespace and then
+    /// the word that follows, in grapheme clusters (what `deleteBackward`
+    /// removes) and UTF-16 code units (what `adjustTextPosition` moves).
+    static func wordSpan(startingAt context: String) -> (clusters: Int, utf16Length: Int) {
+        var clusters = 0
+        var utf16Length = 0
+        var seenWord = false
+        for character in context {
+            if character.isWhitespace {
+                if seenWord { break }
+            } else {
+                seenWord = true
+            }
+            clusters += 1
+            utf16Length += character.utf16.count
+        }
+        return (clusters, utf16Length)
     }
 
     // MARK: - Delete Forward
@@ -236,6 +334,62 @@ struct AdvancedTextMiddleware: ActionMiddleware {
         target.insertText(transformed)
     }
 
+    // MARK: - Cycle Word Case
+
+    /// Steps the case of the word before the cursor (or of the selection)
+    /// along lower → Title → UPPER, upwards or downwards. A step past either
+    /// end leaves the text alone, which is what makes a repeated swipe safe.
+    private func cycleWordCase(target: TextInputTarget, ascending: Bool) {
+        if let selected = target.selectedText, !selected.isEmpty {
+            let stepped = steppedCase(of: selected, ascending: ascending)
+            if stepped != selected { target.insertText(stepped) }
+            return
+        }
+        guard let context = target.documentContextBeforeInput, !context.isEmpty else { return }
+        var characters: [Character] = []
+        for character in context.reversed() {
+            guard character.isLetter else { break }
+            characters.append(character)
+        }
+        guard !characters.isEmpty else { return }
+        let word = String(characters.reversed())
+        let stepped = steppedCase(of: word, ascending: ascending)
+        guard stepped != word else { return }
+        for _ in 0 ..< word.count {
+            target.deleteBackward()
+        }
+        target.insertText(stepped)
+    }
+
+    /// One step along lower → Title → UPPER. Mixed case counts as neither end:
+    /// ascending takes it to UPPER and descending to Title, so a word that is
+    /// neither can be normalised from either direction.
+    private func steppedCase(of text: String, ascending: Bool) -> String {
+        let locale = localeProvider()
+        let lower = text.lowercased(with: locale)
+        let upper = text.uppercased(with: locale)
+        let title = Self.titled(lower, locale: locale)
+        if ascending {
+            switch text {
+            case upper: return text
+            case lower: return title
+            default: return upper
+            }
+        }
+        switch text {
+        case lower: return text
+        case title: return lower
+        default: return title
+        }
+    }
+
+    /// `lowercased` with its first letter in title case (the single glyph
+    /// `ǆ` titles to `ǅ`, not `Ǆ`).
+    private static func titled(_ lowercased: String, locale: Locale) -> String {
+        guard let first = lowercased.first else { return lowercased }
+        return String(first).capitalized(with: locale) + lowercased.dropFirst()
+    }
+
     /// Case change in the active layout's locale (German `ß → SS`, Turkish
     /// dotless `i`, …).
     private func cased(_ text: String, uppercased: Bool) -> String {
@@ -255,7 +409,18 @@ struct AdvancedTextMiddleware: ActionMiddleware {
         if let selected = target.selectedText, !selected.isEmpty {
             clipboard.string = selected
             onClipboardSuccess()
+            return
         }
+        // Nothing selected: copy the text around the cursor, the way
+        // Flickboard's copy selects everything first when there is no
+        // selection. The proxy cannot select, so this reads the same context
+        // `handleCutAll` does — the current paragraph in a long document, the
+        // whole text in a single-line field — under the same size ceiling. Copy
+        // changes nothing in the document, so unlike cut-all it needs no setting.
+        let all = (target.documentContextBeforeInput ?? "") + (target.documentContextAfterInput ?? "")
+        guard !all.isEmpty, !Self.exceedsCutLimit(all) else { return }
+        clipboard.string = all
+        onClipboardSuccess()
     }
 
     private func handlePaste(target: TextInputTarget) {

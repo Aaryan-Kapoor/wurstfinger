@@ -59,8 +59,9 @@ Want to try the latest features before they hit the App Store? Join our public T
 
 ## Features
 
-- **Multi-language support**: 27 keyboard layouts — Arabic, Croatian, English, English (Thumb-Key), Estonian-Finnish, Finnish, French, German, Greek, Hebrew, Hindi, Italian, Japanese (Hiragana), Japanese (Katakana), Korean, Persian, Polish, Portuguese, Russian, Spanish, Spanish-Catalan, Swedish, Tagalog, Thai, Ukrainian, Urdu, and Vietnamese (with Telex input)
-- **MessagEase layout** with symbol and numeric layers
+- **Multi-language support**: 28 keyboard layouts — Arabic, Croatian, English, English (Optimized), English (Thumb-Key), Estonian-Finnish, Finnish, French, German, Greek, Hebrew, Hindi, Italian, Japanese (Hiragana), Japanese (Katakana), Korean, Persian, Polish, Portuguese, Russian, Spanish, Spanish-Catalan, Swedish, Tagalog, Thai, Ukrainian, Urdu, and Vietnamese (with Telex input)
+- **MessagEase layout** with symbol and numeric layers, and every gesture of Flickboard, the Android keyboard it is modelled on: dead keys for every accent, line and word movement, word-case steps, one-shot Ctrl and Alt for terminals ([parity inventory](docs/layout-parity.md))
+- **English (Optimized)**, a second English layout whose letters were placed from letter-pair statistics and a model of the keyboard's real geometry; MessagEase English stays the default ([how, and how much it helps](docs/layout-science.md))
 - **Compose engine** that reproduces Thumb-Key's combination triggers (e.g. `' + a → á`)
 - **Return swipes** for punctuation and math symbols (`?`→`¿`, `*`→`†`, `/`→`÷`, ...)
 - **Circular gestures** on keys to insert uppercase letters

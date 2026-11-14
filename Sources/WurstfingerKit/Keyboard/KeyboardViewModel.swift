@@ -31,8 +31,8 @@ enum KeyboardHapticEvent: Sendable {
     /// pasteboard), so their tick fires from its success paths instead.
     static func forPipelineAction(_ action: KeyAction) -> KeyboardHapticEvent? {
         switch action {
-        case .switchMode, .switchToNextLanguage, .advanceToNextInputMode,
-             .dismissKeyboard:
+        case .switchMode, .switchToNextLanguage, .switchToPreviousLanguage,
+             .toggleUtilityColumnSide, .advanceToNextInputMode, .dismissKeyboard:
             .stateChange
         default:
             nil
@@ -417,6 +417,15 @@ final class KeyboardViewModel {
     }
 
     func switchToNextLanguage() {
+        switchLanguage { LanguageSettings.nextLanguageId(after: $0, in: $1) }
+    }
+
+    func switchToPreviousLanguage() {
+        switchLanguage { LanguageSettings.previousLanguageId(before: $0, in: $1) }
+    }
+
+    /// Moves along the enabled-language ring, `target` choosing the neighbour.
+    private func switchLanguage(to target: (_ currentId: String, _ enabledIds: [String]) -> String) {
         guard enabledLanguageIds.count > 1 else { return }
 
         // Cycle from the layout that is actually on screen. Startup can load a
@@ -429,7 +438,7 @@ final class KeyboardViewModel {
         // Static lookup on the already-normalized enabled list: constructing
         // a throwaway LanguageSettings here would re-run init normalization
         // (an app-group read/write cycle) on every globe swipe.
-        let nextId = LanguageSettings.nextLanguageId(after: currentId, in: enabledLanguageIds)
+        let nextId = target(currentId, enabledLanguageIds)
 
         if nextId != currentId {
             sharedDefaults.set(nextId, forKey: SettingsKey.selectedLanguageId.rawValue)
@@ -443,6 +452,12 @@ final class KeyboardViewModel {
 
     var currentLanguageLabel: String {
         guard let locale = pipelineLocale else { return "" }
+        // A layout may carry its own mark (the second English layout), so two
+        // layouts of one language are told apart on the globe key.
+        if let id = currentDefinition?.id,
+           let mark = KeyboardRegistry.available.first(where: { $0.id == id })?.globeLabel {
+            return mark
+        }
         return LanguageSettings.label(for: locale)
     }
 

@@ -125,6 +125,12 @@ extension KeyAction {
         case .deleteBackward: "⌫"
         case .deleteForward: "⌦"
         case .deleteWordBackward: "⌫⌫"
+        case .deleteWordForward: "⌦⌦"
+        case .lineUp: "↑"
+        case .lineDown: "↓"
+        case .cycleWordCase: "Aa"
+        case .switchToPreviousLanguage: "🌐"
+        case .toggleUtilityColumnSide: "⇆"
         case .lineStart: "⇱"
         case .lineEnd: "⇲"
         case .documentStart: "⤒"
@@ -136,7 +142,12 @@ extension KeyAction {
         case let .moveCursor(offset): offset < 0 ? "◂" : "▸"
         case .advanceToNextInputMode, .switchToNextLanguage: "🌐"
         case .capitalizeWord: "Aa"
-        case let .switchMode(mode): mode
+        case let .switchMode(mode):
+            switch mode {
+            case ModeNames.control: TerminalModifier.control.backLabel
+            case ModeNames.alt: TerminalModifier.alt.backLabel
+            default: mode
+            }
         case let .compose(trigger): trigger
         case .cycleAccents: "◌́"
         case .none: ""

@@ -8,7 +8,7 @@ Yaygın klavyelerin aksine Wurstfinger, müdahaleci kelime tahminine güvenmez; 
 
 • Büyük 3x3 Tuş Izgarası - Hassas imleçler için değil, başparmaklar için optimize edildi
 • Kaydırma Hareketleri - Kaydırarak her tuşta 8 ek karaktere eriş
-• 27 klavye düzeni - Almanca, Arapça, Estonca-Fince, Farsça, Fince, Fransızca, Hırvatça, Hintçe, İbranice, İngilizce, İngilizce (Thumb-Key), İspanyolca, İspanyolca-Katalanca, İsveççe, İtalyanca, Japonca (Hiragana), Japonca (Katakana), Korece, Lehçe, Portekizce, Rusça, Tagalogca, Tayca, Ukraynaca, Urduca, Vietnamca (Telex girişiyle) ve Yunanca
+• 28 klavye düzeni - Almanca, Arapça, Estonca-Fince, Farsça, Fince, Fransızca, Hırvatça, Hintçe, İbranice, İngilizce, İngilizce (Thumb-Key), İspanyolca, İspanyolca-Katalanca, İsveççe, İtalyanca, Japonca (Hiragana), Japonca (Katakana), Korece, Lehçe, Portekizce, Rusça, Tagalogca, Tayca, Ukraynaca, Urduca, Vietnamca (Telex girişiyle) ve Yunanca
 • Birleştirme Kuralları - Tuş kombinasyonlarıyla aksanlı harfler oluştur (örn. ' + a = á)
 • Dairesel Hareketler - Büyük harf için daire çiz
 • İmleç Kontrolü - İmleci taşımak için boşluk çubuğunu, sürekli silmek için silme tuşunu sürükle

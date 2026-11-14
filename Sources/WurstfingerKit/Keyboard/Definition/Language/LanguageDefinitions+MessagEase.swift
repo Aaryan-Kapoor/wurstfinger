@@ -729,6 +729,7 @@ extension LanguageDefinitions {
         croatian,
         english,
         thumbKeyEnglish,
+        englishOptimized,
         estonianFinnish,
         finnish,
         french,

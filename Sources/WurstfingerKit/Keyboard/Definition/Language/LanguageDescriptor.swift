@@ -26,6 +26,12 @@ struct LanguageDescriptor: Identifiable, Sendable {
     /// Which family of layouts this belongs to; only the language list reads it.
     let family: LayoutFamily
 
+    /// The short mark the globe key shows for this language when it is not the
+    /// one its locale gives ("EN+" for the second English layout, so two layouts
+    /// of one language do not look identical there). `nil` derives it from the
+    /// locale ("EN", "DE").
+    let globeLabel: String?
+
     /// Builds the full definition. Receives the descriptor so the layout can
     /// reuse the metadata above instead of repeating the literals — keeping the
     /// id/title/locale a single source of truth.
@@ -36,12 +42,14 @@ struct LanguageDescriptor: Identifiable, Sendable {
         title: String,
         localeIdentifier: String,
         family: LayoutFamily = .messagEase,
+        globeLabel: String? = nil,
         builder: @escaping @Sendable (LanguageDescriptor) -> KeyboardDefinition
     ) {
         self.id = id
         self.title = title
         self.localeIdentifier = localeIdentifier
         self.family = family
+        self.globeLabel = globeLabel
         self.builder = builder
     }
 

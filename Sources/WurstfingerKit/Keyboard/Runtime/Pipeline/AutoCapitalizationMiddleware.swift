@@ -42,13 +42,14 @@ struct AutoCapitalizationMiddleware: ActionMiddleware {
         switch action {
         case .commitText, .space, .newline, .deleteBackward, .deleteForward,
              .compose, .cycleAccents, .paste, .cut, .cutAll, .tab,
-             .deleteWordBackward:
+             .deleteWordBackward, .deleteWordForward:
             true
         // Terminal control sequences and cursor jumps leave the sentence state
         // alone: an Esc or a Home does not start a new sentence.
-        case .moveCursor, .switchMode, .capitalizeWord, .advanceToNextInputMode,
-             .dismissKeyboard, .copy, .none, .switchToNextLanguage,
-             .backTab, .escape, .lineStart, .lineEnd, .documentStart, .documentEnd:
+        case .moveCursor, .switchMode, .capitalizeWord, .cycleWordCase, .advanceToNextInputMode,
+             .dismissKeyboard, .copy, .none, .switchToNextLanguage, .switchToPreviousLanguage,
+             .toggleUtilityColumnSide, .backTab, .escape, .lineStart, .lineEnd, .lineUp, .lineDown,
+             .documentStart, .documentEnd:
             false
         }
     }

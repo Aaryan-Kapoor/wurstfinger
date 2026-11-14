@@ -29,17 +29,25 @@ struct LanguageMetadata: Identifiable, Sendable {
     /// of identity.
     let family: LayoutFamily
 
+    /// The globe key's mark for this language when it is not derived from the
+    /// locale (see `LanguageDescriptor.globeLabel`).
+    let globeLabel: String?
+
     /// The locale this language types in. Derived, so the identifier stays the
     /// single source of truth.
     var locale: Locale {
         Locale(identifier: localeIdentifier)
     }
 
-    init(id: String, title: String, localeIdentifier: String, family: LayoutFamily = .messagEase) {
+    init(
+        id: String, title: String, localeIdentifier: String,
+        family: LayoutFamily = .messagEase, globeLabel: String? = nil
+    ) {
         self.id = id
         self.title = title
         self.localeIdentifier = localeIdentifier
         self.family = family
+        self.globeLabel = globeLabel
     }
 
     /// Builds metadata from a descriptor without materialising its layout.
@@ -48,6 +56,7 @@ struct LanguageMetadata: Identifiable, Sendable {
         title = descriptor.title
         localeIdentifier = descriptor.localeIdentifier
         family = descriptor.family
+        globeLabel = descriptor.globeLabel
     }
 }
 

@@ -1,0 +1,71 @@
+{
+  "id": "wurstfinger-en-optimized-k6",
+  "grid": [
+    [
+      "l",
+      "n",
+      "i"
+    ],
+    [
+      "a",
+      "o",
+      "r"
+    ],
+    [
+      "t",
+      "e",
+      "s"
+    ]
+  ],
+  "swipes": {
+    "topLeft": {
+      "swipeDownRight": "z"
+    },
+    "topCenter": {
+      "swipeDown": "j"
+    },
+    "topRight": {
+      "swipeDownLeft": "x"
+    },
+    "midLeft": {
+      "swipeRight": "k"
+    },
+    "center": {
+      "swipeDown": "d",
+      "swipeDownLeft": "g",
+      "swipeDownRight": "v",
+      "swipeLeft": "c",
+      "swipeRight": "b",
+      "swipeUp": "u",
+      "swipeUpLeft": "q",
+      "swipeUpRight": "p"
+    },
+    "midRight": {
+      "swipeLeft": "m"
+    },
+    "bottomLeft": {
+      "swipeUpRight": "y"
+    },
+    "bottomCenter": {
+      "swipeRight": "h",
+      "swipeUp": "w"
+    },
+    "bottomRight": {
+      "swipeUpLeft": "f"
+    }
+  },
+  "model": "scripts/layout-science/model.py (one-thumb Fitts + stroke, bits per typed character)",
+  "cost_per_char_bits": 1.604396,
+  "messagease_cost_per_char_bits": 1.641092,
+  "vs_messagease_pct": -2.236,
+  "cost_per_char_bits_two_thumb": 0.955183,
+  "letters_moved_from_messagease": 6,
+  "moved_letters": [
+    "a",
+    "h",
+    "j",
+    "l",
+    "v",
+    "z"
+  ]
+}

@@ -265,6 +265,7 @@ extension LayoutFamily {
     var subtitle: String {
         switch self {
         case .messagEase: String(localized: "MessagEase Layout")
+        case .optimized: String(localized: "Optimized Layout")
         case .thumbKey: String(localized: "Thumb-Key Layout")
         case .custom: String(localized: "Custom Layout")
         }

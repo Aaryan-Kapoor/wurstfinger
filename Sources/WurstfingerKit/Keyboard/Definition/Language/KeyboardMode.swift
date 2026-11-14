@@ -81,6 +81,24 @@ struct KeyboardMode: Codable, Equatable, Sendable {
         return removingBinding(keyId: keyId, gesture: gesture)
     }
 
+    /// Returns a copy where one binding is rewritten, only when its action
+    /// matches `expected` (so a language letter placed on the same gesture is
+    /// never touched).
+    func replacingBinding(
+        keyId: String, gesture: GestureType, ifAction expected: KeyAction,
+        with transform: (KeyBinding) -> KeyBinding
+    ) -> KeyboardMode {
+        guard var key = keys[keyId], let existing = key.bindings[gesture], existing.action == expected
+        else { return self }
+        key.bindings[gesture] = transform(existing)
+        var updatedKeys = keys
+        updatedKeys[keyId] = key
+        return KeyboardMode(
+            name: name, keys: updatedKeys, arrangements: arrangements,
+            autoTransitions: autoTransitions
+        )
+    }
+
     /// Returns a copy where the shift-up binding on midRight is replaced.
     /// Used to point shifted → capsLock and capsLock → capsLock (no-op).
     ///

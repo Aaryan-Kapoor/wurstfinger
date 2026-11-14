@@ -366,7 +366,13 @@ extension KeyboardViewModel {
             signposter.endInterval(InputSignposts.dispatch, dispatch)
             endKeystrokeInterval()
         }
-        dispatchAction(action)
+        // A mode switch (shift on or off, Ctrl, Alt) is not a pipeline action:
+        // it goes through the mode machinery, like a tap on a mode key.
+        if case let .switchMode(targetMode) = action {
+            handleSwitchMode(targetMode)
+        } else {
+            dispatchAction(action)
+        }
         // A confirmation tick: the touch-down tap already fired, and a long
         // swipe is a deliberate "do something else" like a mode switch.
         feedbackStateChange()
@@ -404,6 +410,19 @@ extension KeyboardViewModel {
             if currentDefinition?.id != previousLanguage {
                 feedbackStateChange()
             }
+            return true
+        }
+        if case .switchToPreviousLanguage = binding.action {
+            let previousLanguage = currentDefinition?.id
+            switchToPreviousLanguage()
+            if currentDefinition?.id != previousLanguage {
+                feedbackStateChange()
+            }
+            return true
+        }
+        if case .toggleUtilityColumnSide = binding.action {
+            utilityColumnLeading.toggle()
+            feedbackStateChange()
             return true
         }
 

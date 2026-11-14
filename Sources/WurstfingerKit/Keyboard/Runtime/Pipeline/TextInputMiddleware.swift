@@ -59,7 +59,9 @@ struct TextInputMiddleware: ActionMiddleware {
         case .compose, .cycleAccents, .switchMode, .capitalizeWord,
              .advanceToNextInputMode, .dismissKeyboard, .deleteForward,
              .copy, .paste, .cut, .cutAll, .none, .switchToNextLanguage,
-             .lineStart, .lineEnd, .documentStart, .documentEnd, .deleteWordBackward:
+             .switchToPreviousLanguage, .toggleUtilityColumnSide,
+             .lineStart, .lineEnd, .documentStart, .documentEnd, .lineUp, .lineDown,
+             .deleteWordBackward, .deleteWordForward, .cycleWordCase:
             break
         }
     }

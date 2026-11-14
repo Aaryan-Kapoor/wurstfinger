@@ -39,6 +39,14 @@ enum CommonKeys {
             category: .utility, returnAction: nil,
             accessibilityLabel: String(localized: "Next language")
         )
+        // The way back round the language ring: Flickboard's "previous letter
+        // layer". Unlabelled like the other globe swipes (the next-language
+        // swipe shows the language code, a second one would only clutter it).
+        bindings[.swipeUp] = KeyBinding(
+            label: "", action: .switchToPreviousLanguage,
+            category: .utility, returnAction: nil,
+            accessibilityLabel: String(localized: "Previous language")
+        )
         return KeyDefinition(
             id: UtilitySlot.globe, bindings: bindings,
             swipeMode: .fourWayCross, slideType: .none,
@@ -57,10 +65,9 @@ enum CommonKeys {
     /// (issue #77): a swipe toward the top-left corner jumps to the start of
     /// the line, toward the bottom-right corner to its end. The return swipe
     /// (out and back) of each goes the whole way, to the start or end of the
-    /// document. The return key has no other swipe bindings, so nothing
-    /// collides; the labels are empty because the key has no room for hints
+    /// document. The labels are empty because the key has no room for hints
     /// next to its glyph. The names exist for VoiceOver, which lists them as
-    /// custom actions.
+    /// custom actions. The key's other swipes are `wordDeleteBindings`.
     static let lineJumpBindings: [GestureType: KeyBinding] = [
         .swipeUpLeft: KeyBinding(
             label: "", action: .lineStart, category: .utility,
@@ -72,10 +79,26 @@ enum CommonKeys {
         ),
     ]
 
+    /// Word delete on the return key, left and right: Flickboard's delete-word
+    /// on its delete key and long swipe. The delete key's own gestures are
+    /// slides (one character per step), so the word-sized deletions live beside
+    /// the other whole-unit movements, on the key next to it. Plain swipes, no
+    /// return swipe: the delete is destructive and a rebound must not double it.
+    static let wordDeleteBindings: [GestureType: KeyBinding] = [
+        .swipeLeft: KeyBinding(
+            label: "", action: .deleteWordBackward, category: .utility,
+            returnAction: nil, accessibilityLabel: String(localized: "Delete word")
+        ),
+        .swipeRight: KeyBinding(
+            label: "", action: .deleteWordForward, category: .utility,
+            returnAction: nil, accessibilityLabel: String(localized: "Delete word ahead")
+        ),
+    ]
+
     static let `return` = KeyDefinition.utility(
         UtilitySlot.return, label: "↵", action: .newline,
         swipeMode: .eightWay,
-        swipes: lineJumpBindings,
+        swipes: lineJumpBindings.merging(wordDeleteBindings) { first, _ in first },
         accessibilityLabel: String(localized: "New line")
     )
 
@@ -113,12 +136,41 @@ enum CommonKeys {
     /// which VoiceOver reads as the *number* one hundred twenty-three, so the
     /// tap carries a semantic name — as every neighbouring utility key does.
     /// Its counterpart is `NumericLayouts.backToMain`, named "Letters".
-    static let symbols = KeyDefinition.utility(
-        UtilitySlot.symbols, label: "123", action: .switchMode(ModeNames.numeric),
-        swipeMode: .eightWay,
-        swipes: clipboardBindings,
-        accessibilityLabel: String(localized: "Numbers")
-    )
+    static let symbols = symbols(withTerminalModes: false)
+
+    /// The numeric-mode key, optionally with the gestures that enter the
+    /// one-shot Ctrl and Alt modes (`KeyboardMode.generateTerminalModifier`)
+    /// and the one that mirrors the keyboard.
+    ///
+    /// Flickboard puts its Ctrl and Alt toggles on the space bar; here the space
+    /// bar's swipes are slides, so they sit on this key beside the clipboard
+    /// gestures: up-left for Ctrl, left for Alt, down-left to mirror the
+    /// keyboard (Flickboard's "toggle handedness"). Only layouts that have the
+    /// two modes get the first two — a `switchMode` to a mode the definition
+    /// does not have fails validation.
+    static func symbols(withTerminalModes: Bool) -> KeyDefinition {
+        var swipes = clipboardBindings
+        swipes[.swipeDownLeft] = KeyBinding(
+            label: "", action: .toggleUtilityColumnSide, category: .utility,
+            returnAction: nil, accessibilityLabel: String(localized: "Mirror keyboard")
+        )
+        if withTerminalModes {
+            swipes[.swipeUpLeft] = KeyBinding(
+                label: "", action: .switchMode(ModeNames.control), category: .modifier,
+                returnAction: nil, accessibilityLabel: String(localized: "Ctrl")
+            )
+            swipes[.swipeLeft] = KeyBinding(
+                label: "", action: .switchMode(ModeNames.alt), category: .modifier,
+                returnAction: nil, accessibilityLabel: String(localized: "Alt")
+            )
+        }
+        return KeyDefinition.utility(
+            UtilitySlot.symbols, label: "123", action: .switchMode(ModeNames.numeric),
+            swipeMode: .eightWay,
+            swipes: swipes,
+            accessibilityLabel: String(localized: "Numbers")
+        )
+    }
 
     /// Space bar. The `zeroDigit` parameterizes the hold-for-digit output so
     /// each layout can emit its own native zero (e.g. Arabic ٠); it defaults to
@@ -202,6 +254,19 @@ enum CommonKeys {
                 label: "$", action: .compose(trigger: "$"), category: .compose,
                 returnAction: .commitText("¥"), accessibilityLabel: nil
             ),
+            // Flickboard's ellipsis key and its bullet (shifted); the ellipsis is
+            // also the return swipe of the period, the bullet has no other home.
+            .swipeDown: KeyBinding(
+                label: "…", action: .commitText("…"), category: nil,
+                returnAction: .commitText("•"), accessibilityLabel: nil
+            ),
+            // Breve as a dead key (ă ĕ ğ ĭ ŏ ŭ …); its return swipe is the
+            // low-9 quotation mark that completes the quote family on the
+            // bottom-center key (“ ” „ and now ‚).
+            .swipeUpRight: KeyBinding(
+                label: "˘", action: .compose(trigger: "˘"), category: .compose,
+                returnAction: .commitText("‚"), accessibilityLabel: nil
+            ),
         ],
 
         // MARK: topCenter
@@ -257,6 +322,16 @@ enum CommonKeys {
                 returnAction: .commitText("¿"),
                 accessibilityLabel: String(localized: "Question mark")
             ),
+            // Up one line, keeping the column: Flickboard's line-jump on the
+            // same key and direction (its down twin is on the bottomRight key).
+            // The arrow is the hint and hides with the extra symbols, so the
+            // layout can still be practised from memory. Unnamed for VoiceOver
+            // like every letter-grid binding outside the policy set (see the
+            // note above): the screen reader's own text navigation covers it.
+            .swipeUp: KeyBinding(
+                label: "↑", action: .lineUp, category: .symbol,
+                returnAction: nil, accessibilityLabel: nil
+            ),
         ],
 
         // MARK: midLeft
@@ -281,6 +356,12 @@ enum CommonKeys {
             .swipeLeft: KeyBinding(
                 label: "(", action: .commitText("("), category: nil,
                 returnAction: .commitText(")"), accessibilityLabel: nil
+            ),
+            // Ogonek as a dead key (ą ę į ų), macron on its return swipe
+            // (ā ē ī ō ū): Flickboard's bottom-of-the-key pair.
+            .swipeDown: KeyBinding(
+                label: "˛", action: .compose(trigger: "˛"), category: .compose,
+                returnAction: .compose(trigger: "¯"), accessibilityLabel: nil
             ),
         ],
 
@@ -313,12 +394,16 @@ enum CommonKeys {
                 label: ")", action: .commitText(")"), category: nil,
                 returnAction: .commitText("("), accessibilityLabel: nil
             ),
-            // Only present in the shifted and caps-lock modes (the factory strips
-            // it from main). Named because it is the only way out of caps lock,
-            // where the ⇧ above switches to the mode it is already in.
+            // Present in the shifted and caps-lock modes; main keeps it only as
+            // an unlabelled carrier for the return swipe (see
+            // `GridKeyboardFactory`). Named because it is the only way out of
+            // caps lock, where the ⇧ above switches to the mode it is already
+            // in. Its return swipe steps the word before the cursor down a case
+            // (UPPER → Title → lower), the counterpart of the ⇧ return swipe.
             .swipeDown: KeyBinding(
                 label: "⇩", action: .switchMode(ModeNames.main), category: .modifier,
-                returnAction: nil, accessibilityLabel: String(localized: "Lowercase")
+                returnAction: .cycleWordCase(ascending: false),
+                accessibilityLabel: String(localized: "Lowercase")
             ),
             .swipeDownRight: KeyBinding(
                 label: "]", action: .commitText("]"), category: nil,
@@ -339,7 +424,7 @@ enum CommonKeys {
             ),
             .swipeUp: KeyBinding(
                 label: "¨", action: .compose(trigger: "¨"), category: .compose,
-                returnAction: .commitText("˝"), accessibilityLabel: nil
+                returnAction: .compose(trigger: "˝"), accessibilityLabel: nil
             ),
             .swipeRight: KeyBinding(
                 label: "*", action: .commitText("*"), category: nil,
@@ -352,6 +437,18 @@ enum CommonKeys {
             .swipeLeft: KeyBinding(
                 label: "<", action: .commitText("<"), category: nil,
                 returnAction: .commitText("‹"), accessibilityLabel: nil
+            ),
+            // Caron as a dead key on its own (the ^ key's return swipe types it
+            // too), guillemets on the return swipes: Flickboard's « sits here.
+            .swipeDownLeft: KeyBinding(
+                label: "ˇ", action: .compose(trigger: "ˇ"), category: .compose,
+                returnAction: .commitText("«"), accessibilityLabel: nil
+            ),
+            // Cedilla as a dead key (ş ţ ģ ķ), closing guillemet on the return
+            // swipe.
+            .swipeDown: KeyBinding(
+                label: "¸", action: .compose(trigger: "¸"), category: .compose,
+                returnAction: .commitText("»"), accessibilityLabel: nil
             ),
         ],
 
@@ -408,6 +505,11 @@ enum CommonKeys {
             .swipeLeft: KeyBinding(
                 label: "#", action: .commitText("#"), category: nil,
                 returnAction: .commitText("£"), accessibilityLabel: nil
+            ),
+            // Down one line, keeping the column (see the topRight key).
+            .swipeDown: KeyBinding(
+                label: "↓", action: .lineDown, category: .symbol,
+                returnAction: nil, accessibilityLabel: nil
             ),
         ],
     ]

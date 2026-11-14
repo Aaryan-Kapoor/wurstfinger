@@ -120,3 +120,30 @@ from growing. With the backlog empty, no rule carries exclusions.
 
 The vocabulary itself, the zones, and the reasoning are in
 [`docs/GLOSSARY.md`](../docs/GLOSSARY.md).
+
+## gen_compose_marks.py
+
+Writes `ComposeRuleSet+Marks.swift`: every dead-key composition Unicode defines
+(a base letter plus the key's combining mark has a precomposed form) that the
+hand-written `ComposeRuleSet.global` lacks. It parses the existing table from
+the Swift source, so its output only ever adds. Stdlib only.
+
+```bash
+python3 -I scripts/gen_compose_marks.py \
+    > Sources/WurstfingerKit/Keyboard/Definition/Compose/ComposeRuleSet+Marks.swift
+```
+
+Why the rules are kept out of the accent cycle: [`docs/layout-parity.md`](../docs/layout-parity.md).
+
+## layout-science/
+
+The data, cost model, search and tests behind the English (Optimized) layout,
+all stdlib-only Python 3.9 and deterministic. See
+[`docs/layout-science.md`](../docs/layout-science.md) for what they do and how far
+to trust them.
+
+```bash
+python3 -I scripts/layout-science/model.py        # score every layout under the model
+python3 -I scripts/layout-science/test_model.py   # unit tests, about a second
+python3 -I scripts/layout-science/optimize.py     # the full search (about 13 minutes); rewrites results.json and optimized_layout*.json
+```

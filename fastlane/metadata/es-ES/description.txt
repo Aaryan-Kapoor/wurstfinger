@@ -8,7 +8,7 @@ CARACTERÍSTICAS:
 
 • Cuadrícula grande de 3x3 teclas - Pensada para pulgares, no para punteros de precisión
 • Gestos de deslizamiento - Accede a 8 caracteres adicionales por tecla deslizando el dedo
-• 27 distribuciones de teclado - Español, alemán, árabe, coreano, croata, español-catalán, estonio-finés, finés, francés, griego, hebreo, hindi, inglés, inglés (Thumb-Key), italiano, japonés (hiragana), japonés (katakana), persa, polaco, portugués, ruso, sueco, tagalo, tailandés, ucraniano, urdu y vietnamita (con entrada Telex)
+• 28 distribuciones de teclado - Español, alemán, árabe, coreano, croata, español-catalán, estonio-finés, finés, francés, griego, hebreo, hindi, inglés, inglés (Thumb-Key), italiano, japonés (hiragana), japonés (katakana), persa, polaco, portugués, ruso, sueco, tagalo, tailandés, ucraniano, urdu y vietnamita (con entrada Telex)
 • Reglas de composición - Crea acentos combinando caracteres (p. ej., ' + a = á)
 • Gestos circulares - Dibuja un círculo para escribir en mayúsculas
 • Control del cursor - Arrastra sobre la barra espaciadora para mover el cursor y sobre la tecla de borrar para borrar de forma continua

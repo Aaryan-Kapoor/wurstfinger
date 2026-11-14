@@ -58,8 +58,10 @@ struct ThumbKeyLayoutTests {
         for slot in CustomLayout.slots {
             let bound = Set(try #require(main.keys[slot]).bindings.keys)
             var expected = Set(Self.table[slot, default: [:]].keys)
-            // The shift swipe on `a` is upstream's too (up: shift).
-            if slot == GridSlot.midRight { expected.insert(.swipeUp) }
+            // The shift pair on `a`: up is upstream's shift; down is the
+            // unlabelled carrier of the word-case return swipe (a plain down
+            // swipe in main switches to main, i.e. does nothing).
+            if slot == GridSlot.midRight { expected.formUnion([.swipeUp, .swipeDown]) }
             #expect(bound == expected, "\(slot) binds \(bound.subtracting(expected)) and lacks \(expected.subtracting(bound))")
         }
     }
@@ -109,7 +111,10 @@ struct ThumbKeyLayoutTests {
 
     @Test func definitionIsStructurallyValid() {
         #expect(Self.thumbKey.validate().isEmpty)
-        #expect(Self.thumbKey.modes.keys.sorted() == [ModeNames.capsLock, ModeNames.main, ModeNames.numeric, ModeNames.shifted])
+        // ASCII letters, so the one-shot Ctrl and Alt modes are generated too.
+        #expect(Self.thumbKey.modes.keys.sorted() == [
+            ModeNames.alt, ModeNames.capsLock, ModeNames.control, ModeNames.main, ModeNames.numeric, ModeNames.shifted,
+        ])
     }
 
     @Test func numericModeStillOffersTheShortcutsToPunctuation() throws {

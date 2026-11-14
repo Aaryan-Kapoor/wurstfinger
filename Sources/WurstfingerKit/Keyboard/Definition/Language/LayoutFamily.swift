@@ -15,6 +15,10 @@ enum LayoutFamily: Sendable, Equatable {
     /// A MessagEase arrangement (the app's native layouts).
     case messagEase
 
+    /// A MessagEase arrangement with letters moved where measurement says they
+    /// cost less to type (see docs/layout-science.md).
+    case optimized
+
     /// The English layout of the open-source Thumb-Key keyboard.
     case thumbKey
 

@@ -200,10 +200,12 @@ struct ViewModelModeTests {
     @Test func shiftDownHiddenInMainVisibleInShiftedAndCapsLock() throws {
         let (vm, _) = makeViewModel()
 
-        // Main mode: midRight swipeDown is removed (only shown in shifted/capsLock)
+        // Main mode: the ⇩ hint is only shown in shifted/capsLock. The binding
+        // stays as an unlabelled carrier for the word-case return swipe.
         let mainMode = try #require(vm.activeModeFromDefinition)
         let mainMidRight = try #require(mainMode.keys[GridSlot.midRight])
-        #expect(mainMidRight.bindings[.swipeDown] == nil)
+        #expect(mainMidRight.bindings[.swipeDown]?.label == "")
+        #expect(mainMidRight.bindings[.swipeDown]?.returnAction == .cycleWordCase(ascending: false))
 
         // Shifted mode: swipeDown "⇩" is visible
         vm.handleGesture(.swipeUp, keyId: GridSlot.midRight, isReturn: false)

@@ -39,7 +39,10 @@ struct CustomLayoutDefinitionTests {
         #expect(definition.id == "custom-test-layout")
         #expect(definition.title == "Test layout")
         #expect(definition.validate().isEmpty)
-        #expect(definition.modes.keys.sorted() == [ModeNames.capsLock, ModeNames.main, ModeNames.numeric, ModeNames.shifted])
+        // An ASCII-letter layout also gets the one-shot Ctrl and Alt modes.
+        #expect(definition.modes.keys.sorted() == [
+            ModeNames.alt, ModeNames.capsLock, ModeNames.control, ModeNames.main, ModeNames.numeric, ModeNames.shifted,
+        ])
 
         let main = try #require(definition.modes[ModeNames.main])
         #expect(main.keys[GridSlot.topLeft]?.bindings[.tap]?.action == .commitText("q"))
