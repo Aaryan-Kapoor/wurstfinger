@@ -99,6 +99,14 @@ struct SettingsView: View {
                 SettingsRow(icon: "globe", color: .blue, title: "Languages", subtitle: enabledLanguagesSummary)
             }
 
+            NavigationLink(destination: CustomLayoutsView()) {
+                SettingsRow(
+                    icon: "square.grid.3x3", color: .orange,
+                    title: "Custom Layouts",
+                    subtitle: String(localized: "Make your own keyboard layouts")
+                )
+            }
+
             Toggle(isOn: $utilityColumnLeading) {
                 SettingsRow(
                     icon: "keyboard.badge.ellipsis", color: .indigo,

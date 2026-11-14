@@ -8,7 +8,7 @@ FONCTIONNALITÉS :
 
 • Grande grille de 3x3 touches - Optimisée pour les pouces, pas pour les pointeurs de précision
 • Gestes de balayage - Accédez à 8 caractères supplémentaires par touche en balayant
-• 26 dispositions de clavier - Français, allemand, anglais, arabe, coréen, croate, espagnol, espagnol-catalan, estonien-finnois, finnois, grec, hébreu, hindi, italien, japonais (hiragana), japonais (katakana), ourdou, persan, polonais, portugais, russe, suédois, tagalog, thaï, ukrainien et vietnamien (avec saisie Telex)
+• 27 dispositions de clavier - Français, allemand, anglais, anglais (Thumb-Key), arabe, coréen, croate, espagnol, espagnol-catalan, estonien-finnois, finnois, grec, hébreu, hindi, italien, japonais (hiragana), japonais (katakana), ourdou, persan, polonais, portugais, russe, suédois, tagalog, thaï, ukrainien et vietnamien (avec saisie Telex)
 • Règles de composition - Créez des accents par combinaison (p. ex. ' + a = á)
 • Gestes circulaires - Tracez un cercle pour obtenir des majuscules
 • Contrôle du curseur - Faites glisser le doigt sur la barre d'espace pour déplacer le curseur, et sur la touche de suppression pour effacer en continu

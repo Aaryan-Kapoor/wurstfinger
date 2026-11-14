@@ -8,7 +8,7 @@ FUNCIONALIDADES:
 
 • Grelha grande de 3x3 teclas - Otimizada para polegares, não para ponteiros de precisão
 • Gestos de deslize - Aceda a 8 carateres adicionais por tecla ao deslizar
-• 26 disposições de teclado - Português, alemão, árabe, coreano, croata, espanhol, espanhol-catalão, estónio-finlandês, finlandês, francês, grego, hebraico, hindi, inglês, italiano, japonês (hiragana), japonês (katakana), persa, polaco, russo, sueco, tagalo, tailandês, ucraniano, urdu e vietnamita (com introdução Telex)
+• 27 disposições de teclado - Português, alemão, árabe, coreano, croata, espanhol, espanhol-catalão, estónio-finlandês, finlandês, francês, grego, hebraico, hindi, inglês, inglês (Thumb-Key), italiano, japonês (hiragana), japonês (katakana), persa, polaco, russo, sueco, tagalo, tailandês, ucraniano, urdu e vietnamita (com introdução Telex)
 • Regras de composição - Crie acentos através de combinações (p. ex., ' + a = á)
 • Gestos circulares - Desenhe um círculo para escrever em maiúsculas
 • Controlo do cursor - Arraste na barra de espaços para mover o cursor e na tecla de apagar para apagar de forma contínua

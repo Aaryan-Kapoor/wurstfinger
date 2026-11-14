@@ -50,7 +50,7 @@ public final class KeyboardViewController: UIInputViewController {
             // Resolve the locale from lightweight registry metadata only. iOS may
             // query this eagerly/repeatedly, so it must never build a layout.
             let id = selectedLanguageId
-            return (KeyboardRegistry.available.first { $0.id == id }?.localeIdentifier)
+            return KeyboardRegistry.metadata(for: id)?.localeIdentifier
                 ?? LanguageMetadata.english.locale.identifier
         }
         set {

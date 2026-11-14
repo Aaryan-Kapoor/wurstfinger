@@ -23,6 +23,9 @@ struct LanguageDescriptor: Identifiable, Sendable {
     let title: String
     let localeIdentifier: String
 
+    /// Which family of layouts this belongs to; only the language list reads it.
+    let family: LayoutFamily
+
     /// Builds the full definition. Receives the descriptor so the layout can
     /// reuse the metadata above instead of repeating the literals — keeping the
     /// id/title/locale a single source of truth.
@@ -32,11 +35,13 @@ struct LanguageDescriptor: Identifiable, Sendable {
         id: String,
         title: String,
         localeIdentifier: String,
+        family: LayoutFamily = .messagEase,
         builder: @escaping @Sendable (LanguageDescriptor) -> KeyboardDefinition
     ) {
         self.id = id
         self.title = title
         self.localeIdentifier = localeIdentifier
+        self.family = family
         self.builder = builder
     }
 

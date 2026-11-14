@@ -77,6 +77,11 @@ enum SettingsKey: String, CaseIterable, Sendable {
     /// The user's text-replacement shortcuts, a JSON array of
     /// `{shortcut, phrase}` objects (see `TextReplacementTable`).
     case textReplacements
+    /// Opaque token the host app rewrites whenever the set of custom layouts
+    /// changes (add, edit, delete, import). The keyboard extension compares it
+    /// with the one its layouts were loaded for, and re-reads the layout files
+    /// only when it differs, so a settings reload costs one string read.
+    case customLayoutsRevision
 }
 
 // MARK: - Haptic Settings

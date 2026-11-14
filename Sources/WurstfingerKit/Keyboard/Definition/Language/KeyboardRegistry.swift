@@ -9,8 +9,15 @@ import Foundation
 
 /// Registry for keyboard layouts.
 /// Exposes lightweight metadata via `available` and loads full definitions on demand.
+///
+/// Two sources feed it: the layouts that ship with the app (`LanguageDefinitions`,
+/// fixed at compile time) and the user's custom layouts (`CustomLayoutRegistry`,
+/// replaced when the set changes). Both resolve through `load(id:)` into the same
+/// cache, so a custom layout is built lazily, shared by concurrent callers,
+/// prewarmed and evicted exactly like a shipped one.
 enum KeyboardRegistry {
-    /// All available keyboard layouts (lightweight metadata only).
+    /// The layouts that ship with the app (lightweight metadata only) — not the
+    /// user's custom ones, see `allLanguages`.
     ///
     /// Reads descriptor metadata only — no `KeyboardDefinition` is built, so
     /// listing languages (and the extension's `primaryLanguage` lookup) stays
@@ -23,6 +30,76 @@ enum KeyboardRegistry {
         LanguageDefinitions.all.reduce(into: [:]) { dict, descriptor in
             dict[descriptor.id] = descriptor
         }
+
+    /// Every selectable layout: the shipped ones, then the custom ones.
+    /// Metadata only, like `available`. Computed on every access, because the
+    /// custom set can change under it.
+    static var allLanguages: [LanguageMetadata] {
+        available + CustomLayoutRegistry.shared.languages
+    }
+
+    /// Metadata of any selectable layout, shipped or custom. What the keyboard
+    /// controller reads to report the active locale to iOS.
+    static func metadata(for id: String) -> LanguageMetadata? {
+        available.first { $0.id == id }
+            ?? CustomLayoutRegistry.shared.languages.first { $0.id == id }
+    }
+
+    /// Whether `id` belongs to a layout that ships with the app. A custom layout
+    /// may not take such an id: the cache is keyed by it.
+    static func isShippedID(_ id: String) -> Bool {
+        descriptorsByID[id] != nil
+    }
+
+    /// Brings the custom layouts up to date with the host app's last write (see
+    /// `CustomLayoutRegistry.sync`) and drops the cached definitions that went
+    /// stale. Cheap when nothing changed: one defaults read.
+    ///
+    /// Called when settings reload — never on the typing path — in the keyboard
+    /// extension, and by the host app after it writes.
+    /// - Returns: The ids whose definition was replaced or removed.
+    @discardableResult
+    static func syncCustomLayouts(
+        defaults: UserDefaults = SharedDefaults.store,
+        store: CustomLayoutStore = .shared,
+        registry: CustomLayoutRegistry? = nil
+    ) -> Set<String> {
+        // No revision, nothing to follow: the process-wide registry (whose first
+        // use reads the store) is not even touched.
+        guard defaults.string(forKey: SettingsKey.customLayoutsRevision.rawValue) != nil else { return [] }
+        let stale = (registry ?? .shared).sync(defaults: defaults, store: store)
+        for id in stale { cache.remove(id) }
+        return stale
+    }
+
+    /// Makes `layouts` the custom set and drops the cached definitions that went
+    /// stale: the host app's path after it saved or deleted one.
+    /// - Returns: The ids whose definition was replaced or removed.
+    @discardableResult
+    static func replaceCustomLayouts(
+        _ layouts: [CustomLayout],
+        revision: String?,
+        registry: CustomLayoutRegistry = .shared
+    ) -> Set<String> {
+        let stale = registry.replace(with: layouts, revision: revision)
+        for id in stale { cache.remove(id) }
+        return stale
+    }
+
+    /// The descriptor for `id`: a shipped layout's, or one made on the fly for a
+    /// custom layout.
+    private static func descriptor(for id: String) -> LanguageDescriptor? {
+        if let shipped = descriptorsByID[id] { return shipped }
+        guard let layout = CustomLayoutRegistry.shared.layout(withId: id) else { return nil }
+        return LanguageDescriptor(
+            id: layout.id, title: layout.title, localeIdentifier: layout.localeIdentifier, family: .custom
+        ) { _ in
+            // Only the base's settings are read; a base that no longer ships
+            // simply leaves the defaults. A custom layout is never a base, so
+            // this cannot recurse.
+            layout.makeDefinition(basedOn: layout.basedOn.flatMap { descriptorsByID[$0] != nil ? load(id: $0) : nil })
+        }
+    }
 
     /// Cache for loaded definitions. Only languages actually loaded via
     /// `load(id:)` (or `prewarm`) are built and held here.
@@ -43,7 +120,10 @@ enum KeyboardRegistry {
     /// prewarm exists so that, in practice, a language switch never reaches
     /// that branch.
     static func load(id: String) -> KeyboardDefinition? {
-        guard let descriptor = descriptorsByID[id] else {
+        // A hit needs no descriptor, which for a custom layout would be built on
+        // the fly.
+        if let cached = cache.cachedValue(for: id) { return cached }
+        guard let descriptor = descriptor(for: id) else {
             return nil
         }
         return cache.value(for: id) { descriptor.makeDefinition() }
@@ -67,7 +147,7 @@ enum KeyboardRegistry {
     /// thread) instead of building a second copy. Unknown and duplicate ids
     /// are ignored. Never awaited from the input path.
     static func prewarm(_ ids: [String]) async {
-        let unique = Set(ids).filter { descriptorsByID[$0] != nil }
+        let unique = Set(ids).filter { descriptor(for: $0) != nil }
         await withDiscardingTaskGroup { group in
             for id in unique {
                 group.addTask(priority: .utility) {

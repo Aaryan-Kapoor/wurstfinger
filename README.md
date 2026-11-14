@@ -59,7 +59,7 @@ Want to try the latest features before they hit the App Store? Join our public T
 
 ## Features
 
-- **Multi-language support**: 26 keyboard layouts — Arabic, Croatian, English, Estonian-Finnish, Finnish, French, German, Greek, Hebrew, Hindi, Italian, Japanese (Hiragana), Japanese (Katakana), Korean, Persian, Polish, Portuguese, Russian, Spanish, Spanish-Catalan, Swedish, Tagalog, Thai, Ukrainian, Urdu, and Vietnamese (with Telex input)
+- **Multi-language support**: 27 keyboard layouts — Arabic, Croatian, English, English (Thumb-Key), Estonian-Finnish, Finnish, French, German, Greek, Hebrew, Hindi, Italian, Japanese (Hiragana), Japanese (Katakana), Korean, Persian, Polish, Portuguese, Russian, Spanish, Spanish-Catalan, Swedish, Tagalog, Thai, Ukrainian, Urdu, and Vietnamese (with Telex input)
 - **MessagEase layout** with symbol and numeric layers
 - **Compose engine** that reproduces Thumb-Key's combination triggers (e.g. `' + a → á`)
 - **Return swipes** for punctuation and math symbols (`?`→`¿`, `*`→`†`, `/`→`÷`, ...)

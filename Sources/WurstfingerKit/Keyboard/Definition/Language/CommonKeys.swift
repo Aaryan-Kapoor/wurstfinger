@@ -411,4 +411,21 @@ enum CommonKeys {
             ),
         ],
     ]
+
+    /// The slot bindings a layout starts from when it keeps no shared
+    /// punctuation on its letter keys: the shift affordance on the midRight
+    /// key (⇧ up, ⇩ down), which the shifted modes and the caps-lock exit
+    /// depend on, and the named period on the bottomCenter key's down swipe,
+    /// which a layout that carries no other sentence punctuation still needs
+    /// to be usable without gestures (see the naming policy above).
+    /// Everything else a key carries is the layout's own.
+    static let essentialSlotBindings: [String: [GestureType: KeyBinding]] = {
+        let shift: Set<GestureType> = [.swipeUp, .swipeDown]
+        let midRight = (defaultSlotBindings[GridSlot.midRight] ?? [:]).filter { shift.contains($0.key) }
+        var essential = [GridSlot.midRight: midRight]
+        if let period = defaultSlotBindings[GridSlot.bottomCenter]?[.swipeDown] {
+            essential[GridSlot.bottomCenter] = [.swipeDown: period]
+        }
+        return essential
+    }()
 }

@@ -11,12 +11,14 @@ struct LanguageSelectionView: View {
     /// `@Observable` and shared: reading it in `body` subscribes this view to
     /// the properties it uses; `let` is enough because nothing here binds to it.
     private let languageSettings = LanguageSettings.shared
+    /// Observed so a layout added or removed on the Custom Layouts screen shows here.
+    private let library = CustomLayoutLibrary.shared
     @State private var showLastLanguageAlert = false
 
     var body: some View {
         List {
             Section {
-                ForEach(LanguageMetadata.allLanguages) { language in
+                ForEach(library.allLanguages) { language in
                     LanguageRow(
                         language: language,
                         isEnabled: languageSettings.isLanguageEnabled(language),
@@ -79,7 +81,7 @@ private struct LanguageRow: View {
                     .font(.body)
                     .foregroundColor(.primary)
 
-                Text("MessagEase Layout")
+                Text(language.family.subtitle)
                     .font(.caption)
                     .foregroundColor(.secondary)
             }

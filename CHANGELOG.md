@@ -4,6 +4,8 @@
 
 ### Added
 
+- The English layout of Thumb-Key as a selectable layout, "English (Thumb-Key)", next to MessagEase English: the same letters in the same places, with the shift swipes on the `a` key where Thumb-Key has them. Its punctuation lives in the numeric mode (#95)
+- Custom layouts (#95). Settings › Custom Layouts duplicates any layout as a starting point, edits it in a visual editor (the 3x3 grid, and a sheet per key with a field for every swipe, circle and long press), and enables it like a language. Layouts are exported and imported as versioned JSON (share sheet, file, clipboard); the app refuses oversized, malformed, newer-schema and duplicate documents with a message instead of failing. The keyboard loads them through the same registry and cache as the shipped layouts
 - The naming glossary is now checkable: its vocabulary lives in `glossary.toml` with a zone per term (internal, persisted, or user-facing contract), `scripts/check_naming.py` reports every identifier that contradicts it, and `.naming-budget.json` freezes the existing backlog per file so it can shrink but never grow. Sections 7 to 9 of `docs/GLOSSARY.md` are generated from the same source, so the list of rejected spellings and the list of what is actually enforced cannot drift apart
 
 ### Changed
