@@ -33,6 +33,14 @@ struct LanguageMetadata: Identifiable, Sendable {
     /// locale (see `LanguageDescriptor.globeLabel`).
     let globeLabel: String?
 
+    /// The standard layout this one is an optimized arrangement of, or `nil`
+    /// for a layout that stands on its own. The language list shows one row per
+    /// language and offers its variants inside it.
+    let variantOf: String?
+
+    /// Which arrangement of `variantOf` this is (`.standard` for a base layout).
+    let variant: LayoutVariant
+
     /// The locale this language types in. Derived, so the identifier stays the
     /// single source of truth.
     var locale: Locale {
@@ -41,13 +49,16 @@ struct LanguageMetadata: Identifiable, Sendable {
 
     init(
         id: String, title: String, localeIdentifier: String,
-        family: LayoutFamily = .messagEase, globeLabel: String? = nil
+        family: LayoutFamily = .messagEase, globeLabel: String? = nil,
+        variantOf: String? = nil, variant: LayoutVariant = .standard
     ) {
         self.id = id
         self.title = title
         self.localeIdentifier = localeIdentifier
         self.family = family
         self.globeLabel = globeLabel
+        self.variantOf = variantOf
+        self.variant = variant
     }
 
     /// Builds metadata from a descriptor without materialising its layout.
@@ -57,6 +68,8 @@ struct LanguageMetadata: Identifiable, Sendable {
         localeIdentifier = descriptor.localeIdentifier
         family = descriptor.family
         globeLabel = descriptor.globeLabel
+        variantOf = descriptor.variantOf
+        variant = descriptor.variant
     }
 }
 

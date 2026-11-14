@@ -429,6 +429,20 @@ struct TerminalModifierTests {
         #expect(scenario.text.isEmpty)
     }
 
+    @Test func textTheModifierHasNoCodeForIsTypedAsItIs() throws {
+        let definition = try #require(KeyboardRegistry.load(id: "fi_FI"))
+        for name in [ModeNames.control, ModeNames.alt] {
+            let mode = try #require(definition.mode(name))
+            let umlaut = try #require(mode.keys.values.compactMap { $0.bindings.values.first { $0.label.lowercased() == "ä" } }.first)
+            if name == ModeNames.control {
+                #expect(umlaut.action == .commitText("ä"), "Ctrl has no code for ä: the letter is typed")
+            } else {
+                #expect(umlaut.action == .commitText("\u{1B}ä"), "Alt prefixes any printable character")
+            }
+            #expect(umlaut.resolvedCategory == .letter, "and the mode still ends with the key")
+        }
+    }
+
     @Test func theModesExistOnlyWhereTheLettersAreLatin() throws {
         let english = try #require(KeyboardRegistry.load(id: "en_US"))
         #expect(english.mode(ModeNames.control) != nil && english.mode(ModeNames.alt) != nil)

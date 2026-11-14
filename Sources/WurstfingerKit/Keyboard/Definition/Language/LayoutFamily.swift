@@ -25,3 +25,17 @@ enum LayoutFamily: Sendable, Equatable {
     /// A layout the user made or imported (see `CustomLayout`).
     case custom
 }
+
+/// How far a layout's letters have been moved from the language's standard
+/// MessagEase arrangement.
+enum LayoutVariant: String, Sendable, Equatable, CaseIterable {
+    /// The shipped MessagEase arrangement.
+    case standard
+
+    /// A few letters moved where the language's own text says they cost less
+    /// to type (`layoutlab`, docs/layout-science.md).
+    case optimized
+
+    /// Every letter placed by the same search, without the few-moves limit.
+    case full
+}

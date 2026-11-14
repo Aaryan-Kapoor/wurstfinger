@@ -278,6 +278,27 @@ class LanguageSettings {
         enabledLanguageIds.contains(language.id)
     }
 
+    /// Swaps an enabled layout for another arrangement of the same language,
+    /// keeping its place in the enabled order and its role as the selected and
+    /// the pinned language. A no-op when `oldId` is not enabled. The language
+    /// list uses it so that choosing "Optimized" changes the layout of a
+    /// language the user already has, instead of adding a second entry.
+    func switchLayout(from oldId: String, to newId: String) {
+        reloadFromStore()
+        guard oldId != newId, let index = enabledLanguageIds.firstIndex(of: oldId) else { return }
+        let wasPinned = pinnedLanguageId == oldId
+        let wasSelected = selectedLanguageId == oldId
+        var updated = enabledLanguageIds
+        if updated.contains(newId) {
+            updated.remove(at: index)
+        } else {
+            updated[index] = newId
+        }
+        enabledLanguageIds = updated
+        if wasSelected { selectedLanguageId = newId }
+        if wasPinned { pinnedLanguageId = newId }
+    }
+
     /// Returns the next language ID after the current one, wrapping around.
     /// If only one language is enabled, returns that same language.
     func nextLanguageId(after currentId: String) -> String {

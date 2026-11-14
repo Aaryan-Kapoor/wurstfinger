@@ -476,6 +476,168 @@ the alphabet through `KeyboardScenario`, which feeds synthetic finger paths to t
 recognition, resolution and the action pipeline are all exercised. Snapshots: `lang-en_US_optimized`
 and `optimized-*` in `swift run WurstfingerSnapshots`.
 
+## Per-language optimization (`layoutlab`)
+
+The English work above is one language, done by hand-run Python. Every Latin, Greek and
+Cyrillic layout now gets the same treatment from one reusable pipeline, driven by that
+language's own text. It is a Swift tool (`Sources/WurstfingerLayoutLab`, product `layoutlab`)
+because it reads the real `KeyboardDefinition`s: what may move and what must stay is read from
+the layout the app ships, not transcribed.
+
+```
+word list -> corpus table -> text model -> Fitts cost -> constrained annealing -> generated Swift data
+ (derive)     (counts)      (key presses)   (model.py)     (seeded, K-bounded)    (OptimizedArrangements)
+```
+
+**Corpus.** A `word count` list per language (OpenSubtitles 2018 through FrequencyWords, CC BY-SA 4.0;
+sources, licences and hashes in `tools/layout-lab/corpora/SOURCES.md`) becomes a table of how often each
+character starts a word, ends one, and follows another. Only the table is checked in
+(`tools/layout-lab/corpora/<id>.tsv`, about 30 KB each). Subtitles are conversational text, closer to what is typed on
+a phone than the web text of the English section. Trigram counts are not kept: the model is first-order
+(a transition depends on the previous key press only), so a trigram table would add bytes and no signal.
+The licence of the underlying subtitles could not be verified; `SOURCES.md` says so and relies on nothing
+beyond "may be used with attribution to OpenSubtitles".
+
+**What is typed.** A word is kept only if every one of its characters can be typed on the layout, and the
+character becomes the key presses that type it: a letter on a key; a symbol on a key (`'`, `-`); a base letter and
+the layout's own compose trigger (`ü` is `u` then the diaeresis key, checked against the real `ComposeEngine`, so only
+compositions the app performs count); the 🅒 accent-cycle key pressed as often as the cycle needs (French `ï`);
+for Vietnamese the Telex sequence (`ế` is `e e s`). So accented languages are optimized together with the fixed
+positions of their triggers. 77 to 100 % of the word types of each list survive this filter
+(Greek 77 %, Russian 85 %, Ukrainian 83 %, the rest above 93 %; `meta words_kept` in each table).
+
+**Cost.** The model of the English section, ported to Swift (`CostModel.swift`): Fitts pointing in bits on the real 393 pt
+geometry, stroke bits for the swipe, the same-key floor, one thumb. `CostModelParityTests` scores the shipped
+English layouts and both optimizer outputs on the same table in Swift and requires the Python numbers to
+1e-9. The text weights are now exact word counts instead of the mixed Norvig sources (they reproduce the Python `count_1w` row).
+
+**Rules the search keeps** (all read from the definition; tests in `LayoutLabTests`):
+
+* only slots that hold a **letter** move, and only among themselves; punctuation, symbols, compose triggers, the 🅒 key,
+  utility keys and every return/circle binding stay where they are (a variant is bound the same as its base everywhere
+  except the letter slots: `OptimizedVariantTests.everythingThatIsNotALetterIsBindingForBindingTheBases`);
+* every character the base types stays typable, through the same routes (`aVariantTypesEveryCharacterItsBaseTypes`,
+  `AccessibilityLabelTests` and `CompiledModeTests` run over every variant);
+* on each key the tap letter is at least as frequent as each swipe letter (the readability rule of the English section);
+* a **learnability budget** K: at most K letters in a slot other than the shipped one.
+
+**Search.** Simulated annealing as before (geometric cooling from 5x to 0.05x the median swap delta, 40 000 steps, 240 restarts,
+steepest-descent polish), generator `SplitMix64` seeded 0...239, so a run is byte-for-byte reproducible
+(`OptimizerTests.theSameSeedGivesTheSameLayoutAndCost`). *Gentle* is the best layout with K = 4 (the English
+frontier's best gain per move); *full* is K unbounded. Re-running three languages with seed 1000 gave the same
+full optimum and a gentle one within 0.03 % of the first. In Swift release the whole pipeline for 17 languages takes about five minutes.
+
+**Results** (bits per character, one thumb, 393 pt; shipped = the standard layout of that language under its own corpus):
+
+| language | corpus coverage | shipped | gentle (≤4 moved) | Δ | full | Δ | gentle moves |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| Español-Català (Spanish-Catalan) `ca_ES` | 100.0 % | 1.7049 | 1.6321 | -4.27 % | 1.5330 | -10.08 % | a l o w |
+| Deutsch (German) `de_DE` | 100.0 % | 1.6347 | 1.5739 | -3.72 % | 1.5031 | -8.05 % | d e i r |
+| Ελληνικά (Greek) `el_GR` | 100.0 % | 1.7813 | 1.7345 | -2.62 % | 1.6610 | -6.75 % | α ι ν ρ |
+| English `en_US` | 100.0 % | 1.6277 | 1.5996 | -1.73 % | 1.5593 | -4.20 % | i l r z |
+| Español (Spanish) `es_ES` | 100.0 % | 1.6618 | 1.6136 | -2.90 % | 1.5194 | -8.57 % | a d l w |
+| Eesti-Suomi (Estonian-Finnish) `et_EE` | 100.0 % | 1.7038 | 1.5906 | -6.64 % | 1.4789 | -13.20 % | a h l o |
+| Suomi (Finnish) `fi_FI` | 100.0 % | 1.6856 | 1.6147 | -4.21 % | 1.4634 | -13.18 % | h i o ä |
+| Français (French) `fr_FR` | 100.0 % | 1.6525 | 1.6034 | -2.97 % | 1.5294 | -7.45 % | a l o w |
+| Hrvatski (Croatian) `hr_HR` | 100.0 % | 1.7378 | 1.6739 | -3.68 % | 1.5627 | -10.08 % | a h o v |
+| Italiano (Italian) `it_IT` | 100.0 % | 1.6384 | 1.6009 | -2.29 % | 1.5040 | -8.20 % | i l r t |
+| Polski (Polish) `pl_PL` | 100.0 % | 1.7540 | 1.7093 | -2.55 % | 1.5978 | -8.90 % | a i n r |
+| Português (Portuguese) `pt_PT` | 100.0 % | 1.6618 | 1.6136 | -2.90 % | 1.5140 | -8.89 % | a d o t |
+| Русский (Russian) `ru_RU` | 100.0 % | 1.7430 | 1.7044 | -2.22 % | 1.5896 | -8.80 % | в п т ю |
+| Svenska (Swedish) `sv_SE` | 100.0 % | 1.7508 | 1.6961 | -3.12 % | 1.5711 | -10.26 % | a d s |
+| Tagalog (Filipino) `tl_PH` | 100.0 % | 1.7471 | 1.5884 | -9.09 % | 1.4464 | -17.21 % | a e g o |
+| Українська (Ukrainian) `uk_UA` | 100.0 % | 1.7459 | 1.7114 | -1.98 % | 1.6265 | -6.84 % | п у ю я |
+| Tiếng Việt (Vietnamese-Telex) `vi_VN` | 100.0 % | 1.7240 | 1.6629 | -3.55 % | 1.5138 | -12.19 % | e f i z |
+
+Frontier (best cost with at most K letters moved, change against the shipped layout):
+
+| language | K=2 | K=4 | K=6 | K=8 | full (letters moved) |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `ca_ES` | -2.51 % | -4.27 % | -5.89 % | -6.86 % | -10.08 % (34) |
+| `de_DE` | -2.30 % | -3.72 % | -4.78 % | -5.56 % | -8.05 % (27) |
+| `el_GR` | -1.67 % | -2.62 % | -3.34 % | -4.10 % | -6.75 % (25) |
+| `en_US` | -0.98 % | -1.73 % | -2.17 % | -2.56 % | -4.20 % (25) |
+| `es_ES` | -1.26 % | -2.90 % | -4.11 % | -4.91 % | -8.57 % (32) |
+| `et_EE` | -4.67 % | -6.64 % | -8.35 % | -9.71 % | -13.20 % (29) |
+| `fi_FI` | -2.33 % | -4.21 % | -5.96 % | -7.67 % | -13.18 % (28) |
+| `fr_FR` | -1.39 % | -2.97 % | -3.64 % | -4.32 % | -7.45 % (29) |
+| `hr_HR` | -2.03 % | -3.68 % | -4.84 % | -6.18 % | -10.08 % (29) |
+| `it_IT` | -1.30 % | -2.29 % | -3.72 % | -4.78 % | -8.20 % (30) |
+| `pl_PL` | -1.15 % | -2.55 % | -3.32 % | -4.15 % | -8.90 % (31) |
+| `pt_PT` | -1.70 % | -2.90 % | -4.55 % | -5.42 % | -8.89 % (35) |
+| `ru_RU` | -1.40 % | -2.22 % | -3.31 % | -3.86 % | -8.80 % (32) |
+| `sv_SE` | -1.67 % | -3.12 % | -5.17 % | -6.40 % | -10.26 % (26) |
+| `tl_PH` | -6.21 % | -9.09 % | -10.70 % | -11.80 % | -17.21 % (27) |
+| `uk_UA` | -1.31 % | -1.98 % | -2.69 % | -3.50 % | -6.84 % (32) |
+| `vi_VN` | -2.24 % | -3.55 % | -4.85 % | -5.82 % | -12.19 % (25) |
+
+Hand-shipped variants, scored under the same corpus (never regenerated):
+
+* `en_US_optimized`: 1.6043 bits (-1.43 % against `en_US`), moved a h l z
+
+Reading it:
+
+* The gains are larger than for English (full 4.2 %) because the other layouts are English's arrangement with a
+  language's extra letters added around it: Tagalog, Estonian-Finnish and Finnish type letters (`g`, `ä`, `õ`, `h`) from
+  slots chosen for English frequencies. Four moved letters buy 2 to 9 % outside English, which is 25 to 55 % of that
+  language's full gain (least for Russian, Ukrainian and Polish, most for Tagalog and Estonian-Finnish).
+* English is the control: on this corpus the frozen `en_US_optimized` costs 1.6043 and the new gentle optimum 1.5996, so the layout
+  shipped from the web-text analysis was within 0.3 % of what the subtitle corpus finds. That is also why it is **not regenerated**
+  (below): the two agree, and changing it would move letters for nobody's benefit.
+* The Greek layout binds ω twice (top-left down-right and bottom-centre up) and has 25 distinct letters in 26 slots. The model treats the
+  second ω as a fixed slot; every Greek variant keeps it. Worth a look by whoever owns the Greek layout.
+* Like the English numbers these are model numbers. No person has typed on any of them: the learning cost is
+  not modelled, and four letters moved is the part of the model gain that survives re-weighting the constants for English; the larger
+  full-optimum gains are the most model-dependent (the English section's perturbation analysis applies).
+
+**Languages the model does not fit** (skipped, with the reason `LayoutProblem` throws):
+
+| layout | why |
+| --- | --- |
+| Hebrew, Arabic, Persian, Urdu | caseless: their slots carry per-slot return swipes (final forms: כ/ך, ن/ں ...), so moving a letter would detach its return output from it. The model could carry the pairs along; it does not yet |
+| Thai | caseless with per-slot return and circle outputs (ฒ ฬ ...), and a corpus is unsegmented text with no word list |
+| Hindi | vowel signs and conjuncts are built by sequential combining (`combineRuleSet`): the character stream is not the key stream |
+| Japanese (hiragana, katakana) | kana voicing and small kana are sequential combining on per-slot return outputs; a word list is not segmented |
+| Korean | Hangul syllables are composed from jamo by an automaton (`.hangul`): the key stream is jamo, the corpus is syllables |
+
+## Variants in the app
+
+The pipeline writes `OptimizedArrangements+Data.generated.swift`: variant id to key slot to gesture to letter. A variant
+`<id>_optimized` (gentle) or `<id>_full` is the base language's own declaration built under another id; `GridKeyboardFactory`
+substitutes the letters (`OptimizedArrangements.applying`) and nothing else differs. 34 variants ship (17 languages x 2).
+
+**UX.** The Languages list keeps one row per language. A row of a language that has variants carries a *layout menu*
+(Standard, Optimized, Fully optimized); choosing one swaps that language's entry in the enabled list, keeping its place,
+selection and pin (`LanguageSettings.switchLayout`). The variants are not rows of their own, so the list does not triple, the
+globe key cycles through exactly the languages the user enabled, and the globe shows `DE+` / `DE++` so two arrangements of a
+language are never mistaken for each other. Variants have the `.optimized` family: the system language is never matched to
+one (`systemMatchableLanguages`), and the marketing layout count (`MarketingMetadataTests`) counts base layouts, not arrangements.
+
+**Migration decision (proposed, implemented as stated).**
+
+1. **Nobody's layout changes.** Layout ids are persistent settings. Every existing id keeps its meaning, a variant is a new id
+   chosen by an explicit tap, and a test (`LayoutSwitchingTests.nobodysLayoutChangesOnItsOwn`) pins that loading settings never swaps one in.
+2. **`en_US_optimized` is frozen.** It shipped with the web-text K = 4 layout, people may be using it, and the new corpus
+   agrees with it to 0.3 %. `LabFrozen` keeps the pipeline from regenerating it; it appears in the English row's menu as *Optimized*,
+   and English gets a generated *Fully optimized* next to it.
+3. **Fresh installs start on Standard.** The audience is MessagEase users with muscle memory, and the evidence for the variants is a model.
+   If that changes (typing studies with real users), the one-line change is the default of a fresh installation's enabled layout,
+   gated on "no enabled languages stored yet", never a migration of stored ids.
+4. A later regeneration (new corpus, new constants) must not change a shipped variant id in place: ship it as a new generation of ids
+   and leave the old ones, for the same reason as 1.
+
+## Reproduce (per language)
+
+```
+swift build -c release --product layoutlab
+tools/layout-lab/derive-corpora.sh /path/to/frequencywords/raw     # word lists -> tools/layout-lab/corpora/*.tsv
+.build/release/layoutlab score --language de_DE                     # cost of the shipped layout under its corpus
+.build/release/layoutlab optimize \
+    --generated Sources/WurstfingerKit/Keyboard/Definition/Language/OptimizedArrangements+Data.generated.swift \
+    --report docs/layout-lab-report.md                               # all languages; --languages de_DE,fr_FR for some
+# --seed N --restarts N --steps N --budget K tune the search; the defaults produced the table above
+```
+
 ## Reproduce
 
 ```

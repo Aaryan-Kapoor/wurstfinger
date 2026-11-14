@@ -71,7 +71,9 @@ struct MarketingMetadataTests {
             "\(file.path) no longer states a number of \"\(file.noun)\""
         )
         let stated = try #require(Int(ns.substring(with: match.range(at: 1))))
-        let shipped = KeyboardRegistry.available.count
+        // Layouts, not arrangements: a language's optimized variants are options
+        // inside its row of the language list, so they are not counted again.
+        let shipped = KeyboardRegistry.available.filter { $0.variantOf == nil }.count
 
         #expect(stated == shipped, "\(file.path) claims \(stated) \(file.noun), but \(shipped) layouts ship")
     }

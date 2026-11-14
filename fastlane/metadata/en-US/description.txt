@@ -8,7 +8,7 @@ FEATURES:
 
 • Large 3x3 Key Grid - Optimized for thumbs, not precision pointers
 • Swipe Gestures - Access 8 additional characters per key by swiping
-• 28 Keyboard Layouts - Arabic, Croatian, English, English (Optimized), English (Thumb-Key), Estonian-Finnish, Finnish, French, German, Greek, Hebrew, Hindi, Italian, Japanese (Hiragana), Japanese (Katakana), Korean, Persian, Polish, Portuguese, Russian, Spanish, Spanish-Catalan, Swedish, Tagalog, Thai, Ukrainian, Urdu, and Vietnamese (with Telex input)
+• 27 Keyboard Layouts - Arabic, Croatian, English, English (Thumb-Key), Estonian-Finnish, Finnish, French, German, Greek, Hebrew, Hindi, Italian, Japanese (Hiragana), Japanese (Katakana), Korean, Persian, Polish, Portuguese, Russian, Spanish, Spanish-Catalan, Swedish, Tagalog, Thai, Ukrainian, Urdu, and Vietnamese (with Telex input)
 • Compose Rules - Create accents through combinations (e.g. ' + a = á)
 • Circular Gestures - Draw a circle for uppercase letters
 • Cursor Control - Drag on the space bar to move the cursor, drag on the delete key to erase continuously

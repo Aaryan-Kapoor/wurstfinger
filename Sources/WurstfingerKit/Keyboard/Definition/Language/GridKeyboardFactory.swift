@@ -74,6 +74,11 @@ enum GridKeyboardFactory {
             centerCharacters.count == 3 && centerCharacters.allSatisfy { $0.count == 3 },
             "centerCharacters must be a 3×3 matrix"
         )
+        // An optimized variant is the same declaration under another id, with
+        // its letters in the slots the optimizer chose (`OptimizedArrangements`).
+        let (centerCharacters, directionalOverrides) = OptimizedArrangements.applying(
+            toId: id, centerCharacters: centerCharacters, directionalOverrides: directionalOverrides
+        )
 
         let locale = Locale(identifier: localeIdentifier)
         let arrangements = StandardArrangements.grid3x3

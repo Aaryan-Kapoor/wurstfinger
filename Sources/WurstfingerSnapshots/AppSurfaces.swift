@@ -152,4 +152,23 @@ enum AppSurfaces {
             hosted: true
         )
     }
+
+    /// The Languages list: one row per language with its layout menu, one
+    /// language on its optimized layout.
+    static func languages(scheme: ColorScheme) -> Shot {
+        ScenarioEnvironment.reset()
+        let device = Device.iPhone15
+        device.activate()
+        LanguageSettings.saveEnabledLanguageIds(["en_US", "de_DE_optimized", "fr_FR"], to: SharedDefaults.store)
+        SharedDefaults.store.set("en_US", forKey: SettingsKey.selectedLanguageId.rawValue)
+        LanguageSettings.shared.reloadFromStore()
+        return Shot(
+            size: CGSize(width: device.width, height: device.size.height * 1.15), scheme: scheme,
+            content: AnyView(
+                NavigationStack { LanguageSelectionView() }
+                    .formStyle(.grouped).frame(width: device.width, height: device.size.height * 1.15)
+            ),
+            hosted: true
+        )
+    }
 }

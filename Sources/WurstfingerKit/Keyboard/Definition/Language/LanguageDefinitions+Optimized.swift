@@ -43,7 +43,9 @@ extension LanguageDefinitions {
         family: .optimized,
         // The globe key shows the language code; two English layouts would both
         // say "EN", so this one says which it is.
-        globeLabel: "EN+"
+        globeLabel: "EN+",
+        variantOf: "en_US",
+        variant: .optimized
     ) { meta in
         GridKeyboardFactory.layout(
             id: meta.id,

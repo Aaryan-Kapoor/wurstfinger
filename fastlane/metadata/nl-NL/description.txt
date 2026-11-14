@@ -8,7 +8,7 @@ FUNCTIES:
 
 • Groot 3x3-toetsenraster - Geoptimaliseerd voor duimen, niet voor precisiewijzers
 • Veeggebaren - 8 extra tekens per toets door te vegen
-• 28 toetsenbordindelingen - Arabisch, Duits, Engels, Engels (Thumb-Key), Estisch-Fins, Fins, Frans, Grieks, Hebreeuws, Hindi, Italiaans, Japans (Hiragana), Japans (Katakana), Koreaans, Kroatisch, Oekraïens, Perzisch, Pools, Portugees, Russisch, Spaans, Spaans-Catalaans, Tagalog, Thai, Urdu, Vietnamees (met Telex-invoer) en Zweeds
+• 27 toetsenbordindelingen - Arabisch, Duits, Engels, Engels (Thumb-Key), Estisch-Fins, Fins, Frans, Grieks, Hebreeuws, Hindi, Italiaans, Japans (Hiragana), Japans (Katakana), Koreaans, Kroatisch, Oekraïens, Perzisch, Pools, Portugees, Russisch, Spaans, Spaans-Catalaans, Tagalog, Thai, Urdu, Vietnamees (met Telex-invoer) en Zweeds
 • Compose-regels - Maak accenten door combinaties (bijv. ' + a = á)
 • Cirkelgebaren - Teken een cirkel voor hoofdletters
 • Cursorbediening - Sleep over de spatiebalk om de cursor te verplaatsen, sleep over de verwijdertoets om continu te wissen

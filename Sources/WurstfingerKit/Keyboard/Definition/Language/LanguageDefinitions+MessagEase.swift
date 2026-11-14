@@ -723,7 +723,11 @@ extension LanguageDefinitions {
     ///
     /// Holds metadata only; definitions are built lazily via
     /// `LanguageDescriptor.makeDefinition()` (see `KeyboardRegistry`).
-    static let all: [LanguageDescriptor] = [
+    static let all: [LanguageDescriptor] = (declared + OptimizedArrangements.descriptors(for: declared))
+        .sorted { $0.title < $1.title }
+
+    /// The layouts declared by hand, before the generated variants are derived from them.
+    private static let declared: [LanguageDescriptor] = [
         spanishCatalan,
         arabic,
         croatian,
@@ -752,5 +756,5 @@ extension LanguageDefinitions {
         ukrainian,
         urdu,
         vietnamese,
-    ].sorted { $0.title < $1.title }
+    ]
 }
