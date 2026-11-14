@@ -106,6 +106,12 @@ struct TypingBehavior: Sendable, Equatable {
     var areKeyClicksEnabled = false
     /// Speak gesture targets under VoiceOver (`SettingsKey.voiceOverGestureTyping`).
     var isVoiceOverGestureTypingEnabled = false
+    /// Show word completions above the keys (`SettingsKey.wordCompletionsEnabled`).
+    var areWordCompletionsEnabled = false
+    /// Learn words the dictionary lacks (`SettingsKey.learnsWords`).
+    var learnsWords = true
+    /// The last "clear learned words" request the host app made.
+    var learnedWordsClearToken: String?
 
     /// Resolves the toggles from a defaults store. Call when settings change,
     /// never per keystroke. `previous` lets a reload that finds the same
@@ -122,7 +128,10 @@ struct TypingBehavior: Sendable, Equatable {
             clockwiseCircle: CircleType.load(.clockwiseCircleBehaviour, from: store),
             counterclockwiseCircle: CircleType.load(.counterclockwiseCircleBehaviour, from: store),
             areKeyClicksEnabled: store.bool(forKey: SettingsKey.keyClicksEnabled.rawValue),
-            isVoiceOverGestureTypingEnabled: store.bool(forKey: SettingsKey.voiceOverGestureTyping.rawValue)
+            isVoiceOverGestureTypingEnabled: store.bool(forKey: SettingsKey.voiceOverGestureTyping.rawValue),
+            areWordCompletionsEnabled: store.bool(forKey: SettingsKey.wordCompletionsEnabled.rawValue),
+            learnsWords: store.object(forKey: SettingsKey.learnsWords.rawValue) as? Bool ?? true,
+            learnedWordsClearToken: store.string(forKey: SettingsKey.learnedWordsClearToken.rawValue)
         )
     }
 }

@@ -23,6 +23,10 @@ enum SlidePhase: Equatable, Sendable {
     /// (MessagEase: up toggles extra-symbol labels, return-up toggles
     /// letter + standard-symbol labels).
     case swipeUp(isReturn: Bool)
+    /// Downward swipe (not coming back) while the horizontal slide never
+    /// activated. Only keys whose configuration has a `swipeDownThreshold`
+    /// report it: the space bar, where it takes the first word completion.
+    case swipeDown
     /// Touch sequence was cancelled by the system (incoming call, edge
     /// swipe, keyboard dismissal mid-drag). Consumers must discard drag
     /// state without committing any input.
@@ -48,20 +52,28 @@ struct SlideGestureConfiguration: Equatable, Sendable {
     /// gesture that produces nothing at all, reads as a dropped input.
     let swipeUpThreshold: CGFloat?
 
+    /// Downward travel that classifies a down-swipe, or nil for keys without
+    /// one (every key but the space bar). Unlike the up-swipe it has no return
+    /// variant: a pull down and back stays a tap, as it always was.
+    var swipeDownThreshold: CGFloat?
+
     static let moveCursor = SlideGestureConfiguration(
         activationThreshold: KeyboardConstants.SpaceGestures.dragActivationThreshold,
-        swipeUpThreshold: KeyboardConstants.SpaceGestures.swipeUpActivationThreshold
+        swipeUpThreshold: KeyboardConstants.SpaceGestures.swipeUpActivationThreshold,
+        swipeDownThreshold: KeyboardConstants.SpaceGestures.swipeDownActivationThreshold
     )
 
     static let delete = SlideGestureConfiguration(
         activationThreshold: KeyboardConstants.DeleteGestures.slideActivationThreshold,
-        swipeUpThreshold: nil
+        swipeUpThreshold: nil,
+        swipeDownThreshold: nil
     )
 
     /// A key without slide behavior: nothing can latch.
     static let inactive = SlideGestureConfiguration(
         activationThreshold: .infinity,
-        swipeUpThreshold: nil
+        swipeUpThreshold: nil,
+        swipeDownThreshold: nil
     )
 
     static func `for`(_ slideType: SlideType) -> SlideGestureConfiguration {
@@ -84,6 +96,8 @@ struct SlideGestureState: Sendable {
     /// Most-negative vertical translation seen this gesture (SwiftUI's y axis
     /// points down, so upward travel is negative). Peak of the up-swipe.
     private(set) var upwardPeakY: CGFloat = 0
+    /// Largest downward translation seen this gesture, for the down-swipe.
+    private(set) var downwardPeakY: CGFloat = 0
     /// Largest distance from the touch-down origin seen so far. Mirrors
     /// `KeyGestureSequence.maxDisplacement`; used to cancel a pending long
     /// press once the finger has clearly left its resting position.
@@ -127,6 +141,7 @@ struct SlideGestureState: Sendable {
 
         let currentX = translation.width
         upwardPeakY = min(upwardPeakY, translation.height)
+        downwardPeakY = max(downwardPeakY, translation.height)
         maxDisplacement = max(maxDisplacement, hypot(translation.width, translation.height))
 
         // Activate only while the horizontal axis dominates: crossing the
@@ -155,13 +170,15 @@ struct SlideGestureState: Sendable {
         // mis-latch the peak guard was added to fix. A key without an up-swipe
         // binding has no threshold at all, so neither guard applies to it.
         let upSwipeCommitted = configuration.swipeUpThreshold.map { -upwardPeakY >= $0 } ?? false
-        let dominantHorizontalSlide = configuration.swipeUpThreshold.map {
+        // A committed down-swipe blocks the latch the same way (word completions).
+        let downSwipeCommitted = configuration.swipeDownThreshold.map { downwardPeakY >= $0 } ?? false
+        let dominantHorizontalSlide = (configuration.swipeUpThreshold ?? configuration.swipeDownThreshold).map {
             abs(currentX) >= $0 && abs(currentX) > abs(translation.height) * 2
         } ?? false
         if !isSliding,
            abs(currentX) >= configuration.activationThreshold,
            abs(currentX) > abs(translation.height),
-           !upSwipeCommitted || dominantHorizontalSlide {
+           !(upSwipeCommitted || downSwipeCommitted) || dominantHorizontalSlide {
             isSliding = true
             // Anchor at the threshold crossing (not the full translation) so
             // the travel beyond the threshold is reported on the same tick
@@ -208,6 +225,12 @@ struct SlideGestureState: Sendable {
             let returnBoundary = upwardPeakY * KeyboardConstants.SpaceGestures.returnSwipeThreshold
             return .swipeUp(isReturn: translation.height >= returnBoundary)
         }
+        // A down-swipe must still be low when the finger lifts: pulled down and
+        // back it is a tap, exactly as before the space bar had a down-swipe.
+        if let swipeDownThreshold = configuration.swipeDownThreshold, downwardPeakY >= swipeDownThreshold,
+           translation.height > downwardPeakY * KeyboardConstants.SpaceGestures.returnSwipeThreshold {
+            return .swipeDown
+        }
         // A tap must stay near its origin on *both* axes. Gating on
         // horizontal travel alone would classify a vertical flick (e.g.
         // 80 pt up on the space bar) as a tap and commit its center action.
@@ -229,6 +252,7 @@ struct SlideGestureState: Sendable {
         isSliding = false
         lastTranslationX = 0
         upwardPeakY = 0
+        downwardPeakY = 0
         maxDisplacement = 0
     }
 }

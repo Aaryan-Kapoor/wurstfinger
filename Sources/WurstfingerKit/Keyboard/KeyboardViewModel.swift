@@ -122,6 +122,10 @@ final class KeyboardViewModel {
     /// Height of the row above the keys (word completions), 0 for none. Set
     /// by whatever fills that row; the layout plan makes room for it.
     var accessoryRowHeight: CGFloat = 0
+    // WORD COMPLETIONS hook (KeyboardViewModel+Completions.swift): the engine
+    // behind the row above the keys. Lazy so a view model that never types
+    // (previews, the bench's rigs before the first keystroke) builds none.
+    @ObservationIgnored lazy var completions: WordCompletions = makeCompletions()
     /// How geometry changes move (`LayoutMotionClock`), shared by the root
     /// view and the controller so the keys and the frame move together.
     @ObservationIgnored let layoutMotionClock = LayoutMotionClock()
@@ -198,6 +202,7 @@ final class KeyboardViewModel {
             guard fieldTraits != oldValue else { return }
             let tuning = GestureTuning.load(from: sharedDefaults).applying(fieldTraits)
             if gestureTuning != tuning { gestureTuning = tuning }
+            completionsConfigurationDidChange() // WORD COMPLETIONS hook
         }
     }
 
@@ -528,6 +533,7 @@ final class KeyboardViewModel {
             gestureTuning = newTuning
         }
         typingBehavior = TypingBehavior.load(from: sharedDefaults, reusing: typingBehavior)
+        completionsConfigurationDidChange() // WORD COMPLETIONS hook
 
         // The layout on screen was edited, or deleted, in the host app: load
         // what the registry holds now (an English fallback if it is gone).

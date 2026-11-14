@@ -61,7 +61,7 @@ struct TextInputMiddleware: ActionMiddleware {
              .copy, .paste, .cut, .cutAll, .none, .switchToNextLanguage,
              .switchToPreviousLanguage, .toggleUtilityColumnSide,
              .lineStart, .lineEnd, .documentStart, .documentEnd, .lineUp, .lineDown,
-             .deleteWordBackward, .deleteWordForward, .cycleWordCase:
+             .deleteWordBackward, .deleteWordForward, .cycleWordCase, .acceptCompletion:
             break
         }
     }

@@ -37826,6 +37826,1800 @@
           }
         }
       }
+    },
+    "Accept suggestion": {
+      "comment": "ACCESSIBILITY action name for the space bar's down-swipe (VoiceOver): types the first word completion and a space",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vorschlag übernehmen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accepter la suggestion"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aceptar sugerencia"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accetta suggerimento"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Принять подсказку"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Przyjmij podpowiedź"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Godta förslag"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hyväksy ehdotus"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prihvati prijedlog"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "קבלת ההצעה"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chấp nhận gợi ý"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tanggapin ang mungkahi"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Αποδοχή πρότασης"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aceitar sugestão"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Прийняти підказку"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "قبول الاقتراح"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "پذیرفتن پیشنهاد"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تجویز قبول کریں"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ยอมรับคำแนะนำ"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "सुझाव स्वीकारें"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "候補を採用"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "제안 수락"
+          }
+        }
+      }
+    },
+    "Suggestions": {
+      "comment": "ACCESSIBILITY label of the row of word completions above the keys",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vorschläge"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suggestions"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sugerencias"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suggerimenti"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подсказки"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Podpowiedzi"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Förslag"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ehdotukset"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prijedlozi"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "הצעות"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gợi ý"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mga mungkahi"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Προτάσεις"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sugestões"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Підказки"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اقتراحات"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "پیشنهادها"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تجاویز"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "คำแนะนำ"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "सुझाव"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "候補"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "제안"
+          }
+        }
+      }
+    },
+    "Types the rest of the word and a space": {
+      "comment": "ACCESSIBILITY hint of a word completion button above the keys",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tippt den Rest des Wortes und ein Leerzeichen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saisit la fin du mot et une espace"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Escribe el resto de la palabra y un espacio"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scrive il resto della parola e uno spazio"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Печатает остаток слова и пробел"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wpisuje resztę słowa i spację"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skriver resten av ordet och ett mellanslag"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kirjoittaa sanan lopun ja välilyönnin"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Upisuje ostatak riječi i razmak"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "מקליד את שאר המילה ורווח"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gõ phần còn lại của từ và một dấu cách"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Itatype ang natitirang bahagi ng salita at isang space"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Πληκτρολογεί το υπόλοιπο της λέξης και ένα κενό"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Escreve o resto da palavra e um espaço"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Друкує решту слова та пробіл"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يكتب بقية الكلمة ومسافة"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "بقیهٔ کلمه و یک فاصله را تایپ می‌کند"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لفظ کا باقی حصہ اور ایک اسپیس ٹائپ کرتا ہے"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "พิมพ์ส่วนที่เหลือของคำและเว้นวรรค"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "शब्द का शेष भाग और एक स्पेस टाइप करता है"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "単語の残りとスペースを入力します"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "단어의 나머지와 공백을 입력합니다"
+          }
+        }
+      }
+    },
+    "Suggestion: %@": {
+      "comment": "Spoken under VoiceOver gesture typing after a pause: the top word completion. %@ is the word",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vorschlag: %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suggestion : %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sugerencia: %@"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suggerimento: %@"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подсказка: %@"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Podpowiedź: %@"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Förslag: %@"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ehdotus: %@"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prijedlog: %@"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "הצעה: %@"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gợi ý: %@"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mungkahi: %@"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Πρόταση: %@"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sugestão: %@"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Підказка: %@"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اقتراح: %@"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "پیشنهاد: %@"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تجویز: %@"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "คำแนะนำ: %@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "सुझाव: %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "候補: %@"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "제안: %@"
+          }
+        }
+      }
+    },
+    "Word Suggestions": {
+      "comment": "Settings row, screen title and switch: the completions of the word being typed, shown above the keys",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wortvorschläge"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suggestions de mots"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sugerencias de palabras"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suggerimenti di parole"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подсказки слов"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Podpowiedzi słów"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ordförslag"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sanaehdotukset"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prijedlozi riječi"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "הצעות מילים"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gợi ý từ"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mga Mungkahing Salita"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Προτάσεις λέξεων"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sugestões de palavras"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Підказки слів"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اقتراحات الكلمات"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "پیشنهاد کلمه"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الفاظ کی تجاویز"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "คำแนะนำคำศัพท์"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "शब्द सुझाव"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "単語候補"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "단어 제안"
+          }
+        }
+      }
+    },
+    "Complete the word you are typing": {
+      "comment": "Subtitle of the Word Suggestions switch",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das Wort, das du tippst, vervollständigen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compléter le mot en cours de saisie"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Completa la palabra que escribes"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Completa la parola che stai scrivendo"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Дополнять слово, которое вы вводите"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uzupełniaj wpisywane słowo"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Komplettera ordet du skriver"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Täydennä kirjoittamasi sana"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dovrši riječ koju upisujete"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "השלמת המילה שאתם מקלידים"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hoàn thành từ bạn đang gõ"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kumpletuhin ang salitang tina-type mo"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Συμπλήρωση της λέξης που πληκτρολογείτε"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Completa a palavra que está a escrever"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Доповнювати слово, яке ви вводите"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إكمال الكلمة التي تكتبها"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "کامل کردن کلمه‌ای که تایپ می‌کنید"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "جو لفظ آپ ٹائپ کر رہے ہیں اسے مکمل کریں"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "เติมคำที่คุณกำลังพิมพ์ให้สมบูรณ์"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "आप जो शब्द टाइप कर रहे हैं उसे पूरा करें"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "入力中の単語を補完します"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "입력 중인 단어를 완성합니다"
+          }
+        }
+      }
+    },
+    "Shows up to three completions above the keys. Tap one to finish the word and add a space, or swipe down on the space bar to take the first. Left out of password, URL, email and number fields.": {
+      "comment": "Footer of the Word Suggestions switch: what the row does, the space-bar swipe that takes the first completion, and where it stays hidden",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zeigt bis zu drei Vervollständigungen über den Tasten. Tippe auf eine, um das Wort zu beenden und ein Leerzeichen anzuhängen, oder wische auf der Leertaste nach unten, um die erste zu übernehmen. In Passwort-, URL-, E-Mail- und Zahlenfeldern ausgeblendet."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Affiche jusqu'à trois complétions au-dessus des touches. Touchez-en une pour terminer le mot et ajouter une espace, ou balayez vers le bas sur la barre d'espace pour prendre la première. Masquées dans les champs de mot de passe, d'URL, d'e-mail et de nombres."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muestra hasta tres sugerencias sobre las teclas. Toca una para terminar la palabra y añadir un espacio, o desliza hacia abajo en la barra espaciadora para aceptar la primera. Se ocultan en campos de contraseña, URL, correo y números."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostra fino a tre completamenti sopra i tasti. Tocca un completamento per finire la parola e aggiungere uno spazio, oppure scorri verso il basso sulla barra spaziatrice per usare il primo. Nascosti nei campi password, URL, e-mail e numeri."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Показывает до трёх вариантов завершения над клавишами. Коснитесь одного, чтобы закончить слово и добавить пробел, или проведите вниз по пробелу, чтобы принять первый. Скрыты в полях паролей, URL, e-mail и чисел."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pokazuje do trzech uzupełnień nad klawiszami. Stuknij jedno, aby dokończyć słowo i dodać spację, albo przesuń palcem w dół po spacji, aby przyjąć pierwsze. Ukryte w polach haseł, adresów URL, e-maili i liczb."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Visar upp till tre kompletteringar ovanför tangenterna. Tryck på en för att avsluta ordet och lägga till ett mellanslag, eller svep nedåt på mellanslagstangenten för att ta det första. Döljs i fält för lösenord, webbadresser, e-post och siffror."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Näyttää enintään kolme täydennystä näppäinten yläpuolella. Napauta yhtä viimeistelläksesi sanan ja lisätäksesi välilyönnin tai pyyhkäise välilyöntinäppäimellä alas hyväksyäksesi ensimmäisen. Piilotettu salasana-, URL-, sähköposti- ja numerokentissä."
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prikazuje do tri dovršetka iznad tipki. Dodirnite jedan da dovršite riječ i dodate razmak ili povucite prema dolje po razmaknici da prihvatite prvi. Skriveno u poljima za lozinke, URL-ove, e-poštu i brojeve."
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "מציג עד שלוש השלמות מעל המקשים. הקישו על אחת כדי לסיים את המילה ולהוסיף רווח, או החליקו מטה על מקש הרווח כדי לקבל את הראשונה. מוסתר בשדות סיסמה, כתובות URL, אימייל ומספרים."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hiển thị tối đa ba từ gợi ý phía trên các phím. Chạm vào một từ để hoàn thành và thêm dấu cách, hoặc vuốt xuống trên phím cách để chọn từ đầu tiên. Bị ẩn trong các ô mật khẩu, URL, email và số."
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nagpapakita ng hanggang tatlong pagkumpleto sa itaas ng mga key. I-tap ang isa para tapusin ang salita at magdagdag ng space, o mag-swipe pababa sa space bar para kunin ang una. Nakatago sa mga field ng password, URL, email, at numero."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Εμφανίζει έως τρεις συμπληρώσεις πάνω από τα πλήκτρα. Πατήστε μία για να ολοκληρώσετε τη λέξη και να προσθέσετε κενό ή σύρετε προς τα κάτω στο πλήκτρο διαστήματος για να δεχτείτε την πρώτη. Κρύβονται σε πεδία κωδικών, URL, email και αριθμών."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostra até três sugestões por cima das teclas. Toque numa para terminar a palavra e acrescentar um espaço, ou deslize para baixo na barra de espaço para aceitar a primeira. Ocultas em campos de palavra-passe, URL, e-mail e números."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Показує до трьох варіантів завершення над клавішами. Торкніться одного, щоб закінчити слово й додати пробіл, або проведіть вниз по пробілу, щоб прийняти перший. Приховані в полях паролів, URL, e-mail і чисел."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يعرض حتى ثلاثة إكمالات فوق المفاتيح. اضغط على أحدها لإنهاء الكلمة وإضافة مسافة، أو اسحب لأسفل على مفتاح المسافة لقبول الأول. تُخفى في حقول كلمات المرور وعناوين URL والبريد الإلكتروني والأرقام."
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تا سه تکمیل بالای کلیدها نشان می‌دهد. روی یکی بزنید تا کلمه تمام شود و فاصله اضافه شود، یا روی کلید فاصله به پایین بکشید تا اولی پذیرفته شود. در فیلدهای گذرواژه، نشانی اینترنتی، ایمیل و عدد پنهان است."
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "کیز کے اوپر تین تک تکمیلیں دکھاتا ہے۔ لفظ مکمل کرنے اور اسپیس شامل کرنے کے لیے کسی ایک پر ٹیپ کریں، یا پہلی کو لینے کے لیے اسپیس بار پر نیچے کی طرف سوائپ کریں۔ پاس ورڈ، URL، ای میل اور نمبر کے خانوں میں چھپی رہتی ہیں۔"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "แสดงคำที่เติมให้สูงสุดสามคำเหนือแป้นพิมพ์ แตะคำใดคำหนึ่งเพื่อจบคำและเว้นวรรค หรือปัดลงบนแป้นเว้นวรรคเพื่อเลือกคำแรก ซ่อนในช่องรหัสผ่าน URL อีเมล และตัวเลข"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "कुंजियों के ऊपर तीन तक पूर्ण शब्द दिखाता है। शब्द पूरा करने और स्पेस जोड़ने के लिए किसी एक पर टैप करें, या पहला चुनने के लिए स्पेस बार पर नीचे की ओर स्वाइप करें। पासवर्ड, URL, ईमेल और संख्या वाले फ़ील्ड में छिपा रहता है।"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "キーの上に最大3つの補完候補を表示します。候補をタップすると単語を完成させてスペースを追加し、スペースバーを下にスワイプすると最初の候補を採用します。パスワード、URL、メール、数字のフィールドでは表示されません。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "키 위에 최대 세 개의 완성 단어를 표시합니다. 단어를 마무리하고 공백을 추가하려면 하나를 탭하고, 첫 번째 제안을 받아들이려면 스페이스 바를 아래로 쓸어내리세요. 암호, URL, 이메일, 숫자 입력란에서는 표시되지 않습니다."
+          }
+        }
+      }
+    },
+    "Learn New Words": {
+      "comment": "Switch: remember words the dictionary does not know",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neue Wörter lernen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apprendre de nouveaux mots"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aprender palabras nuevas"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impara parole nuove"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Запоминать новые слова"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ucz się nowych słów"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lär nya ord"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opi uusia sanoja"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uči nove riječi"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "לימוד מילים חדשות"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Học từ mới"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Matuto ng Bagong Salita"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Εκμάθηση νέων λέξεων"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aprender palavras novas"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Запам'ятовувати нові слова"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعلّم كلمات جديدة"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "یادگیری کلمه‌های جدید"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "نئے الفاظ سیکھیں"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "เรียนรู้คำใหม่"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "नए शब्द सीखें"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新しい単語を学習"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "새 단어 학습"
+          }
+        }
+      }
+    },
+    "Words the dictionary does not know, such as names, are remembered once you have typed them twice. They stay on this device, inside the keyboard, and are never learned in password or other sensitive fields.": {
+      "comment": "Footer of the Learn New Words switch: what is remembered, where it stays, and that sensitive fields are excluded",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wörter, die das Wörterbuch nicht kennt, etwa Namen, werden gemerkt, sobald du sie zweimal getippt hast. Sie bleiben auf diesem Gerät in der Tastatur und werden nie in Passwort- oder anderen sensiblen Feldern gelernt."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les mots que le dictionnaire ne connaît pas, comme les noms, sont mémorisés après deux saisies. Ils restent sur cet appareil, dans le clavier, et ne sont jamais appris dans les champs de mot de passe ou autres champs sensibles."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Las palabras que el diccionario no conoce, como los nombres, se recuerdan cuando las has escrito dos veces. Se quedan en este dispositivo, dentro del teclado, y nunca se aprenden en campos de contraseña ni otros campos sensibles."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le parole che il dizionario non conosce, come i nomi, vengono ricordate dopo averle scritte due volte. Restano su questo dispositivo, dentro la tastiera, e non vengono mai apprese nei campi password o in altri campi sensibili."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Слова, которых нет в словаре, например имена, запоминаются после того, как вы введёте их дважды. Они остаются на этом устройстве, внутри клавиатуры, и никогда не запоминаются в полях паролей и других конфиденциальных полях."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Słowa, których nie zna słownik, na przykład imiona, są zapamiętywane po dwukrotnym wpisaniu. Zostają na tym urządzeniu, wewnątrz klawiatury, i nigdy nie są zapamiętywane w polach haseł ani innych wrażliwych polach."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ord som ordlistan inte känner till, till exempel namn, kommer ihåg när du har skrivit dem två gånger. De stannar på den här enheten, inne i tangentbordet, och lärs aldrig in i lösenordsfält eller andra känsliga fält."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sanat, joita sanakirja ei tunne, kuten nimet, muistetaan, kun olet kirjoittanut ne kahdesti. Ne pysyvät tällä laitteella näppäimistön sisällä, eikä niitä koskaan opita salasana- tai muissa arkaluonteisissa kentissä."
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Riječi koje rječnik ne poznaje, poput imena, pamte se nakon što ih dvaput upišete. Ostaju na ovom uređaju, unutar tipkovnice, i nikada se ne uče u poljima za lozinke ni drugim osjetljivim poljima."
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "מילים שהמילון אינו מכיר, כמו שמות, נשמרות לאחר שהקלדתם אותן פעמיים. הן נשארות במכשיר הזה, בתוך המקלדת, ולעולם אינן נלמדות בשדות סיסמה או בשדות רגישים אחרים."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Những từ mà từ điển không biết, như tên riêng, sẽ được ghi nhớ sau khi bạn gõ hai lần. Chúng ở lại trên thiết bị này, bên trong bàn phím, và không bao giờ được học trong ô mật khẩu hay các ô nhạy cảm khác."
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ang mga salitang hindi alam ng diksyunaryo, tulad ng mga pangalan, ay naaalala pagkatapos mo itong i-type nang dalawang beses. Nananatili ang mga ito sa device na ito, sa loob ng keyboard, at hindi kailanman natututunan sa mga field ng password o iba pang sensitibong field."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Οι λέξεις που δεν γνωρίζει το λεξικό, όπως τα ονόματα, απομνημονεύονται αφού τις πληκτρολογήσετε δύο φορές. Παραμένουν σε αυτή τη συσκευή, μέσα στο πληκτρολόγιο, και δεν μαθαίνονται ποτέ σε πεδία κωδικών ή άλλα ευαίσθητα πεδία."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "As palavras que o dicionário não conhece, como nomes, são memorizadas depois de as escrever duas vezes. Ficam neste dispositivo, dentro do teclado, e nunca são aprendidas em campos de palavra-passe ou outros campos sensíveis."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Слова, яких немає в словнику, наприклад імена, запам'ятовуються після того, як ви введете їх двічі. Вони залишаються на цьому пристрої, всередині клавіатури, і ніколи не запам'ятовуються в полях паролів чи інших конфіденційних полях."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الكلمات التي لا يعرفها القاموس، مثل الأسماء، تُحفظ بعد أن تكتبها مرتين. تبقى على هذا الجهاز داخل لوحة المفاتيح، ولا تُتعلَّم أبدًا في حقول كلمات المرور أو الحقول الحساسة الأخرى."
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "کلمه‌هایی که فرهنگ لغت نمی‌شناسد، مانند نام‌ها، پس از دو بار تایپ به خاطر سپرده می‌شوند. آن‌ها روی همین دستگاه و داخل صفحه‌کلید می‌مانند و هرگز در فیلدهای گذرواژه یا فیلدهای حساس دیگر یاد گرفته نمی‌شوند."
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "جو الفاظ لغت نہیں جانتی، جیسے نام، وہ دو بار ٹائپ کرنے کے بعد یاد رکھے جاتے ہیں۔ وہ اسی آلے پر، کی بورڈ کے اندر رہتے ہیں اور پاس ورڈ یا دیگر حساس خانوں میں کبھی نہیں سیکھے جاتے۔"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "คำที่พจนานุกรมไม่รู้จัก เช่น ชื่อ จะถูกจดจำหลังจากที่คุณพิมพ์สองครั้ง คำเหล่านี้อยู่ในอุปกรณ์เครื่องนี้ภายในแป้นพิมพ์ และจะไม่ถูกเรียนรู้ในช่องรหัสผ่านหรือช่องที่ละเอียดอ่อนอื่น ๆ"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "जो शब्द शब्दकोश नहीं जानता, जैसे नाम, उन्हें दो बार टाइप करने के बाद याद रखा जाता है। वे इसी डिवाइस पर, कीबोर्ड के भीतर रहते हैं और पासवर्ड या अन्य संवेदनशील फ़ील्ड में कभी नहीं सीखे जाते।"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "名前など辞書にない単語は、2回入力すると記憶されます。単語はこのデバイスのキーボード内にのみ保存され、パスワードなどの機密性の高いフィールドでは学習されません。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "이름처럼 사전에 없는 단어는 두 번 입력하면 기억됩니다. 단어는 이 기기의 키보드 안에만 저장되며 암호 등 민감한 입력란에서는 학습되지 않습니다."
+          }
+        }
+      }
+    },
+    "Clear Learned Words": {
+      "comment": "Destructive button and its confirmation action: forget the words the keyboard learned",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gelernte Wörter löschen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Effacer les mots appris"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Borrar palabras aprendidas"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancella parole apprese"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Удалить запомненные слова"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Usuń zapamiętane słowa"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rensa inlärda ord"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tyhjennä opitut sanat"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izbriši naučene riječi"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "מחיקת מילים שנלמדו"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xóa các từ đã học"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I-clear ang Mga Natutunang Salita"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Διαγραφή μαθημένων λέξεων"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apagar palavras aprendidas"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Видалити запам'ятовані слова"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مسح الكلمات المتعلَّمة"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "پاک کردن کلمه‌های یادگرفته"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "سیکھے ہوئے الفاظ مٹائیں"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ล้างคำที่เรียนรู้"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "सीखे गए शब्द साफ़ करें"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "学習した単語を消去"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "학습한 단어 지우기"
+          }
+        }
+      }
+    },
+    "Clear all learned words?": {
+      "comment": "Confirmation dialog title for clearing the learned words",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle gelernten Wörter löschen?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Effacer tous les mots appris ?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Borrar todas las palabras aprendidas?"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancellare tutte le parole apprese?"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Удалить все запомненные слова?"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Usunąć wszystkie zapamiętane słowa?"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rensa alla inlärda ord?"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tyhjennetäänkö kaikki opitut sanat?"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izbrisati sve naučene riječi?"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "למחוק את כל המילים שנלמדו?"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xóa tất cả các từ đã học?"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I-clear ang lahat ng natutunang salita?"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Διαγραφή όλων των μαθημένων λέξεων;"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apagar todas as palavras aprendidas?"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Видалити всі запам'ятовані слова?"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "هل تريد مسح كل الكلمات المتعلَّمة؟"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "همهٔ کلمه‌های یادگرفته پاک شوند؟"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تمام سیکھے ہوئے الفاظ مٹائیں؟"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ล้างคำที่เรียนรู้ทั้งหมดหรือไม่"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "सभी सीखे गए शब्द साफ़ करें?"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "学習した単語をすべて消去しますか？"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "학습한 단어를 모두 지울까요?"
+          }
+        }
+      }
+    },
+    "The keyboard forgets every word it learned. This cannot be undone.": {
+      "comment": "Message of the confirmation dialog for clearing the learned words",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Tastatur vergisst jedes gelernte Wort. Das lässt sich nicht rückgängig machen."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le clavier oublie tous les mots appris. Cette action est irréversible."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El teclado olvida todas las palabras aprendidas. No se puede deshacer."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La tastiera dimentica tutte le parole apprese. L'operazione non si può annullare."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Клавиатура забудет все запомненные слова. Это действие нельзя отменить."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klawiatura zapomni wszystkie zapamiętane słowa. Tej czynności nie można cofnąć."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tangentbordet glömmer alla inlärda ord. Det går inte att ångra."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Näppäimistö unohtaa kaikki oppimansa sanat. Toimintoa ei voi peruuttaa."
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tipkovnica zaboravlja sve naučene riječi. Ovo se ne može poništiti."
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "המקלדת תשכח כל מילה שלמדה. אי אפשר לבטל פעולה זו."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bàn phím sẽ quên mọi từ đã học. Không thể hoàn tác."
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Makakalimutan ng keyboard ang bawat natutunang salita. Hindi ito mababawi."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Το πληκτρολόγιο ξεχνά κάθε λέξη που έμαθε. Δεν είναι δυνατή η αναίρεση."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O teclado esquece todas as palavras aprendidas. Não é possível anular."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Клавіатура забуде всі запам'ятовані слова. Цю дію не можна скасувати."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ستنسى لوحة المفاتيح كل كلمة تعلمتها. لا يمكن التراجع عن هذا."
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "صفحه‌کلید همهٔ کلمه‌هایی را که یاد گرفته فراموش می‌کند. این کار قابل بازگشت نیست."
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "کی بورڈ ہر سیکھا ہوا لفظ بھول جائے گا۔ اسے کالعدم نہیں کیا جا سکتا۔"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "แป้นพิมพ์จะลืมทุกคำที่เรียนรู้ ไม่สามารถเลิกทำได้"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "कीबोर्ड सीखा हुआ हर शब्द भूल जाएगा। इसे पूर्ववत नहीं किया जा सकता।"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "キーボードは学習したすべての単語を忘れます。この操作は取り消せません。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "키보드가 학습한 모든 단어를 잊어버립니다. 이 작업은 되돌릴 수 없습니다."
+          }
+        }
+      }
+    },
+    "On": {
+      "comment": "Subtitle of a settings row whose switch is on (counterpart of Off)",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activé"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Encendido"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sì"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вкл."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wł."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "På"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Päällä"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uklj."
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "פועל"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bật"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ενεργό"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ligado"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Увімк."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تشغيل"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "روشن"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "چالو"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "เปิด"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "चालू"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "オン"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "켬"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

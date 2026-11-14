@@ -46,6 +46,7 @@ extension KeyboardViewModel {
         )
         rebuildPipeline()
         startPrewarmIfNeeded()
+        completionsConfigurationDidChange() // WORD COMPLETIONS hook: the language may have no dictionary
     }
 
     /// Signature of the inputs that determine a loaded definition (language +
@@ -149,6 +150,12 @@ extension KeyboardViewModel {
         middlewares.append(HapticMiddleware(trigger: { [weak self] action in
             self?.triggerHaptic(for: action)
         }))
+
+        // 1b. Word completions: the accept action, the auto-space behind an
+        //     accepted word, and the cue to look the next word up. First after
+        //     the haptics, so it sees the raw space and punctuation before
+        //     composition or a replacement can rewrite them.
+        middlewares.append(makeCompletionMiddleware())
 
         // 2. Compose + Cycle Accents — per-definition engine so language-specific
         // compose rule overrides are honored (rebuilt on every definition load).
@@ -584,6 +591,10 @@ extension KeyboardViewModel {
             // Only reported when the horizontal slide never activated, so
             // this cannot interfere with cursor movement in either style.
             toggleLabelVisibility(grouped: isReturn)
+        case .swipeDown:
+            // Word completions: the binding on the space bar's down-swipe
+            // (`CommonKeys.spacebar`) takes the first completion, or does nothing.
+            handleGesture(.swipeDown, keyId: key.id, isReturn: false)
         }
     }
 
@@ -772,7 +783,7 @@ extension KeyboardViewModel {
             feelSlideEnded()
         case .tap:
             handleGesture(.tap, keyId: key.id, isReturn: false)
-        case .swipeUp:
+        case .swipeUp, .swipeDown:
             // The delete key has no vertical gestures; label toggles are a
             // space-bar feature. `SlideGestureConfiguration.delete` never
             // classifies one, so this case only keeps the switch exhaustive.

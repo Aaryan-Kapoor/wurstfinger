@@ -49,7 +49,7 @@ struct AutoCapitalizationMiddleware: ActionMiddleware {
         case .moveCursor, .switchMode, .capitalizeWord, .cycleWordCase, .advanceToNextInputMode,
              .dismissKeyboard, .copy, .none, .switchToNextLanguage, .switchToPreviousLanguage,
              .toggleUtilityColumnSide, .backTab, .escape, .lineStart, .lineEnd, .lineUp, .lineDown,
-             .documentStart, .documentEnd:
+             .documentStart, .documentEnd, .acceptCompletion:
             false
         }
     }

@@ -164,7 +164,7 @@ extension KeyboardMode {
                 label: binding.label, action: .commitText(output), category: .letter,
                 returnAction: nil, accessibilityLabel: nil
             )
-        case .cycleAccents, .switchMode, .capitalizeWord, .cycleWordCase:
+        case .cycleAccents, .switchMode, .capitalizeWord, .cycleWordCase, .acceptCompletion:
             // Accents and case changes mean nothing under a modifier, and the
             // shift and lowercase keys would leave the mode half-way: the mode
             // ends with one key, or with the key that replaces "123".

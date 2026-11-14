@@ -112,6 +112,11 @@ enum KeyAction: Codable, Equatable, Sendable {
     /// (UPPER → Title → lower). A step past either end does nothing.
     case cycleWordCase(ascending: Bool)
 
+    /// Take the first word completion of the row above the keys: types the
+    /// rest of the word and a space, and does nothing when there is none
+    /// (`WordCompletions.acceptTop`). Bound to a swipe down on the space bar.
+    case acceptCompletion
+
     /// No action (empty slot)
     case none
 }

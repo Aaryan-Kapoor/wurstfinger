@@ -143,6 +143,7 @@ extension KeyAction {
         case .lineUp: "↑"
         case .lineDown: "↓"
         case .cycleWordCase: "Aa"
+        case .acceptCompletion: "✓"
         case .switchToPreviousLanguage: "🌐"
         case .toggleUtilityColumnSide: "⇆"
         case .lineStart: "⇱"
