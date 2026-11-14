@@ -95,9 +95,9 @@ enum NumpadColumn {
             }
             // The side digits carry their own name for VoiceOver: that is what
             // makes them reachable as custom actions (`accessibilityActions`).
-            bindings[.swipeLeft] = digitBinding(row[0], isNamed: true)
-            bindings[.tap] = digitBinding(row[1], isNamed: false)
-            bindings[.swipeRight] = digitBinding(row[2], isNamed: true)
+            bindings[.swipeLeft] = digitBinding(row[0])
+            bindings[.tap] = digitBinding(row[1])
+            bindings[.swipeRight] = digitBinding(row[2])
             keys[id] = KeyDefinition(
                 id: id, bindings: bindings, swipeMode: .eightWay,
                 slideType: .none, style: .numpad, tapCycleActions: nil
@@ -107,13 +107,14 @@ enum NumpadColumn {
     }
 
     /// A digit binding. The bottom row's `,` and `.` are punctuation and take
-    /// the symbol category.
-    private static func digitBinding(_ glyph: String, isNamed: Bool) -> KeyBinding {
+    /// the symbol category. Unnamed: VoiceOver offers every character on the
+    /// key by its glyph and gesture (`KeyDefinition.accessibilityActions`).
+    private static func digitBinding(_ glyph: String) -> KeyBinding {
         let isDigit = glyph.first?.isNumber == true
         return KeyBinding(
             label: glyph, action: .commitText(glyph),
             category: isDigit ? .digit : .symbol, returnAction: nil,
-            accessibilityLabel: isNamed ? glyph : nil
+            accessibilityLabel: nil
         )
     }
 }

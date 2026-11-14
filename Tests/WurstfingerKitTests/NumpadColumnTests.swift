@@ -110,12 +110,19 @@ struct NumpadColumnKeyTests {
         }
     }
 
-    @Test func theSideDigitsAreReachableByVoiceOver() throws {
+    /// The tap digit is the key's activation; the side digits and every
+    /// symbol are character actions.
+    @Test func everyCharacterIsReachableByVoiceOver() throws {
         let keys = NumpadColumn.keys(digits: NumericLayouts.westernDigits, style: .phone)
         let key = try #require(keys[NumpadColumn.keyIds[0]])
-        let named = key.accessibilityActions.map(\.gesture)
-        #expect(named == [.swipeLeft, .swipeRight])
-        #expect(key.accessibilityActions.map(\.name) == ["1", "3"])
+        let actions = key.accessibilityActions
+        #expect(actions.map(\.name).contains("1, swipe left"))
+        #expect(actions.map(\.name).contains("3, swipe right"))
+        let reachable = Set(actions.compactMap(\.glyph)).union([key.bindings[.tap]?.action.typedText ?? ""])
+        for binding in key.bindings.values {
+            let text = try #require(binding.action.typedText)
+            #expect(reachable.contains(text), "\(binding.label) is unreachable")
+        }
     }
 
     @Test func isNumpadKeyRecognizesTheIds() {
