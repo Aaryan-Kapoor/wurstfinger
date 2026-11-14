@@ -119,3 +119,25 @@ struct KeyboardGeometrySignatureTests {
         #expect(KeyboardGeometrySignature(right) != KeyboardGeometrySignature(left))
     }
 }
+
+struct KeyboardSpringTests {
+    /// The keys (SwiftUI) and the keyboard's frame (UIKit) read the same
+    /// spring off the motion, so they cannot drift apart.
+    @Test func eachMotionIsOneSpringForBothSides() {
+        #expect(LayoutMotion.follow.spring == .follow)
+        #expect(LayoutMotion.settle(duration: 0.3).spring == KeyboardSpring(duration: 0.3, bounce: 0))
+        #expect(LayoutMotion.follow.animation == KeyboardSpring.follow.animation)
+    }
+
+    /// The geometry never overshoots visibly; the feel layer has a little life.
+    @Test func geometryGlidesAndFeelBounces() {
+        #expect(KeyboardSpring.glide(0.34).bounce == 0)
+        #expect(KeyboardSpring.follow.bounce < 0.1)
+        for spring in [KeyboardSpring.track, .settle, .land, .unfold, .detent] {
+            #expect(spring.bounce > 0 && spring.bounce <= 0.3)
+            #expect(spring.duration < 0.3, "a feel spring must finish within a keystroke or two")
+        }
+        #expect(FeelMotion.track == KeyboardSpring.track.animation)
+        #expect(FeelMotion.keyRelease == KeyboardSpring.settle.animation)
+    }
+}

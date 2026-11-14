@@ -562,7 +562,7 @@ public final class KeyboardViewController: UIInputViewController {
               )
         else { return }
         UIView.animate(
-            springDuration: motion.duration, bounce: 0, initialSpringVelocity: 0, delay: 0,
+            springDuration: motion.spring.duration, bounce: motion.spring.bounce, initialSpringVelocity: 0, delay: 0,
             options: [.beginFromCurrentState, .allowUserInteraction],
             animations: { self.view.superview?.layoutIfNeeded() }
         )

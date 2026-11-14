@@ -17,8 +17,9 @@ import SwiftUI
 /// spring picks up from wherever an interrupted animation left off, velocity
 /// included, so a fast typist re-pressing a key mid-release never sees a jump.
 ///
-/// Every spring is one of five, given as (duration, bounce) — the same terms
-/// as the layout's `LayoutMotion` — so the keyboard moves with one character:
+/// Every spring is one of five `KeyboardSpring`s — the terms the layout's
+/// `LayoutMotion` springs are given in too — so the keyboard moves with one
+/// character:
 /// `track` follows a finger, `settle` brings something to rest, `land` lets
 /// something arrive with a little life, `unfold` opens something larger, and
 /// `detent` is the one snappy, springy one, for the slide ratchet.
@@ -28,16 +29,16 @@ enum FeelMotion {
     /// Following a finger: the target hint swelling, the lit cell moving
     /// between map cells. Fast and barely bouncy, so it keeps up with a flick
     /// without swinging past it.
-    static let track = Animation.spring(duration: 0.18, bounce: 0.15)
+    static let track = KeyboardSpring.track.animation
     /// Coming to rest: a key back up after the finger lifts. Quick enough to
     /// be back before the next keystroke at 8–10 keys a second.
-    static let settle = Animation.spring(duration: 0.24, bounce: 0.15)
+    static let settle = KeyboardSpring.settle.animation
     /// Arriving with a little life: the lit cell's first appearance.
-    static let land = Animation.spring(duration: 0.2, bounce: 0.25)
+    static let land = KeyboardSpring.land.animation
     /// Opening up: the guide card's full map after a pause.
-    static let unfold = Animation.spring(duration: 0.28, bounce: 0.15)
+    static let unfold = KeyboardSpring.unfold.animation
     /// A ratchet pawl: one slide step passing.
-    static let detent = Animation.spring(duration: 0.14, bounce: 0.3)
+    static let detent = KeyboardSpring.detent.animation
 
     // MARK: Keys
 

@@ -50,23 +50,16 @@ enum LayoutMotion: Equatable, Sendable {
     /// Changes closer together than this are frames of one continuous change.
     static let continuityWindow: TimeInterval = 0.12
 
-    var animation: Animation {
+    /// The spring, for the SwiftUI keys and the UIKit side that animates
+    /// alongside them (the controller's height constraint) alike.
+    var spring: KeyboardSpring {
         switch self {
-        case let .settle(duration):
-            .spring(duration: duration, bounce: 0)
-        case .follow:
-            .interactiveSpring(response: 0.14, dampingFraction: 0.92)
+        case let .settle(duration): .glide(duration)
+        case .follow: .follow
         }
     }
 
-    /// The spring's duration, for the UIKit side that animates alongside it
-    /// (the controller's height constraint).
-    var duration: TimeInterval {
-        switch self {
-        case let .settle(duration): duration
-        case .follow: 0.14
-        }
-    }
+    var animation: Animation { spring.animation }
 }
 
 /// Decides, per geometry change, how it moves (`LayoutMotion`).
