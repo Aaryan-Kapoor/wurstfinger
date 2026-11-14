@@ -75,7 +75,7 @@ struct LanguageAlphabetCoverageTests {
     @Test(arguments: LanguageDefinitions.all)
     func layoutProducesItsAlphabet(descriptor: LanguageDescriptor) throws {
         let inventory = try #require(
-            Self.inventories.first(where: { $0.id == descriptor.id }),
+            Self.inventories.first(where: { $0.id == (descriptor.variantOf ?? descriptor.id) }),
             "No alphabet inventory for \(descriptor.id) — add one to `inventories`"
         )
         let index = Self.reachability(of: descriptor.makeDefinition())
@@ -93,7 +93,7 @@ struct LanguageAlphabetCoverageTests {
     @Test(arguments: LanguageDefinitions.all)
     func layoutBindsEveryCharacterItDoesNotDeclareAsIndirect(descriptor: LanguageDescriptor) throws {
         let inventory = try #require(
-            Self.inventories.first(where: { $0.id == descriptor.id }),
+            Self.inventories.first(where: { $0.id == (descriptor.variantOf ?? descriptor.id) }),
             "No alphabet inventory for \(descriptor.id) — add one to `inventories`"
         )
         let index = Self.reachability(of: descriptor.makeDefinition())

@@ -659,6 +659,9 @@ enum Catalog {
             scenarios.append(Scenario(group: "app", name: "app-haptics\(tail)") {
                 AppSurfaces.haptics(scheme: scheme)
             })
+            scenarios.append(Scenario(group: "app", name: "app-languages\(tail)") {
+                AppSurfaces.languages(scheme: scheme)
+            })
             scenarios.append(Scenario(group: "app", name: "app-style\(tail)") {
                 AppSurfaces.style(scheme: scheme)
             })

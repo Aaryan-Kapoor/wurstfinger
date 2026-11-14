@@ -78,10 +78,11 @@ extension KeyboardMode {
     /// Generates the one-shot Ctrl or Alt mode from this (main) mode.
     ///
     /// - The nine grid keys keep their gestures; every text output goes through
-    ///   `TerminalModifier.transformed`, and what the modifier has no meaning
-    ///   for becomes an inert binding (an empty `.none`, not a missing one: a
-    ///   missing binding would fall through to the numeric mode and type a
-    ///   digit or a different symbol).
+    ///   `TerminalModifier.transformed`. Text the modifier has no code for is
+    ///   typed as it is; what has no meaning at all (an accent trigger) becomes
+    ///   an inert binding (an empty `.none`, not a missing one: a missing
+    ///   binding would fall through to the numeric mode and type a digit or a
+    ///   different symbol).
     /// - Transformed bindings carry the `.letter` category whatever they were,
     ///   so the mode's `.letter → main` transition returns to the letters after
     ///   one key, the way a held modifier is released with the key.
@@ -145,7 +146,16 @@ extension KeyboardMode {
         let inert = inertBinding
         switch binding.action {
         case let .commitText(text):
-            guard let output = modifier.transformed(text) else { return inert }
+            // Text the modifier has no code for (ä, a digit, a full stop) is typed
+            // as it is: the key still works, and the mode still ends with it. A
+            // layout may put such a letter on a tap (the optimized Finnish layout
+            // puts ä there), and a tap that does nothing would strand the key.
+            guard let output = modifier.transformed(text) else {
+                return KeyBinding(
+                    label: binding.label, action: .commitText(text), category: .letter,
+                    returnAction: nil, accessibilityLabel: nil
+                )
+            }
             let isLetter = text.first?.isLetter == true
             return KeyBinding(
                 label: modifier == .control && isLetter ? binding.label.keyboardUppercased(with: locale) : binding.label,

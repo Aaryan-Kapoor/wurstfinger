@@ -67,6 +67,21 @@ let package = Package(
       path: "Sources/WurstfingerScenarioKit",
       swiftSettings: testableOnMac
     ),
+    // The layout lab: corpus tables, the Fitts-law cost model and the
+    // constrained annealer behind the per-language optimized layouts
+    // (docs/layout-science.md). Reads the real definitions through `@testable`,
+    // so it is macOS-only like the other tools; nothing here is shipped.
+    .target(
+      name: "WurstfingerLayoutLab",
+      dependencies: ["WurstfingerKit"],
+      path: "Sources/WurstfingerLayoutLab",
+      swiftSettings: testableOnMac
+    ),
+    .executableTarget(
+      name: "layoutlab",
+      dependencies: ["WurstfingerKit", "WurstfingerLayoutLab"],
+      path: "Sources/WurstfingerLayoutLabTool"
+    ),
     // macOS command-line tool that renders the real keyboard and app views
     // to PNG through ImageRenderer (see Sources/WurstfingerSnapshots).
     .executableTarget(
@@ -112,7 +127,7 @@ let package = Package(
     ),
     .testTarget(
       name: "WurstfingerKitTests",
-      dependencies: ["WurstfingerKit", "WurstfingerScenarioKit"],
+      dependencies: ["WurstfingerKit", "WurstfingerScenarioKit", "WurstfingerLayoutLab"],
       path: "Tests/WurstfingerKitTests"
     ),
   ],

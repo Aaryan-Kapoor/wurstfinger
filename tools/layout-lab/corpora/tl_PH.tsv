@@ -1,0 +1,634 @@
+meta	language	tl_PH
+meta	license	CC-BY-SA-4.0
+meta	list	tl_full.txt
+meta	sha256	83defa364a79c87e6f4e18f6589a4b4a5e1fe5722d5afe9792cd9ee3aec509f8
+meta	source	OpenSubtitles 2018 via FrequencyWords 2018 (hermitdave)
+meta	tokens_kept	95368
+meta	url	https://github.com/hermitdave/FrequencyWords
+meta	words_kept	10636
+meta	words_seen	10665
+init	-	2
+init	.	4
+init	a	11787
+init	b	4140
+init	c	825
+init	d	3051
+init	e	768
+init	f	301
+init	g	2155
+init	h	3606
+init	i	4728
+init	j	231
+init	k	9703
+init	l	2869
+init	m	10092
+init	n	13938
+init	o	1295
+init	p	6711
+init	q	18
+init	r	849
+init	s	10458
+init	t	4463
+init	u	827
+init	v	118
+init	w	1193
+init	x	3
+init	y	1162
+init	z	70
+init	é	1
+final	-	19
+final	.	136
+final	a	22356
+final	b	231
+final	c	57
+final	d	1311
+final	e	2331
+final	f	130
+final	g	18505
+final	h	593
+final	i	5558
+final	j	26
+final	k	946
+final	l	1352
+final	m	944
+final	n	10879
+final	o	14973
+final	p	728
+final	q	1
+final	r	1047
+final	s	3227
+final	t	4311
+final	u	196
+final	v	21
+final	w	917
+final	x	161
+final	y	4403
+final	z	9
+big	-	-	3
+big	-	a	255
+big	-	b	55
+big	-	c	77
+big	-	d	60
+big	-	e	28
+big	-	f	19
+big	-	g	44
+big	-	h	78
+big	-	i	113
+big	-	j	6
+big	-	k	34
+big	-	l	29
+big	-	m	53
+big	-	n	20
+big	-	o	33
+big	-	p	65
+big	-	q	1
+big	-	r	29
+big	-	s	84
+big	-	t	67
+big	-	u	75
+big	-	v	2
+big	-	w	19
+big	-	y	11
+big	.	a	2
+big	.	b	1
+big	.	c	6
+big	.	e	6
+big	.	h	1
+big	.	i	1
+big	.	k	2
+big	.	m	1
+big	.	o	1
+big	.	r	1
+big	.	s	5
+big	.	t	13
+big	.	u	1
+big	a	-	216
+big	a	.	5
+big	a	a	1485
+big	a	b	2413
+big	a	c	151
+big	a	d	1033
+big	a	e	80
+big	a	f	40
+big	a	g	5710
+big	a	h	2375
+big	a	i	1277
+big	a	j	51
+big	a	k	6446
+big	a	l	6621
+big	a	m	4056
+big	a	n	19701
+big	a	o	511
+big	a	p	2361
+big	a	q	9
+big	a	r	3538
+big	a	s	3432
+big	a	t	5813
+big	a	u	296
+big	a	v	26
+big	a	w	2189
+big	a	x	112
+big	a	y	6354
+big	a	z	19
+big	b	-	4
+big	b	.	1
+big	b	a	4293
+big	b	b	13
+big	b	c	4
+big	b	d	5
+big	b	e	282
+big	b	h	7
+big	b	i	2286
+big	b	j	3
+big	b	l	155
+big	b	m	2
+big	b	o	615
+big	b	r	150
+big	b	s	11
+big	b	t	2
+big	b	u	1061
+big	b	v	5
+big	b	w	5
+big	b	y	95
+big	c	-	1
+big	c	.	6
+big	c	a	269
+big	c	c	11
+big	c	d	1
+big	c	e	222
+big	c	h	483
+big	c	i	73
+big	c	k	178
+big	c	l	71
+big	c	m	1
+big	c	o	255
+big	c	q	3
+big	c	r	93
+big	c	s	13
+big	c	t	163
+big	c	u	170
+big	c	y	74
+big	c	z	2
+big	d	-	6
+big	d	a	1977
+big	d	b	3
+big	d	d	165
+big	d	e	616
+big	d	f	2
+big	d	g	21
+big	d	h	10
+big	d	i	3297
+big	d	j	1
+big	d	k	2
+big	d	l	30
+big	d	m	7
+big	d	n	6
+big	d	o	717
+big	d	p	3
+big	d	r	71
+big	d	s	35
+big	d	t	4
+big	d	u	400
+big	d	v	51
+big	d	w	45
+big	d	y	184
+big	e	-	64
+big	e	.	13
+big	e	a	404
+big	e	b	101
+big	e	c	217
+big	e	d	436
+big	e	e	288
+big	e	f	37
+big	e	g	157
+big	e	h	218
+big	e	i	38
+big	e	j	20
+big	e	k	232
+big	e	l	648
+big	e	m	271
+big	e	n	996
+big	e	o	116
+big	e	p	111
+big	e	q	8
+big	e	r	1900
+big	e	s	821
+big	e	t	508
+big	e	u	22
+big	e	v	34
+big	e	w	61
+big	e	x	164
+big	e	y	138
+big	e	z	6
+big	e	ñ	1
+big	f	-	3
+big	f	a	90
+big	f	b	1
+big	f	d	2
+big	f	e	65
+big	f	f	62
+big	f	g	1
+big	f	h	1
+big	f	i	67
+big	f	l	37
+big	f	m	1
+big	f	o	72
+big	f	r	104
+big	f	s	15
+big	f	t	20
+big	f	u	32
+big	f	y	5
+big	g	-	528
+big	g	a	6324
+big	g	b	191
+big	g	c	11
+big	g	d	132
+big	g	e	501
+big	g	f	1
+big	g	g	404
+big	g	h	281
+big	g	i	1560
+big	g	k	606
+big	g	l	234
+big	g	m	88
+big	g	n	197
+big	g	o	638
+big	g	p	282
+big	g	r	168
+big	g	s	294
+big	g	t	312
+big	g	u	1207
+big	g	w	26
+big	g	y	288
+big	h	-	12
+big	h	.	2
+big	h	a	3265
+big	h	b	2
+big	h	d	11
+big	h	e	508
+big	h	h	63
+big	h	i	3597
+big	h	j	1
+big	h	l	20
+big	h	m	11
+big	h	n	7
+big	h	o	813
+big	h	r	37
+big	h	s	23
+big	h	t	34
+big	h	u	656
+big	h	w	8
+big	h	y	14
+big	i	-	87
+big	i	.	6
+big	i	a	232
+big	i	b	972
+big	i	c	247
+big	i	d	288
+big	i	e	346
+big	i	f	48
+big	i	g	1964
+big	i	h	595
+big	i	i	247
+big	i	j	6
+big	i	k	1181
+big	i	l	2874
+big	i	m	647
+big	i	n	10899
+big	i	o	292
+big	i	p	679
+big	i	q	2
+big	i	r	664
+big	i	s	2335
+big	i	t	4137
+big	i	u	73
+big	i	v	133
+big	i	w	330
+big	i	x	12
+big	i	y	2795
+big	i	z	18
+big	j	-	38
+big	j	a	55
+big	j	c	5
+big	j	e	68
+big	j	i	67
+big	j	o	56
+big	j	r	2
+big	j	u	64
+big	k	-	8
+big	k	a	8962
+big	k	b	105
+big	k	d	5
+big	k	e	308
+big	k	f	1
+big	k	g	1
+big	k	h	126
+big	k	i	2630
+big	k	k	10
+big	k	l	135
+big	k	m	5
+big	k	n	9
+big	k	o	4482
+big	k	p	30
+big	k	r	56
+big	k	s	175
+big	k	t	132
+big	k	u	1517
+big	k	v	1
+big	k	w	47
+big	k	y	73
+big	l	-	4
+big	l	a	8478
+big	l	b	39
+big	l	c	6
+big	l	d	59
+big	l	e	593
+big	l	f	27
+big	l	g	24
+big	l	h	40
+big	l	i	3019
+big	l	j	2
+big	l	k	18
+big	l	l	303
+big	l	m	44
+big	l	n	18
+big	l	o	1048
+big	l	p	35
+big	l	r	8
+big	l	s	189
+big	l	t	68
+big	l	u	724
+big	l	v	10
+big	l	w	3
+big	l	y	209
+big	m	-	9
+big	m	a	8478
+big	m	b	234
+big	m	d	29
+big	m	e	589
+big	m	f	1
+big	m	g	1256
+big	m	h	2
+big	m	i	2007
+big	m	k	1
+big	m	l	5
+big	m	m	57
+big	m	n	4
+big	m	o	2705
+big	m	p	364
+big	m	r	108
+big	m	s	22
+big	m	t	5
+big	m	u	1057
+big	m	w	2
+big	m	y	73
+big	n	-	59
+big	n	.	4
+big	n	a	10999
+big	n	b	5
+big	n	c	236
+big	n	d	2796
+big	n	e	615
+big	n	f	14
+big	n	g	20363
+big	n	h	31
+big	n	i	2803
+big	n	j	16
+big	n	k	47
+big	n	l	54
+big	n	m	34
+big	n	n	83
+big	n	o	2088
+big	n	p	3
+big	n	r	5
+big	n	s	422
+big	n	t	1278
+big	n	u	500
+big	n	v	24
+big	n	w	17
+big	n	y	1015
+big	n	z	1
+big	o	-	62
+big	o	.	12
+big	o	a	63
+big	o	b	342
+big	o	c	69
+big	o	d	563
+big	o	e	18
+big	o	f	70
+big	o	g	289
+big	o	h	183
+big	o	i	46
+big	o	j	17
+big	o	k	546
+big	o	l	422
+big	o	m	272
+big	o	n	5341
+big	o	o	1499
+big	o	p	227
+big	o	q	1
+big	o	r	788
+big	o	s	811
+big	o	t	721
+big	o	u	217
+big	o	v	36
+big	o	w	176
+big	o	x	13
+big	o	y	369
+big	p	-	9
+big	p	a	6225
+big	p	b	4
+big	p	c	3
+big	p	d	1
+big	p	e	787
+big	p	g	3
+big	p	h	93
+big	p	i	984
+big	p	j	1
+big	p	k	7
+big	p	l	157
+big	p	m	2
+big	p	n	3
+big	p	o	846
+big	p	p	47
+big	p	r	317
+big	p	s	86
+big	p	t	30
+big	p	u	1107
+big	p	w	124
+big	p	y	28
+big	q	a	1
+big	q	l	1
+big	q	r	1
+big	q	u	67
+big	r	-	7
+big	r	.	113
+big	r	a	3100
+big	r	b	58
+big	r	c	51
+big	r	d	130
+big	r	e	1069
+big	r	f	50
+big	r	g	63
+big	r	h	73
+big	r	i	1458
+big	r	j	1
+big	r	k	106
+big	r	l	26
+big	r	m	97
+big	r	n	103
+big	r	o	1413
+big	r	p	33
+big	r	q	2
+big	r	r	101
+big	r	s	216
+big	r	t	320
+big	r	u	236
+big	r	v	27
+big	r	w	5
+big	r	x	1
+big	r	y	203
+big	r	z	2
+big	s	-	16
+big	s	.	4
+big	s	a	8512
+big	s	b	5
+big	s	c	91
+big	s	d	21
+big	s	e	624
+big	s	f	4
+big	s	g	24
+big	s	h	361
+big	s	i	4200
+big	s	k	58
+big	s	l	40
+big	s	m	69
+big	s	n	65
+big	s	o	790
+big	s	p	217
+big	s	q	27
+big	s	r	1
+big	s	s	190
+big	s	t	1146
+big	s	u	948
+big	s	w	47
+big	s	y	630
+big	t	-	33
+big	t	.	3
+big	t	a	5923
+big	t	b	6
+big	t	c	44
+big	t	d	3
+big	t	e	916
+big	t	f	1
+big	t	h	250
+big	t	i	2463
+big	t	l	99
+big	t	m	23
+big	t	n	28
+big	t	o	3505
+big	t	p	9
+big	t	r	388
+big	t	s	213
+big	t	t	138
+big	t	u	1505
+big	t	v	21
+big	t	w	74
+big	t	x	4
+big	t	y	154
+big	t	z	2
+big	u	-	34
+big	u	a	127
+big	u	b	514
+big	u	c	54
+big	u	d	119
+big	u	e	70
+big	u	f	12
+big	u	g	297
+big	u	h	708
+big	u	i	66
+big	u	j	25
+big	u	k	585
+big	u	l	1461
+big	u	m	2105
+big	u	n	2934
+big	u	o	135
+big	u	p	371
+big	u	r	635
+big	u	s	1341
+big	u	t	700
+big	u	u	108
+big	u	v	2
+big	u	w	609
+big	u	y	139
+big	u	z	3
+big	v	a	68
+big	v	d	48
+big	v	e	182
+big	v	i	134
+big	v	o	35
+big	v	s	1
+big	v	y	3
+big	w	-	13
+big	w	a	2780
+big	w	b	16
+big	w	d	1
+big	w	e	503
+big	w	f	1
+big	w	h	89
+big	w	i	380
+big	w	k	1
+big	w	l	16
+big	w	n	28
+big	w	o	220
+big	w	p	1
+big	w	r	3
+big	w	s	19
+big	w	w	6
+big	x	-	6
+big	x	a	19
+big	x	c	29
+big	x	e	6
+big	x	h	1
+big	x	i	22
+big	x	n	1
+big	x	p	10
+big	x	t	34
+big	x	u	2
+big	x	x	4
+big	x	y	18
+big	y	-	55
+big	y	.	4
+big	y	a	4483
+big	y	b	10
+big	y	c	9
+big	y	d	5
+big	y	e	289
+big	y	f	17
+big	y	g	2
+big	y	h	2
+big	y	i	101
+big	y	k	1
+big	y	l	12
+big	y	m	14
+big	y	n	10
+big	y	o	3895
+big	y	p	33
+big	y	r	94
+big	y	s	106
+big	y	t	6
+big	y	u	477
+big	y	v	2
+big	y	w	8
+big	y	y	2
+big	z	a	20
+big	z	e	14
+big	z	i	3
+big	z	l	1
+big	z	o	70
+big	z	t	1
+big	z	u	1
+big	z	y	4
+big	z	z	9
+big	é	t	1
+big	ñ	o	1

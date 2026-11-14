@@ -8,7 +8,7 @@ ZNAČAJKE:
 
 • Velika mreža tipki 3x3 - Optimizirana za palčeve, a ne za precizne pokazivače
 • Geste prelaska prstom - 8 dodatnih znakova po tipki prelaskom prsta
-• 28 rasporeda tipkovnice - hrvatski, arapski, engleski, engleski (Thumb-Key), estonsko-finski, finski, francuski, grčki, hebrejski, hindi, japanski (hiragana), japanski (katakana), korejski, njemački, perzijski, poljski, portugalski, ruski, španjolski, španjolsko-katalonski, švedski, tagaloški, tajlandski, talijanski, ukrajinski, urdu i vijetnamski (s unosom Telex)
+• 27 rasporeda tipkovnice - hrvatski, arapski, engleski, engleski (Thumb-Key), estonsko-finski, finski, francuski, grčki, hebrejski, hindi, japanski (hiragana), japanski (katakana), korejski, njemački, perzijski, poljski, portugalski, ruski, španjolski, španjolsko-katalonski, švedski, tagaloški, tajlandski, talijanski, ukrajinski, urdu i vijetnamski (s unosom Telex)
 • Pravila kombiniranja - Naglaske stvaraj kombinacijama (npr. ' + a = á)
 • Kružne geste - Nacrtaj krug za velika slova
 • Upravljanje pokazivačem - Povlačenje po razmaknici pomiče pokazivač, povlačenje po tipki za brisanje briše neprekidno

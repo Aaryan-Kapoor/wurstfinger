@@ -18,22 +18,36 @@ struct LanguageSelectionView: View {
     var body: some View {
         List {
             Section {
-                ForEach(library.allLanguages) { language in
+                // One row per language; its optimized arrangements are a menu
+                // inside the row, not rows of their own.
+                ForEach(library.allLanguages.filter { $0.variantOf == nil }) { language in
+                    let layouts = LanguageRow.layouts(of: language, in: library.allLanguages)
+                    // The arrangement of this language that is switched on, if any.
+                    let active = layouts.first { languageSettings.isLanguageEnabled($0) }
                     LanguageRow(
                         language: language,
-                        isEnabled: languageSettings.isLanguageEnabled(language),
-                        isDefault: languageSettings.pinnedLanguageId == language.id,
+                        layouts: layouts,
+                        active: active ?? language,
+                        isEnabled: active != nil,
+                        isDefault: layouts.contains { languageSettings.pinnedLanguageId == $0.id },
                         onTap: {
-                            if languageSettings.isLanguageEnabled(language) {
-                                languageSettings.pinLanguage(language)
+                            if let active {
+                                languageSettings.pinLanguage(active)
                             } else {
                                 languageSettings.toggleLanguage(language)
                                 languageSettings.pinLanguage(language)
                             }
                         },
                         onToggle: {
-                            if !languageSettings.toggleLanguage(language) {
+                            if !languageSettings.toggleLanguage(active ?? language) {
                                 showLastLanguageAlert = true
+                            }
+                        },
+                        onChooseLayout: { layout in
+                            if let active {
+                                languageSettings.switchLayout(from: active.id, to: layout.id)
+                            } else {
+                                languageSettings.toggleLanguage(layout)
                             }
                         }
                     )
@@ -42,6 +56,10 @@ struct LanguageSelectionView: View {
                 if languageSettings.hasMultipleLanguages {
                     Text("Swipe right on the globe key to switch languages. Tap a language to set it as the default startup language.")
                 }
+            }
+            Section {
+            } footer: {
+                Text("Optimized layouts move a few letters to where your language's own text says they cost least to type; fully optimized ones place every letter. Your layout never changes unless you choose one here.")
             }
         }
         .navigationTitle("Languages")
@@ -56,10 +74,22 @@ struct LanguageSelectionView: View {
 
 private struct LanguageRow: View {
     let language: LanguageMetadata
+    /// The standard layout and its optimized arrangements, in that order.
+    let layouts: [LanguageMetadata]
+    /// The arrangement in use (the standard one while the language is off).
+    let active: LanguageMetadata
     let isEnabled: Bool
     let isDefault: Bool
     let onTap: () -> Void
     let onToggle: () -> Void
+    let onChooseLayout: (LanguageMetadata) -> Void
+
+    /// `language` first, then its variants from least to most moved.
+    static func layouts(of language: LanguageMetadata, in all: [LanguageMetadata]) -> [LanguageMetadata] {
+        let variants = all.filter { $0.variantOf == language.id }
+            .sorted { LayoutVariant.allCases.firstIndex(of: $0.variant)! < LayoutVariant.allCases.firstIndex(of: $1.variant)! }
+        return [language] + variants
+    }
 
     var body: some View {
         HStack {
@@ -88,6 +118,27 @@ private struct LanguageRow: View {
 
             Spacer()
 
+            if layouts.count > 1 {
+                Menu {
+                    ForEach(layouts) { layout in
+                        Button {
+                            onChooseLayout(layout)
+                        } label: {
+                            if layout.id == active.id {
+                                Label(layout.variant.displayName, systemImage: "checkmark")
+                            } else {
+                                Text(layout.variant.displayName)
+                            }
+                        }
+                    }
+                } label: {
+                    Text(active.variant.displayName)
+                        .font(.caption)
+                }
+                .accessibilityLabel(String(localized: "Layout"))
+                .accessibilityValue(active.variant.displayName)
+            }
+
             if isDefault {
                 Text("Default")
                     .font(.caption)
@@ -97,6 +148,17 @@ private struct LanguageRow: View {
         }
         .contentShape(Rectangle())
         .onTapGesture(perform: onTap)
+    }
+}
+
+extension LayoutVariant {
+    /// What the layout menu of a language calls this arrangement.
+    var displayName: String {
+        switch self {
+        case .standard: String(localized: "Standard")
+        case .optimized: String(localized: "Optimized")
+        case .full: String(localized: "Fully optimized")
+        }
     }
 }
 

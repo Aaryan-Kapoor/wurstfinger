@@ -8,7 +8,7 @@ FUNKTIONER:
 
 • Stort 3x3-tastgitter - Optimeret til tommelfingre, ikke til præcisionsmarkører
 • Strygebevægelser - 8 ekstra tegn pr. tast ved at stryge
-• 28 tastaturlayouts - Arabisk, Engelsk, Engelsk (Thumb-Key), Estisk-finsk, Finsk, Fransk, Græsk, Hebraisk, Hindi, Italiensk, Japansk (hiragana), Japansk (katakana), Koreansk, Kroatisk, Persisk, Polsk, Portugisisk, Russisk, Spansk, Spansk-katalansk, Svensk, Tagalog, Thai, Tysk, Ukrainsk, Urdu og Vietnamesisk (med Telex-indtastning)
+• 27 tastaturlayouts - Arabisk, Engelsk, Engelsk (Thumb-Key), Estisk-finsk, Finsk, Fransk, Græsk, Hebraisk, Hindi, Italiensk, Japansk (hiragana), Japansk (katakana), Koreansk, Kroatisk, Persisk, Polsk, Portugisisk, Russisk, Spansk, Spansk-katalansk, Svensk, Tagalog, Thai, Tysk, Ukrainsk, Urdu og Vietnamesisk (med Telex-indtastning)
 • Sammensætningsregler - Lav accenter ved hjælp af kombinationer (f.eks. ' + a = á)
 • Cirkelbevægelser - Tegn en cirkel for store bogstaver
 • Markørstyring - Træk på mellemrumstasten for at flytte markøren, træk på sletteknappen for at slette kontinuerligt

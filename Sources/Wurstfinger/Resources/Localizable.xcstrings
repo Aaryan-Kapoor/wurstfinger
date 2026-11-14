@@ -37826,6 +37826,696 @@
           }
         }
       }
+    },
+    "Standard": {
+      "comment": "Language list: the name of a language's standard (MessagEase) layout in its layout menu, next to Optimized and Fully optimized",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Standard"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Standard"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estándar"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Standard"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Стандартная"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Standardowy"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Standard"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vakio"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Standardni"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "רגיל"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chuẩn"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Standard"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Στάνταρ"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Padrão"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Стандартна"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "قياسي"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "استاندارد"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "معیاری"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "มาตรฐาน"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "मानक"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "標準"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "표준"
+          }
+        }
+      }
+    },
+    "Optimized": {
+      "comment": "Layout menu entry and title suffix of a language's layout with a few letters moved to where its own text says they cost least to type",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optimiert"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optimisée"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optimizada"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ottimizzata"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Оптимизированная"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zoptymalizowany"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optimerad"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optimoitu"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optimiziran"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "מותאמת"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tối ưu"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na-optimize"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Βελτιστοποιημένη"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Otimizada"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Оптимізована"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "محسّنة"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "بهینه‌شده"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "بہتر کردہ"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ปรับให้เหมาะสม"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "अनुकूलित"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最適化"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "최적화"
+          }
+        }
+      }
+    },
+    "Fully optimized": {
+      "comment": "Layout menu entry and title suffix of a language's layout with every letter placed by the optimizer",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voll optimiert"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entièrement optimisée"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Totalmente optimizada"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Completamente ottimizzata"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Полностью оптимизированная"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "W pełni zoptymalizowany"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fullt optimerad"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Täysin optimoitu"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Potpuno optimiziran"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "מותאמת במלואה"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tối ưu hoàn toàn"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ganap na na-optimize"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Πλήρως βελτιστοποιημένη"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Totalmente otimizada"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Повністю оптимізована"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "محسّنة بالكامل"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "کاملاً بهینه‌شده"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مکمل طور پر بہتر کردہ"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ปรับให้เหมาะสมเต็มที่"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "पूरी तरह अनुकूलित"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完全最適化"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "완전 최적화"
+          }
+        }
+      }
+    },
+    "Layout": {
+      "comment": "ACCESSIBILITY label of the menu that picks a language's layout (Standard, Optimized, Fully optimized)",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Layout"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disposition"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Distribución"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Layout"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Раскладка"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Układ"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Layout"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Asettelu"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Raspored"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "פריסה"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bố cục"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Layout"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Διάταξη"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Layout"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Розкладка"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "التخطيط"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "چیدمان"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ترتیب"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "เลย์เอาต์"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "लेआउट"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "レイアウト"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "레이아웃"
+          }
+        }
+      }
+    },
+    "Optimized layouts move a few letters to where your language's own text says they cost least to type; fully optimized ones place every letter. Your layout never changes unless you choose one here.": {
+      "comment": "Footer of the Languages list explaining the optimized layouts and promising nothing changes unless chosen",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optimierte Layouts verschieben einige Buchstaben dorthin, wo sie sich laut den Texten deiner Sprache am günstigsten tippen lassen; voll optimierte ordnen jeden Buchstaben neu an. Dein Layout ändert sich nur, wenn du hier eines wählst."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les dispositions optimisées déplacent quelques lettres là où les textes de votre langue disent qu'elles coûtent le moins à saisir ; les dispositions entièrement optimisées placent chaque lettre. Votre disposition ne change que si vous en choisissez une ici."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Las distribuciones optimizadas mueven unas pocas letras adonde los textos de tu idioma indican que cuesta menos escribirlas; las totalmente optimizadas colocan cada letra. Tu distribución solo cambia si eliges una aquí."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I layout ottimizzati spostano alcune lettere dove i testi della tua lingua dicono che costa meno digitarle; quelli completamente ottimizzati posizionano ogni lettera. Il tuo layout cambia solo se ne scegli uno qui."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Оптимизированные раскладки переносят несколько букв туда, где, судя по текстам вашего языка, их проще всего набирать; полностью оптимизированные расставляют каждую букву заново. Ваша раскладка меняется, только если вы выберете другую здесь."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zoptymalizowane układy przenoszą kilka liter tam, gdzie według tekstów Twojego języka najłatwiej je wpisać; w pełni zoptymalizowane rozmieszczają każdą literę. Twój układ zmienia się tylko wtedy, gdy wybierzesz tutaj inny."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optimerade layouter flyttar några bokstäver dit där språkets egna texter visar att de är lättast att skriva; fullt optimerade placerar varje bokstav. Din layout ändras bara om du väljer en här."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optimoidut asettelut siirtävät muutaman kirjaimen sinne, missä kielesi omat tekstit osoittavat niiden olevan helpoimpia kirjoittaa; täysin optimoidut sijoittavat jokaisen kirjaimen. Asettelusi ei muutu, ellet valitse tässä toista."
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optimizirani rasporedi premještaju nekoliko slova tamo gdje ih se prema tekstovima vašeg jezika najlakše tipka; potpuno optimizirani raspoređuju svako slovo. Vaš se raspored mijenja samo ako ovdje odaberete drugi."
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "פריסות מותאמות מזיזות כמה אותיות למקום שבו, לפי הטקסטים של השפה שלך, הקלדתן קלה ביותר; פריסות מותאמות במלואן ממקמות כל אות. הפריסה שלך משתנה רק אם תבחר כאן אחרת."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bố cục tối ưu dời một vài chữ cái đến nơi mà văn bản của chính ngôn ngữ bạn cho thấy gõ ít tốn công nhất; bố cục tối ưu hoàn toàn sắp xếp lại mọi chữ cái. Bố cục của bạn chỉ thay đổi khi bạn chọn một bố cục khác tại đây."
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inililipat ng mga na-optimize na layout ang ilang titik sa kung saan pinakamadaling i-type ang mga ito ayon sa sariling mga teksto ng wika mo; inaayos ng ganap na na-optimize ang bawat titik. Hindi magbabago ang layout mo maliban kung pipili ka ng iba rito."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Οι βελτιστοποιημένες διατάξεις μετακινούν λίγα γράμματα εκεί όπου τα κείμενα της γλώσσας σας δείχνουν ότι πληκτρολογούνται πιο εύκολα· οι πλήρως βελτιστοποιημένες τοποθετούν κάθε γράμμα. Η διάταξή σας αλλάζει μόνο αν επιλέξετε άλλη εδώ."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Os layouts otimizados movem algumas letras para onde os textos do seu idioma indicam que custam menos a digitar; os totalmente otimizados posicionam cada letra. O seu layout só muda se escolher um aqui."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Оптимізовані розкладки переміщують кілька літер туди, де, за текстами вашої мови, їх найлегше набирати; повністю оптимізовані розташовують кожну літеру заново. Ваша розкладка змінюється, лише якщо ви оберете іншу тут."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تنقل التخطيطات المحسّنة بضعة أحرف إلى حيث تُظهر نصوص لغتك أن كتابتها أيسر؛ وتضع التخطيطات المحسّنة بالكامل كل حرف في مكانه. لا يتغيّر تخطيطك إلا إذا اخترت تخطيطًا آخر هنا."
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "چیدمان‌های بهینه‌شده چند حرف را به جایی می‌برند که متن‌های خود زبان شما نشان می‌دهد تایپشان کم‌زحمت‌تر است؛ چیدمان‌های کاملاً بهینه‌شده هر حرف را جابه‌جا می‌کنند. چیدمان شما فقط وقتی تغییر می‌کند که اینجا چیدمان دیگری انتخاب کنید."
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "بہتر کردہ ترتیبیں چند حروف کو وہاں لے جاتی ہیں جہاں آپ کی زبان کی اپنی تحریروں کے مطابق انہیں ٹائپ کرنا سب سے آسان ہے؛ مکمل طور پر بہتر کردہ ترتیبیں ہر حرف کو نئی جگہ دیتی ہیں۔ آپ کی ترتیب صرف تب بدلتی ہے جب آپ یہاں دوسری منتخب کریں۔"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "เลย์เอาต์ที่ปรับให้เหมาะสมจะย้ายตัวอักษรบางตัวไปยังตำแหน่งที่ข้อความของภาษาคุณชี้ว่าพิมพ์ได้สะดวกที่สุด ส่วนแบบปรับให้เหมาะสมเต็มที่จะจัดวางทุกตัวอักษรใหม่ เลย์เอาต์ของคุณจะไม่เปลี่ยนเว้นแต่คุณเลือกแบบอื่นที่นี่"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "अनुकूलित लेआउट कुछ अक्षरों को वहाँ ले जाते हैं जहाँ आपकी भाषा के अपने पाठ के अनुसार उन्हें टाइप करना सबसे आसान है; पूरी तरह अनुकूलित लेआउट हर अक्षर को नई जगह देते हैं। आपका लेआउट तभी बदलता है जब आप यहाँ कोई दूसरा चुनें।"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最適化レイアウトは、その言語の実際の文章から最も打ちやすいと分かった位置へ、いくつかの文字を動かします。完全最適化はすべての文字を配置し直します。ここで選ばない限り、レイアウトは変わりません。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "최적화 레이아웃은 해당 언어의 실제 글에서 입력하기 가장 쉬운 자리로 몇 글자를 옮기고, 완전 최적화는 모든 글자를 새로 배치합니다. 여기서 직접 선택하지 않는 한 레이아웃은 바뀌지 않습니다."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

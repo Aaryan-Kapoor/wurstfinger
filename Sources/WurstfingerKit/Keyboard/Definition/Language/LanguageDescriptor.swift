@@ -32,6 +32,12 @@ struct LanguageDescriptor: Identifiable, Sendable {
     /// locale ("EN", "DE").
     let globeLabel: String?
 
+    /// See `LanguageMetadata.variantOf`.
+    let variantOf: String?
+
+    /// See `LanguageMetadata.variant`.
+    let variant: LayoutVariant
+
     /// Builds the full definition. Receives the descriptor so the layout can
     /// reuse the metadata above instead of repeating the literals — keeping the
     /// id/title/locale a single source of truth.
@@ -43,6 +49,8 @@ struct LanguageDescriptor: Identifiable, Sendable {
         localeIdentifier: String,
         family: LayoutFamily = .messagEase,
         globeLabel: String? = nil,
+        variantOf: String? = nil,
+        variant: LayoutVariant = .standard,
         builder: @escaping @Sendable (LanguageDescriptor) -> KeyboardDefinition
     ) {
         self.id = id
@@ -50,7 +58,20 @@ struct LanguageDescriptor: Identifiable, Sendable {
         self.localeIdentifier = localeIdentifier
         self.family = family
         self.globeLabel = globeLabel
+        self.variantOf = variantOf
+        self.variant = variant
         self.builder = builder
+    }
+
+    /// An optimized arrangement of this language: the same layout, built under
+    /// another id. The builder is shared on purpose — it gets the *variant's*
+    /// descriptor, so `GridKeyboardFactory` sees the variant id and
+    /// `OptimizedArrangements` rearranges the letters; nothing else differs.
+    func variant(_ variant: LayoutVariant, id: String, title: String, globeLabel: String?) -> LanguageDescriptor {
+        LanguageDescriptor(
+            id: id, title: title, localeIdentifier: localeIdentifier, family: .optimized,
+            globeLabel: globeLabel, variantOf: self.id, variant: variant, builder: builder
+        )
     }
 
     /// Produces the full keyboard definition. This allocates the entire layout
