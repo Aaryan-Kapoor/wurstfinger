@@ -27,6 +27,19 @@ extension KeyboardViewModel {
             },
             previewLabel: { [weak self] key, classification in
                 self?.previewLabel(for: classification, keyId: key.id)
+            },
+            // Feel hooks (`KeyboardViewModel+Feel.swift`).
+            candidateChanged: { [weak self] key, old, new in
+                self?.feelCandidateChanged(on: key, from: old, to: new)
+            },
+            released: { [weak self] key, classification in
+                self?.feelReleased(key, classification: classification)
+            },
+            releaseHandled: { [weak self] in
+                self?.feel.flushRelease()
+            },
+            longPressPhase: { [weak self] key, phase in
+                self?.feelLongPress(key, phase: phase)
             }
         )
     }

@@ -303,6 +303,29 @@ func benchBodies() {
     print("    haptic intensity slider moved             \(haptic)")
     let mode = bodies { viewModel.handleGesture(.tap, keyId: UtilitySlot.symbols, isReturn: false) }
     print("    mode switch (letters -> numeric)          \(mode)")
+
+    // Real touches through the input engine, with the feel layer on (press
+    // light, sink, release spring, detents, pops): each must re-render the
+    // touched key alone.
+    viewModel.switchToMode(ModeNames.main)
+    settle()
+    viewModel.configureTouchEngine(containerWidth: 390, isLongPressEnabled: false)
+    let engine = viewModel.touchEngine
+    if let frame = engine.hitMap.key(withId: GridSlot.center)?.frame {
+        let center = CGPoint(x: frame.midX, y: frame.midY)
+        let down = bodies { engine.began(1, at: center, time: 0) }
+        print("    engine touch-down on one key              \(down)")
+        let up = bodies { engine.ended(1, at: center, time: 0.08) }
+        print("    engine release (tap commits)              \(up)")
+        var moved = 0
+        let flickDown = bodies { engine.began(2, at: center, time: 1) }
+        for step in 1 ... 8 {
+            let point = CGPoint(x: center.x + CGFloat(step) * 8, y: center.y)
+            moved += bodies { engine.moved(2, samples: [TouchSample(location: point, time: 1 + Double(step) / 120)]) }
+        }
+        let flickUp = bodies { engine.ended(2, at: CGPoint(x: center.x + 64, y: center.y), time: 1.1) }
+        print("    engine flick: down / 8 moves / release    \(flickDown) / \(moved) / \(flickUp)")
+    }
 }
 #endif
 

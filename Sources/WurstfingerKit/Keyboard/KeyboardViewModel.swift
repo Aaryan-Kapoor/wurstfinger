@@ -166,7 +166,10 @@ final class KeyboardViewModel {
 
     let hapticSettings: HapticSettings
     let layoutSettings: LayoutSettings
-    @ObservationIgnored private let hapticPlayer: HapticFeedbackPlayer
+    @ObservationIgnored let hapticPlayer: HapticFeedbackPlayer
+    /// The feel layer: haptic cues and transient visuals for every touch
+    /// moment (`KeyboardViewModel+Feel.swift`). Owns no input state.
+    @ObservationIgnored let feel: KeyboardFeel
 
     // MARK: - Computed Properties for Backward Compatibility
 
@@ -266,6 +269,7 @@ final class KeyboardViewModel {
         hapticSettings = HapticSettings(defaults: defaults, shouldPersist: shouldPersistSettings)
         layoutSettings = LayoutSettings(defaults: defaults, shouldPersist: shouldPersistSettings)
         hapticPlayer = HapticFeedbackPlayer(settings: hapticSettings)
+        feel = KeyboardFeel(haptics: hapticPlayer)
 
         enabledLanguageIds = LanguageSettings.normalizedEnabledLanguageIds(from: defaults)
         gestureTuning = GestureTuning.load(from: defaults)
@@ -378,11 +382,12 @@ final class KeyboardViewModel {
         )
     }
 
-    /// Pipeline hook: fires a confirmation tick for state-changing actions.
-    /// Text actions stay silent — their haptic fires on touch-down.
+    /// Pipeline hook: fires a confirmation for state-changing actions.
+    /// Text actions stay silent here — they are felt at touch-down and on
+    /// release (`KeyboardViewModel+Feel.swift`).
     func triggerHaptic(for action: KeyAction) {
-        guard let event = KeyboardHapticEvent.forPipelineAction(action) else { return }
-        hapticPlayer.trigger(event)
+        guard let cue = HapticCue.forPipelineAction(action) else { return }
+        hapticPlayer.play(cue)
     }
 
     func reloadSettings() {
@@ -485,6 +490,17 @@ final class KeyboardViewModel {
     /// keyboard appears); the player re-warms on each touch-down after a pause.
     func prepareHaptics() {
         hapticPlayer.prepareIfNeeded()
+    }
+
+    /// Releases the Taptic Engine while the keyboard is off screen.
+    func suspendHaptics() {
+        hapticPlayer.suspend()
+    }
+
+    /// Whether the keyboard has Full Access, which haptics require in an
+    /// extension (set by the controller).
+    func setHapticAccess(_ isGranted: Bool) {
+        hapticPlayer.isAccessGranted = isGranted
     }
 
     func feedbackDrag() {

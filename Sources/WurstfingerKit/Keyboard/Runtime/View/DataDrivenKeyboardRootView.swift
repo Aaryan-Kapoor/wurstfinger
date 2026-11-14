@@ -43,13 +43,17 @@ struct DataDrivenKeyboardRootView: View {
     @AppStorage(SettingsKey.isLongPressDigitEnabled.rawValue, store: SharedDefaults.store)
     private var isLongPressDigitEnabled = KeyRenderSettings.stock.isLongPressDigitEnabled
 
+    @AppStorage(SettingsKey.keyAnimationsEnabled.rawValue, store: SharedDefaults.store)
+    private var areKeyAnimationsEnabled = KeyRenderSettings.stock.areKeyAnimationsEnabled
+
     private var renderSettings: KeyRenderSettings {
         KeyRenderSettings(
             keyboardStyle: keyboardStyle,
             areLetterLabelsHidden: areLetterLabelsHidden,
             areStandardSymbolLabelsHidden: areStandardSymbolLabelsHidden,
             areExtraSymbolLabelsHidden: areExtraSymbolLabelsHidden,
-            isLongPressDigitEnabled: isLongPressDigitEnabled
+            isLongPressDigitEnabled: isLongPressDigitEnabled,
+            areKeyAnimationsEnabled: areKeyAnimationsEnabled
         )
     }
 
@@ -83,6 +87,8 @@ struct DataDrivenKeyboardRootView: View {
                     metrics: metrics,
                     tuning: viewModel.gestureTuning
                 )
+                // Feel hook: the grid's overlay draws the view model's board.
+                .environment(\.feelBoard, viewModel.feel.board)
                 .padding(.horizontal, KeyboardConstants.Layout.horizontalPadding)
                 .padding(.top, KeyboardConstants.Layout.verticalPaddingTop)
                 .padding(.bottom, KeyboardConstants.Layout.verticalPaddingBottom)

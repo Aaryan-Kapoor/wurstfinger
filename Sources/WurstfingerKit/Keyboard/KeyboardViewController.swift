@@ -107,7 +107,9 @@ public final class KeyboardViewController: UIInputViewController {
         // launched the extension (as opposed to the extension failing).
         KeyboardHealthLog.shared.record("viewWillAppear")
         // Spin the Taptic Engine up now, so the first keystroke's impact does
-        // not pay the ramp.
+        // not pay the ramp. Feel hook: haptics need Full Access in an
+        // extension, so the engine is not even started without it.
+        viewModel.setHapticAccess(hasFullAccess)
         viewModel.prepareHaptics()
         // Reopen in the default (letters) mode: a keyboard dismissed in
         // numeric or shifted mode must not resurface there.
@@ -252,6 +254,9 @@ public final class KeyboardViewController: UIInputViewController {
     /// guaranteed entry is paired with a deferred second one below.
     private func shedMemoryBeforeSuspension(_ event: String) {
         autoreleasepool {
+            // Feel hook: let go of the Taptic Engine; the next appearance
+            // starts it again.
+            viewModel.suspendHaptics()
             KeyboardRegistry.evictAll(except: selectedLanguageId)
             // The memoized grid layouts hold arrangement storage shared with the
             // definitions just evicted, so dropping them is part of the same
@@ -431,6 +436,8 @@ public final class KeyboardViewController: UIInputViewController {
                 // resets it — a new language's layout cannot keep the old mode.)
                 if viewIfLoaded?.window != nil {
                     refreshForAppearance(resettingMode: false)
+                    // Feel hook: the shedding stopped the Taptic Engine.
+                    viewModel.prepareHaptics()
                 }
                 KeyboardHealthLog.shared.record("hostWillEnterForeground")
             }

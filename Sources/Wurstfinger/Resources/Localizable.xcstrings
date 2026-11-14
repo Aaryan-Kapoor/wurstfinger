@@ -32341,6 +32341,554 @@
           }
         }
       }
+    },
+    "Detailed Haptics": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detaillierte Haptik"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retour haptique détaillé"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Respuesta háptica detallada"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Feedback aptico dettagliato"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Детальный тактильный отклик"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Szczegółowe reakcje haptyczne"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detaljerad taktil återkoppling"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yksityiskohtainen tuntopalaute"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detaljne haptičke povratne informacije"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "משוב מישושי מפורט"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Phản hồi xúc giác chi tiết"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detalyadong Haptic Feedback"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Λεπτομερής απτική ανάδραση"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retorno tátil detalhado"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Детальний тактильний відгук"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "استجابة لمسية مفصّلة"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "بازخورد لمسی دقیق"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تفصیلی ہیپٹک فیڈ بیک"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "การตอบสนองแบบสัมผัสโดยละเอียด"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "विस्तृत हैप्टिक फ़ीडबैक"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "詳細な触覚フィードバック"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "세밀한 햅틱 피드백"
+          }
+        }
+      }
+    },
+    "A distinct feel for each gesture: ticks as a swipe passes each direction, a click on release, a swell before a long press. Turn off for simple clicks.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jede Geste fühlt sich eigen an: ein Ticken bei jeder Richtung, die ein Wisch überstreicht, ein Klick beim Loslassen, ein Anschwellen vor langem Drücken. Ausschalten für einfache Klicks."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Une sensation propre à chaque geste : un tic à chaque direction franchie par un balayage, un clic au relâchement, une montée avant un appui long. Désactivez pour des clics simples."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Una sensación propia para cada gesto: un tic al pasar cada dirección de un deslizamiento, un clic al soltar y un aumento antes de una pulsación larga. Desactívalo para clics simples."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Una sensazione diversa per ogni gesto: un tic a ogni direzione attraversata da uno scorrimento, un clic al rilascio, un crescendo prima di una pressione prolungata. Disattiva per clic semplici."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "У каждого жеста своё ощущение: щелчки при прохождении направлений свайпа, щелчок при отпускании, нарастание перед долгим нажатием. Отключите для простых щелчков."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Każdy gest ma własne odczucie: tyknięcie przy każdym kierunku przesunięcia, kliknięcie przy puszczeniu, narastanie przed długim naciśnięciem. Wyłącz, aby mieć proste kliknięcia."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En egen känsla för varje gest: ett tick för varje riktning ett svep passerar, ett klick när du släpper, en stegring före ett långt tryck. Stäng av för enkla klick."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jokaisella eleellä on oma tuntumansa: naksahdus jokaisen pyyhkäisysuunnan kohdalla, klikkaus irrotettaessa ja voimistuva värinä ennen pitkää painallusta. Poista käytöstä, jos haluat yksinkertaiset klikkaukset."
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Svaka gesta ima svoj osjećaj: kucaj pri svakom smjeru kroz koji prijeđe povlačenje, klik pri otpuštanju, pojačavanje prije dugog pritiska. Isključi za jednostavne klikove."
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "תחושה ייחודית לכל מחווה: תקתוק בכל כיוון שהחלקה עוברת, קליק בעת השחרור והתגברות לפני לחיצה ארוכה. כבו לקבלת קליקים פשוטים."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mỗi cử chỉ có cảm giác riêng: rung nhẹ khi vuốt qua từng hướng, cú nhấp khi thả tay, rung tăng dần trước khi nhấn giữ. Tắt để chỉ dùng cú nhấp đơn giản."
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Natatanging pakiramdam sa bawat galaw: tik habang dumaraan ang swipe sa bawat direksyon, click sa pagbitaw, at pag-igting bago ang long press. I-off para sa simpleng click."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ξεχωριστή αίσθηση για κάθε χειρονομία: ένα τικ σε κάθε κατεύθυνση που περνά το σάρωμα, ένα κλικ στην απελευθέρωση, μια κλιμάκωση πριν από το παρατεταμένο πάτημα. Απενεργοποιήστε για απλά κλικ."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uma sensação própria para cada gesto: um tique a cada direção que o deslize atravessa, um clique ao soltar e uma intensificação antes de um toque longo. Desative para cliques simples."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Кожен жест має власне відчуття: клацання на кожному напрямку свайпу, клацання при відпусканні, наростання перед довгим натисканням. Вимкніть для простих клацань."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إحساس مميز لكل إيماءة: نقرة خفيفة عند مرور السحب بكل اتجاه، ونقرة عند الإفلات، وتصاعد قبل الضغط المطوّل. أوقفه للحصول على نقرات بسيطة."
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "حسی متفاوت برای هر اشاره: تیکی با عبور کشیدن از هر جهت، کلیکی هنگام رها کردن و اوج‌گیری پیش از فشار طولانی. برای کلیک‌های ساده خاموشش کنید."
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ہر اشارے کا اپنا احساس: سوائپ کے ہر سمت سے گزرنے پر ٹک، چھوڑنے پر کلک، اور لمبے دباؤ سے پہلے بڑھتی لرزش۔ سادہ کلکس کے لیے بند کریں۔"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "แต่ละท่าทางให้ความรู้สึกต่างกัน: แรงสั่นเบาๆ เมื่อปัดผ่านแต่ละทิศทาง คลิกเมื่อปล่อยนิ้ว และแรงสั่นที่ค่อยๆ เพิ่มขึ้นก่อนการกดค้าง ปิดเพื่อใช้คลิกแบบธรรมดา"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "हर जेस्चर का अपना एहसास: स्वाइप के हर दिशा से गुज़रने पर टिक, छोड़ने पर क्लिक, और लंबे दबाव से पहले बढ़ता कंपन। साधारण क्लिक के लिए बंद करें।"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ジェスチャごとに異なる感触：スワイプが各方向を通過するたびのティック、指を離したときのクリック、長押し前の高まり。オフにするとシンプルなクリックになります。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "제스처마다 다른 느낌: 스와이프가 각 방향을 지날 때의 틱, 손을 뗄 때의 클릭, 길게 누르기 전의 점점 커지는 진동. 끄면 단순한 클릭만 사용합니다."
+          }
+        }
+      }
+    },
+    "Key Animations": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tastenanimationen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Animations des touches"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Animaciones de las teclas"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Animazioni dei tasti"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Анимация клавиш"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Animacje klawiszy"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tangentanimationer"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Näppäinanimaatiot"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Animacije tipki"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "הנפשות מקשים"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hiệu ứng phím"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mga Animation ng Key"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Εφέ κίνησης πλήκτρων"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Animações das teclas"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Анімація клавіш"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "رسوم متحركة للمفاتيح"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "پویانمایی کلیدها"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "کیز کی اینیمیشنز"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "แอนิเมชันของปุ่ม"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "कुंजी एनिमेशन"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "キーのアニメーション"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "키 애니메이션"
+          }
+        }
+      }
+    },
+    "Keys sink and spring back, glass keys catch the light, and swiped characters lift off. Reduce Motion is always respected.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tasten sinken ein und federn zurück, Glastasten fangen das Licht ein, und gewischte Zeichen heben ab. „Bewegung reduzieren“ wird immer berücksichtigt."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les touches s’enfoncent et rebondissent, les touches en verre captent la lumière et les caractères balayés s’envolent. « Réduire les animations » est toujours respecté."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Las teclas se hunden y rebotan, las teclas de cristal captan la luz y los caracteres deslizados se elevan. Siempre se respeta «Reducir movimiento»."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I tasti si abbassano e tornano su, i tasti di vetro catturano la luce e i caratteri scorsi si sollevano. «Riduci movimento» viene sempre rispettato."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Клавиши проседают и пружинят обратно, стеклянные клавиши ловят свет, а символы, набранные свайпом, взлетают. Параметр «Уменьшение движения» всегда учитывается."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klawisze zapadają się i odbijają, szklane klawisze łapią światło, a przesunięte znaki unoszą się. Ustawienie „Ogranicz ruch” jest zawsze uwzględniane."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tangenter sjunker in och fjädrar tillbaka, glastangenter fångar ljuset och svepta tecken lyfter. ”Minska rörelse” respekteras alltid."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Näppäimet painuvat ja ponnahtavat takaisin, lasinäppäimet heijastavat valoa ja pyyhkäistyt merkit kohoavat. Vähennä liikettä -asetusta noudatetaan aina."
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tipke se utisnu i vrate, staklene tipke hvataju svjetlo, a povučeni znakovi se podižu. Postavka „Smanji pokrete” uvijek se poštuje."
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "המקשים שוקעים וקופצים חזרה, מקשי הזכוכית לוכדים את האור, ותווים שהוחלקו מתרוממים. ההגדרה \"הפחתת תנועה\" תמיד נשמרת."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Phím lún xuống rồi bật lại, phím kính bắt sáng và ký tự được vuốt sẽ bay lên. Luôn tôn trọng cài đặt Giảm chuyển động."
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lumulubog at tumatalbog pabalik ang mga key, sumasalo ng liwanag ang mga glass key, at umaangat ang mga na-swipe na character. Laging iginagalang ang Reduce Motion."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Τα πλήκτρα βυθίζονται και επανέρχονται, τα γυάλινα πλήκτρα πιάνουν το φως και οι χαρακτήρες που σαρώνονται ανυψώνονται. Η «Μείωση κίνησης» τηρείται πάντα."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "As teclas afundam e voltam, as teclas de vidro captam a luz e os caracteres deslizados se elevam. A opção Reduzir Movimento é sempre respeitada."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Клавіші просідають і пружно повертаються, скляні клавіші ловлять світло, а символи, набрані свайпом, злітають. Параметр «Зменшення руху» завжди враховується."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تنخفض المفاتيح ثم ترتد، وتلتقط المفاتيح الزجاجية الضوء، وترتفع الأحرف المسحوبة. يُحترم إعداد «تقليل الحركة» دائمًا."
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "کلیدها فرو می‌روند و برمی‌گردند، کلیدهای شیشه‌ای نور را می‌گیرند و نویسه‌های کشیده‌شده بالا می‌روند. تنظیم «کاهش حرکت» همیشه رعایت می‌شود."
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "کیز دبتی اور واپس اچھلتی ہیں، شیشے کی کیز روشنی پکڑتی ہیں، اور سوائپ کیے گئے حروف اوپر اٹھتے ہیں۔ «حرکت کم کریں» کی ترتیب کا ہمیشہ خیال رکھا جاتا ہے۔"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ปุ่มยุบลงแล้วเด้งกลับ ปุ่มกระจกรับแสง และตัวอักษรที่ปัดจะลอยขึ้น เคารพการตั้งค่าลดการเคลื่อนไหวเสมอ"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "कुंजियाँ दबती हैं और वापस उछलती हैं, काँच की कुंजियाँ रोशनी पकड़ती हैं, और स्वाइप किए गए अक्षर ऊपर उठते हैं। ‘गति कम करें’ का हमेशा सम्मान किया जाता है।"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "キーが沈んで跳ね返り、ガラスのキーが光を受け、スワイプした文字が浮かび上がります。「視差効果を減らす」は常に尊重されます。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "키가 눌렸다가 튀어 오르고, 유리 키가 빛을 받으며, 스와이프한 문자가 떠오릅니다. ‘동작 줄이기’ 설정은 항상 반영됩니다."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

@@ -20,6 +20,9 @@ struct StyleSettingsView: View {
     @AppStorage(SettingsKey.keyboardHorizontalPosition.rawValue, store: SharedDefaults.store)
     private var previewPosition = DeviceLayout.defaultKeyboardPosition
 
+    @AppStorage(SettingsKey.keyAnimationsEnabled.rawValue, store: SharedDefaults.store)
+    private var areKeyAnimationsEnabled = KeyRenderSettings.stock.areKeyAnimationsEnabled
+
     var body: some View {
         VStack(spacing: 20) {
             // Keyboard Preview
@@ -47,6 +50,19 @@ struct StyleSettingsView: View {
                             }
                         }
                     }
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Toggle("Key Animations", isOn: $areKeyAnimationsEnabled)
+                            .font(.headline)
+                        Text(
+                            // swiftlint:disable:next line_length
+                            "Keys sink and spring back, glass keys catch the light, and swiped characters lift off. Reduce Motion is always respected."
+                        )
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .padding(.horizontal, 16)
                 }
                 .padding(.vertical, 8)
             }

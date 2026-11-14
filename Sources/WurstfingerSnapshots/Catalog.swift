@@ -22,7 +22,7 @@ struct Scenario {
 @MainActor
 enum Catalog {
     static func all() -> [Scenario] {
-        modes() + languages() + layouts() + optimized() + devices() + variants() + states() + typing() + surfaces()
+        modes() + languages() + layouts() + optimized() + devices() + variants() + states() + feel() + typing() + surfaces()
     }
 
     private static func keyboard(
@@ -295,6 +295,145 @@ enum Catalog {
         return scenarios
     }
 
+    // MARK: Feel (press light, ripple, pops, ring, ratchet, trail ink)
+
+    private static func feel() -> [Scenario] {
+        var scenarios: [Scenario] = []
+        // A press off-centre, so the light visibly starts at the finger.
+        let press = FingerTrail(keyId: GridSlot.center, motion: .press, touchOffset: CGVector(dx: -0.2, dy: -0.16))
+        for scheme in [ColorScheme.light, .dark] {
+            let tail = suffix(scheme)
+            scenarios.append(keyboard("feel", "feel-press-classic\(tail)") {
+                $0.scheme = scheme
+                $0.finger = press
+                $0.showsTrail = false
+            })
+            scenarios.append(keyboard("feel", "feel-press-glass\(tail)") {
+                $0.scheme = scheme
+                $0.style = .liquidGlass
+                $0.backdrop = .colorful
+                $0.finger = press
+                $0.showsTrail = false
+            })
+            scenarios.append(keyboard("feel", "feel-press-glass-fallback\(tail)") {
+                $0.scheme = scheme
+                $0.style = .liquidGlass
+                $0.backdrop = .colorful
+                $0.finger = press
+                $0.showsTrail = false
+                $0.withoutShaders = true
+            })
+            scenarios.append(keyboard("feel", "feel-ripple-glass\(tail)") {
+                $0.scheme = scheme
+                $0.style = .liquidGlass
+                $0.backdrop = .colorful
+                $0.finger = press
+                $0.showsTrail = false
+                $0.feelStill = 0.3
+            })
+            scenarios.append(keyboard("feel", "feel-pop-swipe\(tail)") {
+                $0.scheme = scheme
+                $0.finger = FingerTrail(
+                    keyId: GridSlot.center, motion: .drag(.swipeUpRight, keyWidths: 0.6), lifts: true
+                )
+                $0.showsTrail = false
+                $0.feelStill = 0.35
+            })
+            scenarios.append(keyboard("feel", "feel-longpress-ring\(tail)") {
+                $0.scheme = scheme
+                $0.longPressDigits = true
+                $0.finger = FingerTrail(keyId: GridSlot.center, motion: .press)
+                $0.showsTrail = false
+                $0.feelStill = 0.62
+            })
+            scenarios.append(keyboard("feel", "feel-slide-cursor\(tail)") {
+                $0.scheme = scheme
+                $0.slide = (UtilitySlot.space, 3)
+            })
+            scenarios.append(keyboard("feel", "feel-trail-fast\(tail)") {
+                $0.scheme = scheme
+                $0.finger = FingerTrail(
+                    keyId: GridSlot.midLeft, motion: .drag(.swipeRight, keyWidths: 1.6), dragSpeed: 1600
+                )
+            })
+        }
+        scenarios.append(keyboard("feel", "feel-press-glass-reducetransparency") {
+            $0.style = .liquidGlass
+            $0.backdrop = .colorful
+            $0.finger = press
+            $0.showsTrail = false
+            $0.reduceTransparency = true
+        })
+        scenarios.append(keyboard("feel", "feel-press-reducemotion") {
+            $0.finger = press
+            $0.showsTrail = false
+            $0.reduceMotion = true
+        })
+        scenarios.append(keyboard("feel", "feel-press-animations-off") {
+            $0.finger = press
+            $0.showsTrail = false
+            $0.keyAnimations = false
+        })
+        scenarios.append(keyboard("feel", "feel-pop-longpress") {
+            $0.longPressDigits = true
+            $0.finger = FingerTrail(keyId: GridSlot.midRight, motion: .press, firesLongPress: true)
+            $0.showsTrail = false
+            $0.feelStill = 0.3
+        })
+        scenarios.append(keyboard("feel", "feel-pop-circle") {
+            $0.finger = FingerTrail(
+                keyId: GridSlot.midLeft, motion: .circle(clockwise: true, fraction: 1), lifts: true
+            )
+            $0.showsTrail = false
+            $0.feelStill = 0.25
+        })
+        scenarios.append(keyboard("feel", "feel-pop-swipe-reducemotion") {
+            $0.finger = FingerTrail(
+                keyId: GridSlot.center, motion: .drag(.swipeUpRight, keyWidths: 0.6), lifts: true
+            )
+            $0.showsTrail = false
+            $0.feelStill = 0.35
+            $0.reduceMotion = true
+        })
+        scenarios.append(keyboard("feel", "feel-pop-longswipe") {
+            $0.finger = FingerTrail(
+                keyId: GridSlot.center, motion: .drag(.swipeLeft, keyWidths: 2.0), longSwipes: true, lifts: true
+            )
+            $0.showsTrail = false
+            $0.feelStill = 0.3
+        })
+        scenarios.append(keyboard("feel", "feel-longpress-ring-glass") {
+            $0.style = .liquidGlass
+            $0.backdrop = .colorful
+            $0.longPressDigits = true
+            $0.finger = FingerTrail(keyId: GridSlot.topLeft, motion: .press)
+            $0.showsTrail = false
+            $0.feelStill = 0.35
+        })
+        scenarios.append(keyboard("feel", "feel-slide-delete") {
+            $0.slide = (UtilitySlot.delete, -4)
+        })
+        scenarios.append(keyboard("feel", "feel-trail-slow") {
+            $0.finger = FingerTrail(
+                keyId: GridSlot.midLeft, motion: .drag(.swipeRight, keyWidths: 1.6), dragSpeed: 200
+            )
+        })
+        scenarios.append(keyboard("feel", "feel-trail-armed-dark") {
+            $0.scheme = .dark
+            $0.finger = FingerTrail(
+                keyId: GridSlot.center, motion: .drag(.swipeRight, keyWidths: 2.0), longSwipes: true
+            )
+        })
+        scenarios.append(keyboard("feel", "feel-trail-fallback-dark") {
+            $0.scheme = .dark
+            $0.withoutShaders = true
+            $0.finger = FingerTrail(
+                keyId: GridSlot.midLeft, motion: .drag(.swipeRight, keyWidths: 1.6), dragSpeed: 1600
+            )
+        })
+        return scenarios
+    }
+
     // MARK: Typing
 
     private static func typing() -> [Scenario] {
@@ -339,6 +478,12 @@ enum Catalog {
             })
             scenarios.append(Scenario(group: "app", name: "app-longswipes\(tail)") {
                 AppSurfaces.longSwipes(scheme: scheme)
+            })
+            scenarios.append(Scenario(group: "app", name: "app-haptics\(tail)") {
+                AppSurfaces.haptics(scheme: scheme)
+            })
+            scenarios.append(Scenario(group: "app", name: "app-style\(tail)") {
+                AppSurfaces.style(scheme: scheme)
             })
             if scheme == .light {
                 scenarios.append(Scenario(group: "app", name: "app-textreplacement-empty") {

@@ -89,30 +89,56 @@ struct TouchGuideCard: View {
         [.swipeDownLeft, .swipeDown, .swipeDownRight],
     ]
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         let cell = Self.cellSize(for: guide.keyFrame)
         let side = cell * 3
         let center = Self.placement(cardSide: side, keyFrame: guide.keyFrame, bounds: bounds)
+        let offset = FeelGeometry.mapOffset(of: target)
         ZStack {
-            RoundedRectangle(cornerRadius: cell * 0.35, style: .continuous)
-                .fill(.regularMaterial)
-                .shadow(color: .black.opacity(0.18), radius: 6, y: 2)
-                .opacity(isMapRevealed ? 1 : 0)
-            VStack(spacing: 0) {
-                ForEach(0 ..< 3, id: \.self) { row in
-                    HStack(spacing: 0) {
-                        ForEach(0 ..< 3, id: \.self) { column in
-                            mapCell(Self.layout[row][column], size: cell)
+            // The unfolded map: the card and every unlit cell. Swells in
+            // slightly as it fades in (not under Reduce Motion).
+            ZStack {
+                RoundedRectangle(cornerRadius: cell * 0.35, style: .continuous)
+                    .fill(.regularMaterial)
+                    .shadow(color: .black.opacity(0.18), radius: 6, y: 2)
+                VStack(spacing: 0) {
+                    ForEach(0 ..< 3, id: \.self) { row in
+                        HStack(spacing: 0) {
+                            ForEach(0 ..< 3, id: \.self) { column in
+                                mapLabel(Self.layout[row][column], size: cell)
+                            }
                         }
                     }
                 }
             }
+            .opacity(isMapRevealed ? 1 : 0)
+            .scaleEffect(isMapRevealed || reduceMotion ? 1 : FeelMotion.guideRevealScale)
+
+            // Feel: the lit target is one view that springs from cell to cell
+            // as the direction changes, and grows out from the key's side the
+            // first time a direction is known (`FeelMotion.guideMove` /
+            // `.guideAppear`). Its label swaps instantly — only its place
+            // moves.
+            if isLit {
+                litCell(size: cell)
+                    .offset(x: offset.dx * cell, y: offset.dy * cell)
+                    .transition(
+                        reduceMotion
+                            ? AnyTransition.opacity
+                            : .scale(scale: 0.55, anchor: Self.anchorTowardKey(cardCenter: center, keyFrame: guide.keyFrame))
+                                .combined(with: .opacity)
+                    )
+            }
         }
+        .animation(reduceMotion ? nil : FeelMotion.guideAppear, value: isLit)
+        .animation(reduceMotion ? nil : FeelMotion.guideMove, value: target)
         .frame(width: side, height: side)
         .position(center)
         .onAppear {
             guard revealsMapOnPause, reveal == .afterPause else { return }
-            withAnimation(.easeOut(duration: 0.15).delay(Self.revealDelay)) {
+            withAnimation(FeelMotion.guideReveal.delay(Self.revealDelay)) {
                 isRevealedAfterDelay = true
             }
         }
@@ -127,36 +153,69 @@ struct TouchGuideCard: View {
         }
     }
 
-    @ViewBuilder
-    private func mapCell(_ gesture: GestureType, size: CGFloat) -> some View {
-        let isTarget = gesture == target && (guide.candidate != nil || isMapRevealed)
-        let text = isTarget ? (guide.label ?? Self.label(of: gesture, on: key)) : Self.label(of: gesture, on: key)
-        ZStack {
-            if isTarget {
+    /// Whether the target cell is drawn lit: as soon as a gesture is known,
+    /// or once the map is revealed (then the tap cell lights while the finger
+    /// rests in the centre).
+    private var isLit: Bool {
+        guide.candidate != nil || isMapRevealed
+    }
+
+    /// The lit target: the accent bubble with what releasing now types (the
+    /// label the view model resolved, shift and return swipes included).
+    private func litCell(size: CGFloat) -> some View {
+        let text = guide.label ?? Self.label(of: target, on: key)
+        return ZStack {
+            RoundedRectangle(cornerRadius: size * 0.3, style: .continuous)
+                .fill(Color.accentColor)
+                .shadow(color: .black.opacity(0.2), radius: 4, y: 1)
+            if guide.isReturn || isCircle {
+                // A return swipe or a circle types something other than
+                // the plain swipe: ring the cell so the difference shows.
                 RoundedRectangle(cornerRadius: size * 0.3, style: .continuous)
-                    .fill(Color.accentColor)
-                    .shadow(color: .black.opacity(0.2), radius: 4, y: 1)
-                if guide.isReturn || isCircle {
-                    // A return swipe or a circle types something other than
-                    // the plain swipe: ring the cell so the difference shows.
-                    RoundedRectangle(cornerRadius: size * 0.3, style: .continuous)
-                        .strokeBorder(Color.white.opacity(0.85), lineWidth: 2)
-                        .padding(3)
-                }
+                    .strokeBorder(Color.white.opacity(0.85), lineWidth: 2)
+                    .padding(3)
             }
             if let text, !text.isEmpty {
                 Text(text)
-                    .font(.system(size: size * (isTarget ? 0.62 : 0.45), weight: isTarget ? .bold : .medium, design: .rounded))
-                    .foregroundStyle(isTarget ? Color.white : Color.primary.opacity(0.75))
+                    .font(.system(size: size * 0.62, weight: .bold, design: .rounded))
+                    .foregroundStyle(Color.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.4)
+                    .padding(size * 0.06)
+                    // The label is what the user reads: it swaps at once, it
+                    // never cross-fades behind the moving bubble.
+                    .transaction { $0.animation = nil }
+            }
+        }
+        .frame(width: size, height: size)
+    }
+
+    /// An unlit map cell: the key's own label for that gesture, shown once
+    /// the map is revealed. The target's cell stays empty under the bubble.
+    @ViewBuilder
+    private func mapLabel(_ gesture: GestureType, size: CGFloat) -> some View {
+        let isUnderBubble = gesture == target && isLit
+        ZStack {
+            if let text = Self.label(of: gesture, on: key), !text.isEmpty {
+                Text(text)
+                    .font(.system(size: size * 0.45, weight: .medium, design: .rounded))
+                    .foregroundStyle(Color.primary.opacity(0.75))
                     .lineLimit(1)
                     .minimumScaleFactor(0.4)
                     .padding(size * 0.06)
             }
         }
         .frame(width: size, height: size)
-        // Unlit cells exist only once the map is revealed; the lit one shows
-        // from the first frame its gesture is known.
-        .opacity(isTarget || isMapRevealed ? 1 : 0)
+        .opacity(isUnderBubble ? 0 : 1)
+    }
+
+    /// The side of the lit cell that faces the key: the bubble grows out of
+    /// it, so it reads as coming from under the thumb.
+    static func anchorTowardKey(cardCenter: CGPoint, keyFrame: CGRect) -> UnitPoint {
+        let dx = keyFrame.midX - cardCenter.x
+        let dy = keyFrame.midY - cardCenter.y
+        if abs(dy) >= abs(dx) { return dy > 0 ? .bottom : .top }
+        return dx > 0 ? .trailing : .leading
     }
 
     private var isCircle: Bool {

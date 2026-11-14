@@ -10,6 +10,9 @@ struct HapticSettingsView: View {
     @AppStorage(SettingsKey.keyboardFullAccess.rawValue, store: SharedDefaults.store)
     private var hasFullAccess = false
 
+    @AppStorage(SettingsKey.detailedHapticsEnabled.rawValue, store: SharedDefaults.store)
+    private var isDetailedEnabled = true
+
     /// Whether the keyboard extension has synced its Full Access status at least once.
     /// Prevents treating "unset" as "denied" on fresh installs.
     private var hasSyncedFullAccess: Bool {
@@ -49,14 +52,29 @@ struct HapticSettingsView: View {
                             hapticControl(
                                 title: "Tap Feedback",
                                 value: $tapIntensity,
-                                description: "Applies when you touch any key."
+                                description: "Applies when you touch any key.",
+                                preview: .touchDown
                             )
 
                             hapticControl(
                                 title: "Drag Feedback",
                                 value: $dragIntensity,
-                                description: "Applies when you drag the Space or Delete key to move the cursor or delete text."
+                                description: "Applies when you drag the Space or Delete key to move the cursor or delete text.",
+                                preview: .cursorTick(.deliberate)
                             )
+
+                            VStack(alignment: .leading, spacing: 8) {
+                                Toggle("Detailed Haptics", isOn: $isDetailedEnabled)
+                                    .font(.headline)
+                                Text(
+                                    // swiftlint:disable:next line_length
+                                    "A distinct feel for each gesture: ticks as a swipe passes each direction, a click on release, a swell before a long press. Turn off for simple clicks."
+                                )
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .padding(.horizontal, 16)
                         }
                     } else {
                         // Full Access explicitly denied
@@ -88,6 +106,7 @@ struct HapticSettingsView: View {
                     Button("Reset") {
                         tapIntensity = Double(HapticSettings.defaultTapIntensity)
                         dragIntensity = Double(HapticSettings.defaultDragIntensity)
+                        isDetailedEnabled = true
                     }
                 }
             }
@@ -100,7 +119,8 @@ struct HapticSettingsView: View {
     private func hapticControl(
         title: LocalizedStringKey,
         value: Binding<Double>,
-        description: LocalizedStringKey
+        description: LocalizedStringKey,
+        preview: HapticCue
     ) -> some View {
         VStack(spacing: 16) {
             HStack {
@@ -113,7 +133,7 @@ struct HapticSettingsView: View {
 
             VStack(spacing: 8) {
                 HapticLevelSlider(
-                    levelIndex: levelIndexBinding(for: value),
+                    levelIndex: levelIndexBinding(for: value, preview: preview),
                     levelCount: HapticIntensityLevel.allCases.count
                 )
                 .accessibilityLabel(Text(title))
@@ -144,7 +164,7 @@ struct HapticSettingsView: View {
     ///
     /// Each snap onto a new level plays that level's pulse, so every level
     /// can be felt while sliding across the detents (off stays silent).
-    private func levelIndexBinding(for value: Binding<Double>) -> Binding<Int> {
+    private func levelIndexBinding(for value: Binding<Double>, preview: HapticCue) -> Binding<Int> {
         Binding(
             get: { HapticIntensityLevel(storedIntensity: value.wrappedValue).rawValue },
             set: { index in
@@ -152,21 +172,28 @@ struct HapticSettingsView: View {
                 let previous = HapticIntensityLevel(storedIntensity: value.wrappedValue)
                 value.wrappedValue = Double(level.storedIntensity)
                 if level != previous {
-                    previewFeedback(intensity: Double(level.storedIntensity))
+                    HapticPreview.play(preview)
                 }
             }
         )
     }
+}
 
-    /// Plays the same pulse the keyboard will emit at this intensity.
-    private func previewFeedback(intensity: Double) {
-        guard intensity > 0 else { return }
-        switch HapticPulse.pulse(for: intensity) {
-        case .selectionTick:
-            UISelectionFeedbackGenerator().selectionChanged()
-        case let .impact(style):
-            UIImpactFeedbackGenerator(style: style).impactOccurred()
-        }
+/// Plays, from the settings screen, exactly what the keyboard plays for a
+/// cue at the stored settings: the Core Haptics pattern when Detailed Haptics
+/// is on, the generator pulse otherwise. One player for the screen's
+/// lifetime, re-read from the store before each preview (the sliders write
+/// it through `@AppStorage`).
+@MainActor
+enum HapticPreview {
+    private static let settings = HapticSettings(defaults: SharedDefaults.store, shouldPersist: false)
+    private static let player = HapticFeedbackPlayer(settings: settings)
+
+    static func play(_ cue: HapticCue) {
+        settings.reload()
+        player.refreshIfSettingsChanged()
+        player.prepareIfNeeded()
+        player.play(cue)
     }
 }
 

@@ -69,6 +69,38 @@ enum AppSurfaces {
         )
     }
 
+    /// The haptics screen (Full Access synced as granted), with the
+    /// Detailed Haptics switch.
+    static func haptics(scheme: ColorScheme) -> Shot {
+        ScenarioEnvironment.reset()
+        let device = Device.iPhone15
+        device.activate()
+        SharedDefaults.store.set(true, forKey: SettingsKey.keyboardFullAccess.rawValue)
+        return Shot(
+            size: device.size, scheme: scheme,
+            content: AnyView(
+                NavigationStack { HapticSettingsView() }
+                    .frame(width: device.width, height: device.size.height)
+            ),
+            hosted: true
+        )
+    }
+
+    /// The style screen, with the Key Animations switch.
+    static func style(scheme: ColorScheme) -> Shot {
+        ScenarioEnvironment.reset()
+        let device = Device.iPhone15
+        device.activate()
+        return Shot(
+            size: device.size, scheme: scheme,
+            content: AnyView(
+                NavigationStack { StyleSettingsView() }
+                    .frame(width: device.width, height: device.size.height)
+            ),
+            hosted: true
+        )
+    }
+
     /// The long-swipe settings with the feature switched on.
     static func longSwipes(scheme: ColorScheme) -> Shot {
         ScenarioEnvironment.reset()

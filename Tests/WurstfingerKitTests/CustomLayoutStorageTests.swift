@@ -225,9 +225,9 @@ struct RegistryTests {
     /// The keyboard resolves gestures through compiled tables cached beside
     /// the definition; an edit must drop those too, or the keyboard would draw
     /// the new layout and type the old one.
-    @Test @MainActor func editingALayoutChangesWhatTheKeyboardTypes() throws {
+    @Test @MainActor func editingALayoutChangesWhatTheKeyboardTypes() {
         let original = makeCustomLayout(id: "custom-reg-typing")
-        try withRegistered([original]) {
+        withRegistered([original]) {
             let (vm, target) = makeViewModel(languageId: original.id)
             vm.handleGesture(.tap, keyId: GridSlot.topLeft, isReturn: false)
             #expect(target.events.last == .insertText("q"))

@@ -27,6 +27,12 @@ final class KeyPressCell {
 
     /// Whether `candidate` is a return swipe.
     fileprivate(set) var candidateIsReturn = false
+
+    /// Where the current (or last) finger landed, in unit coordinates of the
+    /// key's touch frame (0,0 top-left). Written once per touch-down, right
+    /// before `isPressed`, so it never costs a render of its own. Feel hook:
+    /// the press light and ripple start here.
+    fileprivate(set) var touchPoint = CGPoint(x: 0.5, y: 0.5)
 }
 
 /// The guide card for the finger most recently put down on a flick key: where
@@ -73,6 +79,12 @@ final class KeyPressRegistry {
         let cell = cell(for: keyId)
         if cell.isPressed != isPressed { cell.isPressed = isPressed }
         if !isPressed { setCandidate(nil, isReturn: false, keyId: keyId) }
+    }
+
+    /// Feel hook: records where a finger landed on `keyId` (unit coordinates).
+    func setTouchPoint(_ point: CGPoint, keyId: String) {
+        let cell = cell(for: keyId)
+        if cell.touchPoint != point { cell.touchPoint = point }
     }
 
     func setCandidate(_ gesture: GestureType?, isReturn: Bool, keyId: String) {
