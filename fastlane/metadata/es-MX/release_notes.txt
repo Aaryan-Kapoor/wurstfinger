@@ -1,0 +1,19 @@
+Versión 1.4.1
+
+Novedades:
+• Estela de gestos opcional: un trazo suave sigue tu dedo mientras deslizas y se desvanece al levantarlo. Desactivada por omisión, en Configuración › Gestos
+• Nuevo ícono de la app: Liquid Glass en iOS 26, con profundidad en la pantalla de inicio
+
+Mejoras:
+• Los deslizamientos rápidos se vuelven a reconocer como gestos, en lugar de teclear la letra central de la tecla
+• Caracteres que no se podían teclear en absoluto en los nuevos diseños: ฬ ฒ ฑ ฏ y ฿ en tailandés, 、 y 。 en japonés junto con los kana pequeños, el semiespacio en persa y urdu, la puntuación de la escritura árabe, el ₹ en hindi, ׳ y ״ en hebreo, y las marcas de repetición de kana sonoras ゞ y ヾ
+• Ahora se puede llegar directamente a č ď ě ň ř š ť ž: el háček (caron) está en el deslizamiento de regreso de la tecla ^ y reemplaza al acento circunflejo independiente que ese gesto tecleaba antes (el ^ en sí no cambia)
+• Arrastrar en diagonal sobre la tecla de borrar ahora borra, en lugar de no hacer nada
+• Mantener una pulsación larga durante un cambio de modo o de idioma ya no teclea el dígito de la tecla anterior
+• El doble espacio teclea un punto solo cuando hay dos espacios consecutivos, e inserta el signo de final de oración de la escritura que estás usando
+• El borrado hacia adelante y poner una palabra en mayúsculas respetan una selección activa
+• Al regresar de otra app, los ajustes que cambiaste mientras tanto se aplican antes de la primera pulsación, y el selector de apps ya no muestra un hueco vacío donde estaba el teclado
+• VoiceOver llega a las teclas de mayúsculas, puntuación y modo, y ofrece acciones que antes solo se hacían deslizando, como copiar, cortar, pegar y ocultar el teclado, mediante el rotor
+• Las etiquetas de las teclas se mantienen dentro de su tecla incluso en los tamaños de teclado más pequeños
+• Tamaño y posición aparecía en inglés sin importar el idioma de la app, y ahora está traducido, junto con 70 traducciones corregidas
+• Un renderizado más ligero le deja más margen de memoria al teclado

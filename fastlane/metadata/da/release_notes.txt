@@ -1,0 +1,19 @@
+Version 1.4.1
+
+Nyt:
+• Valgfrit bevægelsesspor — en blød streg følger din finger, mens du stryger, og toner ud, når du løfter den. Slået fra som standard, under Indstillinger › Bevægelser
+• Nyt appikon: Liquid Glass på iOS 26, med dybde på hjemmeskærmen
+
+Forbedret:
+• Hurtige stryg genkendes igen som stryg i stedet for at skrive tastens midterbogstav
+• Tegn, der slet ikke kunne skrives på de nye layouts: thai ฬ ฒ ฑ ฏ og ฿, de japanske 、 og 。 med de små kana-tegn, det halve mellemrum på persisk og urdu, tegnsætning i arabisk skrift, hindi-₹, de hebraiske ׳ og ״ samt kanas gentagelsestegn for stemte lyde ゞ og ヾ
+• č ď ě ň ř š ť ž kan nås direkte: hacekentegnet ligger nu på returstrygningen på ^-tasten og erstatter den fritstående cirkumfleks, som stregen skrev tidligere (selve ^ er uændret)
+• Diagonale træk på sletteknappen sletter nu i stedet for at gøre ingenting
+• Et langt tryk, der holdes nede over et tilstands- eller sprogskift, skriver ikke længere den gamle tasts ciffer
+• Dobbelt mellemrum skriver kun punktum ved to mellemrum i træk og indsætter sætningstegnet for den skrift, du skriver med
+• Sletning fremad og stort begyndelsesbogstav i ord respekterer en aktiv markering
+• Når du vender tilbage fra en anden app, anvendes indstillinger, der er ændret i mellemtiden, før det første tastetryk, og appskifteren viser ikke længere et tomt hul, hvor tastaturet var
+• VoiceOver når skift-, tegnsætnings- og tilstandstasterne og tilbyder handlinger, der ellers kun findes med stryg, som kopiér, klip, indsæt og skjul tastatur, via rotoren
+• Tasteetiketter bliver inden for deres tast, selv ved de mindste tastaturstørrelser
+• Størrelse og position blev vist på engelsk uanset appens sprog og er nu oversat, sammen med 70 rettede oversættelser
+• Slankere gengivelse giver tastaturet mere hukommelsesplads

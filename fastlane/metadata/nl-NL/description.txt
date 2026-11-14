@@ -1,0 +1,27 @@
+Wurstfinger - Het toetsenbord voor dikke vingers
+
+Zat van typfouten? Wurstfinger is een privacyvriendelijk toetsenbord met grote toetsen en veeggebaren. Gebaseerd op de beproefde MessagEase-indeling vervangt het het krappe QWERTY-raster door een 3x3-indeling die is geoptimaliseerd voor typen met je duimen.
+
+Anders dan gewone toetsenborden vertrouwt Wurstfinger niet op opdringerige woordvoorspelling: de nauwkeurigheid komt voort uit ergonomisch ontwerp. Grote, ruim verdeelde toetsen betekenen minder misklikken, en dankzij het gebarensysteem bereik je alle tekens zonder te zoeken naar piepkleine knopjes.
+
+FUNCTIES:
+
+• Groot 3x3-toetsenraster - Geoptimaliseerd voor duimen, niet voor precisiewijzers
+• Veeggebaren - 8 extra tekens per toets door te vegen
+• 26 toetsenbordindelingen - Arabisch, Duits, Engels, Estisch-Fins, Fins, Frans, Grieks, Hebreeuws, Hindi, Italiaans, Japans (Hiragana), Japans (Katakana), Koreaans, Kroatisch, Oekraïens, Perzisch, Pools, Portugees, Russisch, Spaans, Spaans-Catalaans, Tagalog, Thai, Urdu, Vietnamees (met Telex-invoer) en Zweeds
+• Compose-regels - Maak accenten door combinaties (bijv. ' + a = á)
+• Cirkelgebaren - Teken een cirkel voor hoofdletters
+• Cursorbediening - Sleep over de spatiebalk om de cursor te verplaatsen, sleep over de verwijdertoets om continu te wissen
+• Haptische feedback - Instelbare trillingssterkte
+• Volledig aanpasbaar - Schaal het toetsenbord naar wens
+
+PRIVACY VOOROP:
+
+• Geen gegevensverzameling
+• Geen netwerktoegang
+• Geen tracking van woordvoorspelling
+• Alle verwerking gebeurt lokaal op je apparaat
+
+Wurstfinger vraagt om training: reken op een paar dagen om spiergeheugen op te bouwen. Maar zodra je die drempel over bent, wil je nooit meer terug naar een standaardtoetsenbord. De gebaren worden een tweede natuur, en je typt sneller en met minder fouten dan ooit.
+
+Je vingers zullen je dankbaar zijn!

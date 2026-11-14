@@ -1,0 +1,19 @@
+Phiên bản 1.4.1
+
+Mới:
+• Vệt cử chỉ tùy chọn — một nét mềm theo ngón tay khi bạn vuốt và mờ dần khi nhấc tay lên. Mặc định tắt, nằm trong Cài đặt › Cử chỉ
+• Biểu tượng ứng dụng mới: Liquid Glass trên iOS 26, có chiều sâu trên Màn hình chính
+
+Cải tiến:
+• Các cú vuốt nhanh lại được nhận là vuốt, thay vì gõ ký tự ở giữa của phím
+• Các ký tự trước đây hoàn toàn không gõ được trên các bố cục mới: tiếng Thái ฬ ฒ ฑ ฏ và ฿, tiếng Nhật 、 và 。 cùng các kana nhỏ, dấu nửa khoảng trắng trong tiếng Ba Tư và Urdu, dấu câu chữ Ả Rập, ₹ của tiếng Hindi, ׳ và ״ của tiếng Do Thái, và các dấu lặp kana đục ゞ và ヾ
+• Có thể gõ trực tiếp č ď ě ň ř š ť ž: dấu móc (caron) nay nằm ở cú vuốt quay lại của phím ^, thay cho dấu mũ (circumflex) đứng riêng mà cú vuốt đó từng gõ (bản thân ^ không đổi)
+• Kéo chéo trên phím xóa nay sẽ xóa, thay vì không làm gì
+• Nhấn giữ kéo dài qua lúc chuyển chế độ hoặc ngôn ngữ không còn gõ chữ số của phím cũ
+• Nhấn phím cách hai lần chỉ gõ dấu chấm khi có hai dấu cách liên tiếp, và chèn dấu kết câu của hệ chữ bạn đang gõ
+• Xóa tiến và viết hoa từ tôn trọng vùng chọn đang hoạt động
+• Khi quay lại từ ứng dụng khác, các cài đặt đã thay đổi trong lúc đó được áp dụng trước lần gõ phím đầu tiên, và bộ chuyển đổi ứng dụng không còn hiện khoảng trống ở chỗ bàn phím
+• VoiceOver truy cập được các phím shift, dấu câu và chế độ, đồng thời cung cấp qua rotor các thao tác chỉ có bằng cách vuốt như sao chép, cắt, dán và ẩn bàn phím
+• Nhãn phím nằm gọn trong phím ở cả những kích cỡ bàn phím nhỏ nhất
+• Kích cỡ & Vị trí trước đây hiển thị bằng tiếng Anh dù ngôn ngữ ứng dụng là gì, nay đã được dịch, cùng 70 bản dịch được sửa
+• Kết xuất gọn nhẹ hơn giúp bàn phím có thêm dư địa bộ nhớ

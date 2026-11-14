@@ -1,0 +1,27 @@
+Wurstfinger - Kalın Parmaklar İçin Klavye
+
+Yazım hatalarından bıktın mı? Wurstfinger, büyük tuşlara ve kaydırma hareketlerine sahip, gizliliğe önem veren bir klavyedir. Kendini kanıtlamış MessagEase düzenini temel alır ve dar QWERTY ızgarasının yerine başparmakla yazmak için optimize edilmiş 3x3 bir düzen getirir.
+
+Yaygın klavyelerin aksine Wurstfinger, müdahaleci kelime tahminine güvenmez; doğruluğu ergonomik tasarımla sağlar. Büyük ve aralıklı tuşlar daha az yanlış basış demektir, hareket sistemi ise minik tuşları aramadan tüm karakterlere ulaşmanı sağlar.
+
+ÖZELLİKLER:
+
+• Büyük 3x3 Tuş Izgarası - Hassas imleçler için değil, başparmaklar için optimize edildi
+• Kaydırma Hareketleri - Kaydırarak her tuşta 8 ek karaktere eriş
+• 26 klavye düzeni - Almanca, Arapça, Estonca-Fince, Farsça, Fince, Fransızca, Hırvatça, Hintçe, İbranice, İngilizce, İspanyolca, İspanyolca-Katalanca, İsveççe, İtalyanca, Japonca (Hiragana), Japonca (Katakana), Korece, Lehçe, Portekizce, Rusça, Tagalogca, Tayca, Ukraynaca, Urduca, Vietnamca (Telex girişiyle) ve Yunanca
+• Birleştirme Kuralları - Tuş kombinasyonlarıyla aksanlı harfler oluştur (örn. ' + a = á)
+• Dairesel Hareketler - Büyük harf için daire çiz
+• İmleç Kontrolü - İmleci taşımak için boşluk çubuğunu, sürekli silmek için silme tuşunu sürükle
+• Dokunsal Geri Bildirim - Özelleştirilebilir titreşim yoğunluğu
+• Tamamen Ayarlanabilir - Klavye boyutunu istediğin gibi ölçeklendir
+
+ÖNCE GİZLİLİK:
+
+• Veri toplama yok
+• Ağ erişimi yok
+• Kelime tahmini takibi yok
+• Tüm işlemler cihazında yerel olarak gerçekleşir
+
+Wurstfinger alışma süresi ister; kas hafızası oluşturmak için birkaç gün ayırman gerekir. Ama bu eşiği geçtiğinde standart bir klavyeye asla geri dönmek istemeyeceksin. Hareketler ikinci doğan haline gelir ve her zamankinden daha hızlı, daha az hatayla yazarsın.
+
+Parmakların sana teşekkür edecek!

@@ -1,0 +1,19 @@
+Versione 1.4.1
+
+Novità:
+• Scia del gesto opzionale — un tratto morbido segue il dito mentre scorri e svanisce quando lo sollevi. Disattivata per impostazione predefinita, in Impostazioni › Gesti
+• Nuova icona dell'app: Liquid Glass su iOS 26, con profondità nella schermata Home
+
+Miglioramenti:
+• I movimenti rapidi vengono di nuovo riconosciuti come scorrimenti, invece di digitare la lettera centrale del tasto
+• Caratteri che sui nuovi layout non si potevano digitare affatto: il thai ฬ ฒ ฑ ฏ e ฿, i caratteri giapponesi 、 e 。 con i kana piccoli, il semispazio in persiano e urdu, la punteggiatura della scrittura araba, il ₹ hindi, l'ebraico ׳ e ״ e i segni di iterazione dei kana sonori ゞ e ヾ
+• č ď ě ň ř š ť ž sono raggiungibili direttamente: il caron ora si trova sullo scorrimento di ritorno del tasto ^, e sostituisce l'accento circonflesso isolato che quel gesto digitava prima (il ^ in sé non cambia)
+• Il trascinamento in diagonale sul tasto di cancellazione ora cancella, invece di non fare nulla
+• Una pressione prolungata mantenuta durante il cambio di modalità o di lingua non digita più la cifra del tasto precedente
+• La doppia spaziatura digita un punto solo con due spazi consecutivi e inserisce il segno di fine frase della scrittura in uso
+• Cancellazione in avanti e maiuscola della parola rispettano una selezione attiva
+• Quando torni da un'altra app, le impostazioni modificate nel frattempo vengono applicate prima della prima battuta, e il selettore delle app non mostra più un vuoto al posto della tastiera
+• VoiceOver raggiunge i tasti maiuscole, punteggiatura e modalità, e offre tramite il rotore azioni disponibili solo con lo scorrimento, come copia, taglia, incolla e nascondi tastiera
+• Le etichette dei tasti restano all'interno del tasto anche con le dimensioni più piccole della tastiera
+• Dimensioni e posizione veniva mostrato in inglese in qualsiasi lingua dell'app, ed è ora tradotto, insieme a 70 traduzioni corrette
+• Un rendering più leggero lascia alla tastiera più margine di memoria

@@ -1,0 +1,19 @@
+Sürüm 1.4.1
+
+Yeni:
+• İsteğe bağlı hareket izi — kaydırırken parmağını yumuşak bir çizgi takip eder ve parmağını kaldırdığında silinir. Varsayılan olarak kapalıdır; Ayarlar › Hareketler bölümünden açılır
+• Yeni uygulama simgesi: iOS 26'da Liquid Glass, Ana Ekran'da derinlik efektiyle
+
+İyileştirildi:
+• Hızlı fiske hareketleri, tuşun ortasındaki harfi yazmak yerine yeniden kaydırma olarak algılanıyor
+• Yeni düzenlerde hiç yazılamayan karakterler: Tayca ฬ ฒ ฑ ฏ ve ฿, küçük kanalarla birlikte Japonca 、 ve 。, Farsça ve Urducadaki yarım boşluk, Arap alfabesi noktalama işaretleri, Hintçe ₹, İbranice ׳ ve ״ ile sesli kana yineleme işaretleri ゞ ve ヾ
+• č ď ě ň ř š ť ž doğrudan erişilebilir: karon artık ^ tuşunun geri kaydırmasında yer alıyor ve bu kaydırmanın daha önce yazdığı tek başına düzeltme işaretinin (circumflex) yerini alıyor (^ işaretinin kendisi değişmedi)
+• Silme tuşunda çapraz sürüklemeler artık hiçbir şey yapmak yerine siliyor
+• Mod veya dil değişimi sırasında basılı tutulan uzun basış artık eski tuşun rakamını yazmıyor
+• Çift boşluk, yalnızca art arda iki boşlukta nokta yazıyor ve yazdığın alfabenin cümle sonu işaretini ekliyor
+• İleri silme ve kelimeyi büyük harfe çevirme, etkin bir seçimi dikkate alıyor
+• Başka bir uygulamadan dönünce bu arada değiştirilen ayarlar ilk tuş vuruşundan önce uygulanıyor ve uygulama seçici artık klavyenin bulunduğu yerde boş bir alan göstermiyor
+• VoiceOver; shift, noktalama ve mod tuşlarına ulaşıyor, ayrıca kopyala, kes, yapıştır ve klavyeyi gizle gibi yalnızca kaydırmayla yapılan eylemleri rotor üzerinden sunuyor
+• Tuş etiketleri en küçük klavye boyutlarında bile tuşun içinde kalıyor
+• Boyut ve Konum, uygulama dili ne olursa olsun İngilizce gösteriliyordu; artık çevrildi, ayrıca 70 çeviri düzeltildi
+• Daha hafif oluşturma, klavyeye daha fazla bellek payı bırakıyor

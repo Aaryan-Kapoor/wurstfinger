@@ -1,0 +1,27 @@
+Wurstfinger - O teclado para dedos gordos
+
+Farto de erros ao escrever? O Wurstfinger é um teclado que respeita a sua privacidade, com teclas grandes e gestos de deslize. Baseado na comprovada disposição MessagEase, substitui a apertada grelha QWERTY por uma disposição 3x3 otimizada para escrever com os polegares.
+
+Ao contrário dos teclados convencionais, o Wurstfinger não depende de uma previsão de palavras intrusiva: a precisão resulta de um design ergonómico. Teclas grandes e bem espaçadas significam menos toques falhados, e o sistema de gestos dá acesso a todos os carateres sem ter de andar à procura de botões minúsculos.
+
+FUNCIONALIDADES:
+
+• Grelha grande de 3x3 teclas - Otimizada para polegares, não para ponteiros de precisão
+• Gestos de deslize - Aceda a 8 carateres adicionais por tecla ao deslizar
+• 26 disposições de teclado - Português, alemão, árabe, coreano, croata, espanhol, espanhol-catalão, estónio-finlandês, finlandês, francês, grego, hebraico, hindi, inglês, italiano, japonês (hiragana), japonês (katakana), persa, polaco, russo, sueco, tagalo, tailandês, ucraniano, urdu e vietnamita (com introdução Telex)
+• Regras de composição - Crie acentos através de combinações (p. ex., ' + a = á)
+• Gestos circulares - Desenhe um círculo para escrever em maiúsculas
+• Controlo do cursor - Arraste na barra de espaços para mover o cursor e na tecla de apagar para apagar de forma contínua
+• Feedback háptico - Intensidade da vibração personalizável
+• Totalmente ajustável - Redimensione o teclado ao seu gosto
+
+PRIVACIDADE EM PRIMEIRO LUGAR:
+
+• Sem recolha de dados
+• Sem acesso à rede
+• Sem monitorização da previsão de palavras
+• Todo o processamento é feito localmente no seu dispositivo
+
+O Wurstfinger exige treino: conte com alguns dias para criar memória muscular. Mas, depois de ultrapassada essa fase, nunca mais vai querer voltar a um teclado normal. Os gestos tornam-se uma segunda natureza e escreve mais depressa e com menos erros do que nunca.
+
+Os seus dedos vão agradecer!

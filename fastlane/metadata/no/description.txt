@@ -1,0 +1,27 @@
+Wurstfinger - Tastaturet for tykke fingre
+
+Lei av skrivefeil? Wurstfinger er et personvernvennlig tastatur med store taster og sveipebevegelser. Det bygger på det velprøvde MessagEase-oppsettet og erstatter det trange QWERTY-rutenettet med et 3x3-oppsett som er optimalisert for tommeltasting.
+
+I motsetning til vanlige tastaturer baserer ikke Wurstfinger seg på påtrengende ordforslag - i stedet oppnår det treffsikkerhet gjennom ergonomisk design. Store taster med god plass mellom betyr færre bomtrykk, og bevegelsessystemet gir deg tilgang til alle tegn uten å lete etter bittesmå knapper.
+
+FUNKSJONER:
+
+• Stort 3x3-tasterutenett - Optimalisert for tomler, ikke for presisjonspekere
+• Sveipebevegelser - 8 ekstra tegn per tast ved å sveipe
+• 26 tastaturoppsett - Arabisk, Engelsk, Estisk-finsk, Finsk, Fransk, Gresk, Hebraisk, Hindi, Italiensk, Japansk (hiragana), Japansk (katakana), Koreansk, Kroatisk, Persisk, Polsk, Portugisisk, Russisk, Spansk, Spansk-katalansk, Svensk, Tagalog, Thai, Tysk, Ukrainsk, Urdu og Vietnamesisk (med Telex-inntasting)
+• Komponeringsregler - Lag aksenter gjennom kombinasjoner (f.eks. ' + a = á)
+• Sirkelbevegelser - Tegn en sirkel for store bokstaver
+• Markørstyring - Dra på mellomromstasten for å flytte markøren, dra på slettetasten for å slette kontinuerlig
+• Haptisk tilbakemelding - Justerbar vibrasjonsstyrke
+• Fullt justerbart - Skaler tastaturstørrelsen etter eget ønske
+
+PERSONVERN FØRST:
+
+• Ingen datainnsamling
+• Ingen nettverkstilgang
+• Ingen sporing av ordforslag
+• All behandling skjer lokalt på enheten din
+
+Wurstfinger krever trening - regn med noen dager for å bygge opp muskelminnet. Men når du først har kommet over den terskelen, vil du aldri tilbake til et vanlig tastatur. Bevegelsene blir en annen natur, og du skriver raskere og med færre feil enn noensinne.
+
+Fingrene dine kommer til å takke deg!

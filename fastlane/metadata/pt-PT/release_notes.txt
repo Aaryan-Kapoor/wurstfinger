@@ -1,0 +1,19 @@
+Versão 1.4.1
+
+Novidades:
+• Rasto de gestos opcional: um traço suave acompanha o dedo enquanto desliza e desvanece-se quando o levanta. Desativado por predefinição, em Definições › Gestos
+• Novo ícone da app: Liquid Glass no iOS 26, com profundidade no ecrã principal
+
+Melhorias:
+• Os deslizes rápidos voltam a ser reconhecidos como gestos, em vez de escreverem a letra central da tecla
+• Carateres que não podiam ser escritos de todo nas novas disposições: ฬ ฒ ฑ ฏ e ฿ em tailandês, 、 e 。 em japonês juntamente com os kana pequenos, o meio espaço em persa e urdu, a pontuação da escrita árabe, o ₹ em hindi, ׳ e ״ em hebraico, e as marcas de repetição de kana sonoras ゞ e ヾ
+• č ď ě ň ř š ť ž passam a estar diretamente acessíveis: o caron fica agora no deslize de retorno da tecla ^ e substitui o acento circunflexo isolado que esse deslize escrevia anteriormente (o ^ em si não muda)
+• Arrastar na diagonal sobre a tecla de apagar passa a apagar, em vez de não fazer nada
+• Um toque longo mantido durante uma mudança de modo ou de idioma já não escreve o dígito da tecla anterior
+• O espaço duplo escreve um ponto apenas com dois espaços consecutivos e insere o sinal de fim de frase da escrita que está a utilizar
+• Apagar para a frente e colocar uma palavra em maiúsculas respeitam uma seleção ativa
+• Ao regressar de outra app, as definições alteradas entretanto são aplicadas antes da primeira tecla premida, e o seletor de apps já não mostra um espaço vazio no lugar do teclado
+• O VoiceOver alcança as teclas de maiúsculas, de pontuação e de modo, e oferece através do rotor ações que só existiam por deslize, como copiar, cortar, colar e ocultar o teclado
+• As etiquetas das teclas permanecem dentro da tecla, mesmo nos tamanhos de teclado mais pequenos
+• Tamanho e posição aparecia em inglês, qualquer que fosse o idioma da app, e agora está traduzido, tal como 70 traduções corrigidas
+• Uma renderização mais leve deixa mais margem de memória ao teclado

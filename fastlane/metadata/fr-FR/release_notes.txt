@@ -1,0 +1,19 @@
+Version 1.4.1
+
+Nouveautés :
+• Traînée de geste facultative — un trait doux suit votre doigt pendant le balayage et s'efface quand vous le levez. Désactivée par défaut, dans Réglages › Gestes
+• Nouvelle icône de l'app : Liquid Glass sous iOS 26, avec de la profondeur sur l'écran d'accueil
+
+Améliorations :
+• Les balayages rapides sont de nouveau reconnus comme des gestes au lieu de saisir la lettre centrale de la touche
+• Caractères qui ne pouvaient pas du tout être saisis sur les nouvelles dispositions : ฬ ฒ ฑ ฏ et ฿ en thaï, 、 et 。 en japonais avec les petits kana, la demi-espace en persan et en ourdou, la ponctuation de l'écriture arabe, le ₹ en hindi, ׳ et ״ en hébreu, ainsi que les marques d'itération kana voisées ゞ et ヾ
+• č ď ě ň ř š ť ž sont directement accessibles : le caron se trouve désormais sur le balayage retour de la touche ^ et remplace l'accent circonflexe isolé que ce balayage saisissait auparavant (le ^ lui-même ne change pas)
+• Un glissement en diagonale sur la touche de suppression supprime, au lieu de ne rien faire
+• Un appui long maintenu pendant un changement de mode ou de langue ne saisit plus le chiffre de l'ancienne touche
+• Le double espace ne saisit un point que pour deux espaces consécutifs, et insère le signe de fin de phrase de l'écriture utilisée
+• La suppression vers l'avant et la mise en majuscule d'un mot respectent une sélection active
+• Au retour d'une autre app, les réglages modifiés entre-temps s'appliquent avant la première frappe, et le sélecteur d'apps n'affiche plus de trou vide à l'emplacement du clavier
+• VoiceOver atteint les touches Maj, de ponctuation et de mode, et propose via le rotor des actions réservées au balayage, comme copier, couper, coller et masquer le clavier
+• Les libellés des touches restent dans leur touche, même aux plus petites tailles de clavier
+• Le réglage Taille et position s'affichait en anglais quelle que soit la langue de l'app, et est désormais traduit, avec 70 traductions corrigées
+• Un rendu plus léger laisse davantage de marge de mémoire au clavier

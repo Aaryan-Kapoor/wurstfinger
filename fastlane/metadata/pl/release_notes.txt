@@ -1,0 +1,19 @@
+Wersja 1.4.1
+
+Nowości:
+• Opcjonalny ślad gestu — delikatna linia podąża za palcem podczas przesuwania i zanika po jego uniesieniu. Domyślnie wyłączony, w Ustawienia › Gesty
+• Nowa ikona aplikacji: Liquid Glass w iOS 26, z efektem głębi na ekranie początkowym
+
+Ulepszenia:
+• Szybkie machnięcia są znowu rozpoznawane jako przesunięcia, a nie wpisują środkowej litery klawisza
+• Znaki, których na nowych układach w ogóle nie dało się wpisać: tajskie ฬ ฒ ฑ ฏ i ฿, japońskie 、 i 。 wraz z małymi znakami kana, półspacja w języku perskim i urdu, interpunkcja pisma arabskiego, hindi ₹, hebrajskie ׳ i ״ oraz znaki powtórzenia dźwięcznej kany ゞ i ヾ
+• č ď ě ň ř š ť ž są dostępne bezpośrednio: haczek znajduje się teraz pod przesunięciem powrotnym klawisza ^ i zastępuje samodzielny akcent cyrkumfleks, który to przesunięcie wpisywało wcześniej (sam znak ^ pozostaje bez zmian)
+• Ukośne przeciągnięcia na klawiszu usuwania usuwają znaki zamiast nic nie robić
+• Długie przytrzymanie utrzymane podczas zmiany trybu lub języka nie wpisuje już cyfry poprzedniego klawisza
+• Podwójna spacja wpisuje kropkę tylko po dwóch kolejnych spacjach i wstawia znak końca zdania używanego pisma
+• Usuwanie do przodu i zamiana słowa na wielkie litery uwzględniają aktywne zaznaczenie
+• Po powrocie z innej aplikacji ustawienia zmienione w międzyczasie obowiązują już od pierwszego naciśnięcia klawisza, a przełącznik aplikacji nie pokazuje pustej luki w miejscu klawiatury
+• VoiceOver dociera do klawiszy Shift, interpunkcji i trybów oraz udostępnia przez rotor akcje dostępne tylko przez przesunięcie, takie jak kopiowanie, wycinanie, wklejanie i ukrywanie klawiatury
+• Etykiety klawiszy mieszczą się w klawiszu nawet przy najmniejszych rozmiarach klawiatury
+• Ustawienie Rozmiar i położenie było wyświetlane po angielsku niezależnie od języka aplikacji, a teraz jest przetłumaczone — wraz z 70 poprawionymi tłumaczeniami
+• Lżejsze renderowanie zostawia klawiaturze większy zapas pamięci

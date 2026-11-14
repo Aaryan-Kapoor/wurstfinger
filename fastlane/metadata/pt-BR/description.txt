@@ -1,0 +1,27 @@
+Wurstfinger - O teclado para dedos grossos
+
+Cansou de errar ao digitar? O Wurstfinger é um teclado que respeita a sua privacidade, com teclas grandes e gestos de deslize. Baseado no consagrado layout MessagEase, ele troca a grade QWERTY apertada por um layout 3x3 otimizado para digitar com os polegares.
+
+Diferente dos teclados convencionais, o Wurstfinger não depende de uma previsão de palavras invasiva: a precisão vem de um design ergonômico. Teclas grandes e bem espaçadas significam menos toques errados, e o sistema de gestos dá acesso a todos os caracteres sem a necessidade de caçar botões minúsculos.
+
+RECURSOS:
+
+• Grade grande de 3x3 teclas - Otimizada para polegares, não para ponteiros de precisão
+• Gestos de deslize - Acesse 8 caracteres adicionais por tecla deslizando o dedo
+• 26 layouts de teclado - Português, alemão, árabe, coreano, croata, espanhol, espanhol-catalão, estoniano-finlandês, finlandês, francês, grego, hebraico, híndi, inglês, italiano, japonês (hiragana), japonês (katakana), persa, polonês, russo, sueco, tagalo, tailandês, ucraniano, urdu e vietnamita (com entrada Telex)
+• Regras de composição - Crie acentos por meio de combinações (por exemplo, ' + a = á)
+• Gestos circulares - Desenhe um círculo para digitar em maiúsculas
+• Controle do cursor - Arraste na barra de espaço para mover o cursor e na tecla de apagar para apagar continuamente
+• Resposta tátil - Intensidade da vibração personalizável
+• Totalmente ajustável - Redimensione o teclado do jeito que preferir
+
+PRIVACIDADE EM PRIMEIRO LUGAR:
+
+• Nenhuma coleta de dados
+• Nenhum acesso à rede
+• Nenhum rastreamento da previsão de palavras
+• Todo o processamento acontece localmente no seu dispositivo
+
+O Wurstfinger exige treino: conte com alguns dias para criar memória muscular. Mas, depois de passar dessa fase, você nunca mais vai querer voltar a um teclado comum. Os gestos viram algo natural, e você digita mais rápido e com menos erros do que nunca.
+
+Seus dedos vão agradecer!
