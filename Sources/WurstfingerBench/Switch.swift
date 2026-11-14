@@ -109,6 +109,39 @@ func benchModeSwitch() async -> [Stats] {
         #endif
     }
 
+    // Where the switch's own time goes, without a hosting view observing it:
+    // the mode change alone, and the feel cue a switch plays.
+    do {
+        let bare = BenchRig()
+        let modes = [ModeNames.numeric, ModeNames.main]
+        var index = 0
+        let plain = measure("10g. switchToMode alone (no hosting view)", inputs: Array(0 ..< 2000)) { _ in
+            bare.viewModel.switchToMode(modes[index % 2])
+            index += 1
+            return bare.viewModel.activeModeName.utf8.count
+        }
+        let cue = measure("10h. feel(.modeSwitch) alone", inputs: Array(0 ..< 2000)) { _ in
+            bare.viewModel.feel(.modeSwitch)
+            return 1
+        }
+        plain.report()
+        cue.report()
+        // The same two calls with the hosting graph observing the view model:
+        // what SwiftUI's observation hooks add synchronously.
+        var hostedIndex = 0
+        let hostedPlain = measure("10i. switchToMode alone, hosting view observing", inputs: Array(0 ..< 200)) { _ in
+            viewModel.switchToMode(modes[hostedIndex % 2])
+            hostedIndex += 1
+            return viewModel.activeModeName.utf8.count
+        }
+        let hostedCue = measure("10j. feel(.modeSwitch) alone, hosting view observing", inputs: Array(0 ..< 200)) { _ in
+            viewModel.feel(.modeSwitch)
+            return 1
+        }
+        hostedPlain.report()
+        hostedCue.report()
+        graph.settle()
+    }
     print("10. mode switch latency, 40 alternating switches each way (the settle is 4 x 5 ms run-loop turns, so 'settled' is bounded below by ~20 ms):")
     let results = [
         Stats(name: "10a. main -> numeric: handleGesture only", samples: toNumeric.call),

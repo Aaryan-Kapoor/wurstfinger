@@ -62,6 +62,10 @@ final class GestureTrailRecorder {
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let now: () -> TimeInterval
 
+    /// The buffers the overlay builds each frame's ribbon in
+    /// (`GestureTrailScratch`); owned here so they live as long as the trail.
+    @ObservationIgnored let drawScratch = GestureTrailScratch()
+
     /// The trail setting as last told by the keyboard (from its
     /// `GestureTuning` snapshot), or `nil` when nobody has told it — previews
     /// and tests, which fall back to reading `defaults` once per touch. Set by
@@ -90,17 +94,24 @@ final class GestureTrailRecorder {
     /// than blocking it forever.
     @ObservationIgnored private weak var owner: GestureTrailToken?
 
-    /// The pending fade-out. A cancellable task rather than a work item: it
-    /// sleeps on the main actor and then clears the trail, and cancelling it
-    /// (a new touch, a cancel) is `Task.cancel()`.
-    @ObservationIgnored private var fadeOut: Task<Void, Never>?
+    /// The pending fade-out: a one-shot timer on the keyboard's `TimerSource`
+    /// (a main-actor task in production, a hand-driven clock in tests) that
+    /// clears the trail; a new touch or a cancel cancels it.
+    @ObservationIgnored private var fadeOut: TimerHandle?
+    @ObservationIgnored private let timers: any TimerSource
 
+    /// - Parameters:
+    ///   - now: The clock the samples are stamped with; the overlay's
+    ///     `TimelineView` dates, so the reference-date clock by default.
+    ///   - timers: What the fade-out is armed on.
     init(
         defaults: UserDefaults = SharedDefaults.store,
-        now: @escaping () -> TimeInterval = { Date().timeIntervalSinceReferenceDate }
+        now: @escaping () -> TimeInterval = { Date().timeIntervalSinceReferenceDate },
+        timers: (any TimerSource)? = nil
     ) {
         self.defaults = defaults
         self.now = now
+        self.timers = timers ?? SystemTimerSource()
     }
 
     /// Starts recording a new touch sequence. `token` identifies the
@@ -196,15 +207,10 @@ final class GestureTrailRecorder {
     }
 
     private func scheduleFadeOut() {
-        fadeOut = Task { [weak self] in
-            do {
-                try await Task.sleepWithoutLeeway(for: .seconds(KeyboardConstants.GestureTrail.fadeOutDuration))
-            } catch {
-                return // a new touch or a cancel took over the trail
-            }
-            // Re-checked on the main actor: a cancel that landed between the
-            // sleep ending and this step must not clear the *next* trail.
-            guard !Task.isCancelled, let self else { return }
+        fadeOut = timers.schedule(after: KeyboardConstants.GestureTrail.fadeOutDuration) { [weak self] in
+            // A cancel that landed in between removed the timer, so reaching
+            // here means this fade still owns the trail.
+            guard let self else { return }
             fadeOut = nil
             trail.clear()
             isLongSwipeArmed = false

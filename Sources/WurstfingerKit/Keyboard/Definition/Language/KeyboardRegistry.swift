@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import os
 
 /// Registry for keyboard layouts.
 /// Exposes lightweight metadata via `available` and loads full definitions on demand.
@@ -90,16 +91,26 @@ enum KeyboardRegistry {
 
     /// The descriptor for `id`: a shipped layout's, or one made on the fly for a
     /// custom layout.
-    private static func descriptor(for id: String) -> LanguageDescriptor? {
+    ///
+    /// `internal` so a test can hold a descriptor across an edit.
+    static func descriptor(for id: String) -> LanguageDescriptor? {
         if let shipped = descriptorsByID[id] { return shipped }
         guard let layout = CustomLayoutRegistry.shared.layout(withId: id) else { return nil }
         return LanguageDescriptor(
             id: layout.id, title: layout.title, localeIdentifier: layout.localeIdentifier, family: .custom
         ) { _ in
+            // The layout is read again *here*, under the cache cell's build
+            // lock, not taken from the lookup above. `replaceCustomLayouts`
+            // replaces the set and only then evicts: a build that began with
+            // the old layout but inserted its cell after the eviction would
+            // park the stale definition in the cache for good. Read at build
+            // time, a cell created after the eviction always sees the new set,
+            // and a cell created before it is dropped by the eviction.
+            let current = CustomLayoutRegistry.shared.layout(withId: id) ?? layout
             // Only the base's settings are read; a base that no longer ships
             // simply leaves the defaults. A custom layout is never a base, so
             // this cannot recurse.
-            layout.makeDefinition(basedOn: layout.basedOn.flatMap { descriptorsByID[$0] != nil ? load(id: $0) : nil })
+            return current.makeDefinition(basedOn: current.basedOn.flatMap { descriptorsByID[$0] != nil ? load(id: $0) : nil })
         }
     }
 
@@ -200,18 +211,27 @@ enum KeyboardRegistry {
         await withDiscardingTaskGroup { group in
             for id in unique {
                 group.addTask(priority: .utility) {
+                    let generation = evictions.withLock { $0 }
                     guard let definition = load(id: id) else { return }
-                    _ = compiled(
-                        for: definition,
-                        signature: compiledSignature(languageId: id, numpadType: nil)
-                    )
+                    let signature = compiledSignature(languageId: id, numpadType: nil)
+                    _ = compiled(for: definition, signature: signature)
+                    // An edit evicted this layout while the tables were being
+                    // compiled from its old definition: the insert above landed
+                    // after the eviction and would outlive it. Drop it again;
+                    // the next switch compiles from the new definition.
+                    if evictions.withLock({ $0 }) != generation { compiledCache.remove(signature) }
                 }
             }
         }
     }
 
+    /// How many times `evict(id:)` has run, so a background compile can tell
+    /// that an eviction overtook it (see `prewarm`).
+    private static let evictions = OSAllocatedUnfairLock(initialState: 0)
+
     /// Removes a cached definition (e.g. on memory warning).
     static func evict(id: String) {
+        evictions.withLock { $0 &+= 1 }
         cache.remove(id)
         compiledCache.removeAll { $0.hasPrefix(signaturePrefix(of: id)) }
     }

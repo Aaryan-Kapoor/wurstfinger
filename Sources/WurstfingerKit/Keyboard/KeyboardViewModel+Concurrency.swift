@@ -18,14 +18,15 @@ extension KeyboardViewModel {
     /// Instruments never shows a keystroke that lasts until the next one.
     func beginKeystrokeInterval() {
         endKeystrokeInterval()
-        keystrokeInterval = InputSignposts.signposter.beginInterval(InputSignposts.keystroke)
+        isKeystrokeIntervalOpen = true
+        InputSignposts.begin(InputSignposts.keystroke, InputSignposts.keystrokeID)
     }
 
     /// Closes the `keystroke` interval, if one is open.
     func endKeystrokeInterval() {
-        guard let interval = keystrokeInterval else { return }
-        keystrokeInterval = nil
-        InputSignposts.signposter.endInterval(InputSignposts.keystroke, interval)
+        guard isKeystrokeIntervalOpen else { return }
+        isKeystrokeIntervalOpen = false
+        InputSignposts.end(InputSignposts.keystroke, InputSignposts.keystrokeID)
     }
 
     // MARK: - Definition prewarm
@@ -73,9 +74,10 @@ extension KeyboardViewModel {
     /// **Debounce.** A slider drag in the app posts dozens of times a second.
     /// Each signal cancels the pending reload and arms a new one `debounce`
     /// (50 ms) out, so a burst collapses to a single trailing
-    /// `reloadSettings()` after the last post — implemented with task
-    /// cancellation, so no timer object has to be invalidated and a cancelled
-    /// reload can never fire late.
+    /// `reloadSettings()` after the last post — a one-shot timer on the view
+    /// model's `TimerSource`, cancelled and re-armed per signal, so a
+    /// cancelled reload can never fire late and a test can drive the window
+    /// with a manual clock.
     ///
     /// The returned handle is also kept on the view model: dropping it (or
     /// deallocating the view model) cancels the observation and, through
@@ -91,21 +93,19 @@ extension KeyboardViewModel {
         signals: AsyncStream<Void> = DarwinNotificationCenter.shared.notifications(),
         debounce: Duration = .milliseconds(50)
     ) -> TaskHandle {
+        let seconds = Double(debounce.components.seconds) + Double(debounce.components.attoseconds) / 1e18
         let handle = TaskHandle(Task { @MainActor [weak self] in
-            var pendingReload: Task<Void, Never>?
+            var pendingReload: TimerHandle?
             for await _ in signals {
+                // A cancelled observation acts on nothing, not even a signal
+                // the stream had already buffered.
+                guard let self, !Task.isCancelled else { break }
                 pendingReload?.cancel()
-                pendingReload = Task { @MainActor [weak self] in
-                    do {
-                        try await Task.sleep(for: debounce)
-                    } catch {
-                        return // superseded by a newer signal
-                    }
+                // The window runs on the view model's timer source, so a test
+                // drives it by hand instead of waiting on the wall clock.
+                pendingReload = timers.schedule(after: seconds) { [weak self] in
                     self?.reloadSettings()
                 }
-                // The view model is gone: stop listening rather than keep the
-                // system registration alive for nothing.
-                if self == nil { break }
             }
             pendingReload?.cancel()
         })

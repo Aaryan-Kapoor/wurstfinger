@@ -22,6 +22,7 @@ final class RecordingHapticRenderer: HapticRenderer {
     private(set) var played: [(cue: HapticCue, delay: TimeInterval)] = []
     private(set) var stopped: [HapticCue] = []
     private(set) var suspendCount = 0
+    private(set) var resumeCount = 0
 
     var playedCues: [HapticCue] { played.map(\.cue) }
 
@@ -41,6 +42,10 @@ final class RecordingHapticRenderer: HapticRenderer {
 
     func suspend() {
         suspendCount += 1
+    }
+
+    func resumeIfNeeded() {
+        resumeCount += 1
     }
 }
 

@@ -46,6 +46,15 @@ func runSnapshots() -> Int32 {
         return 0
     }
 
+    // `WURSTFINGER_HINT_RENDERING=views` renders the hints as view stacks, for
+    // a pixel comparison against the shipped one-`Canvas` hints
+    // (`KeyView.hintRendering`).
+    switch ProcessInfo.processInfo.environment["WURSTFINGER_HINT_RENDERING"] {
+    case "views": MainActor.assumeIsolated { KeyView.hintRendering = .views }
+    case "canvas": MainActor.assumeIsolated { KeyView.hintRendering = .canvas }
+    default: break
+    }
+
     var scenarios = Catalog.all()
     if let filter = options.filter?.lowercased(), !filter.isEmpty {
         scenarios = scenarios.filter { $0.name.lowercased().contains(filter) }

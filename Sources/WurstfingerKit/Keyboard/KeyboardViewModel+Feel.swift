@@ -50,11 +50,13 @@ extension KeyboardViewModel {
         case let .armed(keyFrame, delay):
             // Only keys whose hold would type something get the swell and the
             // ring; on the others a rest is just a slow tap.
-            guard previewLabel(for: .longPress, keyId: key.id, isReturn: false) != nil else { return }
+            guard isTyping(.longPress, keyId: key.id) else { return }
             feel.longPressArmed(keyId: key.id, keyFrame: keyFrame, delay: delay)
         case .cancelled:
             feel.longPressCancelled(keyId: key.id)
         case .fired:
+            // An inert hold (nothing was armed for it) has nothing to confirm.
+            guard isTyping(.longPress, keyId: key.id) else { return }
             let text = previewLabel(for: .longPress, keyId: key.id, isReturn: false)
             let commit = text.map { CommitFeel(commitType: .longPress, popText: $0) }
             feel.longPressFired(
@@ -113,6 +115,10 @@ extension KeyboardViewModel {
         switch action {
         case .switchMode, .switchToNextLanguage, .advanceToNextInputMode, .dismissKeyboard:
             return nil
+        case .none:
+            // An inert binding (the globe's tap, a key the one-shot Ctrl mode
+            // has no use for) types nothing, so its release clicks for nothing.
+            return nil
         case let .commitText(text):
             return CommitFeel(commitType: commitType, popText: text.isEmpty || text == " " ? nil : text)
         case let .compose(trigger):
@@ -122,11 +128,18 @@ extension KeyboardViewModel {
         }
     }
 
+    /// Whether `gesture` on `keyId` is bound to something that does anything:
+    /// a binding is there and it is not the inert `.none`.
+    private func isTyping(_ gesture: GestureType, keyId: String) -> Bool {
+        guard let action = resolvedAction(for: gesture, keyId: keyId, isReturn: false) else { return false }
+        return action != .none
+    }
+
     /// The action `gesture` on `keyId` resolves to in the active mode, as
     /// `performGesture` resolves it (circles included) — a lookup in the
     /// compiled tables, like the guide's preview.
     private func resolvedAction(for gesture: GestureType, keyId: String, isReturn: Bool) -> KeyAction? {
-        guard let compiled = compiledDefinition?.mode(activeModeName),
+        guard let compiled = activeCompiledMode,
               let slot = compiled.slot(for: keyId)
         else { return nil }
         if gesture.isCircular {

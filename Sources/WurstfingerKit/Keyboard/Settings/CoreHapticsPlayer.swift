@@ -38,6 +38,110 @@ protocol HapticRenderer: AnyObject {
 
     /// Releases the hardware while the keyboard is off screen.
     func suspend()
+
+    /// Starts the engine again if it was wanted but is not running (it failed
+    /// to start, or the system stopped it while the app was suspended). Cheap
+    /// when there is nothing to do: called on touch-down.
+    func resumeIfNeeded()
+}
+
+extension HapticRenderer {
+    func resumeIfNeeded() {}
+}
+
+/// The engine's lifecycle as plain data: when it may start, restart or give
+/// up. Kept apart from `CoreHapticsRenderer` so every rule can be tested
+/// without a Taptic Engine (this machine has none).
+///
+/// The rules it encodes:
+/// - Nothing starts unless the keyboard asked for it (`prepare`) and has not
+///   since let go of it (`suspend`): a stop or a server reset that arrives
+///   while the keyboard is off screen must not bring the engine back.
+/// - A failed start is retried, but only `maxStartFailures` times in a row;
+///   one transient failure (the process was being suspended) must not silence
+///   the detailed haptics for the rest of the process, and a persistent one
+///   must not loop.
+/// - The system stopping the engine because the app was suspended is not
+///   restarted on the spot (it would fail); the next appearance starts it.
+struct HapticEngineLifecycle: Equatable {
+    enum State: Equatable {
+        /// Not created yet, or suspended.
+        case idle
+        case starting
+        case running
+        /// The device cannot play haptics, or the engine could not be created
+        /// in this process, or it failed to start `maxStartFailures` times in
+        /// a row; the generators take over for good.
+        case unavailable
+    }
+
+    /// Consecutive failed starts after which the engine is given up on.
+    static let maxStartFailures = 3
+
+    private(set) var state = State.idle
+    /// Whether the keyboard wants the engine running (between `prepare` and
+    /// `suspend`).
+    private(set) var isWanted = false
+    private(set) var failedStarts = 0
+
+    /// The keyboard asked for the engine. Returns whether to start it now.
+    mutating func prepare() -> Bool {
+        isWanted = true
+        return state == .idle
+    }
+
+    /// The engine is being started: `idle` becomes `starting`.
+    mutating func startBegan() {
+        if state == .idle { state = .starting }
+    }
+
+    /// The device or the process cannot do haptics.
+    mutating func becameUnavailable() {
+        state = .unavailable
+    }
+
+    /// The asynchronous start finished.
+    mutating func startFinished(error: (any Error)?) {
+        guard state == .starting else { return }
+        if error == nil {
+            state = .running
+            failedStarts = 0
+            return
+        }
+        failedStarts += 1
+        state = failedStarts >= Self.maxStartFailures ? .unavailable : .idle
+    }
+
+    /// The system stopped the engine. Returns whether to start it again.
+    mutating func stopped(applicationWasSuspended: Bool) -> Bool {
+        guard state == .running || state == .starting else { return false }
+        state = .idle
+        return isWanted && !applicationWasSuspended
+    }
+
+    /// The haptic server restarted: the players are invalid. Returns whether
+    /// to start the engine and rebuild them.
+    mutating func reset() -> Bool {
+        guard state != .unavailable, isWanted else { return false }
+        state = .idle
+        return true
+    }
+
+    /// A `start` on a player threw: the engine is not running after all.
+    /// Returns whether to start it again.
+    mutating func playFailed() -> Bool {
+        guard state == .running else { return false }
+        state = .idle
+        return isWanted
+    }
+
+    /// The keyboard let go of the engine. Returns whether it has to be stopped.
+    mutating func suspend() -> Bool {
+        isWanted = false
+        guard state == .running || state == .starting else { return false }
+        state = .idle
+        return true
+    }
 }
 
 /// Core Haptics renderer.
@@ -62,17 +166,10 @@ protocol HapticRenderer: AnyObject {
 /// reports no support and `isReady` stays false.
 @MainActor
 final class CoreHapticsRenderer: HapticRenderer {
-    enum State: Equatable {
-        /// Not created yet, or suspended.
-        case idle
-        case starting
-        case running
-        /// The device cannot play haptics, or the engine could not be created
-        /// in this process; the generators take over for good.
-        case unavailable
-    }
+    typealias State = HapticEngineLifecycle.State
 
-    private(set) var state = State.idle
+    private var lifecycle = HapticEngineLifecycle()
+    var state: State { lifecycle.state }
     private var engine: CHHapticEngine?
     private var players: [HapticCue: CHHapticPatternPlayer] = [:]
     private var patterns: [HapticCue: HapticPatternSpec] = [:]
@@ -88,7 +185,7 @@ final class CoreHapticsRenderer: HapticRenderer {
 
     func prepare(_ patterns: [HapticCue: HapticPatternSpec]) {
         self.patterns = patterns
-        startIfNeeded()
+        if lifecycle.prepare() { startIfNeeded() }
         rebuildPlayers()
     }
 
@@ -101,9 +198,10 @@ final class CoreHapticsRenderer: HapticRenderer {
             return true
         } catch {
             // The engine stopped between our bookkeeping and this call (the
-            // stopped handler has not run yet). Treat it as not running; the
-            // handler restarts it.
-            state = .idle
+            // stopped handler has not run yet, and when it does it finds the
+            // engine already idle and leaves the restart to us). Treat it as
+            // not running and start it again.
+            if lifecycle.playFailed() { startIfNeeded() }
             return false
         }
     }
@@ -118,9 +216,13 @@ final class CoreHapticsRenderer: HapticRenderer {
         }
     }
 
+    func resumeIfNeeded() {
+        guard lifecycle.isWanted, state == .idle else { return }
+        startIfNeeded()
+    }
+
     func suspend() {
-        guard let engine, state == .running || state == .starting else { return }
-        state = .idle
+        guard lifecycle.suspend(), let engine else { return }
         engine.stop(completionHandler: nil)
     }
 
@@ -129,7 +231,7 @@ final class CoreHapticsRenderer: HapticRenderer {
     private func startIfNeeded() {
         guard state == .idle else { return }
         guard Self.isSupportedByHardware else {
-            state = .unavailable
+            lifecycle.becameUnavailable()
             return
         }
         if engine == nil {
@@ -138,11 +240,11 @@ final class CoreHapticsRenderer: HapticRenderer {
             } catch {
                 // A keyboard extension without Full Access (or a process the
                 // haptic server refuses) ends up here: generators from now on.
-                state = .unavailable
+                lifecycle.becameUnavailable()
                 return
             }
         }
-        state = .starting
+        lifecycle.startBegan()
         // Asynchronous start: never block the main thread on the haptic
         // server. Until it completes, `play` returns false and the
         // generators cover.
@@ -168,24 +270,24 @@ final class CoreHapticsRenderer: HapticRenderer {
         return engine
     }
 
+    /// A failed start leaves the engine idle (the lifecycle gives up only after
+    /// a few in a row) and is not retried at once, since whatever failed it
+    /// is likely still true; `resumeIfNeeded` tries again at the next touch.
     private func didStart(error: (any Error)?) {
-        guard state == .starting else { return }
-        state = error == nil ? .running : .unavailable
+        lifecycle.startFinished(error: error)
     }
 
     /// The system stopped the engine (interruption, idle timeout, a system
-    /// error). Restart it right away unless we stopped it ourselves.
+    /// error). Restart it right away unless we stopped it ourselves or the
+    /// app is being suspended (the next appearance starts it then).
     private func engineStopped(reason: CHHapticEngine.StoppedReason) {
-        guard state == .running || state == .starting else { return }
-        state = .idle
-        startIfNeeded()
+        if lifecycle.stopped(applicationWasSuspended: reason == .applicationSuspended) { startIfNeeded() }
     }
 
     /// The haptic server restarted: every player is invalid. Rebuild them and
     /// start again, as Apple requires.
     private func engineReset() {
-        guard state != .unavailable else { return }
-        state = .idle
+        guard lifecycle.reset() else { return }
         startIfNeeded()
         rebuildPlayers()
     }

@@ -408,7 +408,7 @@ struct KeyView: View, Equatable {
     /// the swipe gesture classification is physical, so mirroring the hints
     /// would show a glyph on the opposite edge from the swipe that produces
     /// it. `internal` (not `private`) so the guard tests can lock the mapping.
-    static let hintAlignments: [GestureType: Alignment] = [
+    nonisolated static let hintAlignments: [GestureType: Alignment] = [
         .swipeUp: .top,
         .swipeDown: .bottom,
         .swipeLeft: .leading,
@@ -425,10 +425,10 @@ struct KeyView: View, Equatable {
     /// does not bind drop out via the `key.bindings[gesture]` lookup. Must
     /// cover exactly `hintAlignments` — a missing entry silently hides that
     /// hint. `internal` (not `private`) so the guard test can lock it.
-    static let hintGestureOrder: [GestureType] = GestureType.allCases.filter(\.isSwipe)
+    nonisolated static let hintGestureOrder: [GestureType] = GestureType.allCases.filter(\.isSwipe)
 
     /// Maps certain key actions to SF Symbol names for hint rendering.
-    private static func hintIcon(for action: KeyAction) -> String? {
+    nonisolated static func hintIcon(for action: KeyAction) -> String? {
         switch action {
         case .advanceToNextInputMode: "globe"
         case .dismissKeyboard: "keyboard.chevron.compact.down"
@@ -451,7 +451,7 @@ struct KeyView: View, Equatable {
     /// resolve to physical left/right because the render tree is pinned to
     /// `.leftToRight`; like `hintAlignments`, this table must not be mirrored
     /// for RTL. `internal` (not `private`) so the guard tests can lock it.
-    static func hintEdgePadding(
+    nonisolated static func hintEdgePadding(
         for gesture: GestureType, horizontal: CGFloat, vertical: CGFloat
     ) -> EdgeInsets {
         switch gesture {
@@ -507,7 +507,41 @@ struct KeyView: View, Equatable {
         guidance == .circle ? Color.accentColor : Color.primary
     }
 
+    /// How the hints are drawn: one `Canvas` per key (`KeyHintCanvas`), which
+    /// costs 40% less heap per keyboard graph than a view per glyph and renders
+    /// faster, at pixel parity (`docs/rework-review.md`, S10). The view stacks
+    /// stay selectable so the benchmark and the snapshot tool can compare the
+    /// two in one process.
+    @MainActor static var hintRendering = HintRendering.canvas
+
+    @ViewBuilder
     private var hintOverlay: some View {
+        switch Self.hintRendering {
+        case .views: viewHintOverlay
+        case .canvas: canvasHintOverlay
+        }
+    }
+
+    /// The hints as one `Canvas` per key. The identity is the hint set, so a
+    /// mode or language change fades the new hints in over the old ones
+    /// (`FeelMotion.labelSwap`, from `KeyPressFeel`'s `.animation(value: key)`)
+    /// where the view stacks cross-faded each glyph with `contentTransition`.
+    private var canvasHintOverlay: some View {
+        let hints = KeyHintCanvas.hints(
+            for: key, languageLabel: languageLabel, isLanguageLabelShown: isLanguageLabelShown,
+            isLabelVisible: isLabelVisible
+        )
+        return KeyHintCanvas(
+            hints: hints,
+            typography: typography,
+            emphasis: HintEmphasis(candidate: pressCell?.candidate, isGuided: guidance != .none)
+        )
+        .animation(Self.guidanceAnimation, value: pressCell?.candidate)
+        .id(hints)
+        .transition(.opacity)
+    }
+
+    private var viewHintOverlay: some View {
         let hPad = typography.hintHorizontalPadding
         let vPad = typography.hintVerticalPadding
 
@@ -554,7 +588,7 @@ struct KeyView: View, Equatable {
 
     /// The point an emphasized hint grows from: its own corner or edge, so it
     /// swells toward the key's centre instead of out of the key.
-    static func hintAnchor(for gesture: GestureType) -> UnitPoint {
+    nonisolated static func hintAnchor(for gesture: GestureType) -> UnitPoint {
         switch gesture {
         case .swipeUp: .top
         case .swipeDown: .bottom
@@ -570,7 +604,7 @@ struct KeyView: View, Equatable {
 
     /// Whether the icon is a "globe-style" hint (globe, dismiss) that gets
     /// larger, bolder styling vs. a "symbols-style" hint (copy, paste, cut).
-    private static func isGlobeStyleIcon(for action: KeyAction) -> Bool {
+    nonisolated static func isGlobeStyleIcon(for action: KeyAction) -> Bool {
         switch action {
         case .advanceToNextInputMode, .dismissKeyboard: true
         default: false

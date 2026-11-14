@@ -120,7 +120,19 @@ final class KeyboardViewModel {
     /// simulated screen the other suites read. Nil in the app.
     @ObservationIgnored var screenSizeOverride: CGSize?
     /// Name of the currently active mode in the data-driven definition.
-    var activeModeName: String = ModeNames.main
+    var activeModeName: String = ModeNames.main {
+        didSet { refreshActiveCompiledMode() }
+    }
+
+    /// The compiled tables of the active mode (`CompiledMode`), looked up once
+    /// per mode change rather than once per keystroke and per preview update:
+    /// it removes the mode-name hash from the resolve path, leaving the key
+    /// id's. Nil until a definition is loaded.
+    @ObservationIgnored private(set) var activeCompiledMode: CompiledMode?
+
+    func refreshActiveCompiledMode() {
+        activeCompiledMode = compiledDefinition?.mode(activeModeName)
+    }
 
     // MARK: - Data-Driven Pipeline State (internal for extension access)
 
@@ -137,7 +149,9 @@ final class KeyboardViewModel {
     /// resolves by indexing into it. Filled by `loadDefinition` from the
     /// registry's cache and by `rebuildResolverChain()` for a definition set
     /// directly; `nil` until a definition is loaded.
-    @ObservationIgnored var compiledDefinition: CompiledDefinition?
+    @ObservationIgnored var compiledDefinition: CompiledDefinition? {
+        didSet { refreshActiveCompiledMode() }
+    }
     @ObservationIgnored var pipeline: ActionPipeline?
     /// Whether the current `shifted` mode was engaged by auto-capitalization
     /// (as opposed to a manual shift tap). Only auto-engaged shift may be
@@ -240,7 +254,13 @@ final class KeyboardViewModel {
     /// The input engine every touch on this keyboard runs through. Owned here
     /// rather than by a view, so it outlives view re-creation and the
     /// controller can cancel touches in flight when the keyboard goes away.
-    @ObservationIgnored let touchEngine = TouchEngine()
+    @ObservationIgnored let touchEngine: TouchEngine
+
+    /// The clock and timer every deadline of this keyboard runs on (the
+    /// engine's long press and rollover hold, the trail's fade, the settings
+    /// debounce). System time in the keyboard; tests inject a
+    /// `ManualTimerSource` and drive it by hand.
+    @ObservationIgnored let timers: any TimerSource
 
     /// The engine's callbacks into this view model, built once: the closures
     /// hold the view model weakly and never change, so handing them to the
@@ -260,7 +280,7 @@ final class KeyboardViewModel {
     /// Removes the in-process defaults observer when the view model goes away.
     @ObservationIgnored private var userDefaultsObserver: ObserverToken?
     /// The in-flight touch-down -> text interval, see `InputSignposts`.
-    @ObservationIgnored var keystrokeInterval: OSSignpostIntervalState?
+    @ObservationIgnored var isKeystrokeIntervalOpen = false
     /// The debounced cross-process settings observation, if started.
     @ObservationIgnored var externalSettingsObservation: TaskHandle?
     /// The most recent background definition prewarm, if one was started.
@@ -283,9 +303,13 @@ final class KeyboardViewModel {
         userDefaults: UserDefaults? = nil,
         shouldPersistSettings: Bool = true,
         prewarmsLanguages: Bool = false,
-        clipboard: (any Clipboard)? = nil
+        clipboard: (any Clipboard)? = nil,
+        timers: (any TimerSource)? = nil
     ) {
         self.clipboard = clipboard ?? ClipboardStore.shared
+        let timers = timers ?? SystemTimerSource()
+        self.timers = timers
+        touchEngine = TouchEngine(trail: GestureTrailRecorder(timers: timers), timers: timers)
         // Initialize UserDefaults once
         let defaults = userDefaults ?? SharedDefaults.store
         sharedDefaults = defaults

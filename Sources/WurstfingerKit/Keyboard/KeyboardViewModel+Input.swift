@@ -59,7 +59,7 @@ extension KeyboardViewModel {
     /// dispatching anything. Drives the preview bubble while a finger is
     /// still moving, so it must stay a pure lookup.
     func previewLabel(for gesture: GestureType, keyId: String, isReturn: Bool) -> String? {
-        guard let compiled = compiledDefinition?.mode(activeModeName),
+        guard let compiled = activeCompiledMode,
               let slot = compiled.slot(for: keyId)
         else { return nil }
         if gesture.isCircular {

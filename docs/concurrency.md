@@ -77,7 +77,7 @@ Everything that touches UIKit, SwiftUI state, or the text proxy:
 - The action pipeline and **all middlewares** (`@MainActor protocol
   ActionMiddleware`): they drive the text proxy, which is main-thread-only.
 - `TextInputTarget` (a `@MainActor` protocol), `DocumentProxyTarget`.
-- `HapticFeedbackPlayer`, `GestureTrailRecorder`, `LongPressScheduler`, and the
+- `HapticFeedbackPlayer`, `GestureTrailRecorder`, the `TimerSource`s, and the
   settings objects `HapticSettings`, `LayoutSettings`, `LanguageSettings`.
 - The macOS stand-ins for UIKit types (`UIScreen`, `UIDevice`, the feedback
   generators, `UIPasteboard`) are `@MainActor` too, mirroring the real ones, so
@@ -124,7 +124,8 @@ is never made to wait for a background result.
 | Per-finger state (phase, sample ring, slide state, trail token, long-press timer) | pooled `PointerTrack`s inside `TouchEngine` | the engine itself; never leaves it |
 | Held-back commits | `TouchEngine`'s `CommitQueue` (press order, bounded by `maxPointers`) | flushed synchronously by the event that unblocks them, or by the hold timer |
 | Health log | file in the app group, owned by `KeyboardHealthLog` | not at all (write-only from the keyboard) |
-| Long-press timer, rollover-hold flush, trail fade | main-actor `Task`s | n/a |
+| Long-press deadlines, rollover-hold flush | `TouchEngine`'s one `TimerHandle` on the keyboard's `TimerSource` (earliest deadline; lazily re-armed) | n/a |
+| Trail fade, settings debounce | one `TimerHandle` each on the same `TimerSource` | n/a |
 
 ## Settings: snapshot, then signal
 
@@ -169,10 +170,20 @@ is never made to wait for a background result.
 - **No `DispatchQueue.main.sync`, semaphores, or `Thread.sleep`.** The one
   deliberately blocking call is `KeyboardHealthLog.recordAndFlush`, used only on
   the suspension path, where an async hop that "will run soon" may never run.
-- **Timers are tasks.** Use `Task.sleepWithoutLeeway(for:)` in a main-actor
-  `Task` and cancel the task to cancel the timer. Re-check `Task.isCancelled`
-  after the sleep, on the actor, so a cancel that lands between wake-up and
-  action cannot fire a stale timer.
+- **Timers come from the `TimerSource`.** Nothing on the input path spawns
+  its own sleeping `Task`: the long press, the rollover flush, the trail fade
+  and the settings debounce ask the keyboard's `TimerSource`
+  (`KeyboardViewModel.timers`) for a one-shot `TimerHandle`. In production
+  that is `SystemTimerSource` — a main-actor `Task` sleeping with
+  `Task.sleepWithoutLeeway`, cancelled through the handle and re-checked on
+  the actor after the sleep, exactly what the per-site tasks did. In tests it
+  is `ManualTimerSource`, advanced by hand: a timing test asserts *when*
+  something fires without waiting for it, so a busy machine cannot fail it
+  (`TouchEngineTimingTests`, `ExternalSettingsObservationTests`). The engine
+  arms **one** timer for the earliest of its deadlines and re-arms when it
+  fires; a deadline that goes away is left to that lazy wake-up, so typing
+  with long-press digits on costs about one timer task per long-press
+  duration rather than one per keystroke.
 - **Timers never decide order.** Two main-actor timers (the rollover-hold
   flush and a long press) may wake in either order on a busy main thread, so
   the engine does not rely on the flush running first: a long press that
