@@ -13,8 +13,8 @@ import Foundation
 extension KeyboardViewModel {
     func makeTouchEngineActions() -> TouchEngineActions {
         TouchEngineActions(
-            touchDown: { [weak self] _ in
-                self?.touchDown()
+            touchDown: { [weak self] key in
+                self?.touchDown(key)
             },
             gesture: { [weak self] key, classification in
                 self?.handleClassification(classification, keyId: key.id)
@@ -25,12 +25,26 @@ extension KeyboardViewModel {
             longPress: { [weak self] key in
                 self?.handleGesture(.longPress, keyId: key.id, isReturn: false) ?? false
             },
+            // Asked once per new target, so it is also where the target is
+            // spoken under VoiceOver gesture typing.
             previewLabel: { [weak self] key, classification in
-                self?.previewLabel(for: classification, keyId: key.id)
+                guard let self else { return nil }
+                let label = previewLabel(for: classification, keyId: key.id)
+                if typingBehavior.isVoiceOverGestureTypingEnabled {
+                    let isPlain = !classification.isReturn && gestureTuning.longSwipe.action(for: classification) == nil
+                    speakTarget(classification.gesture, isPlain: isPlain, on: key, label: label)
+                }
+                return label
             },
             // Feel hooks (`KeyboardViewModel+Feel.swift`).
             candidateChanged: { [weak self] key, old, new in
-                self?.feelCandidateChanged(on: key, from: old, to: new)
+                guard let self else { return }
+                feelCandidateChanged(on: key, from: old, to: new)
+                // Back on the key's centre: the preview is not asked for a
+                // tap, so the key's own character is spoken from here.
+                if new.gesture == nil, typingBehavior.isVoiceOverGestureTypingEnabled {
+                    speakTarget(.tap, on: key, label: previewLabel(for: .tap, keyId: key.id, isReturn: false))
+                }
             },
             released: { [weak self] key, classification in
                 self?.feelReleased(key, classification: classification)

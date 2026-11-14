@@ -109,6 +109,13 @@ enum SettingsKey: String, CaseIterable, Sendable {
     /// The keys' press, release and commit animations and the light effects
     /// on them. On by default; Reduce Motion is honoured either way.
     case keyAnimationsEnabled
+    /// The system keyboard's click on every touch-down. Off by default; plays
+    /// only with Full Access and follows the ring / silent switch.
+    case keyClicksEnabled
+    /// Under VoiceOver, the keyboard takes flicks directly (a direct-touch
+    /// area) and speaks the character a flick would type, instead of VoiceOver
+    /// reading each key. Off by default (`SpokenFeedback`).
+    case voiceOverGestureTyping
 }
 
 // MARK: - Haptic Settings

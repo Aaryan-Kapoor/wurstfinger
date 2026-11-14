@@ -36867,6 +36867,965 @@
           }
         }
       }
+    },
+    "Gesture Typing with VoiceOver": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestentippen mit VoiceOver"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saisie par gestes avec VoiceOver"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Escritura con gestos con VoiceOver"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Digitazione a gesti con VoiceOver"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Набор жестами с VoiceOver"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pisanie gestami z VoiceOver"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestskrivning med VoiceOver"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elekirjoitus VoiceOverin kanssa"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tipkanje pokretima uz VoiceOver"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "הקלדה במחוות עם VoiceOver"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nhập bằng cử chỉ với VoiceOver"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pag-type gamit ang galaw kasama ang VoiceOver"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Πληκτρολόγηση με χειρονομίες με το VoiceOver"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Digitação por gestos com o VoiceOver"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Набір жестами з VoiceOver"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الكتابة بالإيماءات مع VoiceOver"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تایپ با اشاره همراه با VoiceOver"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VoiceOver کے ساتھ اشاروں سے ٹائپنگ"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "พิมพ์ด้วยท่าทางพร้อม VoiceOver"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VoiceOver के साथ इशारों से टाइपिंग"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VoiceOverでジェスチャ入力"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VoiceOver로 제스처 입력"
+          }
+        }
+      }
+    },
+    "VoiceOver": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VoiceOver"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VoiceOver"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VoiceOver"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VoiceOver"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VoiceOver"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VoiceOver"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VoiceOver"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VoiceOver"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VoiceOver"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VoiceOver"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VoiceOver"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VoiceOver"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VoiceOver"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VoiceOver"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VoiceOver"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VoiceOver"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VoiceOver"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VoiceOver"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VoiceOver"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VoiceOver"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VoiceOver"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VoiceOver"
+          }
+        }
+      }
+    },
+    "With VoiceOver on, the keyboard takes your flicks directly instead of reading each key: the character a flick would type is spoken as you move, and lifting your finger types it. Turn off to explore the keys one by one, where every character is also an action in the rotor.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bei aktivem VoiceOver nimmt die Tastatur deine Wischgesten direkt an, statt jede Taste vorzulesen: Das Zeichen, das eine Wischgeste eingeben würde, wird angesagt, während du dich bewegst, und beim Loslassen wird es eingegeben. Schalte es aus, um die Tasten einzeln zu erkunden – dort ist jedes Zeichen auch eine Aktion im Rotor."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lorsque VoiceOver est activé, le clavier reçoit directement vos balayages au lieu de lire chaque touche : le caractère que saisirait le balayage est annoncé pendant le mouvement, et il est saisi lorsque vous levez le doigt. Désactivez pour explorer les touches une par une ; chaque caractère y est aussi une action du rotor."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Con VoiceOver activado, el teclado recibe tus deslizamientos directamente en lugar de leer cada tecla: se anuncia el carácter que escribiría el deslizamiento mientras te mueves, y al levantar el dedo se escribe. Desactívalo para explorar las teclas una a una, donde cada carácter también es una acción del rotor."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Con VoiceOver attivo, la tastiera riceve direttamente i tuoi scorrimenti invece di leggere ogni tasto: il carattere che lo scorrimento digiterebbe viene pronunciato mentre ti muovi e viene digitato quando sollevi il dito. Disattiva per esplorare i tasti uno alla volta, dove ogni carattere è anche un'azione del rotore."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Когда VoiceOver включён, клавиатура принимает смахивания напрямую, а не зачитывает каждую клавишу: символ, который введёт смахивание, произносится во время движения, а при отрыве пальца вводится. Выключите, чтобы изучать клавиши по одной — там каждый символ также доступен как действие ротора."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gdy VoiceOver jest włączony, klawiatura przyjmuje przesunięcia bezpośrednio zamiast odczytywać każdy klawisz: znak, który wpisałoby przesunięcie, jest odczytywany w trakcie ruchu, a po uniesieniu palca zostaje wpisany. Wyłącz, aby poznawać klawisze pojedynczo — wtedy każdy znak jest też czynnością w pokrętle."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "När VoiceOver är på tar tangentbordet emot dina svep direkt i stället för att läsa upp varje tangent: tecknet som svepet skulle skriva läses upp medan du rör dig, och när du lyfter fingret skrivs det. Stäng av för att utforska tangenterna en i taget, där varje tecken också är en åtgärd i rotorn."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kun VoiceOver on päällä, näppäimistö ottaa pyyhkäisysi vastaan suoraan sen sijaan, että lukisi jokaisen näppäimen: merkki, jonka pyyhkäisy kirjoittaisi, luetaan liikkeen aikana, ja se kirjoitetaan, kun nostat sormen. Laita pois, jos haluat tutkia näppäimiä yksi kerrallaan – silloin jokainen merkki on myös roottorin toiminto."
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kad je VoiceOver uključen, tipkovnica izravno prima tvoje poteze umjesto da čita svaku tipku: znak koji bi potez upisao izgovara se dok se krećeš, a upisuje se kad podigneš prst. Isključi za istraživanje tipki jednu po jednu, gdje je svaki znak i radnja u rotoru."
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "כש‑VoiceOver פועל, המקלדת מקבלת את ההחלקות שלך ישירות במקום להקריא כל מקש: התו שההחלקה תקליד נאמר בזמן התנועה, והרמת האצבע מקלידה אותו. כבה כדי לסייר במקשים אחד אחד, שם כל תו הוא גם פעולה ברוטור."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Khi bật VoiceOver, bàn phím nhận trực tiếp các thao tác vuốt thay vì đọc từng phím: ký tự mà thao tác vuốt sẽ nhập được đọc khi bạn di chuyển, và nhấc ngón tay lên sẽ nhập ký tự đó. Tắt để khám phá từng phím một, khi đó mỗi ký tự cũng là một tác vụ trong rô-to."
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kapag naka-on ang VoiceOver, direktang tinatanggap ng keyboard ang mga swipe mo sa halip na basahin ang bawat key: binabanggit ang character na ita-type ng swipe habang gumagalaw ka, at tina-type ito kapag inangat mo ang daliri. I-off para isa-isang galugarin ang mga key, kung saan action din sa rotor ang bawat character."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Με το VoiceOver ενεργό, το πληκτρολόγιο δέχεται απευθείας τις σαρώσεις σου αντί να εκφωνεί κάθε πλήκτρο: ο χαρακτήρας που θα πληκτρολογούσε η σάρωση εκφωνείται καθώς κινείσαι και πληκτρολογείται όταν σηκώσεις το δάχτυλο. Απενεργοποίησέ το για να εξερευνάς τα πλήκτρα ένα ένα, όπου κάθε χαρακτήρας είναι και ενέργεια στον ρότορα."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Com o VoiceOver ativado, o teclado recebe os seus deslizes diretamente em vez de ler cada tecla: o caractere que o deslize digitaria é falado enquanto você move o dedo, e é digitado quando você o levanta. Desative para explorar as teclas uma a uma, onde cada caractere também é uma ação do rotor."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Коли VoiceOver увімкнено, клавіатура приймає жести напряму, а не зачитує кожну клавішу: символ, який введе жест, промовляється під час руху, а коли ви піднімаєте палець — вводиться. Вимкніть, щоб досліджувати клавіші по одній — там кожен символ також є дією ротора."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "عند تشغيل VoiceOver، تتلقى لوحة المفاتيح سحباتك مباشرة بدلًا من قراءة كل مفتاح: يُنطق الحرف الذي ستكتبه السحبة أثناء الحركة، ويُكتب عند رفع إصبعك. أوقفه لاستكشاف المفاتيح واحدًا تلو الآخر، حيث يكون كل حرف أيضًا إجراءً في الدوّار."
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "وقتی VoiceOver روشن است، صفحه‌کلید کشیدن‌های شما را مستقیم دریافت می‌کند و هر کلید را نمی‌خواند: نویسه‌ای که کشیدن تایپ می‌کند هنگام حرکت گفته می‌شود و با برداشتن انگشت تایپ می‌شود. برای کاوش کلیدها یکی‌یکی خاموشش کنید؛ آنجا هر نویسه یک کنش در روتور هم هست."
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VoiceOver آن ہونے پر کی بورڈ ہر کلید پڑھنے کے بجائے آپ کے سوائپ براہِ راست لیتا ہے: جو حرف سوائپ ٹائپ کرے گا وہ حرکت کے دوران بولا جاتا ہے، اور انگلی اٹھانے پر ٹائپ ہو جاتا ہے۔ کلیدوں کو ایک ایک کر کے دیکھنے کے لیے بند کریں، جہاں ہر حرف روٹر میں ایک عمل بھی ہے۔"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "เมื่อเปิด VoiceOver แป้นพิมพ์จะรับการปัดของคุณโดยตรงแทนการอ่านทีละปุ่ม: ตัวอักษรที่การปัดจะพิมพ์จะถูกพูดออกมาขณะที่คุณเลื่อนนิ้ว และจะพิมพ์เมื่อคุณยกนิ้วขึ้น ปิดเพื่อสำรวจปุ่มทีละปุ่ม ซึ่งทุกตัวอักษรเป็นการทำงานในตัวหมุนด้วย"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VoiceOver चालू होने पर कीबोर्ड हर की पढ़ने के बजाय आपके स्वाइप सीधे लेता है: स्वाइप जो वर्ण टाइप करेगा वह चलते समय बोला जाता है, और उंगली उठाने पर टाइप हो जाता है। कीज़ को एक-एक करके देखने के लिए बंद करें, जहाँ हर वर्ण रोटर में एक क्रिया भी है।"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VoiceOverがオンのとき、キーボードはキーを1つずつ読み上げる代わりにスワイプを直接受け取ります。スワイプで入力される文字は指を動かすあいだに読み上げられ、指を離すと入力されます。オフにすると、キーを1つずつ確認でき、各文字はローターのアクションとしても使えます。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VoiceOver가 켜져 있으면 키보드가 각 키를 읽는 대신 스와이프를 직접 받습니다. 스와이프로 입력될 문자는 손가락을 움직이는 동안 읽어 주고, 손가락을 떼면 입력됩니다. 끄면 키를 하나씩 탐색할 수 있으며, 이때 모든 문자는 로터의 동작으로도 사용할 수 있습니다."
+          }
+        }
+      }
+    },
+    "Key Clicks": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tastenklicks"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clics du clavier"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clics del teclado"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clic dei tasti"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Щелчки клавиш"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kliknięcia klawiszy"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tangentklick"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Näppäinäänet"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klikovi tipki"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "צלילי הקלדה"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tiếng bấm phím"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mga Click ng Key"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ήχοι πλήκτρων"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cliques do teclado"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Клацання клавіш"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "نقرات المفاتيح"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "صدای کلیک کلیدها"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "کلید کی کلک"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "เสียงคลิกแป้นพิมพ์"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "की क्लिक"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "キーのクリック音"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "키 클릭 소리"
+          }
+        }
+      }
+    },
+    "Plays the keyboard click on every key, and stays silent in silent mode.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spielt bei jeder Taste den Tastaturklick ab und bleibt im Stummmodus still."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Joue le clic du clavier à chaque touche, et reste silencieux en mode silencieux."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reproduce el clic del teclado en cada tecla y permanece en silencio en el modo silencio."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Riproduce il clic della tastiera a ogni tasto e resta muto in modalità silenziosa."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Воспроизводит щелчок клавиатуры на каждой клавише и молчит в бесшумном режиме."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odtwarza kliknięcie klawiatury przy każdym klawiszu i milknie w trybie cichym."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spelar tangentbordsklicket för varje tangent och är tyst i ljudlöst läge."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toistaa näppäimistön napsautuksen jokaisesta näppäimestä ja on hiljaa äänettömässä tilassa."
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reproducira klik tipkovnice na svakoj tipki i šuti u tihom načinu."
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "משמיע את צליל ההקלדה בכל מקש, ושותק במצב שקט."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Phát tiếng bấm bàn phím ở mỗi phím và im lặng ở chế độ im lặng."
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nagpe-play ng click ng keyboard sa bawat key, at tahimik kapag naka-silent mode."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Παίζει τον ήχο του πληκτρολογίου σε κάθε πλήκτρο και μένει σιωπηλό στην αθόρυβη λειτουργία."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reproduz o clique do teclado em cada tecla e fica em silêncio no modo silencioso."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Відтворює клацання клавіатури на кожній клавіші й мовчить у безшумному режимі."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يشغّل نقرة لوحة المفاتيح مع كل مفتاح، ويبقى صامتًا في الوضع الصامت."
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "صدای کلیک صفحه‌کلید را برای هر کلید پخش می‌کند و در حالت بی‌صدا ساکت می‌ماند."
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ہر کلید پر کی بورڈ کی کلک چلاتا ہے، اور خاموش موڈ میں خاموش رہتا ہے۔"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "เล่นเสียงคลิกแป้นพิมพ์ทุกครั้งที่กดปุ่ม และเงียบเมื่ออยู่ในโหมดเงียบ"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "हर की पर कीबोर्ड क्लिक बजाता है, और साइलेंट मोड में चुप रहता है।"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "キーを押すたびにキーボードのクリック音を鳴らします。消音モードでは鳴りません。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "키를 누를 때마다 키보드 클릭 소리를 재생하며, 무음 모드에서는 소리가 나지 않습니다."
+          }
+        }
+      }
+    },
+    "Keyboard": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tastatur"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clavier"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teclado"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tastiera"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Клавиатура"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klawiatura"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tangentbord"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Näppäimistö"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tipkovnica"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "מקלדת"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bàn phím"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keyboard"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Πληκτρολόγιο"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teclado"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Клавіатура"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لوحة المفاتيح"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "صفحه‌کلید"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "کی بورڈ"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "แป้นพิมพ์"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "कीबोर्ड"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "キーボード"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "키보드"
+          }
+        }
+      }
+    },
+    "Flick to type. The character is spoken as you move; lift your finger to type it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wische zum Tippen. Das Zeichen wird während der Bewegung angesagt; heb den Finger, um es einzugeben."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Balayez pour saisir. Le caractère est annoncé pendant le mouvement ; levez le doigt pour le saisir."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desliza para escribir. El carácter se anuncia mientras te mueves; levanta el dedo para escribirlo."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scorri per digitare. Il carattere viene pronunciato mentre ti muovi; solleva il dito per digitarlo."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Смахивайте, чтобы печатать. Символ произносится во время движения; поднимите палец, чтобы ввести его."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Przesuwaj, aby pisać. Znak jest odczytywany w trakcie ruchu; unieś palec, aby go wpisać."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Svep för att skriva. Tecknet läses upp medan du rör dig; lyft fingret för att skriva det."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kirjoita pyyhkäisemällä. Merkki luetaan liikkeen aikana; nosta sormi kirjoittaaksesi sen."
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Povuci za tipkanje. Znak se izgovara dok se krećeš; podigni prst da ga upišeš."
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "החלק כדי להקליד. התו נאמר בזמן התנועה; הרם את האצבע כדי להקליד אותו."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vuốt để nhập. Ký tự được đọc khi bạn di chuyển; nhấc ngón tay để nhập."
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mag-swipe para mag-type. Binabanggit ang character habang gumagalaw ka; iangat ang daliri para i-type ito."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Σάρωσε για πληκτρολόγηση. Ο χαρακτήρας εκφωνείται καθώς κινείσαι· σήκωσε το δάχτυλο για να τον πληκτρολογήσεις."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deslize para digitar. O caractere é falado enquanto você se move; levante o dedo para digitá-lo."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Проводьте, щоб друкувати. Символ промовляється під час руху; підніміть палець, щоб ввести його."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اسحب للكتابة. يُنطق الحرف أثناء الحركة؛ ارفع إصبعك لكتابته."
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "برای تایپ بکشید. نویسه هنگام حرکت گفته می‌شود؛ برای تایپ آن انگشت را بردارید."
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ٹائپ کرنے کے لیے سوائپ کریں۔ حرکت کے دوران حرف بولا جاتا ہے؛ اسے ٹائپ کرنے کے لیے انگلی اٹھائیں۔"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ปัดเพื่อพิมพ์ ตัวอักษรจะถูกพูดขณะที่คุณเลื่อนนิ้ว ยกนิ้วขึ้นเพื่อพิมพ์"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "टाइप करने के लिए स्वाइप करें। चलते समय वर्ण बोला जाता है; उसे टाइप करने के लिए उंगली उठाएँ।"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "スワイプして入力します。動かしているあいだ文字が読み上げられ、指を離すと入力されます。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "스와이프하여 입력합니다. 움직이는 동안 문자를 읽어 주며, 손가락을 떼면 입력됩니다."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

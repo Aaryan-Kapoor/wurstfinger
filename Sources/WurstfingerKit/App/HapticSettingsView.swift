@@ -13,6 +13,9 @@ struct HapticSettingsView: View {
     @AppStorage(SettingsKey.detailedHapticsEnabled.rawValue, store: SharedDefaults.store)
     private var isDetailedEnabled = true
 
+    @AppStorage(SettingsKey.keyClicksEnabled.rawValue, store: SharedDefaults.store)
+    private var areKeyClicksEnabled = false
+
     /// Whether the keyboard extension has synced its Full Access status at least once.
     /// Prevents treating "unset" as "denied" on fresh installs.
     private var hasSyncedFullAccess: Bool {
@@ -73,6 +76,16 @@ struct HapticSettingsView: View {
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                                 .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .padding(.horizontal, 16)
+
+                            VStack(alignment: .leading, spacing: 8) {
+                                Toggle("Key Clicks", isOn: $areKeyClicksEnabled)
+                                    .font(.headline)
+                                Text("Plays the keyboard click on every key, and stays silent in silent mode.")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
                             }
                             .padding(.horizontal, 16)
                         }

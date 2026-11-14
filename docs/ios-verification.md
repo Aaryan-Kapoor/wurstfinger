@@ -28,6 +28,10 @@ clipboard need it).
 | System gesture | Swipe up from the home indicator mid-flick | Nothing typed, no stuck pressed key |
 | VoiceOver | Turn VoiceOver on, double-tap keys, use the rotor's actions | Activation types the key; custom actions work |
 | Guide card | Flick slowly, pause on a key | Bubble shows the target; after a pause the key's map appears above the thumb |
+| VoiceOver actions (#231) | VoiceOver on, focus a letter key, open the rotor's Actions | Every character on the key is listed as "character, gesture" ("v, swipe down right"); a lone mark is read by name ("period") |
+| Gesture typing with VoiceOver | Settings → VoiceOver → Gesture Typing on; VoiceOver on; flick slowly | The key's character is spoken on touch-down, each new target as the finger moves, and lifting types it (VoiceOver echoes it). Check that the rotor's Direct Touch item, if shown, toggles it, and that VoiceOver's own touch sounds stay quiet (`silentOnTouch`) |
+| Sensitive fields | A field with `textContentType` password (shown in clear), one-time code or card number, trail on | No trail, no guide card, no glyph lifting off; the key's own hint still lights. Back in a normal field everything returns |
+| Key clicks | Settings → Haptics → Key Clicks on (needs Full Access) | The system click on letters, the delete sound on delete, the modifier sound on space/return/123/globe; silent in silent mode |
 
 ## Responsiveness, measured on the device
 

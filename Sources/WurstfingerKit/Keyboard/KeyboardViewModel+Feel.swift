@@ -155,9 +155,10 @@ extension KeyboardViewModel {
 
     /// The glyph lifting off the guide card for `commit`, from the cell the
     /// card lit for it. Taps get none: their glyph is the key's own label
-    /// (see `CommitPopView`).
+    /// (see `CommitPopView`); nor does a sensitive field (`FieldTraits`).
     private func pop(_ commit: CommitFeel, key: KeyDefinition, gesture: GestureType) -> FeelBoard.Pop? {
         guard commit.commitType != .tap,
+              !fieldTraits.isSensitive,
               let text = commit.popText,
               let frame = touchEngine.hitMap.key(withId: key.id)?.frame
         else { return nil }

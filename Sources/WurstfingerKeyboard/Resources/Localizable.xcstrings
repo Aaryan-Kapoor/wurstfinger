@@ -5644,6 +5644,280 @@
           }
         }
       }
+    },
+    "Keyboard": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tastatur"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clavier"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teclado"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tastiera"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Клавиатура"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klawiatura"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tangentbord"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Näppäimistö"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tipkovnica"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "מקלדת"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bàn phím"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keyboard"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Πληκτρολόγιο"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teclado"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Клавіатура"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لوحة المفاتيح"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "صفحه‌کلید"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "کی بورڈ"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "แป้นพิมพ์"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "कीबोर्ड"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "キーボード"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "키보드"
+          }
+        }
+      }
+    },
+    "Flick to type. The character is spoken as you move; lift your finger to type it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wische zum Tippen. Das Zeichen wird während der Bewegung angesagt; heb den Finger, um es einzugeben."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Balayez pour saisir. Le caractère est annoncé pendant le mouvement ; levez le doigt pour le saisir."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desliza para escribir. El carácter se anuncia mientras te mueves; levanta el dedo para escribirlo."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scorri per digitare. Il carattere viene pronunciato mentre ti muovi; solleva il dito per digitarlo."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Смахивайте, чтобы печатать. Символ произносится во время движения; поднимите палец, чтобы ввести его."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Przesuwaj, aby pisać. Znak jest odczytywany w trakcie ruchu; unieś palec, aby go wpisać."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Svep för att skriva. Tecknet läses upp medan du rör dig; lyft fingret för att skriva det."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kirjoita pyyhkäisemällä. Merkki luetaan liikkeen aikana; nosta sormi kirjoittaaksesi sen."
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Povuci za tipkanje. Znak se izgovara dok se krećeš; podigni prst da ga upišeš."
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "החלק כדי להקליד. התו נאמר בזמן התנועה; הרם את האצבע כדי להקליד אותו."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vuốt để nhập. Ký tự được đọc khi bạn di chuyển; nhấc ngón tay để nhập."
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mag-swipe para mag-type. Binabanggit ang character habang gumagalaw ka; iangat ang daliri para i-type ito."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Σάρωσε για πληκτρολόγηση. Ο χαρακτήρας εκφωνείται καθώς κινείσαι· σήκωσε το δάχτυλο για να τον πληκτρολογήσεις."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deslize para digitar. O caractere é falado enquanto você se move; levante o dedo para digitá-lo."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Проводьте, щоб друкувати. Символ промовляється під час руху; підніміть палець, щоб ввести його."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اسحب للكتابة. يُنطق الحرف أثناء الحركة؛ ارفع إصبعك لكتابته."
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "برای تایپ بکشید. نویسه هنگام حرکت گفته می‌شود؛ برای تایپ آن انگشت را بردارید."
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ٹائپ کرنے کے لیے سوائپ کریں۔ حرکت کے دوران حرف بولا جاتا ہے؛ اسے ٹائپ کرنے کے لیے انگلی اٹھائیں۔"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ปัดเพื่อพิมพ์ ตัวอักษรจะถูกพูดขณะที่คุณเลื่อนนิ้ว ยกนิ้วขึ้นเพื่อพิมพ์"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "टाइप करने के लिए स्वाइप करें। चलते समय वर्ण बोला जाता है; उसे टाइप करने के लिए उंगली उठाएँ।"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "スワイプして入力します。動かしているあいだ文字が読み上げられ、指を離すと入力されます。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "스와이프하여 입력합니다. 움직이는 동안 문자를 읽어 주며, 손가락을 떼면 입력됩니다."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

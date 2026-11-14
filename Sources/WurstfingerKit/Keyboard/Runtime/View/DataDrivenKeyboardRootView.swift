@@ -46,6 +46,9 @@ struct DataDrivenKeyboardRootView: View {
     @AppStorage(SettingsKey.keyAnimationsEnabled.rawValue, store: SharedDefaults.store)
     private var areKeyAnimationsEnabled = KeyRenderSettings.stock.areKeyAnimationsEnabled
 
+    @AppStorage(SettingsKey.voiceOverGestureTyping.rawValue, store: SharedDefaults.store)
+    private var isVoiceOverGestureTypingEnabled = KeyRenderSettings.stock.isVoiceOverGestureTypingEnabled
+
     private var renderSettings: KeyRenderSettings {
         KeyRenderSettings(
             keyboardStyle: keyboardStyle,
@@ -53,7 +56,8 @@ struct DataDrivenKeyboardRootView: View {
             areStandardSymbolLabelsHidden: areStandardSymbolLabelsHidden,
             areExtraSymbolLabelsHidden: areExtraSymbolLabelsHidden,
             longPress: longPress,
-            areKeyAnimationsEnabled: areKeyAnimationsEnabled
+            areKeyAnimationsEnabled: areKeyAnimationsEnabled,
+            isVoiceOverGestureTypingEnabled: isVoiceOverGestureTypingEnabled
         )
     }
 
@@ -89,6 +93,7 @@ struct DataDrivenKeyboardRootView: View {
                 )
                 // Feel hook: the grid's overlay draws the view model's board.
                 .environment(\.feelBoard, viewModel.feel.board)
+                .environment(\.showsTypedCharacters, !viewModel.fieldTraits.isSensitive)
                 .padding(.horizontal, KeyboardConstants.Layout.horizontalPadding)
                 .padding(.top, KeyboardConstants.Layout.verticalPaddingTop)
                 .padding(.bottom, KeyboardConstants.Layout.verticalPaddingBottom)

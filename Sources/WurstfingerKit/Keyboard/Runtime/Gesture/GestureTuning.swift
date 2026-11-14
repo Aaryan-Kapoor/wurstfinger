@@ -102,6 +102,10 @@ struct TypingBehavior: Sendable, Equatable {
     /// What a circle on a letter key types, per direction (Expert).
     var clockwiseCircle = CircleType.default
     var counterclockwiseCircle = CircleType.default
+    /// Play the system key click on touch-down (`SettingsKey.keyClicksEnabled`).
+    var areKeyClicksEnabled = false
+    /// Speak gesture targets under VoiceOver (`SettingsKey.voiceOverGestureTyping`).
+    var isVoiceOverGestureTypingEnabled = false
 
     /// Resolves the toggles from a defaults store. Call when settings change,
     /// never per keystroke. `previous` lets a reload that finds the same
@@ -116,7 +120,9 @@ struct TypingBehavior: Sendable, Equatable {
             textReplacements: TextReplacementTable.load(from: store, reusing: previous?.textReplacements),
             longPress: LongPressType.load(from: store),
             clockwiseCircle: CircleType.load(.clockwiseCircleBehaviour, from: store),
-            counterclockwiseCircle: CircleType.load(.counterclockwiseCircleBehaviour, from: store)
+            counterclockwiseCircle: CircleType.load(.counterclockwiseCircleBehaviour, from: store),
+            areKeyClicksEnabled: store.bool(forKey: SettingsKey.keyClicksEnabled.rawValue),
+            isVoiceOverGestureTypingEnabled: store.bool(forKey: SettingsKey.voiceOverGestureTyping.rawValue)
         )
     }
 }

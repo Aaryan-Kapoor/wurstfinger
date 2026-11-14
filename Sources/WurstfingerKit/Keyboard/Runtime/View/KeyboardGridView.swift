@@ -62,6 +62,17 @@ struct KeyboardGridView: View {
     /// slide ratchet), if the host has a view model to supply them.
     @Environment(\.feelBoard) private var feelBoard
 
+    /// False in a sensitive field: the guide card would name what is typed.
+    @Environment(\.showsTypedCharacters) private var showsTypedCharacters
+
+    @Environment(\.accessibilityVoiceOverEnabled) private var isVoiceOverOn
+
+    /// VoiceOver hands the touches to the engine directly (see
+    /// `GestureTypingAccessibility`), so the keys leave the accessibility tree.
+    private var isGestureTypingActive: Bool {
+        isVoiceOverOn && renderSettings.isVoiceOverGestureTypingEnabled && isTouchSurfaceEnabled
+    }
+
     private var gestureTrail: GestureTrailRecorder {
         injectedTrail ?? engine.trail
     }
@@ -91,6 +102,7 @@ struct KeyboardGridView: View {
                 cellContent(for: cell, totalRows: totalRows, typography: typography)
             }
         }
+        .accessibilityHidden(isGestureTypingActive)
         // Registered here rather than on the root view so it exists wherever a
         // key is rendered — showcase, screenshot and preview hosts included —
         // and so the recorded points land in exactly the bounds the overlay
@@ -116,7 +128,9 @@ struct KeyboardGridView: View {
             }
         }
         .overlay {
-            TouchGuideOverlay(press: engine.press, keys: keys, gridSize: gridSize)
+            if showsTypedCharacters {
+                TouchGuideOverlay(press: engine.press, keys: keys, gridSize: gridSize)
+            }
         }
         // Topmost, so it receives every touch on the grid: one native view for
         // all fingers instead of a gesture per key (see `TouchEngine`).
@@ -129,7 +143,7 @@ struct KeyboardGridView: View {
                     isLongPressEnabled: renderSettings.isLongPressEnabled,
                     actions: touchActions
                 ))
-                .accessibilityHidden(true)
+                .modifier(GestureTypingAccessibility(isActive: isGestureTypingActive))
             }
         }
         // For the overlays above, which outline a key inside its touch frame.

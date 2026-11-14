@@ -51,6 +51,9 @@ struct SettingsView: View {
     @AppStorage(SettingsKey.cutAllEnabled.rawValue, store: SharedDefaults.store)
     private var cutAllEnabled = false
 
+    @AppStorage(SettingsKey.voiceOverGestureTyping.rawValue, store: SharedDefaults.store)
+    private var isVoiceOverGestureTypingEnabled = false
+
     @AppStorage(SettingsKey.gestureTrailEnabled.rawValue, store: SharedDefaults.store)
     private var gestureTrailEnabled = false
 
@@ -82,6 +85,7 @@ struct SettingsView: View {
             Form {
                 generalSection
                 gesturesSection
+                voiceOverSection
                 appearanceSection
                 feedbackSection
                 expertSection
@@ -187,6 +191,21 @@ struct SettingsView: View {
             // Toggle caps the height of its label, which clips the text in
             // languages whose title wraps. A footer is free to wrap.
             Text(cutAllFooter)
+        }
+    }
+
+    private var voiceOverSection: some View {
+        Section {
+            Toggle(isOn: $isVoiceOverGestureTypingEnabled) {
+                SettingsRow(icon: "hand.draw", color: .indigo, title: "Gesture Typing with VoiceOver")
+            }
+        } header: {
+            Text("VoiceOver")
+        } footer: {
+            Text(
+                // swiftlint:disable:next line_length
+                "With VoiceOver on, the keyboard takes your flicks directly instead of reading each key: the character a flick would type is spoken as you move, and lifting your finger types it. Turn off to explore the keys one by one, where every character is also an action in the rotor."
+            )
         }
     }
 

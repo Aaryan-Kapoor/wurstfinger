@@ -184,6 +184,22 @@ final class KeyboardViewModel {
     /// view draws from them.
     @ObservationIgnored private(set) var typingBehavior: TypingBehavior
 
+    /// What the field being typed into says about itself (a sensitive field
+    /// shows no trail, guide card or lifting glyph). Set by the controller
+    /// whenever the field changes; observed because the root view reads it.
+    var fieldTraits = FieldTraits.standard {
+        didSet {
+            guard fieldTraits != oldValue else { return }
+            let tuning = GestureTuning.load(from: sharedDefaults).applying(fieldTraits)
+            if gestureTuning != tuning { gestureTuning = tuning }
+        }
+    }
+
+    /// Who speaks gesture targets under VoiceOver (see `SpokenFeedback`).
+    @ObservationIgnored var spokenFeedback = SpokenFeedback.voiceOver
+    /// Who plays key clicks (see `KeyClickPlayer`).
+    @ObservationIgnored var keyClicks = KeyClickPlayer.system
+
     /// How many times `reloadSettings()` has run. Lets tests and the bench
     /// observe that a signal produced exactly one reload (the debounce).
     @ObservationIgnored private(set) var settingsReloadCount = 0
@@ -492,7 +508,7 @@ final class KeyboardViewModel {
         // The one place the per-keystroke settings are read from the store.
         // Compared before assigning so a reload that changed nothing leaves the
         // snapshot (and the views holding it) untouched.
-        let newTuning = GestureTuning.load(from: sharedDefaults)
+        let newTuning = GestureTuning.load(from: sharedDefaults).applying(fieldTraits)
         if gestureTuning != newTuning {
             gestureTuning = newTuning
         }
@@ -562,11 +578,33 @@ final class KeyboardViewModel {
 
     /// A finger touched a key: opens the `keystroke` signpost interval (closed
     /// when the pipeline has delivered the result, or the touch is abandoned)
-    /// and fires the touch-down haptic. The interval costs nothing unless
-    /// Instruments is recording.
-    func touchDown() {
+    /// and fires the touch-down haptic — plus, as the user set them, the key
+    /// click and, under VoiceOver gesture typing, the key's own character.
+    /// The interval costs nothing unless Instruments is recording.
+    func touchDown(_ key: KeyDefinition? = nil) {
         beginKeystrokeInterval()
         feedbackTap()
+        guard let key else { return }
+        if typingBehavior.areKeyClicksEnabled { keyClicks.play(KeyClick(for: key)) }
+        if typingBehavior.isVoiceOverGestureTypingEnabled {
+            speakTarget(.tap, on: key, label: previewLabel(for: .tap, keyId: key.id, isReturn: false))
+        }
+    }
+
+    /// Says what releasing now would do — the binding's name where it has one
+    /// ("Delete word"), otherwise the `label` it would type, spelled out —
+    /// when gesture typing under VoiceOver is on and VoiceOver is listening.
+    /// One flag check otherwise.
+    ///
+    /// The name is used only for the gesture's own binding: a return swipe
+    /// or a long swipe does something else than the binding's name says.
+    func speakTarget(_ gesture: GestureType, isPlain: Bool = true, on key: KeyDefinition, label: String?) {
+        guard typingBehavior.isVoiceOverGestureTypingEnabled, spokenFeedback.isActive() else { return }
+        if isPlain, let name = key.bindings[gesture]?.accessibilityLabel, !name.isEmpty {
+            spokenFeedback.announce(.name(name))
+        } else if let label, !label.trimmingCharacters(in: .whitespaces).isEmpty {
+            spokenFeedback.announce(.glyph(label))
+        }
     }
 
     /// Warms the Taptic Engine ahead of the first touch (called when the

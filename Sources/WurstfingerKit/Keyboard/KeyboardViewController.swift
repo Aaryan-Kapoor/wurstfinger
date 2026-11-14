@@ -165,6 +165,7 @@ public final class KeyboardViewController: UIInputViewController {
         if resettingMode {
             viewModel.resetToDefaultMode()
         }
+        refreshFieldTraits()
         updateKeyboardHeight()
         // Warm the other enabled languages again: the pre-suspension shedding
         // evicted them, and a globe-key switch should not pay a build. Runs in
@@ -205,6 +206,25 @@ public final class KeyboardViewController: UIInputViewController {
         // on keyboard appearance. Re-evaluate so stale shift state is
         // corrected (e.g. caret moved from a sentence start into a word).
         viewModel.refreshAutoCapitalization()
+        refreshFieldTraits()
+    }
+
+    /// Content types whose text must not linger on screen (`FieldTraits`).
+    private static let sensitiveContentTypes: Set<UITextContentType> = [
+        .password, .newPassword, .oneTimeCode, .creditCardNumber, .creditCardSecurityCode,
+    ]
+
+    /// Reads what the focused field says about itself. Cheap (two property
+    /// reads), and the view model ignores an unchanged value, so it runs on
+    /// every appearance and text change rather than tracking field switches.
+    private func refreshFieldTraits() {
+        let proxy = textDocumentProxy
+        // Both are optional requirements of `UITextInputTraits`.
+        let isSecure = proxy.isSecureTextEntry ?? false
+        let contentType: UITextContentType? = proxy.textContentType ?? nil
+        viewModel.fieldTraits = FieldTraits(
+            isSensitive: isSecure || contentType.map(Self.sensitiveContentTypes.contains) == true
+        )
     }
 
     /// Loads the keyboard definition only when the inputs that determine it

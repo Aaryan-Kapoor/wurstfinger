@@ -27,6 +27,9 @@ struct KeyRenderSettings: Equatable, Sendable {
     /// Press, release and commit animations and the light effects on keys
     /// (`SettingsKey.keyAnimationsEnabled`).
     var areKeyAnimationsEnabled = true
+    /// Under VoiceOver, the grid is one direct-touch area that speaks gesture
+    /// targets (`SettingsKey.voiceOverGestureTyping`).
+    var isVoiceOverGestureTypingEnabled = false
 
     /// The values a key renders with when nothing is stored yet. Single source
     /// for those defaults: `DataDrivenKeyboardRootView` initializes its
