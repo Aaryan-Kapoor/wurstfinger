@@ -121,7 +121,7 @@ struct KeyCategoryTests {
     }
 
     @Test func keyCategoryCodable() throws {
-        for category in [KeyCategory.letter, .digit, .symbol, .compose, .modifier, .utility, .whitespace] {
+        for category in [KeyCategory.letter, .digit, .symbol, .compose, .modifier, .utility, .whitespace, .emoji] {
             let data = try JSONEncoder().encode(category)
             let decoded = try JSONDecoder().decode(KeyCategory.self, from: data)
             #expect(decoded == category)

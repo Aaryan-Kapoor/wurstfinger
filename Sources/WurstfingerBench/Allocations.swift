@@ -243,6 +243,30 @@ func benchAllocations() async {
         sink.withLock { $0 &+= total }
     }
 
+    // 8j: the emoji mode's keystroke. The middleware that remembers the emoji
+    // for the recent key must add nothing: an in-place move-to-front of nine
+    // small strings. The second row alternates two keys so that every
+    // keystroke really reorders the list.
+    do {
+        rig.viewModel.switchToMode(ModeNames.emoji)
+        var accumulator = 0
+        let steady = countAllocations(iterations: 20_000) {
+            accumulator &+= rig.viewModel.handleGesture(.tap, keyId: GridSlot.topLeft, isReturn: false) ? 1 : 0
+        }
+        reportAllocations("8j. emoji mode: handleGesture(.tap) -> pipeline (+ recents) -> target", steady)
+        var flip = false
+        let rotating = countAllocations(iterations: 20_000) {
+            flip.toggle()
+            accumulator &+= rig.viewModel.handleGesture(
+                flip ? .swipeUp : .swipeDown, keyId: GridSlot.topRight, isReturn: false
+            ) ? 1 : 0
+        }
+        reportAllocations("8j-i. emoji mode: alternating flicks (the recents reorder every time)", rotating)
+        rig.viewModel.switchToMode(ModeNames.main)
+        let total = accumulator + rig.target.inserted
+        sink.withLock { $0 &+= total }
+    }
+
     // 8i: one frame of the gesture trail, as the overlay builds it (the
     // `Path` itself is CoreGraphics storage and always counts for one).
     do {

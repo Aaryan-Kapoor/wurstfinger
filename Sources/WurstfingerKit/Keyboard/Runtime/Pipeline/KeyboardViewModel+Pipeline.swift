@@ -274,6 +274,13 @@ extension KeyboardViewModel {
             target: { [weak self] in self?.textInputTarget }
         ))
 
+        // 5b. EMOJI MODE: remember what was typed for the recent key. After the
+        //     text input, so only an emoji that was inserted is remembered.
+        middlewares.append(EmojiRecentsMiddleware(
+            isRecording: { [weak self] in self.map { !$0.fieldTraits.isSensitive } ?? false },
+            record: { [weak self] emoji in self?.recordEmoji(emoji) }
+        ))
+
         // 6. View controller actions (globe, dismiss)
         middlewares.append(ViewControllerActionMiddleware(
             onAdvanceToNextInputMode: { [weak self] in self?.onAdvanceToNextInputMode?() },
@@ -483,7 +490,16 @@ extension KeyboardViewModel {
     private func handleCircular(_ outcome: CircularOutcome, in compiled: CompiledMode) {
         switch outcome {
         case let .binding(index):
-            dispatchBinding(compiled.binding(at: index))
+            let binding = compiled.binding(at: index)
+            // EMOJI MODE hook: a circle turns the emoji page, a mode switch the
+            // pipeline does not carry out (see `performGesture`).
+            if case let .switchMode(target) = binding.action {
+                let previousMode = activeModeName
+                handleSwitchMode(target)
+                if activeModeName != previousMode { feel(.modeSwitch) }
+            } else {
+                dispatchBinding(binding)
+            }
         case let .commitUppercase(text):
             dispatchAction(.commitText(text))
         case .capitalizeWord:
@@ -504,6 +520,7 @@ extension KeyboardViewModel {
               let definition = currentDefinition,
               definition.mode(modeName) != nil
         else { return }
+        noteEmojiModeChange(from: activeModeName, to: modeName) // EMOJI MODE hook
         activeModeName = modeName
         // Any mode change invalidates a pending auto-shift; the auto-cap
         // engage path re-sets the flag right after switching.

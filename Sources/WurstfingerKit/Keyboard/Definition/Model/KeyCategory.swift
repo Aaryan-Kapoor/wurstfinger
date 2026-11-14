@@ -16,6 +16,7 @@ enum KeyCategory: String, Codable, Sendable {
     case modifier // Shift, symbols toggle, caps lock
     case utility // Globe, delete, return
     case whitespace // Space, newline
+    case emoji // An emoji of the emoji mode — content, never hidden with the symbols
 }
 
 extension KeyAction {

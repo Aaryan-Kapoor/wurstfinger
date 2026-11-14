@@ -116,6 +116,9 @@ enum SettingsKey: String, CaseIterable, Sendable {
     /// area) and speaks the character a flick would type, instead of VoiceOver
     /// reading each key. Off by default (`SpokenFeedback`).
     case voiceOverGestureTyping
+    // EMOJI MODE: the recent key's nine emoji, newest first (`EmojiRecents`).
+    // Read when settings reload, written when the emoji mode is left.
+    case emojiRecents
 }
 
 // MARK: - Haptic Settings

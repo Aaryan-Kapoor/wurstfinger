@@ -255,7 +255,10 @@ struct NumpadColumnDefinitionTests {
         let with = definition.addingNumpadColumn(style: .phone)
         for (name, mode) in with.modes {
             let hasKeys = NumpadColumn.keyIds.allSatisfy { mode.keys[$0] != nil }
-            #expect(hasKeys == (name != ModeNames.numeric), "mode \(name)")
+            // The numeric mode is all digits already, and the emoji pages keep a
+            // recent key where the column's last row would sit.
+            let wantsKeys = name != ModeNames.numeric && !EmojiLayouts.isEmojiMode(name)
+            #expect(hasKeys == wantsKeys, "mode \(name)")
         }
         // Nothing else changed: same arrangements, same other keys.
         for (name, mode) in with.modes {

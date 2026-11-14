@@ -139,6 +139,13 @@ final class KeyboardViewModel {
     /// The loaded definition. Observed: the grid renders from it, so a
     /// language switch must invalidate the views that read it.
     var currentDefinition: KeyboardDefinition?
+    /// EMOJI MODE: the nine emoji the recent key offers (`EmojiRecents`), a
+    /// snapshot read when settings reload and written when the emoji mode is
+    /// left (`KeyboardViewModel+Emoji.swift`). Unobserved: the key is rebuilt
+    /// into the definition when the mode is entered, never while it is up.
+    @ObservationIgnored var emojiRecents = EmojiRecents()
+    /// Whether `emojiRecents` holds emoji typed since it was last written.
+    @ObservationIgnored var emojiRecentsAreUnsaved = false
     /// Signature of the inputs that produced `currentDefinition` (see
     /// `definitionSignature(languageId:numpadType:)`). Kept on the view model
     /// — not the controller — so in-keyboard language switches, which load a
@@ -513,6 +520,7 @@ final class KeyboardViewModel {
             gestureTuning = newTuning
         }
         typingBehavior = TypingBehavior.load(from: sharedDefaults, reusing: typingBehavior)
+        reloadEmojiRecents() // EMOJI MODE hook
 
         // The layout on screen was edited, or deleted, in the host app: load
         // what the registry holds now (an English fallback if it is gone).

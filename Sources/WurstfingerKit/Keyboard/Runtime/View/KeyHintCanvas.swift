@@ -114,6 +114,9 @@ nonisolated struct KeyHintCanvas: View, Animatable {
         enum Content: Hashable, Sendable {
             /// A text label, `isLetter` for the more prominent letter styling.
             case text(String, isLetter: Bool)
+            /// An emoji (EMOJI MODE): drawn at `KeyTypography.hintEmoji`, in its
+            /// own colours, never tinted by the rest or accent colour.
+            case emoji(String)
             /// An SF Symbol; `isGlobeStyle` for the larger, bolder icon size.
             case icon(name: String, isGlobeStyle: Bool)
             /// The language code on the globe key. Never emphasized.
@@ -184,6 +187,8 @@ nonisolated struct KeyHintCanvas: View, Animatable {
                     hints.append(Hint(slot: slot, content: .icon(
                         name: name, isGlobeStyle: KeyView.isGlobeStyleIcon(for: binding.action)
                     )))
+                } else if EmojiText.isEmoji(binding.label) {
+                    hints.append(Hint(slot: slot, content: .emoji(binding.label)))
                 } else {
                     hints.append(Hint(slot: slot, content: .text(
                         binding.label, isLetter: binding.label.first?.isLetter ?? false
@@ -202,6 +207,7 @@ nonisolated struct KeyHintCanvas: View, Animatable {
         case let .text(_, isLetter): isLetter ? Color.primary.opacity(0.65) : Color.secondary.opacity(0.55)
         case let .icon(_, isGlobeStyle): isGlobeStyle ? Color.primary.opacity(0.5) : Color.secondary.opacity(0.45)
         case .language: Color.primary.opacity(0.5)
+        case .emoji: Color.primary
         }
     }
 
@@ -265,6 +271,12 @@ nonisolated struct KeyHintCanvas: View, Animatable {
                 let font = lift >= 0.5 ? typography.hintBold : isLetter ? typography.hintMedium : typography.hintRegular
                 let color = blend(rest, toward: .accentColor, by: lift, in: context.environment)
                 let resolved = context.resolve(Text(label).font(font).foregroundStyle(color))
+                glyph = resolved.measure(in: unbounded)
+                drawGlyph = { context, origin in context.draw(resolved, at: origin, anchor: .topLeading) }
+            case let .emoji(label):
+                // No foreground style: a colour glyph keeps its own colours, and
+                // the emphasis is the swell and the receding of the others.
+                let resolved = context.resolve(Text(label).font(typography.hintEmoji))
                 glyph = resolved.measure(in: unbounded)
                 drawGlyph = { context, origin in context.draw(resolved, at: origin, anchor: .topLeading) }
             case let .language(label):

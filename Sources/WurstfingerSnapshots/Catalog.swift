@@ -22,7 +22,7 @@ struct Scenario {
 @MainActor
 enum Catalog {
     static func all() -> [Scenario] {
-        modes() + languages() + layouts() + optimized() + devices() + variants() + layoutOptions() + states() + feel() + typing() + surfaces()
+        modes() + languages() + layouts() + optimized() + emoji() + devices() + variants() + layoutOptions() + states() + feel() + typing() + surfaces()
     }
 
     private static func keyboard(
@@ -107,6 +107,85 @@ enum Catalog {
             $0.customLayouts = [LayoutSurfaces.sampleLayout()]
             $0.language = LayoutSurfaces.sampleLayout().id
             $0.typedText = "Süße Straße"
+        })
+        return scenarios
+    }
+
+    // MARK: 2d. Emoji mode
+
+    /// The emoji mode's two pages in both appearances (the mode sweep adds them
+    /// too, as `modes-emoji*`), the guide card over a flick, a return swipe and
+    /// a circle, the label toggles that must not hide it, the numpad column and
+    /// the utility column on the left, and on an iPad.
+    private static func emoji() -> [Scenario] {
+        var scenarios: [Scenario] = []
+        for scheme in [ColorScheme.light, .dark] {
+            let tail = suffix(scheme)
+            scenarios.append(keyboard("emoji", "emoji-page1\(tail)") {
+                $0.mode = ModeNames.emoji
+                $0.scheme = scheme
+            })
+            scenarios.append(keyboard("emoji", "emoji-page2\(tail)") {
+                $0.mode = ModeNames.emojiMore
+                $0.scheme = scheme
+            })
+            scenarios.append(keyboard("emoji", "emoji-guide-flick\(tail)") {
+                $0.mode = ModeNames.emoji
+                $0.scheme = scheme
+                $0.finger = FingerTrail(keyId: GridSlot.topRight, motion: .drag(.swipeUp, keyWidths: 0.5), paused: true)
+            })
+            scenarios.append(keyboard("emoji", "emoji-guide-map\(tail)") {
+                $0.mode = ModeNames.emoji
+                $0.scheme = scheme
+                $0.finger = FingerTrail(keyId: GridSlot.midRight, motion: .press, paused: true)
+            })
+        }
+        scenarios.append(keyboard("emoji", "emoji-guide-return") {
+            $0.mode = ModeNames.emoji
+            $0.finger = FingerTrail(keyId: GridSlot.midRight, motion: .returnSwipe(.swipeUp, keyWidths: 0.8))
+        })
+        scenarios.append(keyboard("emoji", "emoji-guide-circle") {
+            $0.mode = ModeNames.emoji
+            $0.finger = FingerTrail(keyId: GridSlot.center, motion: .circle(clockwise: true, fraction: 0.95))
+        })
+        scenarios.append(keyboard("emoji", "emoji-guide-top-row") {
+            $0.mode = ModeNames.emoji
+            $0.finger = FingerTrail(keyId: GridSlot.topLeft, motion: .drag(.swipeDown, keyWidths: 0.5), paused: true)
+        })
+        scenarios.append(keyboard("emoji", "emoji-pressed") {
+            $0.mode = ModeNames.emoji
+            $0.pressedKeys = [GridSlot.center]
+        })
+        scenarios.append(keyboard("emoji", "emoji-labels-hidden") {
+            $0.mode = ModeNames.emoji
+            $0.hideLetters = true
+            $0.hideStandardSymbols = true
+            $0.hideExtraSymbols = true
+        })
+        scenarios.append(keyboard("emoji", "emoji-numpad-column") {
+            $0.mode = ModeNames.emoji
+            $0.numpadColumn = .trailing
+        })
+        scenarios.append(keyboard("emoji", "emoji-utility-left") {
+            $0.mode = ModeNames.emoji
+            $0.utilityColumnLeading = true
+        })
+        scenarios.append(keyboard("emoji", "emoji-hebrew") {
+            $0.language = "he_IL"
+            $0.mode = ModeNames.emoji
+        })
+        scenarios.append(keyboard("emoji", "emoji-ipad") {
+            $0.mode = ModeNames.emoji
+            $0.device = .iPadLandscape
+        })
+        scenarios.append(keyboard("emoji", "emoji-entry-hint") {
+            $0.mode = ModeNames.main
+            $0.finger = FingerTrail(keyId: UtilitySlot.symbols, motion: .drag(.swipeDownRight, keyWidths: 0.5), paused: true)
+        })
+        scenarios.append(keyboard("emoji", "emoji-small-keys") {
+            $0.mode = ModeNames.emoji
+            $0.device = .iPhoneSE
+            $0.keyAspectRatio = 1.0
         })
         return scenarios
     }

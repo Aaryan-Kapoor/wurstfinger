@@ -256,8 +256,13 @@ struct NamedAccessibilityBindingTests {
         for def in try loadedDefinitions() {
             for (modeName, mode) in def.modes {
                 for (keyId, key) in mode.keys where Self.gridSlotIds.contains(keyId) {
+                    // The emoji pages name their circles: a circle turns the page,
+                    // which VoiceOver cannot draw, so the page switch is a rotor entry.
+                    let pageTurns: Set<GestureType> = EmojiLayouts.isEmojiMode(modeName)
+                        ? [.circularClockwise, .circularCounterclockwise] : []
                     let unexpected = namedGestures(of: key)
                         .subtracting(Self.namedGridGestures[keyId] ?? [])
+                        .subtracting(pageTurns)
                     let listed = unexpected.map { "\($0)" }.sorted().joined(separator: ", ")
                     #expect(
                         unexpected.isEmpty,

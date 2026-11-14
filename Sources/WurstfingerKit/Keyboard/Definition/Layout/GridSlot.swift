@@ -21,6 +21,8 @@ enum GridSlot {
     static let bottomRight = "bottomRight"
     /// Extra slot for the "0" digit key (only used in numeric mode).
     static let zero = "zero"
+    /// Extra slot for the emoji mode's "recent" key (bottom row, like `zero`).
+    static let recent = "recent"
 
     /// Ordered list of all slots (for mapping from centerCharacters arrays)
     static let allSlots: [[String]] = [

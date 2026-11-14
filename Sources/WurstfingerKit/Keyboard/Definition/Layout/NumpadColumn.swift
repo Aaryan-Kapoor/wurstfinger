@@ -133,7 +133,8 @@ extension KeyboardDefinition {
     func addingNumpadColumn(style: NumpadType) -> KeyboardDefinition {
         let numpadKeys = NumpadColumn.keys(digits: numericDigits, style: style)
         var updated = modes
-        for (name, mode) in modes where name != ModeNames.numeric {
+        // EMOJI MODE: the emoji pages have a recent key of their own in that place.
+        for (name, mode) in modes where name != ModeNames.numeric && !EmojiLayouts.isEmojiMode(name) {
             updated[name] = KeyboardMode(
                 name: mode.name,
                 keys: mode.keys.merging(numpadKeys) { existing, _ in existing },

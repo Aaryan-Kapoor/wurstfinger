@@ -92,6 +92,9 @@ enum ModeNames {
     static let numeric = "numeric"
     static let symbols = "symbols"
     static let emoji = "emoji"
+    /// The emoji mode's second page, reached by a circle on any of its keys
+    /// (`EmojiLayouts`).
+    static let emojiMore = "emojiMore"
     /// One-shot Ctrl: the next key types the terminal control character
     /// (`KeyboardMode.generateTerminalModifier`).
     static let control = "control"
