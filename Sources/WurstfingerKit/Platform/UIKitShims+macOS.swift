@@ -19,7 +19,12 @@ struct UIScreen {
     static let main = UIScreen()
     static let phoneBounds = CGRect(x: 0, y: 0, width: 390, height: 844)
 
-    var bounds: CGRect { Self.phoneBounds }
+    /// What `bounds` reports. The Mac build keeps it at `phoneBounds`; the
+    /// headless snapshot tool sets it to another device's screen to render the
+    /// keyboard the way that device lays it out.
+    nonisolated(unsafe) static var simulatedBounds = phoneBounds
+
+    var bounds: CGRect { Self.simulatedBounds }
 }
 
 enum UIUserInterfaceIdiom {
@@ -30,8 +35,11 @@ enum UIUserInterfaceIdiom {
 struct UIDevice {
     static let current = UIDevice()
 
-    /// A Mac window hosts the phone keyboard, so the device class is always phone.
-    var userInterfaceIdiom: UIUserInterfaceIdiom { .phone }
+    /// A Mac window hosts the phone keyboard, so the device class is phone
+    /// unless the snapshot tool simulates an iPad.
+    nonisolated(unsafe) static var simulatedIdiom: UIUserInterfaceIdiom = .phone
+
+    var userInterfaceIdiom: UIUserInterfaceIdiom { Self.simulatedIdiom }
 }
 
 // MARK: - Haptics

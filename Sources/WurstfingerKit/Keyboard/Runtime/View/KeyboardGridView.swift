@@ -51,8 +51,12 @@ struct KeyboardGridView: View {
     /// draw.
     @StateObject private var trailStore = GestureTrailStore()
 
+    /// A recorder a headless host supplies to draw a trail it feeds itself
+    /// (see `SnapshotHooks.swift`); nil in the app.
+    @Environment(\.gestureTrailRecorderOverride) private var injectedTrail
+
     private var gestureTrail: GestureTrailRecorder {
-        trailStore.recorder
+        injectedTrail ?? trailStore.recorder
     }
 
     var body: some View {

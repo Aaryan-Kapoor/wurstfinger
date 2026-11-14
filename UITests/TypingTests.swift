@@ -169,13 +169,15 @@ final class TypingTests: XCTestCase {
     }
 
     /// A directional swipe produces a different character than a plain tap.
+    /// In de_DE the top-left key types "a" on tap and "ä" on a swipe down;
+    /// swiping up there is unbound, so it would type nothing at all.
     @MainActor
-    func testSwipeUpProducesDifferentCharacterThanTap() {
+    func testSwipeDownProducesDifferentCharacterThanTap() {
         let element = key("topLeft")
         XCTAssertTrue(element.waitForExistence(timeout: 2))
         let tapLabel = element.label
 
-        element.swipeUp()
+        swipe(on: "topLeft", dx: 0, dy: 40)
 
         // Something was produced, and it differs from the tap (center) output.
         let predicate = NSPredicate { _, _ in
@@ -188,8 +190,9 @@ final class TypingTests: XCTestCase {
         )
         XCTAssertEqual(
             result, .completed,
-            "Swipe up should produce a character other than the tap label '\(tapLabel)', got '\(typedText())'"
+            "Swipe down should produce a character other than the tap label '\(tapLabel)', got '\(typedText())'"
         )
+        assertTypedText(equals: "ä")
     }
 
     /// Compose: typing a base letter, then swiping the acute-accent trigger

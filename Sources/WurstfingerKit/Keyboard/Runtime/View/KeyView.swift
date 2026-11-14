@@ -59,6 +59,10 @@ struct KeyView: View {
 
     @State private var isActive = false
 
+    /// Keys a headless host holds in the pressed state (see
+    /// `SnapshotHooks.swift`); empty in the app, where only a touch presses.
+    @Environment(\.forcedActiveKeyIds) private var forcedActiveKeyIds
+
     /// User settings affecting key rendering, injected by `KeyboardGridView`
     /// (ultimately read once in `DataDrivenKeyboardRootView`) — see
     /// `KeyRenderSettings`. No default, for the same reason as `metrics`: a
@@ -272,7 +276,9 @@ struct KeyView: View {
         let shape = RoundedRectangle(cornerRadius: KeyboardConstants.KeyDimensions.cornerRadius)
         switch settings.keyboardStyle {
         case .classic:
-            shape.fill(Self.backgroundColor(for: key.style, active: isActive))
+            shape.fill(Self.backgroundColor(
+                for: key.style, active: isActive || forcedActiveKeyIds.contains(key.id)
+            ))
         case .liquidGlass:
             shape.fill(.bar)
                 .overlay(

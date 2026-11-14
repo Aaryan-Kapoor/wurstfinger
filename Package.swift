@@ -27,6 +27,16 @@ let previewsUnavailable: Bool = {
 let sharedSwiftSettings: [SwiftSetting] =
   previewsUnavailable ? [.define("WURSTFINGER_NO_PREVIEWS")] : []
 
+// The headless snapshot tool and the typing-scenario harness reach the
+// kit's internals through `@testable import`, which needs a module compiled
+// for testing. SwiftPM only does that for debug builds; this keeps it on for
+// release builds too, on macOS only, so `swift run -c release
+// WurstfingerSnapshots` works while the iOS app and extension builds are
+// untouched.
+let testableOnMac: [SwiftSetting] = [
+  .unsafeFlags(["-enable-testing"], .when(platforms: [.macOS]))
+]
+
 let package = Package(
   name: "Wurstfinger",
   defaultLocalization: "en",
@@ -38,6 +48,7 @@ let package = Package(
     .library(name: "WurstfingerKit", targets: ["WurstfingerKit"]),
     .executable(name: "Wurstfinger", targets: ["Wurstfinger"]),
     .executable(name: "WurstfingerKeyboard", targets: ["WurstfingerKeyboard"]),
+    .executable(name: "WurstfingerSnapshots", targets: ["WurstfingerSnapshots"]),
   ],
   targets: [
     // All app and keyboard code lives in one module so internal access keeps
@@ -45,7 +56,23 @@ let package = Package(
     .target(
       name: "WurstfingerKit",
       path: "Sources/WurstfingerKit",
-      swiftSettings: sharedSwiftSettings
+      swiftSettings: sharedSwiftSettings + testableOnMac
+    ),
+    // Typing-by-gesture harness shared by the tests and the snapshot
+    // tool: it synthesizes touch paths and drives the real recognition and
+    // pipeline code of the kit.
+    .target(
+      name: "WurstfingerScenarioKit",
+      dependencies: ["WurstfingerKit"],
+      path: "Sources/WurstfingerScenarioKit",
+      swiftSettings: testableOnMac
+    ),
+    // macOS command-line tool that renders the real keyboard and app views
+    // to PNG through ImageRenderer (see Sources/WurstfingerSnapshots).
+    .executableTarget(
+      name: "WurstfingerSnapshots",
+      dependencies: ["WurstfingerKit", "WurstfingerScenarioKit"],
+      path: "Sources/WurstfingerSnapshots"
     ),
     .executableTarget(
       name: "Wurstfinger",
@@ -65,7 +92,7 @@ let package = Package(
     ),
     .testTarget(
       name: "WurstfingerKitTests",
-      dependencies: ["WurstfingerKit"],
+      dependencies: ["WurstfingerKit", "WurstfingerScenarioKit"],
       path: "Tests/WurstfingerKitTests"
     ),
   ],
