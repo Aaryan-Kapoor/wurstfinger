@@ -273,3 +273,24 @@ of bodies on an update (section 10).
   body runs after the row ends and is not counted.
 - Allocation counts are process-wide; the rows run on the main actor with
   every prewarm drained first, so they are the operation's own.
+
+## Second pass (after the feel, layout and modifier merges)
+
+Release build, `WurstfingerBench --alloc` and `--memory`, same machine; findings
+S1–S11 in `docs/rework-review.md`.
+
+| Operation | After the feel merge | Second pass |
+| --- | --- | --- |
+| tap keystroke, engine → pipeline → target (8a) | 9 allocs | **0** |
+| flick keystroke, down + 8 moves + up (8b) | 13 allocs | **0** |
+| tap with long press enabled (8h) | 18 allocs (a timer task per touch-down) | **0** (one engine timer, re-armed lazily) |
+| drag move, 1 sample, engine + view model (8c) | 0 allocs | 0 allocs, p50 0.63 µs, p99 2.0 µs |
+| `os_signpost` begin/end pair (8g-ii) | 3 allocs (`OSSignposter`) | **0** |
+| live preview lookup (8f) | 0 allocs | 0 allocs |
+| trail frame, 40 samples (8i) | ~15 allocs (eight arrays plus the `Path`) | 7 allocs, all the `Path`'s CoreGraphics storage |
+| one keyboard view graph, marginal heap (9e) | 3.83 MB (hints as view stacks) | **2.31 MB** (hints as one `Canvas` per key) |
+| `ImageRenderer` render of the keyboard, warm p50 (row 5) | 38.6 ms | 22.3 ms |
+| `TouchEngine`, 10 warmed tracks, heap (9d) | 35.1 KB | 64.2 KB (the trail's scratch buffers now live with the engine instead of being rebuilt each frame) |
+
+The test suite went from ~30 s to ~11 s once every timing test ran on the
+manual clock instead of sleeping.

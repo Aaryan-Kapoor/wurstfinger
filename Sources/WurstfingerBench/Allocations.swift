@@ -235,12 +235,33 @@ func benchAllocations() async {
             reportAllocations("8g-i. ActionPipeline.process(commitText) only", pipelineOnly)
         }
         let signposts = countAllocations(iterations: 20_000) {
-            let signposter = InputSignposts.signposter
-            let interval = signposter.beginInterval(InputSignposts.dispatch)
-            signposter.endInterval(InputSignposts.dispatch, interval)
+            InputSignposts.begin(InputSignposts.dispatch, InputSignposts.dispatchID)
+            InputSignposts.end(InputSignposts.dispatch, InputSignposts.dispatchID)
         }
-        reportAllocations("8g-ii. OSSignposter begin/end interval pair", signposts)
+        reportAllocations("8g-ii. os_signpost begin/end pair (InputSignposts)", signposts)
         let total = accumulator + rig.target.inserted
+        sink.withLock { $0 &+= total }
+    }
+
+    // 8i: one frame of the gesture trail, as the overlay builds it (the
+    // `Path` itself is CoreGraphics storage and always counts for one).
+    do {
+        let scratch = GestureTrailScratch()
+        var trailSamples: [GestureTrailSample] = []
+        for index in 0 ..< 40 {
+            trailSamples.append(GestureTrailSample(
+                point: CGPoint(x: 40 + CGFloat(index) * 5, y: 60 + sin(CGFloat(index) / 3) * 10),
+                time: 1 + Double(index) * 0.008
+            ))
+        }
+        let predicted = [CGPoint(x: 242, y: 61)]
+        var accumulator = 0
+        let frame = countAllocations(iterations: 2000) {
+            let path = GestureTrailInk.shape(samples: trailSamples[...], predicted: predicted, headWidth: 12, scratch: scratch)
+            accumulator &+= path.isEmpty ? 0 : 1
+        }
+        reportAllocations("8i. trail frame: GestureTrailInk.shape (40 samples, scratch)", frame)
+        let total = accumulator
         sink.withLock { $0 &+= total }
     }
 

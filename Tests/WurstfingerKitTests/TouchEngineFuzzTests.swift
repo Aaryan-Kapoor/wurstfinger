@@ -11,7 +11,6 @@
 
 import CoreGraphics
 import Foundation
-import os
 import Testing
 @testable import WurstfingerKit
 
@@ -36,10 +35,13 @@ private struct SplitMix64 {
 /// engine should believe alongside it.
 @MainActor
 private final class FuzzHarness {
-    /// The engine's clock: the synthetic event time of the event in flight.
-    /// A lock rather than a main-actor property so the engine's nonisolated
-    /// `now` closure can read it.
-    let clock = OSAllocatedUnfairLock<TimeInterval>(initialState: 0)
+    /// The engine's clock and timers, turned by hand: advancing it to the
+    /// next event's time fires every long press and rollover flush due on
+    /// the way, so the timer path is exercised too.
+    let timers = ManualTimerSource()
+    /// While `cancelAll` runs, commits it flushes are recorded at an infinite
+    /// time (see `cancelAll()`).
+    private var isCancellingAll = false
     let engine: TouchEngine
     var rng: SplitMix64
 
@@ -94,10 +96,9 @@ private final class FuzzHarness {
         rng = SplitMix64(state: seed)
         longPressEnabled = longPress
         self.attributesCommits = attributesCommits
-        let clock = self.clock
         engine = TouchEngine(
-            trail: GestureTrailRecorder(defaults: InMemoryUserDefaults()),
-            now: { clock.withLock { $0 } }
+            trail: GestureTrailRecorder(defaults: InMemoryUserDefaults(), timers: timers),
+            timers: timers
         )
         configure(reduced: false)
         engine.updateSize(CGSize(width: 300, height: 240))
@@ -200,7 +201,7 @@ private final class FuzzHarness {
             if attributesCommits { Issue.record("Commit on \(key.id) with no finger attributed to it") }
             return
         }
-        let now = clock.withLock { $0 }
+        let now = isCancellingAll ? TimeInterval.infinity : timers.now
         commits.append(Commit(
             order: finger.order, pressTime: finger.pressTime, dispatchTime: now,
             holdExempt: finger.isSliding || finger.longPressed
@@ -226,8 +227,7 @@ private final class FuzzHarness {
 
     private func advance() {
         time += rng.range(0.001, 0.04)
-        let now = time
-        clock.withLock { $0 = now }
+        timers.advance(to: time)
     }
 
     /// One random event. Touch-downs target a free key, so every commit can be
@@ -328,11 +328,10 @@ private final class FuzzHarness {
     /// the commits it dispatches are recorded at an infinite time: they are
     /// exempt from the press-order check by the engine's own rule.
     func cancelAll() {
-        clock.withLock { $0 = .infinity }
+        isCancellingAll = true
         engine.cancelAll()
+        isCancellingAll = false
         down.removeAll()
-        let now = time
-        clock.withLock { $0 = now }
     }
 
     private func cancelled(_ pointer: PointerID) {

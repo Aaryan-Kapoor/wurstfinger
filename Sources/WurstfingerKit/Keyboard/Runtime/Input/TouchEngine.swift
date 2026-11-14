@@ -139,27 +139,46 @@ final class TouchEngine {
     private var pool: [PointerTrack] = []
     /// Completed gestures waiting for an earlier finger (see "Rollover order").
     private var pending = CommitQueue()
-    /// The timer that releases held-back commits when a hold expires, and the
-    /// deadline it was armed for — so a second blocked flush for the same
-    /// blocker does not replace a task that already waits for the same moment.
-    private var flushTask: Task<Void, Never>?
+    /// When the head of the queue may go out, if a hold is blocking it
+    /// (touch-clock time).
     private var flushDeadline: TimeInterval?
     private var nextSequence: UInt64 = 0
-    private let now: () -> TimeInterval
+    /// The clock and timer every deadline here runs on.
+    private let timers: any TimerSource
+    /// **The one timer.** The engine has several deadlines in flight — one
+    /// long press per resting finger and the rollover flush — but arms a
+    /// single timer for the earliest of them and, when it fires, runs whatever
+    /// is due and re-arms for the next. Deadlines that go away (a finger
+    /// lifts, a flick cancels its long press) do not touch the timer: it wakes
+    /// at the old deadline, finds nothing due and re-arms. So typing with
+    /// long-press digits on creates about one timer task every long-press
+    /// duration, not one per keystroke (the previous design, measured at 9
+    /// extra allocations per tap).
+    private var timer: TimerHandle?
+    /// The deadline `timer` is armed for.
+    private var armedDeadline: TimeInterval?
     /// The classifier's working memory, allocated once; see
     /// `ClassificationScratch`.
     private let scratch = ClassificationScratch()
 
-    /// - Parameter now: The clock touch timestamps are measured on (system
-    ///   uptime, like `UITouch.timestamp` and `NSEvent.timestamp`).
+    /// - Parameter timers: The clock touch timestamps are measured on and the
+    ///   timer deadlines are armed with. System uptime (like
+    ///   `UITouch.timestamp` and `NSEvent.timestamp`) in the keyboard; a
+    ///   `ManualTimerSource` in tests.
     init(
         trail: GestureTrailRecorder = GestureTrailRecorder(),
-        now: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }
+        timers: any TimerSource = SystemTimerSource()
     ) {
         self.trail = trail
-        self.now = now
+        self.timers = timers
         pool.reserveCapacity(Self.maxPointers)
         tracks.reserveCapacity(Self.maxPointers)
+    }
+
+    /// An engine on the system timers but a custom clock (tests that drive
+    /// synthetic touch times and never let a timer fire).
+    convenience init(trail: GestureTrailRecorder = GestureTrailRecorder(), now: @escaping () -> TimeInterval) {
+        self.init(trail: trail, timers: SystemTimerSource(now: now))
     }
 
     // MARK: - Configuration
@@ -250,8 +269,8 @@ final class TouchEngine {
         case let .slide(configuration):
             _ = track.recordSlide(.zero, configuration: configuration)
         }
-        scheduleLongPress(for: track)
-        if track.longPress.isScheduled {
+        if isLongPressEnabled {
+            armLongPress(for: track, at: time + tuning.longPressDuration)
             actions.longPressPhase(key, .armed(keyFrame: hit.frame, delay: tuning.longPressDuration))
         }
     }
@@ -292,8 +311,8 @@ final class TouchEngine {
                 from: token
             )
         }
-        if track.longPress.isScheduled, !track.isResting(within: tuning.longPressMovementTolerance) {
-            track.longPress.cancel()
+        if track.longPressDeadline != nil, !track.isResting(within: tuning.longPressMovementTolerance) {
+            track.longPressDeadline = nil
             actions.longPressPhase(track.key, .cancelled)
         }
         speculate(track)
@@ -317,8 +336,10 @@ final class TouchEngine {
     func ended(_ id: PointerID, at location: CGPoint, time: TimeInterval) {
         guard let track = track(for: id) else { return }
         remove(track)
-        if track.longPress.isScheduled { actions.longPressPhase(track.key, .cancelled) }
-        track.longPress.cancel()
+        if track.longPressDeadline != nil {
+            track.longPressDeadline = nil
+            actions.longPressPhase(track.key, .cancelled)
+        }
         release(track)
 
         if track.phase == .longPressed {
@@ -334,8 +355,7 @@ final class TouchEngine {
         let translation = track.translation(to: location)
         switch track.kind {
         case .flick:
-            let signposter = InputSignposts.signposter
-            let interval = signposter.beginInterval(InputSignposts.classify)
+            InputSignposts.begin(InputSignposts.classify, InputSignposts.classifyID)
             let classification = track.flick.handleEnded(
                 translation: CGSize(width: translation.x, height: translation.y),
                 aspectRatio: track.aspectRatio,
@@ -343,7 +363,7 @@ final class TouchEngine {
                 keySize: track.keySize,
                 scratch: scratch
             )
-            signposter.endInterval(InputSignposts.classify, interval)
+            InputSignposts.end(InputSignposts.classify, InputSignposts.classifyID)
             trail.finish(from: track.trailToken)
             actions.released(track.key, classification)
             enqueue(PendingCommit(sequence: track.sequence, key: track.key, kind: .gesture(classification)), at: time)
@@ -380,6 +400,9 @@ final class TouchEngine {
         for track in tracks { abandon(track) }
         flushPending(at: .infinity)
         press.clearAll()
+        timer?.cancel()
+        timer = nil
+        armedDeadline = nil
     }
 
     /// Fingers currently down.
@@ -426,45 +449,36 @@ final class TouchEngine {
 
     // MARK: - Long press
 
-    private func scheduleLongPress(for track: PointerTrack) {
-        guard isLongPressEnabled else { return }
-        scheduleLongPress(for: track, after: tuning.longPressDuration)
+    /// Arms the finger's long press for `deadline` (touch-clock time).
+    private func armLongPress(for track: PointerTrack, at deadline: TimeInterval) {
+        track.longPressDeadline = deadline
+        rearmTimer()
     }
 
-    private func scheduleLongPress(for track: PointerTrack, after delay: TimeInterval) {
-        let sequence = track.sequence
-        track.longPress.schedule(after: delay) { [weak self, weak track] in
-            guard let self, let track else { return false }
-            return self.longPressFired(track, sequence: sequence)
-        }
-    }
-
-    /// The fire guard: the finger is still the one that armed the timer, still
-    /// resting and not yet consumed, no earlier finger holds its place in the
-    /// press order, and a long-press binding resolved.
+    /// The fire guard: the finger is still down, still resting and not yet
+    /// consumed, no earlier finger holds its place in the press order, and a
+    /// long-press binding resolved.
     ///
     /// A long press that fires while an earlier finger is still inside its
     /// hold is *deferred* to that hold's deadline rather than dispatched out of
     /// order or dropped: it is a commit like any other. (With the stock
     /// timings a hold always expires long before a long press fires, so the
     /// deferral is a guarantee rather than a frequent path.)
-    private func longPressFired(_ track: PointerTrack, sequence: UInt64) -> Bool {
-        guard track.sequence == sequence,
-              tracks.contains(where: { $0 === track }),
-              track.phase != .longPressed
-        else { return false }
+    @discardableResult
+    private func longPressFired(_ track: PointerTrack) -> Bool {
+        guard tracks.contains(where: { $0 === track }), track.phase != .longPressed else { return false }
         guard track.isResting(within: tuning.longPressMovementTolerance) else {
             actions.longPressPhase(track.key, .cancelled)
             return false
         }
-        let time = now()
+        let time = timers.now
         // Commits whose hold expired since the last event are still queued
         // until something flushes them; a long press is a later commit, so it
         // releases them first rather than overtaking them. (The flush timer
         // normally runs before a long press can fire; this makes it a rule.)
         flushPending(at: time)
         if let blocker = tracks.first(where: { $0.holdsBack(track.sequence, at: time) }) {
-            scheduleLongPress(for: track, after: max(blocker.pressTime + Self.rolloverHold - time, 0))
+            armLongPress(for: track, at: blocker.holdDeadline)
             return false
         }
         guard actions.longPress(track.key) else {
@@ -486,11 +500,51 @@ final class TouchEngine {
     /// what the scenario harness uses to type a long press without waiting.
     func fireLongPressTimer(for id: PointerID) {
         guard isLongPressEnabled, let track = track(for: id) else { return }
-        let sequence = track.sequence
-        track.longPress.cancel()
-        track.longPress.runFire { [weak self] in
-            self?.longPressFired(track, sequence: sequence) ?? false
+        track.longPressDeadline = nil
+        longPressFired(track)
+    }
+
+    // MARK: - The timer
+
+    /// Arms the timer for the earliest deadline in flight, unless the armed
+    /// one is already that early. Called whenever a deadline is added or moved
+    /// earlier; a deadline that is removed is left to the lazy wake-up (see
+    /// `timer`).
+    private func rearmTimer() {
+        var next = flushDeadline ?? .infinity
+        for track in tracks {
+            if let deadline = track.longPressDeadline, deadline < next { next = deadline }
         }
+        guard next < .infinity else { return }
+        if let armed = armedDeadline, timer?.isActive == true, armed <= next { return }
+        timer?.cancel()
+        armedDeadline = next
+        timer = timers.schedule(after: next - timers.now) { [weak self] in
+            self?.timerFired()
+        }
+    }
+
+    /// Runs every deadline that has passed — long presses first, in press
+    /// order, then the held-back commits — and re-arms for whatever is left.
+    private func timerFired() {
+        timer = nil
+        armedDeadline = nil
+        let time = timers.now
+        for track in tracks {
+            guard let deadline = track.longPressDeadline, deadline <= time else { continue }
+            track.longPressDeadline = nil
+            longPressFired(track)
+        }
+        if let deadline = flushDeadline, deadline <= time {
+            flushDeadline = nil
+            flushPending(at: time)
+        }
+        rearmTimer()
+    }
+
+    /// The deadline the timer is armed for, if any (for tests).
+    var armedTimerDeadline: TimeInterval? {
+        timer?.isActive == true ? armedDeadline : nil
     }
 
     // MARK: - Ordered commits
@@ -505,7 +559,8 @@ final class TouchEngine {
     private func flushPending(at time: TimeInterval) {
         while let head = pending.first {
             if let blocker = tracks.first(where: { $0.holdsBack(head.sequence, at: time) }) {
-                scheduleFlush(at: blocker.pressTime + Self.rolloverHold)
+                flushDeadline = blocker.holdDeadline
+                rearmTimer()
                 return
             }
             pending.removeFirst()
@@ -514,26 +569,7 @@ final class TouchEngine {
             case let .slide(phase): actions.slide(head.key, phase)
             }
         }
-        flushTask?.cancel()
-        flushTask = nil
         flushDeadline = nil
-    }
-
-    private func scheduleFlush(at deadline: TimeInterval) {
-        if flushTask != nil, flushDeadline == deadline { return }
-        flushTask?.cancel()
-        flushDeadline = deadline
-        let delay = max(deadline - now(), 0)
-        flushTask = Task { [weak self] in
-            do {
-                try await Task.sleepWithoutLeeway(for: .seconds(delay))
-            } catch {
-                return
-            }
-            guard let self, !Task.isCancelled else { return }
-            flushDeadline = nil
-            flushPending(at: now())
-        }
     }
 
     /// Re-checks the waiting gestures at `time` (for tests driving a clock).
@@ -574,15 +610,17 @@ final class TouchEngine {
     /// slide in flight, the trail cleared at once.
     private func abandon(_ track: PointerTrack) {
         remove(track)
-        if track.longPress.isScheduled { actions.longPressPhase(track.key, .cancelled) }
-        track.longPress.cancel()
+        if track.longPressDeadline != nil {
+            track.longPressDeadline = nil
+            actions.longPressPhase(track.key, .cancelled)
+        }
         if case .slide = track.kind, let phase = track.slide.handleCancelled() {
             actions.slide(track.key, phase)
         }
         trail.cancel(from: track.trailToken)
         release(track)
         recycle(track)
-        flushPending(at: now())
+        flushPending(at: timers.now)
     }
 
     private func recycle(_ track: PointerTrack) {
@@ -655,10 +693,10 @@ private struct CommitQueue {
     }
 }
 
-/// One finger's state, from touch-down to release. A class so the long-press
+/// One finger's state, from touch-down to release. A class so the engine's
 /// timer can read the live state at fire time, and pooled by the engine so a
-/// touch allocates nothing: the sample buffer, the timer and the trail token
-/// are created once per slot and reset between fingers.
+/// touch allocates nothing: the sample buffer and the trail token are created
+/// once per slot and reset between fingers.
 ///
 /// (`~Copyable` per-finger values were considered: Swift 6.1's `Array` cannot
 /// hold them and there is no inline fixed-size array yet, so a pool of them
@@ -716,8 +754,10 @@ private final class PointerTrack {
 
     var flick = KeyGestureSequence()
     var slide = SlideGestureState()
-    let longPress = LongPressScheduler()
     let trailToken = GestureTrailToken()
+    /// When this finger's long press fires (touch-clock time), while one is
+    /// armed; the engine's single timer serves it (see `TouchEngine.timer`).
+    var longPressDeadline: TimeInterval?
 
     func start(
         id: PointerID, key: KeyDefinition, origin: CGPoint, aspectRatio: CGFloat, keySize: CGSize,
@@ -796,11 +836,22 @@ private final class PointerTrack {
         }
     }
 
+    /// When this finger's hold on later commits runs out (touch-clock time).
+    ///
+    /// The one expression both the timer's deadline and `holdsBack` use: had
+    /// the check been `time - pressTime < rolloverHold`, then at the deadline
+    /// `(pressTime + 0.25) - pressTime` can round to 0.2499…, the hold would
+    /// still stand at the moment it was armed to end, and the timer would
+    /// re-arm for that same moment forever (the fuzz suite hung on it).
+    var holdDeadline: TimeInterval {
+        pressTime + TouchEngine.rolloverHold
+    }
+
     /// Whether this finger holds back a completed gesture pressed after it:
     /// only an undecided finger, and only within the hold.
     @inline(__always)
     func holdsBack(_ laterSequence: UInt64, at time: TimeInterval) -> Bool {
-        guard sequence < laterSequence, time - pressTime < TouchEngine.rolloverHold else { return false }
+        guard sequence < laterSequence, time < holdDeadline else { return false }
         switch phase {
         case .resting, .heading: return true
         case .sliding, .longPressed: return false
@@ -810,7 +861,7 @@ private final class PointerTrack {
     func reset() {
         flick.handleCancelled()
         _ = slide.handleCancelled()
-        longPress.abandon()
+        longPressDeadline = nil
         phase = .resting
         key = .idle
         keyId = ""

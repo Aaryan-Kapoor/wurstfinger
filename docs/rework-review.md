@@ -342,3 +342,142 @@ is in `docs/concurrency.md`. Finding numbers below refer to the first half.
   `handleEnded(…scratch:)`, `KeyGestureRecognizer.classify(path:…scratch:)`,
   buffer variants of the preprocessor steps, `RingBuffer.copyOrdered(into:)`
   and `count`.
+
+---
+
+# Second pass: after the feel, layouts and modifier merges
+
+Reviewed at `d356e44` (the merge of the feel layer, custom layouts, Thumb-Key
+and English Optimized, the one-shot Ctrl/Alt modes, copy-all and word-case
+cycling). Same ranking as above. Measurements are in `docs/performance.md`,
+section "Second pass".
+
+## Findings
+
+### S1. A flick keystroke regained four allocations through the feel release — `KeyboardFeel.swift` (`FeelBoard.add`), `KeyboardViewModel+Feel.swift`
+
+The release hook (`released` → `commitFeel` → `pop` → `FeelBoard.add`)
+filtered the pop array into a fresh copy per pop and looked the key's frame
+up by a linear scan of the hit map (`KeyHitMap.key(withId:)`). A flick
+keystroke measured 13 allocations against the 9 of a tap (the drag sample
+stayed at 0). Fixed: pops are kept in reserved storage and mutated in place
+under `withMutation`, and the hit map indexes keys by id.
+
+### S2. The first invalidation after a mode switch grew 8× — `KeyView.swift`, `KeyPressSurface.swift`, `FeelOverlay.swift`
+
+`--switch` row 10a (the `handleGesture` that switches mode, with the hosting
+graph observing) went from ~54 µs to ~410 µs after the merge. The switch
+itself is 0.2 µs and the cue it plays 1 µs (rows 10g/10h); the time is
+SwiftUI marking the graph dirty synchronously inside Observation's
+`withMutation` — more dependents per key now (`KeyPressFeel`'s
+`.animation(value: key)`, the press surface, the feel overlays). This is the
+per-key node count again (see S6).
+
+### S3. A long press cost one timer `Task` per touch-down; timers were untestable — `TouchEngine.swift`, `LongPressScheduler.swift` (removed), `GestureTrailRecorder.swift`, `KeyboardViewModel+Concurrency.swift`
+
+Every deadline (long press per finger, the rollover flush, the trail fade,
+the settings debounce) slept on the wall clock in its own task; a tap with
+long-press digits on measured 18 allocations against 9 without, and the
+suite's timing tests (`LongPressSchedulerTests`, the debounce tests) could
+only wait and hope. Fixed: a `TimerSource` protocol (`SystemTimerSource` in
+production, `ManualTimerSource` in tests), the engine arming **one** timer
+for the earliest of its deadlines and re-arming lazily, and every timed test
+rewritten to turn the clock by hand. The fuzz suite now advances the manual
+clock between events, so long presses and hold flushes fire from the timer
+path under random interleavings too.
+
+### S4. One-shot Ctrl/Alt let the numeric mode's ghost keys answer — `KeyboardMode+Terminal.swift`
+
+A gesture the main mode left unbound fell through the ghost resolver to the
+numeric mode: a hold typed the key's digit raw and a swipe on the top corners
+typed `≤`/`≥`, neither a control code nor `.letter`, so the modifier stayed
+armed. Fixed: the generated modes bind every unbound swipe to an inert
+binding and a hold to what the tap does (`TerminalModeRobustnessTests`, four
+layouts). Also covered: the appearance reset and a language switch leave the
+mode; auto-capitalization never enters or leaves it; an inert release or
+hold plays no click and arms no ring.
+
+### S5. Custom layouts: unbounded reads, and two eviction races — `CustomLayoutStore.swift`, `KeyboardRegistry.swift`
+
+A directory of junk files was read and validated in full at launch (a
+validation builds a whole keyboard): capped at `maxFilesRead` (4 ×
+`maxLayouts`). A definition build that began with the old layout but inserted
+its cache cell after `replaceCustomLayouts` evicted it parked the stale
+definition for good: the build now re-reads the layout under the cell's build
+lock. A background prewarm that compiled tables from an old definition could
+likewise outlive the eviction: prewarm compares an eviction generation and
+drops what it inserted. Tests: `CustomLayoutRobustnessTests`.
+
+### S6. Haptics engine lifecycle: a failed start was forever, a stop while suspended restarted — `CoreHapticsPlayer.swift`, `HapticFeedbackPlayer.swift`
+
+One transient start failure (the process being suspended) marked Core
+Haptics unavailable for the rest of the process; a server reset or stop
+while the keyboard was off screen restarted the engine the keyboard had just
+let go of. Extracted as a pure `HapticEngineLifecycle` (wanted/idle/starting/
+running/unavailable, three consecutive failures before giving up, no restart
+unless wanted), driven from the renderer, nudged from touch-down via
+`resumeIfNeeded`. Tests: `HapticEngineLifecycleTests`.
+
+### S7. The trail's per-frame path allocated eight arrays a frame — `GestureTrailInk.swift`, `GestureTrailGeometry.swift`, `GestureTrailOverlay.swift`
+
+With the trail on, each display-link frame built the visible samples, the
+points, two scale arrays, the spline, the arc lengths and both ribbon edges
+fresh. Fixed: a `GestureTrailScratch` owned by the recorder, buffer-filling
+variants of the geometry helpers, a `visibleSampleRange` instead of a copy.
+The `Path` remains (CoreGraphics storage). `GestureTrailScratchTests` pin the
+scratch path equal to the array path.
+
+### S8. `OSSignposter` intervals: three allocations per keystroke, ungateable — `InputSignposts.swift`
+
+`OSSignposter.beginInterval` builds its state even with nobody recording and
+`isEnabled` reports true regardless. Replaced with `os_signpost` on an
+`OSLog` with fixed `OSSignpostID`s, which allocates nothing (bench row
+8g-ii).
+
+### S9. The second `String` hash per resolve — `KeyboardViewModel.swift`
+
+`compiledDefinition?.mode(activeModeName)` ran per keystroke and per preview
+change. The view model now caches `activeCompiledMode`, refreshed from
+`didSet` on `activeModeName` and `compiledDefinition`.
+
+### S10. Hint glyphs as one `Canvas` per key — `KeyHintCanvas.swift`
+
+Each hint glyph was its own `Text` or `Image` view with its own padding,
+alignment and animation modifiers: about a dozen view-graph nodes per key,
+times ~20 keys, per keyboard graph. `KeyHintCanvas` draws a key's hints in one
+`Canvas`, with the emphasis (lift and recede) as an `Animatable` vector so the
+80 ms swell still runs.
+
+**Decision: ship the Canvas** (`KeyView.hintRendering = .canvas`). Measured in
+one process, alternating, release build (bench row 9e):
+
+| | View stacks | One `Canvas` per key |
+| --- | --- | --- |
+| Heap per extra keyboard graph | 3.83 MB | 2.31 MB (−40%) |
+| `ImageRenderer` render of the keyboard, p50 (warm) | 38.6 ms | 22.3 ms |
+
+Pixel diff over the whole snapshot catalogue (174 renders, threshold 16/255):
+144 identical; the rest differ in at most 0.66% of pixels — sub-pixel glyph
+placement on stretched (wide or tall) keys, invisible side by side. What the
+Canvas gives up: the bold weight of an emphasized hint switches half-way
+through the swell rather than at its start, and a mode change cross-fades the
+key's hint set as a whole rather than glyph by glyph. The view stacks stay
+behind the switch for the bench and `WURSTFINGER_HINT_RENDERING=views`.
+
+### S11. The single timer could spin on a hold deadline — `TouchEngine.swift` (found after the pass, by the fuzz suite hanging)
+
+The rollover hold was armed for `pressTime + rolloverHold` but tested as
+`time - pressTime < rolloverHold`. At press times where the subtraction rounds
+down (`(0.1 + 0.25) - 0.1 = 0.2499…`), the hold still stood at the very
+instant it was armed to end, so the flush re-armed the timer for that same
+instant, forever: on the manual clock a hang, in the keyboard a main-actor
+busy loop until the wall clock moved past the rounding. Both now read one
+`PointerTrack.holdDeadline` and the check is `time < holdDeadline`.
+`TouchEngineTimingTests.aHoldEndsAtItsDeadlineWhateverThePressTimeRoundsTo`
+pins it at 0.1 s.
+
+Two of the pass's own tests also needed correcting: the deferred-long-press
+test could not reach its deferral (the earlier finger's own long press decides
+it first, so it rightly holds nothing back — now covered by its own test), and
+a cancelled settings observation still acted on one already-buffered signal
+(the loop now checks `Task.isCancelled`).

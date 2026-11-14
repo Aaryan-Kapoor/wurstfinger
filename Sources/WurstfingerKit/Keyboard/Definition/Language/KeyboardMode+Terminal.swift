@@ -88,6 +88,12 @@ extension KeyboardMode {
     /// - Other bindings that move the cursor (the line jumps) are left alone;
     ///   accent compose/cycle, case and shift bindings go inert: a dead key
     ///   under Ctrl is meaningless.
+    /// - A gesture the main mode leaves unbound would fall through to the
+    ///   numeric mode's ghost keys (a hold types the key's digit, a swipe the
+    ///   `≤`/`≥` of the top corners), which are neither control codes nor
+    ///   category `.letter`: the digit would be typed raw and the mode would
+    ///   stay armed. So every swipe the key does not bind is inert here, and a
+    ///   hold does what a tap does (the way the numeric mode mirrors its taps).
     /// - Letter labels show uppercase under Ctrl (the `^A` convention); Alt
     ///   keeps them as they are.
     /// - The numeric-mode key becomes the key that leaves the mode.
@@ -98,6 +104,15 @@ extension KeyboardMode {
             if gridSlots.contains(keyId) {
                 var copy = key
                 copy.bindings = key.bindings.mapValues { Self.terminalBinding($0, modifier: modifier, locale: locale) }
+                // Close the ghost fallback (see above): every gesture the key
+                // does not bind gets an answer of its own.
+                for gesture in GestureType.allCases where copy.bindings[gesture] == nil && !gesture.isCircular {
+                    if gesture == .longPress, let tap = copy.bindings[.tap] {
+                        copy.bindings[gesture] = tap
+                    } else if gesture.isSwipe || gesture == .longPress {
+                        copy.bindings[gesture] = Self.inertBinding
+                    }
+                }
                 generated[keyId] = copy
             } else if keyId == UtilitySlot.symbols {
                 generated[keyId] = KeyDefinition.utility(
@@ -117,13 +132,17 @@ extension KeyboardMode {
         )
     }
 
+    /// A binding that types nothing and leaves the mode armed. Present rather
+    /// than absent so the numeric mode's ghost keys cannot answer for it.
+    private static let inertBinding = KeyBinding(
+        label: "", action: .none, category: .utility,
+        returnAction: nil, accessibilityLabel: nil
+    )
+
     private static func terminalBinding(
         _ binding: KeyBinding, modifier: TerminalModifier, locale: Locale
     ) -> KeyBinding {
-        let inert = KeyBinding(
-            label: "", action: .none, category: .utility,
-            returnAction: nil, accessibilityLabel: nil
-        )
+        let inert = inertBinding
         switch binding.action {
         case let .commitText(text):
             guard let output = modifier.transformed(text) else { return inert }

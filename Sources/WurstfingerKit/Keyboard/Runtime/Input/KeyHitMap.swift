@@ -38,6 +38,10 @@ struct KeyHitMap: Sendable, Equatable {
 
     let keys: [Key]
     let size: CGSize
+    /// Key id → index into `keys`. The feel layer asks for a key's frame by
+    /// id on every release and slide latch; a scan of the keys was fine for
+    /// tests but not on that path.
+    private let indexByID: [String: Int]
 
     private let columns: Int
     private let rows: Int
@@ -96,6 +100,7 @@ struct KeyHitMap: Sendable, Equatable {
         self.size = size
         self.columns = columns
         self.rows = rows
+        indexByID = Dictionary(keys.enumerated().map { ($0.element.id, $0.offset) }, uniquingKeysWith: { first, _ in first })
         self.horizontalSpacing = horizontalSpacing
         self.verticalSpacing = verticalSpacing
         columnPitch = columnWidth + horizontalSpacing
@@ -133,7 +138,7 @@ struct KeyHitMap: Sendable, Equatable {
 
     /// The key with `id`, if it is laid out in this grid.
     func key(withId id: String) -> Key? {
-        keys.first { $0.id == id }
+        indexByID[id].map { keys[$0] }
     }
 
     private static func band(_ value: CGFloat, pitch: CGFloat, count: Int) -> Int {

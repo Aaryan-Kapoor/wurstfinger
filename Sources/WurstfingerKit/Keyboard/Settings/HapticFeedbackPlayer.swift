@@ -186,7 +186,13 @@ final class HapticFeedbackPlayer {
     func prepareIfNeeded() {
         guard isAccessGranted, settings.tapIntensity > 0 || settings.dragIntensity > 0 else { return }
         if prepared == nil { refreshIfSettingsChanged() }
-        if isDetailedActive, detailed?.isReady == true { return }
+        if isDetailedActive {
+            if detailed?.isReady == true { return }
+            // Wanted but not running (a start failed, or the system stopped
+            // the engine while the app was suspended): a state check, and an
+            // asynchronous start only when there is something to start.
+            detailed?.resumeIfNeeded()
+        }
         let now = ContinuousClock.now
         if let lastPrepared, now - lastPrepared < Self.warmWindow { return }
         lastPrepared = now

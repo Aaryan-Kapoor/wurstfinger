@@ -103,6 +103,23 @@ struct GestureTrail: Equatable, Sendable {
         return samples.last.map { [$0.point] } ?? []
     }
 
+    /// The indices of `samples` inside the visible age window at `now`: what
+    /// `visiblePoints(at:)` returns, as a range instead of a copy, for the
+    /// per-frame drawing path. Never empty for a non-empty trail (the newest
+    /// sample stays, see `visiblePoints`).
+    func visibleSampleRange(
+        at now: TimeInterval,
+        visibleDuration: TimeInterval = KeyboardConstants.GestureTrail.visibleDuration
+    ) -> Range<Int> {
+        guard !samples.isEmpty else { return 0 ..< 0 }
+        let reference = releaseTime ?? now
+        let cutoff = reference - visibleDuration
+        var start = 0
+        while start < samples.count, samples[start].time < cutoff { start += 1 }
+        if start == samples.count { start = samples.count - 1 }
+        return start ..< samples.count
+    }
+
     /// Overall opacity multiplier: 1 while the finger is down, ramping to 0
     /// across `fadeOutDuration` after it lifts.
     func fadeOpacity(

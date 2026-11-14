@@ -225,7 +225,20 @@ final class FeelBoard {
     /// animation never reported completion (the overlay was off screen).
     static let popLifetime: TimeInterval = 1
 
-    private(set) var pops: [Pop] = []
+    /// The pops on screen, oldest first. Kept in `popStorage` and mutated in
+    /// place: a commit used to build a filtered copy of the array per pop,
+    /// which was an allocation on every swipe keystroke.
+    var pops: [Pop] {
+        access(keyPath: \.pops)
+        return popStorage
+    }
+
+    @ObservationIgnored private var popStorage: [Pop] = {
+        var pops: [Pop] = []
+        pops.reserveCapacity(FeelBoard.maxPops + 1)
+        return pops
+    }()
+
     private(set) var ring: Ring?
     private(set) var ratchet: Ratchet?
 
@@ -241,16 +254,21 @@ final class FeelBoard {
         var pop = pop
         pop.id = nextID
         pop.time = now()
-        var next = pops.filter { pop.time - $0.time < Self.popLifetime }
-        next.append(pop)
-        if next.count > Self.maxPops { next.removeFirst(next.count - Self.maxPops) }
-        pops = next
+        withMutation(keyPath: \.pops) {
+            popStorage.removeAll { pop.time - $0.time >= Self.popLifetime }
+            if popStorage.count >= Self.maxPops {
+                popStorage.removeFirst(popStorage.count - Self.maxPops + 1)
+            }
+            popStorage.append(pop)
+        }
     }
 
     /// The overlay's pop animation finished.
     func removePop(id: UInt64) {
-        guard let index = pops.firstIndex(where: { $0.id == id }) else { return }
-        pops.remove(at: index)
+        guard let index = popStorage.firstIndex(where: { $0.id == id }) else { return }
+        withMutation(keyPath: \.pops) {
+            _ = popStorage.remove(at: index)
+        }
     }
 
     func showRing(keyId: String, keyFrame: CGRect, duration: TimeInterval) {

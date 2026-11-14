@@ -251,6 +251,119 @@ func benchViewGraphMemory() async {
     spinRunLoop(turns: 4)
     let inserted = rig.target.inserted
     sink.withLock { $0 &+= inserted }
+
+    // 9e rides on 9c's machinery and runs right after it.
+    await benchHintRendering()
+}
+
+// MARK: - 9e: the hints as view stacks vs. one Canvas per key
+
+/// Marginal cost of an extra keyboard graph with the hints drawn `rendering`
+/// way: the first graph is built and settled (so the framework's one-time
+/// warm-up is not charged), then `extra` more, and the delta is what those
+/// cost. The same measurement as 9c, once per rendering.
+@MainActor
+func marginalGraphCost(
+    _ rig: BenchRig, rendering: HintRendering, extra: Int = 5
+) -> (perGraph: MemoryReading, total: MemoryReading) {
+    KeyView.hintRendering = rendering
+    spinRunLoop(turns: 4)
+    let baseline = readMemory()
+    var graphs = [HostedKeyboard]()
+    graphs.append(autoreleasepool { HostedKeyboard(viewModel: rig.viewModel) })
+    graphs[0].settle()
+    let afterFirst = readMemory()
+    for _ in 0 ..< extra {
+        let graph = autoreleasepool { HostedKeyboard(viewModel: rig.viewModel) }
+        graph.settle()
+        graphs.append(graph)
+    }
+    let afterMore = readMemory()
+    let marginal = afterMore - afterFirst
+    autoreleasepool {
+        for graph in graphs { graph.tearDown() }
+        graphs.removeAll()
+    }
+    spinRunLoop(turns: 8)
+    return (
+        MemoryReading(heap: marginal.heap / extra, footprint: marginal.footprint / extra),
+        afterMore - baseline
+    )
+}
+
+/// Section 9e: `KeyView.hintRendering` set each way in one process, measured
+/// alternately (views, canvas, views, canvas, ...) so drift in the machine's
+/// state cancels: marginal heap and footprint per extra graph, the
+/// `ImageRenderer` render time of row 5, and, in a debug build, the key bodies
+/// a mode switch evaluates.
+@MainActor
+func benchHintRendering() async {
+    let rig = BenchRig()
+    await KeyboardRegistry.prewarm(["de_DE"])
+    let saved = KeyView.hintRendering
+    defer { KeyView.hintRendering = saved }
+    let renderings: [(HintRendering, String)] = [(.views, "views "), (.canvas, "canvas")]
+
+    print("9e. hints drawn as view stacks vs. one Canvas per key (390 pt, de_DE, off-screen NSHostingView, alternating, 5 extra graphs per round):")
+    // A throwaway round for each, so neither pays the other's first-use costs.
+    for (rendering, _) in renderings { _ = marginalGraphCost(rig, rendering: rendering) }
+    var heap = [HintRendering: [Int]]()
+    var footprint = [HintRendering: [Int]]()
+    for round in 1 ... 3 {
+        for (rendering, name) in renderings {
+            let cost = marginalGraphCost(rig, rendering: rendering)
+            heap[rendering, default: []].append(cost.perGraph.heap)
+            footprint[rendering, default: []].append(cost.perGraph.footprint)
+            reportReading("    round \(round) \(name): marginal cost per extra graph", cost.perGraph)
+        }
+    }
+    func mean(_ values: [Int]?) -> Int { (values ?? []).reduce(0, +) / Swift.max(values?.count ?? 1, 1) }
+    for (rendering, name) in renderings {
+        reportReading(
+            "    mean of 3 rounds, \(name): per extra graph",
+            MemoryReading(heap: mean(heap[rendering]), footprint: mean(footprint[rendering]))
+        )
+    }
+
+    print("    row 5, ImageRenderer render of the whole keyboard (59 renders after the cold one; views, canvas, views, canvas):")
+    for (index, (rendering, name)) in (renderings + renderings).enumerated() {
+        KeyView.hintRendering = rendering
+        for stats in benchRender(iterations: 60) {
+            Stats(name: "    row 5 run \(index + 1), \(name)", samples: stats.samples).report()
+        }
+    }
+
+    #if DEBUG
+    print("    KeyView.body evaluations per mode switch (debug build):")
+    for (rendering, name) in renderings {
+        KeyView.hintRendering = rendering
+        let graph = autoreleasepool { HostedKeyboard(viewModel: rig.viewModel) }
+        graph.settle()
+        guard let forward = switchGesture(to: ModeNames.numeric, in: rig.viewModel) else { continue }
+        rig.viewModel.handleGesture(forward.gesture, keyId: forward.keyId, isReturn: false)
+        graph.settle()
+        guard let backward = switchGesture(to: ModeNames.main, in: rig.viewModel) else { continue }
+        rig.viewModel.handleGesture(backward.gesture, keyId: backward.keyId, isReturn: false)
+        graph.settle()
+        var toNumeric = 0
+        var toMain = 0
+        let trips = 10
+        for _ in 0 ..< trips {
+            let start = KeyViewBodyCounter.count
+            rig.viewModel.handleGesture(forward.gesture, keyId: forward.keyId, isReturn: false)
+            graph.settle()
+            let middle = KeyViewBodyCounter.count
+            rig.viewModel.handleGesture(backward.gesture, keyId: backward.keyId, isReturn: false)
+            graph.settle()
+            toNumeric += middle - start
+            toMain += KeyViewBodyCounter.count - middle
+        }
+        print("      \(name): main -> numeric \(format(Double(toNumeric) / Double(trips), 1)), "
+            + "numeric -> main \(format(Double(toMain) / Double(trips), 1))")
+        graph.tearDown()
+        spinRunLoop(turns: 4)
+    }
+    #endif
 }
 
 // MARK: - 9d: an input engine with every finger slot warmed

@@ -55,9 +55,20 @@ enum GestureTrailGeometry {
         _ points: [CGPoint],
         subdivisions: Int = KeyboardConstants.GestureTrail.smoothingSubdivisions
     ) -> [CGPoint] {
-        guard points.count > 2, subdivisions > 1 else { return points }
-        let last = points.count - 1
         var result: [CGPoint] = []
+        smooth(points, subdivisions: subdivisions, into: &result)
+        return result
+    }
+
+    /// `smoothed(_:subdivisions:)` writing into a caller-owned array (cleared
+    /// first, capacity kept), for the per-frame path.
+    static func smooth(_ points: [CGPoint], subdivisions: Int, into result: inout [CGPoint]) {
+        result.removeAll(keepingCapacity: true)
+        guard points.count > 2, subdivisions > 1 else {
+            result.append(contentsOf: points)
+            return
+        }
+        let last = points.count - 1
         result.reserveCapacity(last * subdivisions + 1)
         for index in 0 ..< last {
             // Duplicate the endpoints so the first and last segment get the
@@ -72,7 +83,6 @@ enum GestureTrailGeometry {
             }
         }
         result.append(points[last])
-        return result
     }
 
     /// Half the ribbon width at `progress`, which runs 0 at the tail to 1 at
@@ -152,6 +162,14 @@ enum GestureTrailGeometry {
     /// Arc length from the tail to each point, in the same order.
     static func cumulativeDistances(along points: [CGPoint]) -> [CGFloat] {
         var distances: [CGFloat] = []
+        cumulativeDistances(along: points, into: &distances)
+        return distances
+    }
+
+    /// `cumulativeDistances(along:)` into a caller-owned array (cleared
+    /// first, capacity kept).
+    static func cumulativeDistances(along points: [CGPoint], into distances: inout [CGFloat]) {
+        distances.removeAll(keepingCapacity: true)
         // Reserved before the tail seed, so the growth below never reallocates.
         distances.reserveCapacity(max(points.count, 1))
         distances.append(0)
@@ -160,7 +178,6 @@ enum GestureTrailGeometry {
             let point = points[index]
             distances.append(distances[index - 1] + hypot(point.x - previous.x, point.y - previous.y))
         }
-        return distances
     }
 
     // MARK: - Private

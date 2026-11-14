@@ -114,18 +114,26 @@ struct GestureTuningSnapshotTests {
 @MainActor
 @Suite(.serialized)
 struct ExternalSettingsObservationTests {
-    private func makeViewModel(_ defaults: UserDefaults) -> KeyboardViewModel {
+    private func makeViewModel(_ defaults: UserDefaults, timers: ManualTimerSource? = nil) -> KeyboardViewModel {
         // Non-persisting would only follow haptics; the keyboard extension
         // persists, and that is the configuration the signal exists for.
-        KeyboardViewModel(userDefaults: defaults, shouldPersistSettings: true)
+        KeyboardViewModel(userDefaults: defaults, shouldPersistSettings: true, timers: timers)
+    }
+
+    /// Lets the observation task consume what was yielded into its stream:
+    /// yields the main actor until `condition` holds. Bounded by a number of
+    /// yields, never by time, so a busy machine can only make it slower.
+    private func settle(until condition: () -> Bool) async {
+        for _ in 0 ..< 20_000 where !condition() {
+            await Task.yield()
+        }
     }
 
     /// Waits (on the main actor, so the observation task can run) until
-    /// `condition` holds or the deadline passes. The deadline is generous on
-    /// purpose: a passing run returns as soon as the condition holds, and the
-    /// full suite keeps the main actor busy for seconds at a time (fuzzing,
-    /// typing scenarios), which a tight deadline mistakes for a failure.
-    private func waitUntil(timeout: Duration = .seconds(20), _ condition: () -> Bool) async {
+    /// `condition` holds or the deadline passes. Only the end-to-end Darwin
+    /// test uses it: that one crosses a real system notification and has no
+    /// clock to turn.
+    private func waitUntil(timeout: Duration = .seconds(2), _ condition: () -> Bool) async {
         let clock = ContinuousClock()
         let end = clock.now.advanced(by: timeout)
         while !condition(), clock.now < end {
@@ -134,60 +142,70 @@ struct ExternalSettingsObservationTests {
     }
 
     @Test func aSignalReloadsTheSettingsAfterTheDebounceWindow() async {
+        let timers = ManualTimerSource()
         let defaults = InMemoryUserDefaults()
         defaults.set(250.0, forKey: SettingsKey.keyboardWidthPoints.rawValue)
-        let vm = makeViewModel(defaults)
+        let vm = makeViewModel(defaults, timers: timers)
         let (signals, trigger) = AsyncStream.makeStream(of: Void.self)
         vm.observeExternalSettingsChanges(signals: signals, debounce: .milliseconds(50))
 
         defaults.set(320.0, forKey: SettingsKey.keyboardWidthPoints.rawValue)
         trigger.yield()
+        await settle { timers.pendingCount == 1 }
 
         // Not yet: the trailing window has not elapsed.
         #expect(vm.keyboardWidth == 250.0)
-        await waitUntil { vm.keyboardWidth == 320.0 }
+        timers.advance(by: 0.049)
+        #expect(vm.keyboardWidth == 250.0)
+        timers.advance(by: 0.001)
         #expect(vm.keyboardWidth == 320.0)
         #expect(vm.settingsReloadCount == 1)
     }
 
     @Test func aBurstOfSignalsCollapsesToOneReload() async {
-        let vm = makeViewModel(InMemoryUserDefaults())
+        let timers = ManualTimerSource()
+        let vm = makeViewModel(InMemoryUserDefaults(), timers: timers)
         let (signals, trigger) = AsyncStream.makeStream(of: Void.self, bufferingPolicy: .unbounded)
-        // A window far longer than any stall a loaded test machine produces
-        // between two buffered signals, so only a real debounce bug can make
-        // the burst reload twice. (At 80 ms this flaked under parallel load.)
-        vm.observeExternalSettingsChanges(signals: signals, debounce: .milliseconds(300))
+        vm.observeExternalSettingsChanges(signals: signals, debounce: .milliseconds(50))
         let before = vm.settingsReloadCount
 
-        // A slider drag in the host app: many posts in quick succession.
+        // A slider drag in the host app: many posts in quick succession. Each
+        // one re-arms the window, so all 40 have been consumed once 40 timers
+        // were ever armed.
         for _ in 0 ..< 40 { trigger.yield() }
+        await settle { timers.scheduledTotal == 40 }
+        #expect(timers.pendingCount == 1, "every signal but the last cancelled its predecessor's window")
 
-        await waitUntil { vm.settingsReloadCount > before }
-        // Let any (incorrect) second reload have its chance to land.
-        try? await Task.sleep(for: .milliseconds(400))
+        timers.advance(by: 10)
         #expect(vm.settingsReloadCount == before + 1, "a coalesced burst must reload exactly once")
     }
 
     @Test func noSignalNoReload() async {
-        let vm = makeViewModel(InMemoryUserDefaults())
+        let timers = ManualTimerSource()
+        let vm = makeViewModel(InMemoryUserDefaults(), timers: timers)
         let (signals, _) = AsyncStream.makeStream(of: Void.self)
         vm.observeExternalSettingsChanges(signals: signals, debounce: .milliseconds(20))
 
-        try? await Task.sleep(for: .milliseconds(150))
+        timers.advance(by: 10)
 
         #expect(vm.settingsReloadCount == 0)
+        #expect(timers.pendingCount == 0)
     }
 
     @Test func cancellingTheObservationStopsReloads() async {
-        let vm = makeViewModel(InMemoryUserDefaults())
+        let timers = ManualTimerSource()
+        let vm = makeViewModel(InMemoryUserDefaults(), timers: timers)
         let (signals, trigger) = AsyncStream.makeStream(of: Void.self)
         let handle = vm.observeExternalSettingsChanges(signals: signals, debounce: .milliseconds(20))
 
         handle.cancel()
         trigger.yield()
-        try? await Task.sleep(for: .milliseconds(200))
+        // Give the (cancelled) task every chance to run anyway.
+        for _ in 0 ..< 100 { await Task.yield() }
+        timers.advance(by: 10)
 
         #expect(vm.settingsReloadCount == 0)
+        #expect(timers.scheduledTotal == 0, "a cancelled observation arms no window")
     }
 
     @Test func aDarwinPostReachesTheViewModelEndToEnd() async {

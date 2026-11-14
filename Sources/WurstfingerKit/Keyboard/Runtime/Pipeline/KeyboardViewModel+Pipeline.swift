@@ -341,10 +341,9 @@ extension KeyboardViewModel {
         // `dispatch` nests inside the `keystroke` interval opened at touch-down
         // (see `InputSignposts`); the keystroke ends here, once the pipeline has
         // delivered its text.
-        let signposter = InputSignposts.signposter
-        let dispatch = signposter.beginInterval(InputSignposts.dispatch)
+        InputSignposts.begin(InputSignposts.dispatch, InputSignposts.dispatchID)
         defer {
-            signposter.endInterval(InputSignposts.dispatch, dispatch)
+            InputSignposts.end(InputSignposts.dispatch, InputSignposts.dispatchID)
             endKeystrokeInterval()
         }
         return performGesture(gesture, keyId: keyId, isReturn: isReturn)
@@ -364,10 +363,9 @@ extension KeyboardViewModel {
         guard let action = gestureTuning.longSwipe.action(for: classification) else {
             return handleGesture(classification.gesture, keyId: keyId, isReturn: classification.isReturn)
         }
-        let signposter = InputSignposts.signposter
-        let dispatch = signposter.beginInterval(InputSignposts.dispatch)
+        InputSignposts.begin(InputSignposts.dispatch, InputSignposts.dispatchID)
         defer {
-            signposter.endInterval(InputSignposts.dispatch, dispatch)
+            InputSignposts.end(InputSignposts.dispatch, InputSignposts.dispatchID)
             endKeystrokeInterval()
         }
         // A mode switch (shift on or off, Ctrl, Alt) is not a pipeline action:
@@ -383,7 +381,7 @@ extension KeyboardViewModel {
     }
 
     private func performGesture(_ gesture: GestureType, keyId: String, isReturn: Bool) -> Bool {
-        guard let compiled = compiledDefinition?.mode(activeModeName) else { return false }
+        guard let compiled = activeCompiledMode else { return false }
 
         // Circular gestures: always "handled", even on a key with nothing to
         // type, as before (a circle never falls through to the tap on release).

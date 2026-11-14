@@ -60,7 +60,7 @@ struct GestureTrailOverlay: View {
         // Those frames would build the full ribbon only to fill it at zero
         // opacity; bail before the geometry instead.
         guard !trail.isFinished(at: now) else { return }
-        let samples = trail.visibleSamples(at: now)
+        let samples = trail.samples[trail.visibleSampleRange(at: now)]
         guard let head = samples.last?.point else { return }
         // While the finger is down, run the ribbon out to where the system
         // predicts it is going, so the head sits under the finger.
@@ -68,7 +68,9 @@ struct GestureTrailOverlay: View {
 
         // Feel: ink-like — thinner where the finger moved fast, fading toward
         // the tail, glowing under the finger (`GestureTrailInk`).
-        let path = GestureTrailInk.shape(samples: samples, predicted: predicted, headWidth: headWidth)
+        let path = GestureTrailInk.shape(
+            samples: samples, predicted: predicted, headWidth: headWidth, scratch: recorder.drawScratch
+        )
         // One fill of one closed contour, so the alpha is the shading's alone
         // even where the path crosses itself.
         // A long swipe that will fire on release reads in the accent colour,

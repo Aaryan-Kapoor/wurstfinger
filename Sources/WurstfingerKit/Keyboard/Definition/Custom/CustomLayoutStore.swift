@@ -21,6 +21,13 @@ struct CustomLayoutStore: Sendable {
     /// at launch and what the list screen shows.
     static let maxLayouts = 16
 
+    /// Most files one read opens. The files that count are the first
+    /// `maxLayouts` that validate, so a few broken ones may precede them; past
+    /// this many (by file name) the rest are rejected unread. Bounds what a
+    /// directory full of junk can cost the keyboard extension at launch, where
+    /// each file is read and validated (a validation builds a whole keyboard).
+    static let maxFilesRead = 4 * maxLayouts
+
     let directory: URL
 
     init(directory: URL) {
@@ -64,7 +71,8 @@ struct CustomLayoutStore: Sendable {
     ///
     /// A file is accepted only if it is within the size cap, decodes and
     /// validates, and its file name is its id; extra files beyond `maxLayouts`
-    /// (by file name) are rejected. Never throws: an unreadable directory is an
+    /// (by file name) are rejected, and so is every file after the first
+    /// `maxFilesRead` unread. Never throws: an unreadable directory is an
     /// empty store, and a bad file is reported in `rejected`, so one corrupt
     /// layout cannot take the others — or the keyboard — down with it.
     func load() -> Contents {
@@ -74,8 +82,14 @@ struct CustomLayoutStore: Sendable {
         ) else { return Contents() }
 
         var contents = Contents()
+        var filesRead = 0
         for url in entries.filter({ $0.pathExtension == "json" }).sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) {
             let name = url.deletingPathExtension().lastPathComponent
+            guard filesRead < Self.maxFilesRead else {
+                contents.rejected[name] = .tooManyLayouts(limit: Self.maxLayouts)
+                continue
+            }
+            filesRead += 1
             if let size = try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize,
                size > CustomLayoutCodec.maxDocumentBytes {
                 contents.rejected[name] = .tooLarge(bytes: size)
