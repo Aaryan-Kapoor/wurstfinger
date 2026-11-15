@@ -43,7 +43,8 @@ enum LabPipeline {
     /// Persian and Urdu subtitles are often written with the Arabic yeh and kaf.
     static let foldings: [String: [String: String]] = [
         "fa_IR": ["\u{064A}": "\u{06CC}", "\u{0643}": "\u{06A9}"],
-        "ur": ["\u{064A}": "\u{06CC}", "\u{0643}": "\u{06A9}"],
+        // Urdu text from the web mixes Arabic forms in: heh ه for ہ, yeh ي for ی, kaf ك for ک, ۀ for ۂ.
+        "ur": ["\u{0647}": "\u{06C1}", "\u{064A}": "\u{06CC}", "\u{0643}": "\u{06A9}", "\u{06C0}": "\u{06C2}"],
     ]
 
     /// Corpus table → typable characters for `problem`.

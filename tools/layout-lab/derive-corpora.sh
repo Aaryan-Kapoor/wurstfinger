@@ -16,7 +16,7 @@ SOURCE="source=OpenSubtitles 2018 via FrequencyWords 2018 (hermitdave); license=
 # layout id : FrequencyWords code
 for pair in en_US:en de_DE:de fr_FR:fr es_ES:es ca_ES:ca it_IT:it pt_PT:pt pl_PL:pl hr_HR:hr sv_SE:sv \
             fi_FI:fi et_EE:et tl_PH:tl vi_VN:vi ru_RU:ru uk_UA:uk el_GR:el \
-            he_IL:he ar:ar fa_IR:fa; do
+            he_IL:he ar:ar fa_IR:fa ur:ur; do
   id="${pair%%:*}"; code="${pair##*:}"
   sha="$(shasum -a 256 "$RAW/${code}_full.txt" | cut -d' ' -f1)"
   "$LAB" derive --language "$id" --words "$RAW/${code}_full.txt" --out "$OUT/$id.tsv" \

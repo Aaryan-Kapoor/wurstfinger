@@ -51,10 +51,11 @@ phone than newspaper or web text is.
 | `he_IL` | `he_full.txt` | `a69a3f390eb53183bf191c4eac18282592992aef9ff184c5dcf8919f5ea0f773` |
 | `ar` | `ar_full.txt` | `ebb36aeae78e609adc552b32ec91ff2490e1170f8b244d22eef9952d2096d610` |
 | `fa_IR` | `fa_full.txt` | `e46be953c3a0b3db74ea307c6f6a21ce2c72217bde0ab1d79b3809209ab52501` |
+| `ur` | `ur_full.txt` | `b148f7f3e2b937e01fc4968ef00c4cc5f53b400ac714d362f41dee09fd083154` |
 | `ca_ES` | `ca_full.txt` | `af4cc4d9e44a3d40a5fe038d677003ae725aecc02d1fae37023f9264749c8c5f` |
 | `et_EE` | `et_full.txt` | `8b0dbb18efd797a497878caae9597fe230be5162dcc6a39d4a35299bb8c60e14` |
 
-`pt_PT` uses the `pt` list, which is not split by variety; `en_US` uses `en`. Persian text written with the Arabic yeh and kaf (ي ك) is folded to the Persian ی and ک when a table is derived (`LabPipeline.foldings`).
+`pt_PT` uses the `pt` list, which is not split by variety; `en_US` uses `en`. Persian text written with the Arabic yeh and kaf (ي ك) is folded to the Persian ی and ک when a table is derived, and Urdu text's Arabic ه ي ك ۀ to ہ ی ک ۂ (0.35 % of Urdu tokens; `LabPipeline.foldings`). The Urdu list is small (9 592 words, 177 k tokens, comparable to Tagalog's), so its numbers carry more noise.
 
 ## What a table keeps and drops
 
@@ -70,7 +71,4 @@ phone than newspaper or web text is.
 
 ## Not here
 
-* **Urdu** has no table although FrequencyWords has a list (`ur_full.txt`, sha256
-  `b148f7f3e2b937e01fc4968ef00c4cc5f53b400ac714d362f41dee09fd083154`): the Urdu layout has no ہ, ھ or ۔, so about a third of the
-  corpus cannot be typed on it and statistics from the rest would be misleading (docs/layout-science.md).
 * Thai, Hindi, Japanese and Korean: the model does not apply to them (same document).

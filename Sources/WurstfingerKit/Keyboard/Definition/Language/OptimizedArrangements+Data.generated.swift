@@ -635,6 +635,62 @@ extension OptimizedArrangements {
             GridSlot.bottomCenter: [.swipeLeft: "м", .swipeRight: "я", .swipeUp: "п", .tap: "е"],
             GridSlot.bottomRight: [.swipeUpLeft: "щ", .tap: "в"],
         ],
+        // اردو (Urdu): cost 1.7187 vs shipped 1.8040 bits per character; moved د ن ک ے
+        "ur_optimized": [
+            GridSlot.topLeft: [.swipeDown: "ۂ", .swipeDownRight: "ق", .swipeLeft: "ھ", .swipeUp: "ٹ", .tap: "ہ"],
+            GridSlot.topCenter: [
+                .swipeDown: "خ", .swipeDownLeft: "ض", .swipeDownRight: "پ", .swipeUp: "ُ",
+                .swipeUpLeft: "ِ", .swipeUpRight: "َ", .tap: "ب",
+            ],
+            GridSlot.topRight: [.swipeDownLeft: "چ", .tap: "م"],
+            GridSlot.midLeft: [
+                .swipeDown: "د", .swipeDownRight: "ط", .swipeRight: "ح", .swipeUp: "ۓ",
+                .swipeUpRight: "ص", .tap: "ی",
+            ],
+            GridSlot.center: [
+                .swipeDown: "ت", .swipeDownLeft: "ل", .swipeDownRight: "ن", .swipeLeft: "س",
+                .swipeRight: "آ", .swipeUp: "ج", .swipeUpLeft: "ف", .swipeUpRight: "ش",
+                .tap: "ا",
+            ],
+            GridSlot.midRight: [
+                .swipeDown: "ڈ", .swipeDownLeft: "ع", .swipeLeft: "ز", .swipeUp: "ڑ",
+                .swipeUpLeft: "ژ", .tap: "ر",
+            ],
+            GridSlot.bottomLeft: [.swipeUp: "ّ", .swipeUpLeft: "ٓ", .swipeUpRight: "ؤ", .tap: "و"],
+            GridSlot.bottomCenter: [
+                .swipeDownRight: "ئ", .swipeLeft: "ء", .swipeRight: "ں", .swipeUp: "ث",
+                .swipeUpLeft: "ظ", .swipeUpRight: "غ", .tap: "ک",
+            ],
+            GridSlot.bottomRight: [.swipeLeft: "ذ", .swipeUp: "ً", .swipeUpLeft: "گ", .swipeUpRight: "ْ", .tap: "ے"],
+        ],
+        // اردو (Urdu): cost 1.5632 vs shipped 1.8040 bits per character; moved ء آ ؤ ئ ا ب ت ث ج ح خ د ذ ز س ش ص ض ط ظ ع غ ف ق ل م ن و ً َ ُ ِ ّ ْ ٓ ٹ پ چ ڈ ڑ ژ ک گ ں ھ ہ ۂ ی ے ۓ
+        "ur_full": [
+            GridSlot.topLeft: [.swipeDown: "ّ", .swipeDownRight: "ژ", .swipeLeft: "ُ", .swipeUp: "ۂ", .tap: "ج"],
+            GridSlot.topCenter: [
+                .swipeDown: "ء", .swipeDownLeft: "ً", .swipeDownRight: "َ", .swipeUp: "ِ",
+                .swipeUpLeft: "ْ", .swipeUpRight: "ۓ", .tap: "ھ",
+            ],
+            GridSlot.topRight: [.swipeDownLeft: "ٓ", .tap: "ٹ"],
+            GridSlot.midLeft: [
+                .swipeDown: "ش", .swipeDownRight: "ڑ", .swipeRight: "ع", .swipeUp: "غ",
+                .swipeUpRight: "ذ", .tap: "و",
+            ],
+            GridSlot.center: [
+                .swipeDown: "ں", .swipeDownLeft: "ق", .swipeDownRight: "ئ", .swipeLeft: "ل",
+                .swipeRight: "گ", .swipeUp: "چ", .swipeUpLeft: "ز", .swipeUpRight: "ص",
+                .tap: "ی",
+            ],
+            GridSlot.midRight: [
+                .swipeDown: "ف", .swipeDownLeft: "ڈ", .swipeLeft: "ط", .swipeUp: "ض",
+                .swipeUpLeft: "ث", .tap: "ر",
+            ],
+            GridSlot.bottomLeft: [.swipeUp: "د", .swipeUpLeft: "ؤ", .swipeUpRight: "خ", .tap: "ہ"],
+            GridSlot.bottomCenter: [
+                .swipeDownRight: "ے", .swipeLeft: "ن", .swipeRight: "ت", .swipeUp: "م",
+                .swipeUpLeft: "ب", .swipeUpRight: "س", .tap: "ا",
+            ],
+            GridSlot.bottomRight: [.swipeLeft: "پ", .swipeUp: "آ", .swipeUpLeft: "ح", .swipeUpRight: "ظ", .tap: "ک"],
+        ],
         // Tiếng Việt (Vietnamese-Telex): cost 1.6629 vs shipped 1.7240 bits per character; moved e f i z
         "vi_VN_optimized": [
             GridSlot.topLeft: [.swipeDown: "đ", .swipeDownRight: "v", .tap: "a"],

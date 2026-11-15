@@ -127,7 +127,7 @@ struct LayoutProblemTests {
     }
 
     @Test func theCaselessRightToLeftLayoutsAreProblemsToo() throws {
-        for id in ["he_IL", "ar", "fa_IR"] {
+        for id in ["he_IL", "ar", "fa_IR", "ur"] {
             let problem = try LayoutProblem(languageId: id)
             #expect(problem.movableSlots.count >= 22, "\(id)")
         }
@@ -381,7 +381,7 @@ struct OptimizedVariantTests {
                        "pt_PT": "O coração não tem razão", "hr_HR": "Čovjek je šetao", "uk_UA": "Добрий день",
                        "vi_VN": "xin chao", "tl_PH": "Magandang umaga po", "ca_ES": "Bon dia, com estàs",
                        "et_EE": "Tere hommikust", "en_US": "the quick brown fox jumps over the lazy dog",
-                       "he_IL": "שלום עולם מה שלומך", "ar": "مرحبا بالعالم", "fa_IR": "سلام دنیا"]
+                       "he_IL": "שלום עולם מה שלומך", "ar": "مرحبا بالعالم", "fa_IR": "سلام دنیا", "ur": "آپ کیسے ہیں"]
         var checked = 0
         for id in Self.table.keys.sorted() {
             guard let sample = samples[baseId(id)] else { continue }
@@ -545,7 +545,7 @@ struct FormTravelTests {
     }
 
     @Test func everyCharacterOfTheBaseStillHasAGestureInTheCaselessVariants() throws {
-        for base in ["he_IL", "ar", "fa_IR"] {
+        for base in ["he_IL", "ar", "fa_IR", "ur"] {
             for suffix in ["optimized", "full"] {
                 let id = "\(base)_\(suffix)"
                 let variant = try #require(KeyboardRegistry.load(id: id))
@@ -567,11 +567,11 @@ struct FormTravelTests {
         }
     }
 
-    @Test func caselessVariantsAreRegisteredAndUrduAndThaiAreNot() {
-        for id in ["he_IL", "ar", "fa_IR"] {
+    @Test func caselessVariantsAreRegisteredAndThaiAndTheComposedScriptsAreNot() {
+        for id in ["he_IL", "ar", "fa_IR", "ur"] {
             #expect(OptimizedArrangements.table["\(id)_optimized"] != nil && OptimizedArrangements.table["\(id)_full"] != nil, "\(id)")
         }
-        for id in ["ur", "th_TH", "hi_IN", "ja_JP", "ko_KR"] {
+        for id in ["th_TH", "hi_IN", "ja_JP", "ko_KR"] {
             #expect(OptimizedArrangements.table["\(id)_optimized"] == nil, "\(id) is not modelled")
         }
     }
@@ -601,7 +601,7 @@ struct StartingLayoutTests {
     }
 
     @Test func everythingElseStartsOnItself() {
-        for id in ["ur", "th_TH", "hi_IN", "ja_JP", "ko_KR", "en_US_thumbkey", "de_DE_optimized", "de_DE_full", "no_such_layout"] {
+        for id in ["th_TH", "hi_IN", "ja_JP", "ko_KR", "en_US_thumbkey", "de_DE_optimized", "de_DE_full", "no_such_layout"] {
             #expect(LanguageSettings.startingLayoutId(for: id) == id, "\(id)")
         }
     }

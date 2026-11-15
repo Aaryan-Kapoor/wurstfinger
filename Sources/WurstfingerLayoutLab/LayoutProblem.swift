@@ -59,7 +59,6 @@ struct LayoutProblem {
     /// Layouts the model is not applied to even though their definition looks
     /// ordinary, and why.
     static let notModelled: [String: String] = [
-        "ur": "the Urdu layout has no ہ (heh goal) and no ھ (do-chashmee heh) anywhere, the two commonest letters after alef: about a third of an Urdu corpus is untypable on it, so statistics from the typable rest would describe text nobody writes; fix the layout first",
         "th_TH": "Thai is written without spaces and builds syllables from vowel and tone marks that stack on a consonant; there is no word list to take key-press statistics from",
     ]
 

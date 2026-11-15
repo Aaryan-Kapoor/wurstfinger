@@ -479,8 +479,7 @@ and `optimized-*` in `swift run WurstfingerSnapshots`.
 
 ## Per-language optimization (`layoutlab`)
 
-The English work above is one language, done by hand-run Python. Every Latin, Greek, Cyrillic, Hebrew, Arabic and
-Persian layout now gets the same treatment from one reusable pipeline, driven by that
+The English work above is one language, done by hand-run Python. Every Latin, Greek, Cyrillic, Hebrew, Arabic, Persian and Urdu layout now gets the same treatment from one reusable pipeline, driven by that
 language's own text. It is a Swift tool (`Sources/WurstfingerLayoutLab`, product `layoutlab`)
 because it reads the real `KeyboardDefinition`s: what may move and what must stay is read from
 the layout the app ships, not transcribed.
@@ -505,7 +504,7 @@ the layout's own compose trigger (`ü` is `u` then the diaeresis key, checked ag
 compositions the app performs count); the 🅒 accent-cycle key pressed as often as the cycle needs (French `ï`);
 for Vietnamese the Telex sequence (`ế` is `e e s`). So accented languages are optimized together with the fixed
 positions of their triggers. 77 to 100 % of the word types of each list survive this filter
-(Greek 77 %, Russian 85 %, Ukrainian 83 %, Hebrew 88 %, Persian 87 %, Arabic 65 %, the rest above 93 %; `meta words_kept` in each table). Arabic loses a third because its subtitles carry Latin text, digits and diacritics the layout has no key for; Persian text written with the Arabic yeh and kaf is folded to the Persian ی and ک first (`LabPipeline.foldings`).
+(Greek 77 %, Russian 85 %, Ukrainian 83 %, Hebrew 88 %, Persian 87 %, Urdu 92 %, Arabic 65 %, the rest above 93 %; `meta words_kept` in each table). Arabic loses a third because its subtitles carry Latin text, digits and diacritics the layout has no key for; Persian text written with the Arabic yeh and kaf is folded to the Persian ی and ک first, and Urdu text's Arabic heh, yeh, kaf and ۀ to ہ, ی, ک and ۂ (`LabPipeline.foldings`); for Urdu that touches 0.35 % of word tokens (131 of 9 592 word types: ي 0.21 %, ك 0.10 %, ه 0.04 %).
 
 **Cost.** The model of the English section, ported to Swift (`CostModel.swift`): Fitts pointing in bits on the real 393 pt
 geometry, stroke bits for the swipe, the same-key floor, one thumb. `CostModelParityTests` scores the shipped
@@ -526,7 +525,7 @@ English layouts and both optimizer outputs on the same table in Swift and requir
 steepest-descent polish), generator `SplitMix64` seeded 0...239, so a run is byte-for-byte reproducible
 (`OptimizerTests.theSameSeedGivesTheSameLayoutAndCost`). *Gentle* is the best layout with K = 4 (the English
 frontier's best gain per move); *full* is K unbounded. Re-running three languages with seed 1000 gave the same
-full optimum and a gentle one within 0.03 % of the first. In Swift release the whole pipeline for 20 languages takes five to ten minutes.
+full optimum and a gentle one within 0.03 % of the first. In Swift release the whole pipeline for 21 languages takes five to ten minutes.
 
 **Results** (bits per character, one thumb, 393 pt; shipped = the standard layout of that language under its own corpus):
 
@@ -551,6 +550,7 @@ full optimum and a gentle one within 0.03 % of the first. In Swift release the w
 | Svenska (Swedish) `sv_SE` | 100.0 % | 1.7508 | 1.6961 | -3.12 % | 1.5711 | -10.26 % | a d s |
 | Tagalog (Filipino) `tl_PH` | 100.0 % | 1.7471 | 1.5884 | -9.09 % | 1.4464 | -17.21 % | a e g o |
 | Українська (Ukrainian) `uk_UA` | 100.0 % | 1.7459 | 1.7114 | -1.98 % | 1.6265 | -6.84 % | п у ю я |
+| اردو (Urdu) `ur` | 100.0 % | 1.8040 | 1.7187 | -4.73 % | 1.5632 | -13.35 % | د ن ک ے |
 | Tiếng Việt (Vietnamese-Telex) `vi_VN` | 100.0 % | 1.7240 | 1.6629 | -3.55 % | 1.5138 | -12.19 % | e f i z |
 
 Frontier (best cost with at most K letters moved, change against the shipped layout):
@@ -576,6 +576,7 @@ Frontier (best cost with at most K letters moved, change against the shipped lay
 | `sv_SE` | -1.67 % | -3.12 % | -5.17 % | -6.40 % | -10.26 % (26) |
 | `tl_PH` | -6.21 % | -9.09 % | -10.70 % | -11.80 % | -17.21 % (27) |
 | `uk_UA` | -1.31 % | -1.98 % | -2.69 % | -3.50 % | -6.84 % (32) |
+| `ur` | -2.37 % | -4.73 % | -5.99 % | -6.76 % | -13.35 % (50) |
 | `vi_VN` | -2.24 % | -3.55 % | -4.85 % | -5.82 % | -12.19 % (25) |
 
 Hand-shipped variants, scored under the same corpus (never regenerated):
@@ -604,7 +605,7 @@ Reading it:
   not modelled, and four letters moved is the part of the model gain that survives re-weighting the constants for English; the larger
   full-optimum gains are the most model-dependent (the English section's perturbation analysis applies).
 
-**Caseless right-to-left scripts (Hebrew, Arabic, Persian).** What a slot types besides its letter is a *form*: Hebrew's final letters
+**Caseless right-to-left scripts (Hebrew, Arabic, Persian, Urdu).** What a slot types besides its letter is a *form*: Hebrew's final letters
 ך ף ץ (and ן) are the return swipe of כ פ צ נ, a Persian or Arabic letter's return swipe is its dotted or hamza sibling. The model carries
 the form with its letter:
 
@@ -615,14 +616,13 @@ the form with its letter:
 * a character that is a letter on a key is typed there, and the form is used only for what has no key (ך ף ץ);
 * tatweel ـ (a modifier letter, a decoration) and the harakat stay put, with the ZWNJ on tatweel's return swipe.
 
-Corpora: FrequencyWords 2018 `he`, `ar`, `fa`, same licence handling. Results are in the table above (Arabic and Persian gain the most, about
-4 % gentle and 10-11 % full, because their layouts' letter order was never tuned to their frequencies; Hebrew the least).
+Corpora: FrequencyWords 2018 `he`, `ar`, `fa`, `ur`, same licence handling. Results are in the table above (Arabic, Persian and Urdu gain the most, about
+4-5 % gentle and 10-13 % full, because their layouts' letter order was never tuned to their frequencies; Hebrew the least).
 
 **Languages the model does not fit** (skipped, with the reason `LayoutProblem` throws):
 
 | layout | why |
 | --- | --- |
-| Urdu | **the layout cannot type Urdu.** It has no ہ (heh goal), no ھ (do-chashmee heh) and no ۔ (full stop), the commonest letters after alef: they are in 35 % of the corpus's tokens (the alphabet test records "the reference layout has no ہ ... anywhere"). A table built from the typable rest would describe text nobody writes, so no corpus is checked in. Fix the layout first (it needs positions for ہ and ھ), then it fits the model like Persian |
 | Thai | written without spaces, syllables built from vowel and tone marks that stack on a consonant, and no 2018 word list; the model has no way to say what a "word" costs |
 | Hindi | vowel signs and conjuncts are built by sequential combining (`combineRuleSet`): the character stream is not the key stream |
 | Japanese (hiragana, katakana) | kana voicing and small kana are sequential combining on per-slot return outputs; a word list is not segmented |
@@ -632,7 +632,7 @@ Corpora: FrequencyWords 2018 `he`, `ar`, `fa`, same licence handling. Results ar
 
 The pipeline writes `OptimizedArrangements+Data.generated.swift`: variant id to key slot to gesture to letter. A variant
 `<id>_optimized` (gentle) or `<id>_full` is the base language's own declaration built under another id; `GridKeyboardFactory`
-substitutes the letters (`OptimizedArrangements.applying`) and nothing else differs. 40 variants ship (20 languages x 2).
+substitutes the letters (`OptimizedArrangements.applying`) and nothing else differs. 42 variants ship (21 languages x 2).
 
 **UX.** The Languages list keeps one row per language. A row of a language that is **on** and has variants carries a *layout menu*
 (Standard, Optimized, Fully optimized); rows that are off stay plain, so the list reads cleanly. The row's subtitle says which
