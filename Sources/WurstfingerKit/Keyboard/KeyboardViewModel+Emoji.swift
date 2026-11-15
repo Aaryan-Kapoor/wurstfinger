@@ -17,12 +17,20 @@ extension KeyboardViewModel {
         emojiRecentsAreUnsaved = true
     }
 
-    /// Settings reloaded: take what the store holds, unless emoji typed since
-    /// the last write are still waiting for it (the store is behind us then).
-    func reloadEmojiRecents() {
-        guard !emojiRecentsAreUnsaved else { return }
-        let stored = EmojiRecents.load(from: sharedDefaults)
-        if stored != emojiRecents { emojiRecents = stored }
+    /// Settings reloaded: take the recents the store holds, unless emoji typed
+    /// since the last write are still waiting for it (the store is behind us
+    /// then), and the skin tone. A tone that changed rebuilds the pages at once:
+    /// the preference is set in the host app, so the pages are not under a thumb.
+    func reloadEmojiSettings() {
+        if !emojiRecentsAreUnsaved {
+            let stored = EmojiRecents.load(from: sharedDefaults)
+            if stored != emojiRecents { emojiRecents = stored }
+        }
+        let tone = EmojiSkinTone.load(from: sharedDefaults)
+        if tone != emojiSkinTone {
+            emojiSkinTone = tone
+            refreshEmojiPages()
+        }
     }
 
     /// The emoji mode is about to be entered from another mode, or left for one.
@@ -34,19 +42,21 @@ extension KeyboardViewModel {
         let wasEmoji = EmojiLayouts.isEmojiMode(oldMode)
         let isEmoji = EmojiLayouts.isEmojiMode(newMode)
         if isEmoji, !wasEmoji {
-            refreshRecentKey()
+            refreshEmojiPages()
         } else if wasEmoji, !isEmoji {
             saveEmojiRecents()
         }
     }
 
-    /// Rebuilds the emoji pages around `emojiRecents` when the recent key is
-    /// out of date.
-    private func refreshRecentKey() {
-        guard let definition = currentDefinition, definition.mode(ModeNames.emoji) != nil,
-              definition.mode(ModeNames.emoji)?.keys[GridSlot.recent] != EmojiLayouts.recentKey(emojiRecents)
+    /// Rebuilds the emoji pages around `emojiRecents` and `emojiSkinTone` when
+    /// either is out of date: the recent key differs from what the pages hold,
+    /// or the pages were built in another tone.
+    private func refreshEmojiPages() {
+        guard let definition = currentDefinition, let pages = definition.mode(ModeNames.emoji),
+              emojiPagesTone != emojiSkinTone || pages.keys[GridSlot.recent] != EmojiLayouts.recentKey(emojiRecents)
         else { return }
-        let updated = EmojiLayouts.applying(emojiRecents, to: definition)
+        let updated = EmojiLayouts.applying(emojiRecents, tone: emojiSkinTone, to: definition)
+        emojiPagesTone = emojiSkinTone
         currentDefinition = updated
         compiledDefinition = compiledDefinition?.replacing([ModeNames.emoji, ModeNames.emojiMore], from: updated)
     }

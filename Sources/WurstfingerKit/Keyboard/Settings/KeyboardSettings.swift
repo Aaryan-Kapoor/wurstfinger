@@ -134,6 +134,9 @@ enum SettingsKey: String, CaseIterable, Sendable {
     // EMOJI MODE: the recent key's nine emoji, newest first (`EmojiRecents`).
     // Read when settings reload, written when the emoji mode is left.
     case emojiRecents
+    /// EMOJI MODE: the skin tone of the hands and people, 0 (default) to 5
+    /// (`EmojiSkinTone`). Read when settings reload.
+    case emojiSkinTone
 }
 
 // MARK: - Haptic Settings

@@ -18,7 +18,7 @@ import Foundation
 enum EmojiText {
     /// Whether `text` starts with an emoji in its colour presentation: a
     /// scalar that is emoji by default (😂), or a text-default scalar that
-    /// carries the emoji selector U+FE0F (❤️, ☀️, ✌️).
+    /// carries the emoji selector U+FE0F (❤️, ☀️, ✌️) or a skin-tone modifier.
     ///
     /// The selector check is why this is not just `properties.isEmoji`: that
     /// property is also true of the ASCII digits, `#` and `*` (keycap bases),
@@ -29,7 +29,8 @@ enum EmojiText {
         let properties = first.properties
         if properties.isEmojiPresentation { return true }
         guard properties.isEmoji, first.value > 0xFF else { return false }
-        return scalars.contains { $0.value == 0xFE0F }
+        // The selector, or a skin-tone modifier after a text-default base (☝🏽).
+        return scalars.contains { $0.value == 0xFE0F || (0x1F3FB ... 0x1F3FF).contains($0.value) }
     }
 
     /// Whether `text` is exactly one emoji: one grapheme cluster that

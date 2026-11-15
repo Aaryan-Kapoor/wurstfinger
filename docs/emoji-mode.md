@@ -116,23 +116,28 @@ as emoji everywhere.
 
 ## 4. Decisions
 
-**Skin tones: not in the base set.** Every hand is the default yellow. A scheme
-that works would be one stored preference (a tone, off by default) applied to
-every emoji that has `Emoji_Modifier_Base` as it is typed, by a pipeline step
-after the text input, which keeps every binding one grapheme cluster (base plus
-modifier is one) and the hint and the typed emoji one tone. It needs a
-Settings screen (a picker with six rows and its 22 translations) and a note in
-the guide that hints show the default tone; both are outside this change, so it
-is a follow-up, not a half-built option. Putting the tones on the map instead
-would multiply every hand cell by five, and a long press that cycles through
-them is not possible (a hold fires once).
+**Skin tones: one preference, not in the base set.** The map holds every hand
+in its default (yellow) form. Settings › General › Emoji Skin Tone picks one of
+six tones, shown as the 👍 in each; `EmojiSkinTone` then turns the emoji that
+have tone variants into base plus Fitzpatrick modifier **when the pages are
+built** (`EmojiLayouts.modes(tone:)`), not on each keystroke. Building is where
+it belongs: the hint, the guide card, VoiceOver and the typed text all read the
+same binding, so the key shows what it types, and a keystroke does exactly
+what it did before (0 allocations, bench rows 8q). A base and its modifier are
+one grapheme cluster, and a test holds every emoji of the map in every tone to
+that. Which emoji take a tone is `Emoji_Modifier_Base` of the single-scalar
+emoji (33 of the 234: the hands, 🙇 🤷 🤦 💃 🕺 🧘 🛌 and the like), checked
+against the variants listed in `emoji-test.txt` for Emoji 15.0; faces, hearts
+and sequences are left alone. The recent key holds what was typed, in the tone
+it was typed in. The view model reads the preference when settings reload and
+rebuilds the pages when it changed (and on entering the mode, for a freshly
+loaded layout).
 
 **Long press: it types what the tap types.** The hold is an opt-in setting
 (off, digits, capitals) and the engine arms no timer when it is off, so a
 hold cannot be the way to anything essential. It must still be bound: an
 unbound hold falls through to the numeric mode's ghost key and would type the
-key's digit among the emoji. The skin-tone preference above would make the
-hold useful later (a hold types the untoned hand).
+key's digit among the emoji.
 
 **Recents.** The recent key is nine emoji in the same 3x3 shape. It is read from
 the shared defaults when settings reload (never per keystroke), kept in memory
@@ -172,11 +177,25 @@ list and holds every binding to one grapheme cluster.
 practising the letter layout from memory; an emoji is the content of the mode,
 so `LabelCategory` treats it as functional (always visible).
 
-**Size.** An emoji is as wide as it is tall and nine share a key. The centre
-emoji is drawn at 0.68 of the letter size and a hint at 0.74 of the hint size
-(`KeyTypography.centerEmoji`, `hintEmoji`), which keeps the three hints in a
-row and the centre clear of each other at the default key size and on the
-smallest.
+**Size and fit.** An emoji is as wide as it is tall and nine share a key, so
+emoji are sized as a fraction of the key (`KeyTypography.emojiHintFraction`
+0.19, `emojiCenterFraction` 0.28), not from the letter sizes, which are clamped
+(on an iPad the centre stopped growing while the hints did, until the
+prototype was the size of its neighbours). Then `HintFit` scales down any hint
+or centre glyph whose ink would not fit its cell, never below 0.7, so nothing
+runs into its neighbour; it is the same rule for every script (it was found
+with Arabic and Persian, where three letters in a row read as one blob). It
+measures with Core Text and caches per text and size, so the `Canvas`, the
+view-stack renderer and the centre label use one number and a redraw during
+an animation shapes nothing.
+
+`EmojiInkAudit` is the evidence: it renders every glyph the way the key draws
+it, reads the ink back from the pixels and reports overflow and any two
+glyphs of a key closer than a point. `swift run WurstfingerSnapshots
+--emoji-audit` prints it for five key sizes (all six tones) and for the letter
+keys of every layout; `EmojiInkAuditTests` pins the result. A glyph the
+system's emoji font itself draws incomplete (🫡 is cropped at its advance on
+the macOS this was written on) is invisible to it, because cropped ink is ink.
 
 ## 5. Implementation map
 
@@ -194,6 +213,9 @@ smallest.
 | Compiled tables for the rebuilt pages | `CompiledDefinition.replacing(_:from:)` |
 | A circle that turns the page | hook in `handleCircular` (a `.switchMode` binding) |
 | Hint canvas, centre label | `KeyHintCanvas.Hint.Content.emoji`, `KeyTypography` |
+| Skin tone | `Settings/EmojiSkinTone.swift`, `SettingsKey.emojiSkinTone`, the picker in `SettingsView` |
+| Fitting glyphs to their cells | `Runtime/View/HintFit.swift` |
+| The pixel audit | `WurstfingerScenarioKit/EmojiInkAudit.swift` |
 | Not spelled out | `KeyDefinition+Accessibility.characterAction` |
 | Numpad column skips the pages | `KeyboardDefinition.addingNumpadColumn` |
 
@@ -204,9 +226,11 @@ duplicate, a count, a newer emoji and a moved family.
 
 ## 6. What it costs
 
-A definition builds both pages from shared static keys (the 9+9 family keys are
-built once for the process; each layout only adds its own `abc` key). The
-compiled tables are built with the rest of the definition (and by the prewarm).
+The pages are built once per back-key label for the process and shared by every
+layout (`EmojiLayouts.sharedModes`), and so are their compiled tables
+(`EmojiLayouts.compiled`): the mode costs about 1 KB of heap per layout
+(`docs/performance.md`, row 9a). The tables follow a definition's pages only
+when they differ from the shared ones.
 The recent key's rebuild on entry compiles two modes of eleven keys. On the
 keystroke: one string comparison per key outside the emoji mode, and in it the
 check of one binding and an in-place list update (`WurstfingerBench --alloc`,

@@ -156,6 +156,12 @@ final class KeyboardViewModel {
     @ObservationIgnored var emojiRecents = EmojiRecents()
     /// Whether `emojiRecents` holds emoji typed since it was last written.
     @ObservationIgnored var emojiRecentsAreUnsaved = false
+    /// EMOJI MODE: the skin-tone preference (a snapshot, like the recents), and
+    /// the tone the loaded definition's emoji pages were built in. A freshly
+    /// loaded definition is in the default tone; the pages are rebuilt when the
+    /// two differ (`refreshEmojiPages`).
+    @ObservationIgnored var emojiSkinTone = EmojiSkinTone.none
+    @ObservationIgnored var emojiPagesTone = EmojiSkinTone.none
     /// Signature of the inputs that produced `currentDefinition` (see
     /// `definitionSignature(languageId:numpadType:)`). Kept on the view model
     /// — not the controller — so in-keyboard language switches, which load a
@@ -554,7 +560,7 @@ final class KeyboardViewModel {
         typingBehavior = TypingBehavior.load(from: sharedDefaults, reusing: typingBehavior)
         completionsConfigurationDidChange() // WORD COMPLETIONS hook
         updateTraceRecording() // WP-A: traces
-        reloadEmojiRecents() // EMOJI MODE hook
+        reloadEmojiSettings() // EMOJI MODE hook
 
         // The layout on screen was edited, or deleted, in the host app: load
         // what the registry holds now (an English fallback if it is gone).
@@ -669,6 +675,8 @@ final class KeyboardViewModel {
         saveEmojiRecents()
         completionsWillSuspend()
         traceRecorder?.flushForSuspension()
+        // The hints' ink measurements: re-measured on the next draw.
+        HintFit.evictAll()
     }
 
     /// Releases the Taptic Engine while the keyboard is off screen.

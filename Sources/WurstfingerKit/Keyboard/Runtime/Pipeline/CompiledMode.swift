@@ -375,7 +375,11 @@ struct CompiledDefinition: Sendable {
         let shifted = definition.mode(ModeNames.shifted)
         let locale = definition.locale
         modes = definition.modes.mapValues {
-            CompiledMode(mode: $0, fallbackMode: fallback, shiftedMode: shifted, locale: locale)
+            // EMOJI MODE hook: the default emoji pages are compiled once per
+            // back-key label, not once per language.
+            EmojiLayouts.isEmojiMode($0.name)
+                ? EmojiLayouts.compiled($0, fallbackMode: fallback, shiftedMode: shifted, locale: locale)
+                : CompiledMode(mode: $0, fallbackMode: fallback, shiftedMode: shifted, locale: locale)
         }
     }
 

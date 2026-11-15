@@ -124,6 +124,29 @@ nonisolated struct KeyHintCanvas: View, Animatable {
         }
 
         var gesture: GestureType { KeyView.hintGestureOrder[slot] }
+
+        /// How much smaller than normal this hint is drawn so as not to
+        /// overflow its cell; 1 for an icon or the language code. Cached
+        /// measurements (`HintFit.inkSize`), so a redraw during an animation
+        /// shapes nothing.
+        nonisolated func fit(typography: KeyTypography) -> CGFloat {
+            let metrics: HintFit.InkMetrics
+            let isEmoji: Bool
+            switch content {
+            case let .text(label, _):
+                metrics = HintFit.inkMetrics(of: label, pointSize: typography.hintPointSize)
+                isEmoji = false
+            case let .emoji(label):
+                metrics = HintFit.inkMetrics(of: label, pointSize: typography.emojiHintPointSize)
+                isEmoji = true
+            case .icon, .language: return 1
+            }
+            return HintFit.hintScale(
+                metrics: metrics, gesture: gesture, key: typography.keySize,
+                horizontalPadding: typography.hintHorizontalPadding, verticalPadding: typography.hintVerticalPadding,
+                gap: HintFit.gap(forEmoji: isEmoji)
+            )
+        }
     }
 
     let hints: [Hint]
@@ -331,8 +354,11 @@ nonisolated struct KeyHintCanvas: View, Animatable {
 
             var pass = context
             pass.opacity *= opacity
-            if lift > 0 {
-                let scale = 1 + (emphasizedScale - 1) * lift
+            // A glyph too wide for its third of the key is drawn smaller, held at
+            // the edge it hangs from (`HintFit`).
+            let fit = hint.fit(typography: typography)
+            if lift > 0 || fit != 1 {
+                let scale = (1 + (emphasizedScale - 1) * lift) * fit
                 let anchor = KeyView.hintAnchor(for: gesture)
                 let pivot = CGPoint(x: origin.x + glyph.width * anchor.x, y: origin.y + glyph.height * anchor.y)
                 pass.translateBy(x: pivot.x, y: pivot.y)
