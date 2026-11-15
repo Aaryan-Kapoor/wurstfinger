@@ -230,6 +230,10 @@ fi
 
 step "Swift Bundler: build $APP_NAME and $KEYBOARD_NAME, bundle the app"
 BUNDLE_ARGS=(bundle "$APP_NAME" -p "$BUNDLER_PLATFORM" -c "$CONFIGURATION")
+# Xcode would generate Swift symbols from the string catalog, and keys that
+# differ only by case or punctuation (Down-Left, Down Left) collide there. The
+# code looks strings up by key, so the symbols are not wanted.
+BUNDLE_ARGS+=(-Xxcodebuild STRING_CATALOG_GENERATE_SYMBOLS=NO)
 if [ "$KIND" = simulator ]; then
     # Swift Bundler signs simulator builds ad hoc by itself; it is signed again
     # below once the extension is inside.
