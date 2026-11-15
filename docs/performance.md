@@ -294,3 +294,25 @@ S1–S11 in `docs/rework-review.md`.
 
 The test suite went from ~30 s to ~11 s once every timing test ran on the
 manual clock instead of sleeping.
+
+## Third pass (completions, derived feel, emoji, optimized layouts, forgiving gestures)
+
+Release build, `WurstfingerBench --alloc` and `--memory`, same machine.
+
+| Operation | Before this round | Third pass |
+| --- | --- | --- |
+| tap / flick / long-press keystroke (8a, 8b, 8h) | 0 allocs | 0 allocs |
+| tap, flick, long-press tap with the completion row on (8j, 8k, 8j′) | – | 0 allocs (a coalesced poke of one long-lived waker) |
+| tap with the row on and a run-loop turn between keystrokes (8m) | – | 1 alloc, 40 B (resuming the waker's reader) |
+| the deferred lookup itself (8l) | – | 9 allocs, 376 B, after the keystroke |
+| tap / flick with key sounds on, a voice and stroke derived (8n, 8o, 8p) | – | 0 allocs |
+| emoji keystroke, recents reordered (8q, 8q-i) | – | 0 allocs |
+| classify (8e), trail frame (8i) | 1 alloc / 7 allocs | unchanged |
+| one keyboard view graph, marginal heap (9c) | 2.31 MB | **1.68 MB**; 6.52 MB under VoiceOver or Switch Control |
+| heap per language definition, mean (9a) | 47.4 KB | 90.3 KB (the two emoji pages in every layout) |
+
+The view graph had grown to 6.52 MB with the per-key VoiceOver actions of #231:
+SwiftUI builds a view for every custom action of every key, about 4.9 MB for
+the whole keyboard, whether or not anything reads them. They are now attached
+only while VoiceOver or Switch Control runs (`KeyAccessibilityActions`), and
+row 9c prices them separately ("per graph with VoiceOver's key actions").

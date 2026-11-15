@@ -18,9 +18,28 @@ import SwiftUI
 /// is offered too, named by character and gesture (#231). All of them
 /// dispatch through the same `onGesture` callback as a real touch, so they
 /// share the resolver chain and pipeline.
+///
+/// The custom actions exist only while VoiceOver or Switch Control runs, the
+/// assistive technologies that offer them: SwiftUI builds a view for every
+/// action of every key, about 4.9 MB of heap per keyboard (the bench's row
+/// 9c, `docs/performance.md`), which nobody else would ever use. Turning one
+/// on mid-session re-renders the keys with their actions. The activation
+/// override stays on always: it is one action, and it is what makes a key
+/// with an inert tap work under any assistive input.
 struct KeyAccessibilityActions: ViewModifier {
     let key: KeyDefinition
     let onGesture: (KeyDefinition, GestureType, Bool) -> Void
+
+    @Environment(\.accessibilityVoiceOverEnabled) private var isVoiceOverEnabled
+    @Environment(\.accessibilitySwitchControlEnabled) private var isSwitchControlEnabled
+
+    /// Offers the custom actions whatever runs: for the benchmark's row that
+    /// prices them, and for anything that inspects the actions off a device.
+    @MainActor static var offersActionsAlways = false
+
+    private var offersActions: Bool {
+        isVoiceOverEnabled || isSwitchControlEnabled || Self.offersActionsAlways
+    }
 
     /// Whether the word completion row is on (`offersCompletionAction`): the
     /// space bar's "Accept suggestion" is only worth a rotor entry then.
@@ -38,12 +57,16 @@ struct KeyAccessibilityActions: ViewModifier {
     }
 
     func body(content: Content) -> some View {
-        withActivation(content)
-            .accessibilityActions {
-                ForEach(actions, id: \.name) { action in
-                    Button { onGesture(key, action.gesture, action.isReturn) } label: { label(for: action) }
+        if offersActions {
+            withActivation(content)
+                .accessibilityActions {
+                    ForEach(actions, id: \.name) { action in
+                        Button { onGesture(key, action.gesture, action.isReturn) } label: { label(for: action) }
+                    }
                 }
-            }
+        } else {
+            withActivation(content)
+        }
     }
 
     /// A character action spells its glyph out, so VoiceOver reads "ä, swipe

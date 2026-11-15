@@ -252,6 +252,29 @@ func benchViewGraphMemory() async {
     let inserted = rig.target.inserted
     sink.withLock { $0 &+= inserted }
 
+    // The graph as VoiceOver and Switch Control get it, every key carrying its
+    // custom actions (`KeyAccessibilityActions`, attached only while one of
+    // them runs): what the actions cost the users who have them.
+    KeyAccessibilityActions.offersActionsAlways = true
+    let beforeActions = readMemory()
+    var withActions = [HostedKeyboard]()
+    for _ in 0 ..< 5 {
+        let graph = autoreleasepool { HostedKeyboard(viewModel: rig.viewModel) }
+        graph.settle()
+        withActions.append(graph)
+    }
+    let actionsCost = readMemory() - beforeActions
+    reportReading(
+        "    per graph with VoiceOver's key actions",
+        MemoryReading(heap: actionsCost.heap / 5, footprint: actionsCost.footprint / 5)
+    )
+    autoreleasepool {
+        for graph in withActions { graph.tearDown() }
+        withActions.removeAll()
+    }
+    spinRunLoop(turns: 8)
+    KeyAccessibilityActions.offersActionsAlways = false
+
     // 9e rides on 9c's machinery and runs right after it.
     await benchHintRendering()
 }
