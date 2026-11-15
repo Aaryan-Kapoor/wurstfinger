@@ -102,6 +102,24 @@ enum AppSurfaces {
         )
     }
 
+    /// The gesture trace recorder's screen, recording on, Full Access granted.
+    static func gestureTraces(scheme: ColorScheme, fullAccess: Bool = true) -> Shot {
+        ScenarioEnvironment.reset()
+        let device = Device.iPhone15
+        device.activate()
+        SharedDefaults.store.set(true, forKey: SettingsKey.expertModeEnabled.rawValue)
+        SharedDefaults.store.set(fullAccess, forKey: SettingsKey.keyboardFullAccess.rawValue)
+        SharedDefaults.store.set(fullAccess, forKey: SettingsKey.gestureTraceRecording.rawValue)
+        return Shot(
+            size: device.size, scheme: scheme,
+            content: AnyView(
+                NavigationStack { GestureTracesView() }
+                    .formStyle(.grouped).frame(width: device.width, height: device.size.height)
+            ),
+            hosted: true
+        )
+    }
+
     /// The circle behaviours (Expert): clockwise a capital, counter-clockwise a digit.
     static func circles(scheme: ColorScheme) -> Shot {
         ScenarioEnvironment.reset()

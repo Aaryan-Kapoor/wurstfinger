@@ -595,7 +595,7 @@ struct GesturePreprocessor {
 
     /// The path through a spike's neighbours must run straight on into the
     /// samples beyond them: the turn at each, as a cosine, within 40°.
-    private static let spikeMinimumContinuationCosine = CGFloat(cos(Double.pi * 40 / 180))
+    fileprivate static let spikeMinimumContinuationCosine = CGFloat(cos(Double.pi * 40 / 180))
 
     /// Removes lone samples that jump off the path sideways and come straight
     /// back: a digitizer glitch puts the finger a fraction of a key off its line
@@ -610,16 +610,16 @@ struct GesturePreprocessor {
     ///   sides are opposed). A fast circle sampled three times a turn also puts a
     ///   sample far off its neighbours' chord, but its path bends at every
     ///   sample and never goes straight on.
-    /// A path needs two samples on each side to be judged, so a glitch in the
-    /// first or last two samples is left alone (the last is the release itself).
-    /// A spike is cut and the next sample judged against the repaired path.
+    /// The first and last interior samples are judged on the one side they have
+    /// (the very first and the release itself are never cut). A spike is cut and
+    /// the next sample judged against the repaired path.
     ///
     /// In place; returns the new count.
     func filterSpikes(_ points: UnsafeMutableBufferPointer<CGPoint>) -> Int {
         var count = points.count
-        var i = 2
-        while i < count - 2 {
-            if isSpike(in: points, at: i) {
+        var i = 1
+        while i < count - 1 {
+            if isSpike(in: points, at: i, count: count) {
                 for j in i ..< count - 1 {
                     points[j] = points[j + 1]
                 }
@@ -633,13 +633,13 @@ struct GesturePreprocessor {
 
     /// Array form of `filterSpikes(_:)`.
     func filterSpikes(_ points: [CGPoint]) -> [CGPoint] {
-        guard points.count >= 5 else { return points }
+        guard points.count >= 4 else { return points }
         var copy = points
         let count = copy.withUnsafeMutableBufferPointer { filterSpikes($0) }
         return Array(copy.prefix(count))
     }
 
-    private func isSpike(in points: UnsafeMutableBufferPointer<CGPoint>, at i: Int) -> Bool {
+    private func isSpike(in points: UnsafeMutableBufferPointer<CGPoint>, at i: Int, count: Int) -> Bool {
         let a = points[i - 1], c = points[i + 1]
         let chord = CGVector(dx: c.x - a.x, dy: c.y - a.y)
         let length = hypot(chord.dx, chord.dy)
@@ -650,22 +650,32 @@ struct GesturePreprocessor {
         guard detour >= Self.spikeMinimumDetour else { return false }
 
         // The path on either side runs the same way: into the spike and out of
-        // it. A turn-back (a return swipe's tip) has the two opposed.
-        let before = CGVector(dx: a.x - points[i - 2].x, dy: a.y - points[i - 2].y)
-        let after = CGVector(dx: points[i + 2].x - c.x, dy: points[i + 2].y - c.y)
-        guard continues(before, into: after) else { return false }
-        // And, when the neighbours are far enough apart to have a direction, it
-        // runs along their chord.
-        return length < 4 || (continues(before, into: chord) && continues(chord, into: after))
+        // it. A turn-back (a return swipe's tip) has the two opposed. The first
+        // and last interior samples have only one side to look at, and judge on
+        // that one: the neighbours' chord against the stretch beyond them.
+        let before: CGVector? = i >= 2
+            ? CGVector(dx: a.x - points[i - 2].x, dy: a.y - points[i - 2].y) : nil
+        let after: CGVector? = i + 2 < count
+            ? CGVector(dx: points[i + 2].x - c.x, dy: points[i + 2].y - c.y) : nil
+        if let before, let after, !continues(before, into: after, cosine: 0) { return false }
+        guard before != nil || after != nil else { return false }
+        // When the neighbours are far enough apart to have a direction, it runs
+        // along their chord; closer together the chord is noise and only the
+        // sides can speak (and both must exist).
+        guard length >= 8 else { return before != nil && after != nil }
+        if let before, !continues(before, into: chord) { return false }
+        if let after, !continues(chord, into: after) { return false }
+        return true
     }
 
     /// Whether `second` carries on from `first` to within the continuation cone.
-    private func continues(_ first: CGVector, into second: CGVector) -> Bool {
+    private func continues(
+        _ first: CGVector, into second: CGVector, cosine: CGFloat = GesturePreprocessor.spikeMinimumContinuationCosine
+    ) -> Bool {
         let firstLength = hypot(first.dx, first.dy)
         let secondLength = hypot(second.dx, second.dy)
         guard firstLength > 0, secondLength > 0 else { return false }
-        return first.dx * second.dx + first.dy * second.dy
-            >= Self.spikeMinimumContinuationCosine * firstLength * secondLength
+        return first.dx * second.dx + first.dy * second.dy >= cosine * firstLength * secondLength
     }
 
     // MARK: - Step 3: Aspect Ratio Normalization
@@ -1006,14 +1016,28 @@ struct GestureFeatures: Sendable {
 
     /// A stroke shorter than `swipeLength` that was nonetheless quick and long
     /// enough to be a flick. Needs the time; without it (0) nothing is fast.
-    /// The finger must also *end* out there (a chord of at least 60% of the
-    /// reach): one stray sample that jumps away and straight back is a glitch in
-    /// a tap, not a stroke.
+    /// The finger must also have *meant* it: either it ends out there (a chord of
+    /// at least 60% of the reach) or it is a sustained out-and-back — a return
+    /// swipe, quick and short. One stray sample that jumps away and straight
+    /// back is a glitch in a tap, not a stroke; what tells them apart is that a
+    /// return swipe spends several samples out near its far point.
     var isFastSwipe: Bool {
         peakTime > 0
-            && chordLength >= 0.6 * maxDisplacement
+            && (chordLength >= 0.6 * maxDisplacement || isSustainedOutAndBack)
             && maxDisplacement >= thresholds.fastSwipeLength * keyScale
             && maxDisplacement >= thresholds.fastSwipeSpeed * keyScale * CGFloat(peakTime)
+    }
+
+    /// How many samples of the path lie at least half way out to its farthest
+    /// point. A glitch has one; a stroke out and back has several. Set by `extract`.
+    var samplesOut: Int = 0
+
+    /// The finger went out and came back (the return-swipe geometry) and spent
+    /// at least three samples out there: not a lone glitch.
+    private var isSustainedOutAndBack: Bool {
+        samplesOut >= 3
+            && returnRatio < thresholds.maxReturnRatio
+            && thresholds.returnDisplacementRange.contains(maxDisplacementProgress)
     }
 
     // Derived classifications (using configurable thresholds)
@@ -1071,6 +1095,13 @@ struct GestureFeatures: Sendable {
         var features = extractFeatures(from: points, thresholds: thresholds)
         features.keyScale = keyScale
         features.peakTime = peakTime
+        // Samples at least half way out: what a glitch lacks.
+        let half = features.maxDisplacement / 2
+        if half > 0, let origin = points.first {
+            var out = 0
+            for i in 0 ..< points.count where points[i].distance(to: origin) >= half { out += 1 }
+            features.samplesOut = out
+        }
         // A path that winds one and a half times or more is no return swipe,
         // whatever shape it fits (a spiral fits no circle): the fit is only
         // asked where a flat loop could be mistaken for a circle.

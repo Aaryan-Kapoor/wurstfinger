@@ -133,6 +133,11 @@ final class TouchEngine {
     private var actions = TouchEngineActions()
     private var isLongPressEnabled = false
 
+    /// WP-A (gesture traces): where flick gestures are recorded for tuning the
+    /// recognizer, when the user turned that on. Nil — the default — costs the
+    /// touch path one optional check per event and nothing else.
+    var traceSink: GestureTraceRecorder?
+
     /// Fingers currently down, in press order.
     private var tracks: [PointerTrack] = []
     /// Released tracks, reused for the next touches.
@@ -266,6 +271,11 @@ final class TouchEngine {
         switch track.kind {
         case .flick:
             track.recordFlick(.zero, at: time)
+            // WP-A: traces
+            traceSink?.began(
+                id, keyId: key.id, keySize: hit.size,
+                offset: CGPoint(x: location.x - hit.frame.midX, y: location.y - hit.frame.midY), time: time
+            )
         case let .slide(configuration):
             _ = track.recordSlide(.zero, configuration: configuration)
         }
@@ -291,6 +301,7 @@ final class TouchEngine {
             for sample in samples {
                 trail.extend(to: sample.location, from: token)
                 track.recordFlick(track.translation(to: sample.location), at: sample.time)  // WP-A
+                traceSink?.moved(id, translation: track.translation(to: sample.location), time: sample.time) // WP-A: traces
             }
         case let .slide(configuration):
             for sample in samples {
@@ -365,6 +376,7 @@ final class TouchEngine {
                 scratch: scratch
             )
             InputSignposts.end(InputSignposts.classify, InputSignposts.classifyID)
+            traceSink?.ended(id, translation: translation, time: time, classification: classification) // WP-A: traces
             trail.finish(from: track.trailToken)
             actions.released(track.key, classification)
             enqueue(PendingCommit(sequence: track.sequence, key: track.key, kind: .gesture(classification)), at: time)
@@ -620,6 +632,7 @@ final class TouchEngine {
             actions.slide(track.key, phase)
         }
         trail.cancel(from: track.trailToken)
+        traceSink?.cancelled(track.id) // WP-A: traces
         release(track)
         recycle(track)
         flushPending(at: timers.now)

@@ -480,6 +480,8 @@ extension KeyboardViewModel {
             return true
         }
 
+        // WP-A: a delete may mean the gesture before it was misread.
+        if let recorder = traceRecorder, binding.action == .deleteBackward { recorder.noteDelete() }
         let context = ActionContext(
             action: binding.action,
             binding: binding,
@@ -810,6 +812,8 @@ extension KeyboardViewModel {
 
     /// Dispatches a raw action through the pipeline (no binding context).
     func dispatchAction(_ action: KeyAction) {
+        // WP-A: a delete may mean the gesture before it was misread.
+        if let recorder = traceRecorder, action == .deleteBackward { recorder.noteDelete() }
         let context = ActionContext(action: action, binding: nil, mode: activeModeName)
         pipeline?.process(context)
     }

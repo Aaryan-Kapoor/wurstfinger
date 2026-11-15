@@ -25,6 +25,7 @@ iOS may ask you to grant "Full Access" to the keyboard. This permission is **opt
 
 - Haptic feedback (vibration when you tap keys)
 - Key sounds, when you turn them on
+- Gesture traces, when you turn them on (stored on your device, see Data Storage)
 
 Even with Full Access enabled, Wurstfinger does not transmit any data. All processing happens locally on your device.
 
@@ -42,6 +43,12 @@ The keyboard also remembers two things on your device, and nothing else of what 
 - **Learned words:** when word suggestions are on, words you type that the system dictionary does not know, so they can be suggested back to you. Kept in a file only the keyboard can read, capped at 1,500 words, and erased with "Clear Learned Words" in the app. Turn off "Learn New Words" to stop it.
 
 Neither is recorded in password, one-time-code or card-number fields, and neither ever leaves your device. Word suggestions are looked up in the system's own on-device dictionary.
+
+If you turn on **Record Gesture Traces** (Settings, Expert, Gesture Traces; off by default, and it needs Full Access), the keyboard also saves the *shape and timing* of your gestures, so the gesture recognizer can be tuned to how you type:
+
+- **What is stored:** the path of each swipe, tap or circle relative to the centre of its key, the time each point was reached, the key's size and position in the grid (for example "top left"), how the keyboard read the gesture, and whether you corrected it (deleted it and tried again on the same key).
+- **What is not stored:** the characters you typed, any text from the field or around the cursor, the language, or the time of day. A key position together with a gesture does identify a character to someone who knows the layout, which is why nothing is recorded in password, one-time-code or card-number fields, or in fields where the app turns suggestions off (URL, email address, number, username and code fields).
+- **Where it is kept:** in a file in the app group container shared by the keyboard and the app, on your device only. It holds the last 2,000 gestures and is never sent anywhere. The app shows how many traces there are, can erase them with "Clear Traces", and exports them only when you choose "Export Traces" and pick where to send the file.
 
 ## Children's Privacy
 
