@@ -8,6 +8,10 @@ name: Sideload IPA
 # `gh run download` the artifact.
 
 on:
+  # Until this is on the default branch, GitHub will not dispatch it by name, so
+  # a push to this branch builds it too.
+  push:
+    branches: [sideload]
   workflow_dispatch:
     inputs:
       configuration:
@@ -46,7 +50,7 @@ jobs:
         uses: ./.github/actions/setup-swift-bundler
 
       - name: Build the IPA
-        run: scripts/bundle-ios.sh --sideload --configuration "${{ inputs.configuration }}" --ipa "$RUNNER_TEMP/Wurstfinger-sideload.ipa"
+        run: scripts/bundle-ios.sh --sideload --configuration "${{ inputs.configuration || 'release' }}" --ipa "$RUNNER_TEMP/Wurstfinger-sideload.ipa"
 
       - name: Upload
         uses: actions/upload-artifact@v4
