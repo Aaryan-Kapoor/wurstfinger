@@ -3,17 +3,17 @@ meta	license	CC-BY-SA-4.0
 meta	list	vi_full.txt
 meta	sha256	b9063a8ec6a40fb22db9a2f8f5f90a06784669f235a95b25d5f28ae093ebaf07
 meta	source	OpenSubtitles 2018 via FrequencyWords 2018 (hermitdave)
-meta	tokens_kept	26463086
+meta	tokens_kept	26463119
 meta	url	https://github.com/hermitdave/FrequencyWords
-meta	words_kept	90425
+meta	words_kept	90435
 meta	words_seen	94644
 init	-	90
 init	.	210
 init	a	630586
-init	b	1123070
+init	b	1123072
 init	b̀	7
 init	b́	20
-init	c	3956487
+init	c	3956488
 init	c̃	2
 init	c̣	93
 init	d	364365
@@ -22,14 +22,14 @@ init	d́	11
 init	e	206475
 init	f	35428
 init	g	850040
-init	h	982045
+init	h	982046
 init	h́	10
 init	i	44907
 init	j	50010
 init	k	1271171
 init	l	1559086
 init	l̉	1
-init	m	1233889
+init	m	1233890
 init	m̀	1
 init	m̃	2
 init	n	2600353
@@ -39,10 +39,10 @@ init	q	263856
 init	r	588404
 init	s	966264
 init	s̉	1
-init	t	4189003
+init	t	4189030
 init	t́	75
 init	u	32895
-init	v	1242376
+init	v	1242377
 init	v́	119
 init	w	43624
 init	x	287921
@@ -156,13 +156,13 @@ final	d	47737
 final	d́	5
 final	e	235445
 final	f	8634
-final	g	2984907
+final	g	2984916
 final	g̣	4
 final	h	1278422
 final	h̀	4
 final	h́	171
 final	h̉	2
-final	i	3805336
+final	i	3805339
 final	j	1617
 final	k	40668
 final	l	52374
@@ -183,6 +183,7 @@ final	w	14633
 final	x	8320
 final	y	1514241
 final	z	5210
+final	ª	21
 final	ß	118
 final	à	1007810
 final	á	103259
@@ -486,6 +487,7 @@ big	b	w	50
 big	b	x	6
 big	b	y	5785
 big	b	z	5
+big	b	ª	2
 big	b	ß	10
 big	b	à	62218
 big	b	á	50716
@@ -596,6 +598,7 @@ big	c	w	29
 big	c	x	20
 big	c	y	2969
 big	c	z	90
+big	c	ª	1
 big	c	ß	20
 big	c	à	12108
 big	c	á	270306
@@ -978,12 +981,13 @@ big	h	q	43
 big	h	r	4506
 big	h	s	708
 big	h	t	4241
-big	h	u	231672
+big	h	u	231674
 big	h	v	93
 big	h	w	499
 big	h	x	7
 big	h	y	10843
 big	h	z	30
+big	h	ª	3
 big	h	ß	36
 big	h	à	185061
 big	h	á	167143
@@ -1011,7 +1015,7 @@ big	h	ø	70
 big	h	ù	16695
 big	h	ú	354359
 big	h	û	44
-big	h	ü	112
+big	h	ü	113
 big	h	ý	121
 big	h	ă	16050
 big	h	đ	17
@@ -1436,6 +1440,7 @@ big	m	w	176
 big	m	x	26
 big	m	y	7630
 big	m	z	44
+big	m	ª	1
 big	m	ß	4
 big	m	à	166355
 big	m	á	34810
@@ -1527,7 +1532,7 @@ big	n	c	12128
 big	n	d	30304
 big	n	e	39258
 big	n	f	634
-big	n	g	3682101
+big	n	g	3682110
 big	n	g̣	5
 big	n	h	1827186
 big	n	h̀	1
@@ -1820,6 +1825,7 @@ big	r	w	992
 big	r	x	117
 big	r	y	16599
 big	r	z	496
+big	r	ª	15
 big	r	ß	19
 big	r	à	8840
 big	r	á	28962
@@ -1847,7 +1853,7 @@ big	r	ø	10
 big	r	ù	3557
 big	r	ú	7189
 big	r	û	3
-big	r	ü	15
+big	r	ü	16
 big	r	ý	21
 big	r	ă	5832
 big	r	đ	6
@@ -2011,7 +2017,7 @@ big	t	d	274
 big	t	e	36362
 big	t	f	200
 big	t	g	326
-big	t	h	1369109
+big	t	h	1369114
 big	t	h́	170
 big	t	h̃	4
 big	t	i	204168
@@ -2023,7 +2029,7 @@ big	t	n	1280
 big	t	o	63220
 big	t	p	113
 big	t	q	39
-big	t	r	557926
+big	t	r	557942
 big	t	s	4906
 big	t	t	14655
 big	t	u	58646
@@ -2059,7 +2065,7 @@ big	t	ø	27
 big	t	ù	9447
 big	t	ú	8721
 big	t	û	37
-big	t	ü	4
+big	t	ü	10
 big	t	ý	398
 big	t	ă	4327
 big	t	đ	12
@@ -2145,6 +2151,7 @@ big	u	w	98
 big	u	x	529
 big	u	y	240081
 big	u	z	1233
+big	u	ª	2
 big	u	ß	9
 big	u	à	3301
 big	u	á	56560
@@ -2269,7 +2276,7 @@ big	v	ø	11
 big	v	ù	4472
 big	v	ú	540
 big	v	û	117
-big	v	ü	3
+big	v	ü	4
 big	v	ý	3
 big	v	ă	6198
 big	v	đ	43
@@ -2567,6 +2574,8 @@ big	z	ớ	27
 big	z	ờ	9
 big	z	ợ	2
 big	z	ụ	13
+big	ª	i	3
+big	ª	n	9
 big	ß	-	1
 big	ß	e	6
 big	ß	i	12
@@ -3117,6 +3126,7 @@ big	ü	s	18
 big	ü	t	14
 big	ü	u	1
 big	ü	v	4
+big	ü	ª	9
 big	ü	ö	79
 big	ý	-	22
 big	ý	.	11

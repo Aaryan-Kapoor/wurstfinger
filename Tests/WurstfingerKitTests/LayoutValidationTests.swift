@@ -51,7 +51,7 @@ struct LayoutValidationTests {
                 Issue.record("Failed to load \(info.id)")
                 continue
             }
-            if CaselessLanguages.ids.contains(info.id) {
+            if CaselessLanguages.contains(layout: info.id) {
                 // Caseless scripts have no shift affordance at all.
                 #expect(
                     definition.mode(ModeNames.shifted) == nil,

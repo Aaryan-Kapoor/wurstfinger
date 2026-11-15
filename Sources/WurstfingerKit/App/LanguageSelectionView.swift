@@ -34,20 +34,20 @@ struct LanguageSelectionView: View {
                             if let active {
                                 languageSettings.pinLanguage(active)
                             } else {
-                                languageSettings.toggleLanguage(language)
-                                languageSettings.pinLanguage(language)
+                                // Turning a language on starts it on its optimized layout, when it has one.
+                                let starting = LanguageSettings.startingLayout(for: language)
+                                languageSettings.toggleLanguage(starting)
+                                languageSettings.pinLanguage(starting)
                             }
                         },
                         onToggle: {
-                            if !languageSettings.toggleLanguage(active ?? language) {
+                            if !languageSettings.toggleLanguage(active ?? LanguageSettings.startingLayout(for: language)) {
                                 showLastLanguageAlert = true
                             }
                         },
                         onChooseLayout: { layout in
                             if let active {
                                 languageSettings.switchLayout(from: active.id, to: layout.id)
-                            } else {
-                                languageSettings.toggleLanguage(layout)
                             }
                         }
                     )
@@ -84,6 +84,17 @@ private struct LanguageRow: View {
     let onToggle: () -> Void
     let onChooseLayout: (LanguageMetadata) -> Void
 
+    /// Says which arrangement is in use: "MessagEase Layout", or "Optimized for German".
+    private var subtitle: String {
+        let name = language.locale.language.languageCode.flatMap { Locale.current.localizedString(forLanguageCode: $0.identifier) }
+            ?? language.title
+        switch active.variant {
+        case .standard: return active.family.subtitle
+        case .optimized: return String(localized: "Optimized for \(name)")
+        case .full: return String(localized: "Fully optimized for \(name)")
+        }
+    }
+
     /// `language` first, then its variants from least to most moved.
     static func layouts(of language: LanguageMetadata, in all: [LanguageMetadata]) -> [LanguageMetadata] {
         let variants = all.filter { $0.variantOf == language.id }
@@ -111,14 +122,15 @@ private struct LanguageRow: View {
                     .font(.body)
                     .foregroundColor(.primary)
 
-                Text(language.family.subtitle)
+                Text(subtitle)
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
 
             Spacer()
 
-            if layouts.count > 1 {
+            // The layout menu is for a language that is on; an off row stays plain.
+            if isEnabled, layouts.count > 1 {
                 Menu {
                     ForEach(layouts) { layout in
                         Button {

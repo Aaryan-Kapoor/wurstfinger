@@ -43,8 +43,8 @@ struct CorpusTable: Equatable {
 
     /// Adds one word, `weight` times. Characters are lowercased with `locale`
     /// and NFC-normalized; a typographic apostrophe becomes `'`.
-    mutating func add(word: String, weight: Int, locale: Locale) {
-        let normalized = Self.normalize(word, locale: locale)
+    mutating func add(word: String, weight: Int, locale: Locale, folding: [String: String] = [:]) {
+        let normalized = Self.normalize(word, locale: locale, folding: folding)
         let characters = normalized.map { String($0) }
         guard let first = characters.first, let last = characters.last else { return }
         initial[first, default: 0] += weight
@@ -54,15 +54,18 @@ struct CorpusTable: Equatable {
         }
     }
 
-    static func normalize(_ word: String, locale: Locale) -> String {
-        let folded = word.replacingOccurrences(of: "\u{2019}", with: "'")
+    /// `folding` maps characters a language's text writes in the Arabic way to the
+    /// one its layout types (Persian ی and ک for Arabic ي and ك).
+    static func normalize(_ word: String, locale: Locale, folding: [String: String] = [:]) -> String {
+        var folded = word.replacingOccurrences(of: "\u{2019}", with: "'")
+        for (from, to) in folding.sorted(by: { $0.key < $1.key }) { folded = folded.replacingOccurrences(of: from, with: to) }
         return folded.lowercased(with: locale).precomposedStringWithCanonicalMapping
     }
 
     /// Builds a table from `word count` lines (the FrequencyWords format),
     /// keeping a word only if `isTypable` accepts every character of it.
     static func fromWordList(
-        _ text: String, locale: Locale, isTypable: (String) -> Bool, limit: Int = .max
+        _ text: String, locale: Locale, folding: [String: String] = [:], isTypable: (String) -> Bool, limit: Int = .max
     ) -> (table: CorpusTable, kept: Int, seen: Int) {
         var table = CorpusTable()
         var kept = 0
@@ -73,7 +76,7 @@ struct CorpusTable: Equatable {
             let fields = line.split(separator: " ")
             guard fields.count == 2, let weight = Int(fields[1]) else { continue }
             seen += 1
-            let word = normalize(String(fields[0]), locale: locale)
+            let word = normalize(String(fields[0]), locale: locale, folding: folding)
             let characters = word.map { String($0) }
             let ok = characters.allSatisfy { character in
                 if let known = typable[character] { return known }

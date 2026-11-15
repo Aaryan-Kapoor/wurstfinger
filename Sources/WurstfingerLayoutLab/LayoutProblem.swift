@@ -38,6 +38,12 @@ struct LayoutProblem {
     /// binds ω twice). They stay as they are: only the first slot of a letter
     /// moves, so every letter has exactly one place the model can move.
     let duplicateSlots: [LabSlot: String]
+    /// What a letter's *form* gesture types, by the letter that carries it:
+    /// the return swipe of its swipe slot or the circle of its tap slot. The
+    /// pair travels with the letter when it moves (Hebrew כ and its final ך).
+    let formOfLetter: [String: String]
+    /// The reverse: a form character and the letter whose form it is.
+    let letterOfForm: [String: String]
     /// Single non-letter characters a slot commits (`'`, `-`, `.`): fixed.
     let fixedCharacters: [String: LabSlot]
     /// Compose triggers (`´`, `¨`, ...) and the slot that types each: fixed.
@@ -50,10 +56,15 @@ struct LayoutProblem {
     /// Vietnamese is typed with Telex: modified vowels are key sequences.
     let usesTelex: Bool
 
+    /// Layouts the model is not applied to even though their definition looks
+    /// ordinary, and why.
+    static let notModelled: [String: String] = [
+        "ur": "the Urdu layout has no ہ (heh goal) and no ھ (do-chashmee heh) anywhere, the two commonest letters after alef: about a third of an Urdu corpus is untypable on it, so statistics from the typable rest would describe text nobody writes; fix the layout first",
+        "th_TH": "Thai is written without spaces and builds syllables from vowel and tone marks that stack on a consonant; there is no word list to take key-press statistics from",
+    ]
+
     init(definition: KeyboardDefinition) throws {
-        guard definition.settings.autoCapitalize else {
-            throw LabError.unsupported("caseless script: return swipes and circles bind per slot (final forms, voicing)")
-        }
+        if let reason = Self.notModelled[definition.id] { throw LabError.unsupported(reason) }
         guard definition.settings.inputMethod != .hangul, definition.settings.combineRuleSet == nil else {
             throw LabError.unsupported("sequential composition: the character stream is not the key stream")
         }
@@ -69,6 +80,8 @@ struct LayoutProblem {
         var movable: [LabSlot] = []
         var base: LetterAssignment = [:]
         var duplicates: [LabSlot: String] = [:]
+        var forms: [String: String] = [:]
+        var fixedFormSlots: [String: LabSlot] = [:]
         var fixed: [String: LabSlot] = [:]
         var triggers: [String: LabSlot] = [:]
         var cycle: LabSlot?
@@ -78,18 +91,34 @@ struct LayoutProblem {
             for gesture in gestures {
                 guard let binding = key.bindings[gesture] else { continue }
                 let slot = LabSlot(key: keyIndex, gesture: gesture)
+                func formText(_ binding: KeyBinding) -> String? {
+                    if slot.gesture == .tap {
+                        if case let .commitText(text)? = key.bindings[.circularClockwise]?.action { return text }
+                        return nil
+                    }
+                    if case let .commitText(text)? = binding.returnAction { return text }
+                    return nil
+                }
                 switch binding.action {
                 case let .commitText(text):
                     guard text.count == 1, let character = text.first, !character.isWhitespace else { continue }
-                    if character.isLetter {
+                    // A modifier letter (tatweel ـ) is a decoration, not a letter of the alphabet.
+                    let isLetter = character.isLetter
+                        && character.unicodeScalars.allSatisfy { $0.properties.generalCategory != .modifierLetter }
+                    if isLetter {
                         if base.values.contains(text) {
                             duplicates[slot] = text
                         } else {
                             movable.append(slot)
                             base[slot] = text
+                            if let form = formText(binding), form != text { forms[text] = form }
                         }
-                    } else if fixed[text] == nil || slot < fixed[text]! {
-                        fixed[text] = slot
+                    } else {
+                        if fixed[text] == nil || slot < fixed[text]! { fixed[text] = slot }
+                        if let form = formText(binding), form != text, form.count == 1,
+                           fixedFormSlots[form] == nil || slot.formSlot < fixedFormSlots[form]! {
+                            fixedFormSlots[form] = slot.formSlot
+                        }
                     }
                 case let .compose(trigger):
                     if triggers[trigger] == nil || slot < triggers[trigger]! { triggers[trigger] = slot }
@@ -103,7 +132,9 @@ struct LayoutProblem {
         movableSlots = movable.sorted()
         self.base = base
         duplicateSlots = duplicates
-        fixedCharacters = fixed
+        fixedCharacters = fixed.merging(fixedFormSlots) { direct, _ in direct }
+        formOfLetter = forms
+        letterOfForm = Dictionary(forms.map { ($0.value, $0.key) }, uniquingKeysWith: { min($0, $1) })
         triggerSlots = triggers
         cycleSlot = cycle
     }

@@ -113,7 +113,13 @@ class LanguageSettings {
         // a single-language setup by seeding with the current selection.
         let stored = loadEnabledLanguageIds(from: defaults) ?? []
         let valid = stored.filter { LanguageMetadata.language(withId: $0) != nil }
-        let enabled = valid.isEmpty ? [resolvedSelected] : valid
+        // A fresh installation — nothing stored about languages at all — starts on
+        // the system language's optimized layout when it has one. Anything stored,
+        // even a bare selection from an older version, is somebody's choice and is
+        // never rewritten.
+        let isFreshInstall = stored.isEmpty && defaults.string(forKey: SettingsKey.selectedLanguageId.rawValue) == nil
+        let seed = isFreshInstall ? startingLayoutId(for: resolvedSelected) : resolvedSelected
+        let enabled = valid.isEmpty ? [seed] : valid
 
         let selected = enabled.contains(resolvedSelected) ? resolvedSelected : enabled[0]
 
@@ -124,6 +130,24 @@ class LanguageSettings {
         }
 
         return NormalizedState(selected: selected, enabled: enabled, pinned: pinned)
+    }
+
+    /// The layout a language starts on when somebody turns it on: its gentle
+    /// Optimized variant when it has one, otherwise the language itself. Only the
+    /// moment of enabling uses it. A language that is already enabled keeps
+    /// whatever layout it has, and the menu in its row is one pick away from any
+    /// arrangement, Standard included.
+    nonisolated static func startingLayoutId(for id: String) -> String {
+        guard let language = LanguageMetadata.language(withId: id),
+              language.variantOf == nil, language.family == .messagEase
+        else { return id }
+        let optimized = OptimizedArrangements.id(of: .optimized, base: id)
+        return LanguageMetadata.language(withId: optimized) == nil ? id : optimized
+    }
+
+    /// `startingLayoutId(for:)` as metadata.
+    nonisolated static func startingLayout(for language: LanguageMetadata) -> LanguageMetadata {
+        LanguageMetadata.language(withId: startingLayoutId(for: language.id)) ?? language
     }
 
     /// Re-reads the language state from the backing store, resolving

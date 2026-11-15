@@ -15,13 +15,17 @@ enum LabToken: Hashable {
     case letter(String)
     /// A press that never moves: space, punctuation, a compose trigger.
     case fixed(LabSlot)
+    /// The form gesture (return swipe or circle) of a letter's slot: it moves with the letter.
+    case form(String)
 }
 
 /// Weighted transitions between key presses, normalised to sum to one.
 struct TextModel {
     /// Movable letters, in the order of `LayoutProblem.letters`; token index i < letterCount.
     let letters: [String]
-    /// Fixed presses, after the letters in the token numbering.
+    /// Every token: the letters, then the form presses and fixed presses in order of first use.
+    let tokens: [LabToken]
+    /// Fixed presses' slots, in the order their tokens appear.
     let fixedSlots: [LabSlot]
     /// Row-major `tokenCount x tokenCount` weights.
     let weights: [Double]
@@ -33,25 +37,31 @@ struct TextModel {
     let untypable: [String: Int]
 
     var letterCount: Int { letters.count }
-    var tokenCount: Int { letters.count + fixedSlots.count }
+    var tokenCount: Int { tokens.count }
 
     init(table: CorpusTable, problem: LayoutProblem) {
         let letters = problem.letters
-        var fixed: [LabSlot] = [.space]
+        var tokens: [LabToken] = letters.map { .letter($0) }
+        var fixed: [LabSlot] = []
         var letterIndex: [String: Int] = [:]
         for (index, letter) in letters.enumerated() { letterIndex[letter] = index }
+        var dynamicIndex: [LabToken: Int] = [:]
 
-        func fixedIndex(_ slot: LabSlot) -> Int {
-            if let index = fixed.firstIndex(of: slot) { return letters.count + index }
-            fixed.append(slot)
-            return letters.count + fixed.count - 1
-        }
         func token(_ token: LabToken) -> Int {
             switch token {
-            case let .letter(letter): letterIndex[letter]!
-            case let .fixed(slot): fixedIndex(slot)
+            case let .letter(letter):
+                return letterIndex[letter]!
+            case let .fixed(slot):
+                if let index = dynamicIndex[token] { return index }
+                fixed.append(slot)
+            case .form:
+                if let index = dynamicIndex[token] { return index }
             }
+            tokens.append(token)
+            dynamicIndex[token] = tokens.count - 1
+            return tokens.count - 1
         }
+        _ = token(.fixed(.space))
 
         var expansions: [String: [LabToken]] = [:]
         var untypable: [String: Int] = [:]
@@ -88,7 +98,7 @@ struct TextModel {
             }
         }
 
-        let count = letters.count + fixed.count
+        let count = tokens.count
         var weights = [Double](repeating: 0, count: count * count)
         var total = 0.0
         for (from, to, weight) in pending {
@@ -100,6 +110,7 @@ struct TextModel {
         for (index, letter) in letters.enumerated() { letterWeights[index] = Double(occurrences[letter] ?? 0) }
 
         self.letters = letters
+        self.tokens = tokens
         fixedSlots = fixed
         self.weights = weights
         letterOccurrences = letterWeights
@@ -124,6 +135,7 @@ struct TextModel {
     ) -> [LabToken]? {
         if letterIndex[character] != nil { return [.letter(character)] }
         if let slot = problem.fixedCharacters[character] { return [.fixed(slot)] }
+        if let letter = problem.letterOfForm[character], letterIndex[letter] != nil { return [.form(letter)] }
 
         func base(_ text: String) -> LabToken? {
             if letterIndex[text] != nil { return .letter(text) }

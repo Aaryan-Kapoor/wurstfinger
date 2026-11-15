@@ -308,10 +308,11 @@ struct LanguageAlphabetCoverageTests {
             id: "el_GR", source: "Greek alphabet, final sigma, monotonic accented vowels",
             groups: ["αβγδεζηθικλμνξοπρστυφχψω", "ς", "άέήίόύώϊϋΐΰ"],
             // Monotonic Greek accents every stressed vowel, so binding all of
-            // them would cost more slots than the grid has: the tonos vowels
+            // them would cost more slots than the grid has (the 26th slot holds ί,
+            // the commonest of them, where a second ω used to sit): the tonos vowels
             // come from the acute key, the dialytika ones from the diaeresis key
             // (ΐ and ΰ from either, applied to the other mark's output).
-            indirectRoutes: [.composeKey: "άέήίόύώϊϋΐΰ"]
+            indirectRoutes: [.composeKey: "άέήόύώϊϋΐΰ"]
         ),
         AlphabetInventory(
             id: "he_IL", source: "Hebrew alphabet, final forms, geresh and gershayim",

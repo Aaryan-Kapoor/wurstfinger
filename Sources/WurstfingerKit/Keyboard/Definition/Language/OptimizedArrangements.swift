@@ -49,25 +49,59 @@ enum OptimizedArrangements {
 
     /// The letters of a variant substituted into a layout declaration. A
     /// declaration whose id has no data comes back unchanged.
+    ///
+    /// What a letter's slot types besides the letter itself travels with it: the
+    /// return swipe of a swipe slot (`returnOverrides`: Hebrew כ and its final
+    /// ך, a Greek letter and its accented capital) and the circle of a tap slot
+    /// (`circularOverrides`). Moving ך's base letter to another key therefore
+    /// moves ך with it, and a letter that lands on a tap gets the same glyph on
+    /// its circle, since a tap has no return swipe.
     static func applying(
         toId id: String,
         centerCharacters: [[String]],
-        directionalOverrides: [String: [GestureType: String]]
-    ) -> (centerCharacters: [[String]], directionalOverrides: [String: [GestureType: String]]) {
-        guard let arrangement = table[id] else { return (centerCharacters, directionalOverrides) }
+        directionalOverrides: [String: [GestureType: String]],
+        returnOverrides: [String: [GestureType: String]] = [:],
+        circularOverrides: [String: String] = [:]
+    ) -> (
+        centerCharacters: [[String]],
+        directionalOverrides: [String: [GestureType: String]],
+        returnOverrides: [String: [GestureType: String]],
+        circularOverrides: [String: String]
+    ) {
+        guard let arrangement = table[id] else {
+            return (centerCharacters, directionalOverrides, returnOverrides, circularOverrides)
+        }
         var centers = centerCharacters
         var overrides = directionalOverrides
+        var returns = returnOverrides
+        var circles = circularOverrides
+
+        // What each moving letter carries, read before anything is rewritten.
+        var formOfLetter: [String: String] = [:]
+        for (rowIndex, row) in GridSlot.allSlots.enumerated() {
+            for (columnIndex, slot) in row.enumerated() {
+                for gesture in arrangement[slot]?.keys.sorted(by: { $0.rawValue < $1.rawValue }) ?? [] {
+                    if gesture == .tap {
+                        if let form = circularOverrides[slot] { formOfLetter[centerCharacters[rowIndex][columnIndex]] = form }
+                    } else if let letter = directionalOverrides[slot]?[gesture], let form = returnOverrides[slot]?[gesture] {
+                        formOfLetter[letter] = form
+                    }
+                }
+            }
+        }
         for (rowIndex, row) in GridSlot.allSlots.enumerated() {
             for (columnIndex, slot) in row.enumerated() {
                 for (gesture, letter) in arrangement[slot] ?? [:] {
                     if gesture == .tap {
                         centers[rowIndex][columnIndex] = letter
+                        circles[slot] = formOfLetter[letter]
                     } else {
                         overrides[slot, default: [:]][gesture] = letter
+                        returns[slot, default: [:]][gesture] = formOfLetter[letter]
                     }
                 }
             }
         }
-        return (centers, overrides)
+        return (centers, overrides, returns, circles)
     }
 }

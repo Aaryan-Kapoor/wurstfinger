@@ -3,9 +3,9 @@ meta	license	CC-BY-SA-4.0
 meta	list	pl_full.txt
 meta	sha256	8b69a097e502a32a42db6ca37a74781f66ddc4027fe5d66b6d98b6467abae3cf
 meta	source	OpenSubtitles 2018 via FrequencyWords 2018 (hermitdave)
-meta	tokens_kept	237004271
+meta	tokens_kept	237004276
 meta	url	https://github.com/hermitdave/FrequencyWords
-meta	words_kept	1448690
+meta	words_kept	1448694
 meta	words_seen	1491400
 init	-	881
 init	.	1423
@@ -35,6 +35,7 @@ init	w	17838312
 init	x	25232
 init	y	162959
 init	z	15527448
+init	ª	5
 init	ß	5
 init	á	301
 init	â	7
@@ -85,13 +86,13 @@ final	b	438335
 final	c	2294134
 final	d	2266157
 final	e	37723020
-final	f	133263
+final	f	133265
 final	g	410214
 final	h	3338105
 final	i	15564188
 final	j	6655509
 final	k	5944761
-final	l	1020556
+final	l	1020557
 final	m	15149381
 final	n	3459998
 final	o	27650602
@@ -100,7 +101,7 @@ final	q	4723
 final	r	1336276
 final	s	1994786
 final	t	5019517
-final	u	6403547
+final	u	6403549
 final	v	35826
 final	w	5782342
 final	x	92469
@@ -494,7 +495,7 @@ big	e	b	2001254
 big	e	c	3454624
 big	e	d	4425559
 big	e	e	227977
-big	e	f	269582
+big	e	f	269583
 big	e	g	4756166
 big	e	h	24163
 big	e	i	135768
@@ -506,7 +507,7 @@ big	e	n	4772839
 big	e	o	170878
 big	e	p	1305360
 big	e	q	4400
-big	e	r	5670535
+big	e	r	5670538
 big	e	s	9535167
 big	e	t	1739781
 big	e	u	116741
@@ -574,7 +575,7 @@ big	f	q	30
 big	f	r	241227
 big	f	s	2587
 big	f	t	16134
-big	f	u	103304
+big	f	u	103306
 big	f	v	26
 big	f	w	482
 big	f	x	71
@@ -733,7 +734,7 @@ big	i	b	187189
 big	i	c	3148365
 big	i	d	1317755
 big	i	e	40085302
-big	i	f	61084
+big	i	f	61087
 big	i	g	581744
 big	i	h	9763
 big	i	i	275773
@@ -748,7 +749,7 @@ big	i	q	6353
 big	i	r	398920
 big	i	s	2904706
 big	i	t	797115
-big	i	u	730368
+big	i	u	730369
 big	i	v	68897
 big	i	w	967877
 big	i	x	21874
@@ -1284,7 +1285,7 @@ big	r	e	2484946
 big	r	f	32131
 big	r	g	242401
 big	r	h	13131
-big	r	i	996094
+big	r	i	996097
 big	r	j	4585
 big	r	k	522797
 big	r	l	191676
@@ -1415,7 +1416,7 @@ big	t	e	7300119
 big	t	f	15730
 big	t	g	5474
 big	t	h	338445
-big	t	i	315502
+big	t	i	315503
 big	t	j	2391
 big	t	k	1783354
 big	t	l	102354
@@ -1482,7 +1483,7 @@ big	u	h	46852
 big	u	i	66566
 big	u	j	2429977
 big	u	k	707068
-big	u	l	508369
+big	u	l	508370
 big	u	m	1186289
 big	u	n	676934
 big	u	o	25264
@@ -1801,6 +1802,8 @@ big	z	ť	1
 big	z	ů	1
 big	z	ź	17
 big	z	ż	2363
+big	ª	e	4
+big	ª	t	1
 big	ß	-	5
 big	ß	b	2
 big	ß	e	56
