@@ -37,6 +37,10 @@ final class WordCompletions {
     /// (over `slowLookup`): fast typing then shares one lookup per pause.
     static let slowLookupDelay: TimeInterval = 0.06
     static let slowLookup: TimeInterval = 0.006
+    /// How long after the keyboard appears, or the language changes, the
+    /// dictionary is warmed: after the appearance animation and before a
+    /// first keystroke is likely, and never inside a touch.
+    static let warmUpDelay: TimeInterval = 0.4
     /// Silence after which the top completion is spoken under VoiceOver
     /// gesture typing.
     static let announcementPause: TimeInterval = 1.0
@@ -81,6 +85,9 @@ final class WordCompletions {
 
     @ObservationIgnored private var pendingRefresh: TimerHandle?
     @ObservationIgnored private var pendingAnnouncement: TimerHandle?
+    @ObservationIgnored private var pendingWarmUp: TimerHandle?
+    /// Languages the source has been warmed for (this process).
+    @ObservationIgnored private var warmedLanguages: Set<String> = []
     @ObservationIgnored private var lookupDelay: TimeInterval = 0
     /// The prefix `candidates` were looked up for.
     @ObservationIgnored private var candidatesPrefix = ""
@@ -123,8 +130,25 @@ final class WordCompletions {
         self.isEnabled = isEnabled
         self.learnsWords = learnsWords
         self.traits = traits
+        let languageChanged = self.locale.identifier != locale.identifier
         self.locale = locale
         reconfigure()
+        if languageChanged { warmUp() }
+    }
+
+    /// Warms the dictionary for the current language on a timer, once per
+    /// language: the first lookup is the slow one (it loads the dictionary), and
+    /// this moves that cost to a moment when no finger is on the keys. The
+    /// controller calls it when the keyboard appears; `configure` when the
+    /// language changes. A no-op while the row is off.
+    func warmUp() {
+        guard isActive, pendingWarmUp == nil, !warmedLanguages.contains(languageKey) else { return }
+        pendingWarmUp = timers.schedule(after: Self.warmUpDelay) { [weak self] in
+            guard let self else { return }
+            pendingWarmUp = nil
+            guard isActive, warmedLanguages.insert(languageKey).inserted else { return }
+            source.warm(locale)
+        }
     }
 
     private func reconfigure() {
@@ -144,6 +168,8 @@ final class WordCompletions {
         refreshWaker?.cancelPending()
         pendingAnnouncement?.cancel()
         pendingAnnouncement = nil
+        pendingWarmUp?.cancel()
+        pendingWarmUp = nil
         isAutoSpacePending = false
         lastObservedPrefix = ""
         candidatesPrefix = ""

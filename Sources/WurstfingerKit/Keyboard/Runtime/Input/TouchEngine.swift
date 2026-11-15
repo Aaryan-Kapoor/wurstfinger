@@ -132,6 +132,10 @@ final class TouchEngine {
     private var keys: [String: KeyDefinition] = [:]
     private var actions = TouchEngineActions()
     private var isLongPressEnabled = false
+    /// SLIDE SPEED hook: the touch-clock time of the slide sample being
+    /// reported, so the view model can tell how fast the finger slides
+    /// (`SlideSpeedTracker`) without a clock of its own.
+    private(set) var slideSampleTime: TimeInterval = 0
 
     /// Fingers currently down, in press order.
     private var tracks: [PointerTrack] = []
@@ -295,6 +299,7 @@ final class TouchEngine {
         case let .slide(configuration):
             for sample in samples {
                 trail.extend(to: sample.location, from: token)
+                slideSampleTime = sample.time // SLIDE SPEED hook
                 let update = track.recordSlide(track.translation(to: sample.location), configuration: configuration)
                 reportSlide(update, from: track)
             }
@@ -371,6 +376,7 @@ final class TouchEngine {
         case let .slide(configuration):
             // Feed the release position as a final move first, as the drag
             // gesture did, so travel in the last frame is not lost.
+            slideSampleTime = time // SLIDE SPEED hook
             reportSlide(track.recordSlide(translation, configuration: configuration), from: track)
             let phase = track.slide.handleEnded(
                 translation: CGSize(width: translation.x, height: translation.y),

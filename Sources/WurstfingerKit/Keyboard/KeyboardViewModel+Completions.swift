@@ -61,6 +61,12 @@ extension KeyboardViewModel {
         completionsConfigurationDidChange()
     }
 
+    /// The keyboard appeared: warm the dictionary for the language on a timer
+    /// (`WordCompletions.warmUp`). Called by the controller.
+    func completionsKeyboardDidAppear() {
+        completions.warmUp()
+    }
+
     /// The host's text or caret changed outside a key of ours (a field switch,
     /// a caret tap): look the word up again. Called by the controller.
     func completionsHostTextDidChange() {

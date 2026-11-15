@@ -43,6 +43,13 @@ final class ScriptedCompletionSource: CompletionSource {
             .map { $0 }
     }
 
+    /// The languages `warm` was called for, in order.
+    private(set) var warmed: [String] = []
+
+    func warm(_ locale: Locale) {
+        warmed.append(locale.language.languageCode?.identifier ?? "und")
+    }
+
     func knows(_ word: String, locale: Locale) -> Bool {
         knownWords.contains(word)
     }

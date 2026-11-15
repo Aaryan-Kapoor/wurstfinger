@@ -308,6 +308,9 @@ final class KeyboardViewModel {
     /// Cursor-movement type captured at the start of the current space drag, so
     /// a mid-drag settings change cannot switch classification mode mid-gesture.
     @ObservationIgnored var spaceDragCursorType: CursorMovementType = .continuous
+    /// SLIDE SPEED hook (`SlideSpeed.swift`): how fast the current space-bar
+    /// slide goes, and so whether the caret steps by characters or words.
+    @ObservationIgnored var spaceSlideSpeed = SlideSpeedTracker()
     @ObservationIgnored var isDeleteDragging = false
     @ObservationIgnored var deleteDragResidual: CGFloat = 0
 

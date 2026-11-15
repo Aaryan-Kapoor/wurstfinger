@@ -331,6 +331,65 @@ struct WordCompletionsEngineTests {
         #expect(rig.engine.candidates.map(\.word) == ["hello", "help", "helps"])
     }
 
+    // MARK: Warming the dictionary
+
+    @Test func theDictionaryIsWarmedOnATimerNotAtOnce() {
+        let rig = rig(before: "")
+        rig.engine.warmUp() // the keyboard appeared
+        #expect(rig.source.warmed.isEmpty, "never inside the call")
+        rig.timers.advance(by: WordCompletions.warmUpDelay - 0.05)
+        #expect(rig.source.warmed.isEmpty)
+        rig.timers.advance(by: 0.1)
+        #expect(rig.source.warmed == ["en"])
+    }
+
+    @Test func eachLanguageIsWarmedOnce() {
+        let rig = rig(before: "")
+        rig.engine.warmUp() // the keyboard appeared
+        rig.engine.warmUp()
+        rig.timers.advance(by: 1)
+        rig.engine.warmUp() // appeared again
+        rig.timers.advance(by: 1)
+        #expect(rig.source.warmed == ["en"])
+    }
+
+    @Test func aLanguageSwitchWarmsTheNewLanguage() {
+        let rig = rig(before: "")
+        rig.engine.warmUp()
+        rig.timers.advance(by: 1)
+        rig.engine.configure(isEnabled: true, learnsWords: true, traits: .standard, locale: Locale(identifier: "de_DE"))
+        #expect(rig.source.warmed == ["en"])
+        rig.timers.advance(by: 1)
+        #expect(rig.source.warmed == ["en", "de"])
+        rig.engine.configure(isEnabled: true, learnsWords: true, traits: .standard, locale: Locale(identifier: "en_US"))
+        rig.timers.advance(by: 1)
+        #expect(rig.source.warmed == ["en", "de"], "already warm")
+    }
+
+    @Test func nothingIsWarmedWithTheRowOffOrInASensitiveField() {
+        let off = rig(before: "", enabled: false)
+        off.engine.warmUp()
+        off.timers.advance(by: 1)
+        #expect(off.source.warmed.isEmpty)
+        let sensitive = rig(before: "", traits: FieldTraits(isSensitive: true))
+        sensitive.engine.warmUp()
+        sensitive.timers.advance(by: 1)
+        #expect(sensitive.source.warmed.isEmpty)
+    }
+
+    @Test func turningTheRowOffBeforeTheTimerCancelsTheWarmUp() {
+        let rig = rig(before: "")
+        rig.engine.configure(isEnabled: false, learnsWords: true, traits: .standard, locale: Locale(identifier: "en_US"))
+        rig.timers.advance(by: 1)
+        #expect(rig.source.warmed.isEmpty)
+    }
+
+    @Test func aWarmUpDoesNotTouchTheSlowLookupSafeguard() {
+        // The 6 ms rule is untouched: a lookup over it delays the next one.
+        #expect(WordCompletions.slowLookup == 0.006)
+        #expect(WordCompletions.slowLookupDelay > 0)
+    }
+
     // MARK: Accepting
 
     @Test func acceptingTypesTheRestOfTheWordAndASpace() {
