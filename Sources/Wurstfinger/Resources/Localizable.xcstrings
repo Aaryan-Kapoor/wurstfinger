@@ -42228,6 +42228,1239 @@
           }
         }
       }
+    },
+    "Gesture Traces": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestenaufzeichnungen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Traces de gestes"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registros de gestos"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tracce dei gesti"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Записи жестов"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zapisy gestów"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestspår"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elejäljet"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tragovi pokreta"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "הקלטות מחוות"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dấu vết cử chỉ"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mga bakas ng galaw"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ίχνη χειρονομιών"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registos de gestos"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Записи жестів"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "سجلات الإيماءات"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ردهای حرکات"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اشاروں کے ریکارڈ"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ร่องรอยท่าทาง"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "संकेत रिकॉर्ड"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ジェスチャーの記録"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "제스처 기록"
+          }
+        }
+      }
+    },
+    "Record Gesture Traces": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gesten aufzeichnen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistrer les traces de gestes"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grabar registros de gestos"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registra le tracce dei gesti"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Записывать жесты"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zapisuj gesty"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spela in gestspår"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tallenna eleiden jäljet"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Snimaj tragove pokreta"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "הקלט מחוות"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ghi dấu vết cử chỉ"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I-record ang mga bakas ng galaw"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Καταγραφή ιχνών χειρονομιών"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gravar registos de gestos"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Записувати жести"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تسجيل الإيماءات"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ضبط ردهای حرکات"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اشاروں کے ریکارڈ محفوظ کریں"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "บันทึกร่องรอยท่าทาง"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "संकेत रिकॉर्ड करें"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ジェスチャーを記録"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "제스처 기록하기"
+          }
+        }
+      }
+    },
+    "Needs Full Access, which is off for this keyboard.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Benötigt Vollzugriff, der für diese Tastatur ausgeschaltet ist."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nécessite l'accès complet, qui est désactivé pour ce clavier."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Requiere acceso completo, que está desactivado para este teclado."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Richiede l'accesso completo, che è disattivato per questa tastiera."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Требуется полный доступ, который для этой клавиатуры выключен."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wymaga pełnego dostępu, który jest wyłączony dla tej klawiatury."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kräver full åtkomst, som är avstängd för det här tangentbordet."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vaatii täyden pääsyn, joka on pois päältä tälle näppäimistölle."
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zahtijeva puni pristup, koji je za ovu tipkovnicu isključen."
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "דורש גישה מלאה, שכבויה עבור מקלדת זו."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cần quyền truy cập đầy đủ, hiện đang tắt cho bàn phím này."
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nangangailangan ng Buong Access, na naka-off para sa keyboard na ito."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Απαιτεί πλήρη πρόσβαση, η οποία είναι απενεργοποιημένη για αυτό το πληκτρολόγιο."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Requer acesso total, que está desativado para este teclado."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Потрібен повний доступ, який для цієї клавіатури вимкнено."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يتطلب وصولاً كاملاً، وهو متوقف لهذه لوحة المفاتيح."
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "نیاز به دسترسی کامل دارد که برای این صفحه‌کلید خاموش است."
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مکمل رسائی درکار ہے، جو اس کی بورڈ کے لیے بند ہے۔"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ต้องใช้การเข้าถึงแบบเต็ม ซึ่งปิดอยู่สำหรับคีย์บอร์ดนี้"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "पूर्ण पहुँच की आवश्यकता है, जो इस कीबोर्ड के लिए बंद है।"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "フルアクセスが必要ですが、このキーボードではオフになっています。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "전체 접근 권한이 필요하지만 이 키보드에서는 꺼져 있습니다."
+          }
+        }
+      }
+    },
+    "Saves the shape and timing of your gestures on this device, so the recognizer can be tuned to how you really type. It stores no characters and no text, nothing from password, URL, email or code fields, and nothing leaves your device unless you export it. The last 2,000 gestures are kept.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speichert Form und Zeitverlauf deiner Gesten auf diesem Gerät, damit die Erkennung auf dein echtes Tippen abgestimmt werden kann. Es werden keine Zeichen und kein Text gespeichert, nichts aus Passwort-, URL-, E-Mail- oder Code-Feldern, und nichts verlässt dein Gerät, außer du exportierst es. Die letzten 2.000 Gesten werden aufbewahrt."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistre la forme et le rythme de vos gestes sur cet appareil, afin d'ajuster la reconnaissance à votre façon de taper. Aucun caractère ni texte n'est stocké, rien des champs de mot de passe, d'URL, d'e-mail ou de code, et rien ne quitte votre appareil sauf si vous l'exportez. Les 2 000 derniers gestes sont conservés."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guarda la forma y el ritmo de tus gestos en este dispositivo para ajustar el reconocimiento a cómo escribes de verdad. No guarda caracteres ni texto, nada de los campos de contraseña, URL, correo o código, y nada sale de tu dispositivo salvo que lo exportes. Se conservan los últimos 2000 gestos."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salva la forma e i tempi dei tuoi gesti su questo dispositivo, per tarare il riconoscimento su come scrivi davvero. Non salva caratteri né testo, nulla dai campi password, URL, e-mail o codice, e nulla lascia il dispositivo se non lo esporti. Vengono conservati gli ultimi 2.000 gesti."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сохраняет форму и скорость ваших жестов на этом устройстве, чтобы настроить распознавание под ваш реальный набор. Символы и текст не сохраняются, ничего из полей паролей, URL, e-mail и кода, и ничто не покидает устройство, пока вы не экспортируете это. Хранятся последние 2000 жестов."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zapisuje na tym urządzeniu kształt i tempo Twoich gestów, aby dostroić rozpoznawanie do tego, jak naprawdę piszesz. Nie przechowuje znaków ani tekstu, niczego z pól haseł, adresów URL, e-maili i kodu, a nic nie opuszcza urządzenia, dopóki tego nie wyeksportujesz. Przechowywanych jest ostatnie 2000 gestów."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sparar formen och tempot på dina gester på den här enheten, så att igenkänningen kan finjusteras efter hur du faktiskt skriver. Inga tecken och ingen text sparas, inget från lösenords-, URL-, e-post- eller kodfält, och inget lämnar enheten om du inte exporterar det. De senaste 2 000 gesterna sparas."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tallentaa elkeidesi muodon ja ajoituksen tälle laitteelle, jotta tunnistus voidaan virittää tapaasi kirjoittaa. Se ei tallenna merkkejä eikä tekstiä, ei mitään salasana-, URL-, sähköposti- tai koodikentistä, eikä mikään poistu laitteeltasi, ellet vie sitä. Viimeiset 2 000 elettä säilytetään."
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sprema oblik i ritam vaših pokreta na ovom uređaju kako bi se prepoznavanje moglo prilagoditi načinu na koji stvarno tipkate. Ne sprema znakove ni tekst, ništa iz polja za lozinke, URL-ove, e-poštu ili kod, a ništa ne napušta vaš uređaj osim ako ga ne izvezete. Čuva se posljednjih 2000 pokreta."
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "שומר את הצורה והקצב של המחוות שלך במכשיר זה, כדי שאפשר יהיה לכוון את הזיהוי לאופן שבו אתה באמת מקליד. לא נשמרים תווים או טקסט, שום דבר משדות סיסמה, כתובת, אימייל או קוד, ושום דבר לא יוצא מהמכשיר אלא אם תייצא אותו. נשמרות 2,000 המחוות האחרונות."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lưu hình dạng và nhịp độ cử chỉ của bạn trên thiết bị này để tinh chỉnh nhận diện theo cách bạn thực sự gõ. Không lưu ký tự hay văn bản, không lưu gì từ trường mật khẩu, URL, email hoặc mã, và không gì rời khỏi thiết bị trừ khi bạn xuất ra. Giữ lại 2.000 cử chỉ gần nhất."
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sine-save ang hugis at tiyempo ng iyong mga galaw sa device na ito, para maiayos ang pagkilala sa totoo mong pag-type. Walang character o text na sine-save, walang galing sa mga field ng password, URL, email o code, at walang lumalabas sa device mo maliban kung i-export mo. Itinatago ang huling 2,000 galaw."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Αποθηκεύει το σχήμα και τον ρυθμό των χειρονομιών σας σε αυτή τη συσκευή, ώστε η αναγνώριση να προσαρμοστεί στον τρόπο που πληκτρολογείτε πραγματικά. Δεν αποθηκεύονται χαρακτήρες ή κείμενο, τίποτα από πεδία κωδικών, URL, email ή κώδικα, και τίποτα δεν φεύγει από τη συσκευή σας αν δεν το εξαγάγετε. Διατηρούνται οι τελευταίες 2.000 χειρονομίες."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guarda a forma e o ritmo dos seus gestos neste dispositivo, para afinar o reconhecimento à forma como realmente escreve. Não guarda carateres nem texto, nada dos campos de palavra-passe, URL, e-mail ou código, e nada sai do dispositivo a não ser que o exporte. Os últimos 2000 gestos são guardados."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Зберігає форму й темп ваших жестів на цьому пристрої, щоб налаштувати розпізнавання під ваш реальний набір. Символи й текст не зберігаються, нічого з полів паролів, URL, e-mail і коду, і ніщо не залишає пристрій, доки ви не експортуєте це. Зберігаються останні 2000 жестів."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يحفظ شكل إيماءاتك وتوقيتها على هذا الجهاز، حتى يمكن ضبط التعرّف وفق طريقة كتابتك الفعلية. لا يخزّن أي أحرف أو نص، ولا شيئاً من حقول كلمات المرور أو عناوين URL أو البريد أو الأكواد، ولا يغادر شيء جهازك ما لم تصدّره. يُحتفظ بآخر 2000 إيماءة."
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "شکل و زمان‌بندی حرکات شما را روی این دستگاه ذخیره می‌کند تا تشخیص با شیوهٔ واقعی تایپ شما تنظیم شود. هیچ نویسه یا متنی ذخیره نمی‌شود، هیچ چیز از فیلدهای رمز عبور، نشانی، ایمیل یا کد، و چیزی از دستگاه شما خارج نمی‌شود مگر اینکه خروجی بگیرید. ۲۰۰۰ حرکت آخر نگه داشته می‌شود."
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "آپ کے اشاروں کی شکل اور وقت اس ڈیوائس پر محفوظ کرتا ہے تاکہ شناخت کو آپ کے اصل ٹائپ کرنے کے انداز کے مطابق بنایا جا سکے۔ کوئی حرف یا متن محفوظ نہیں ہوتا، پاس ورڈ، URL، ای میل یا کوڈ کے فیلڈز سے کچھ نہیں، اور برآمد کیے بغیر کچھ آپ کی ڈیوائس سے باہر نہیں جاتا۔ آخری 2,000 اشارے رکھے جاتے ہیں۔"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "บันทึกรูปทรงและจังหวะของท่าทางของคุณไว้ในอุปกรณ์นี้ เพื่อปรับการจดจำให้เข้ากับวิธีที่คุณพิมพ์จริง ไม่เก็บตัวอักษรหรือข้อความ ไม่เก็บสิ่งใดจากช่องรหัสผ่าน URL อีเมล หรือโค้ด และไม่มีสิ่งใดออกจากอุปกรณ์ เว้นแต่คุณส่งออก เก็บท่าทางล่าสุด 2,000 รายการ"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "इस डिवाइस पर आपके संकेतों का आकार और समय सहेजता है, ताकि पहचान को आपके वास्तविक टाइपिंग ढंग के अनुसार ट्यून किया जा सके। कोई अक्षर या पाठ नहीं सहेजा जाता, पासवर्ड, URL, ईमेल या कोड फ़ील्ड से कुछ नहीं, और निर्यात किए बिना कुछ भी आपके डिवाइस से बाहर नहीं जाता। आख़िरी 2,000 संकेत रखे जाते हैं।"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "入力のしかたに合わせて認識を調整できるよう、ジェスチャーの形とタイミングをこのデバイスに保存します。文字やテキストは保存せず、パスワード、URL、メール、コードのフィールドの内容も保存せず、書き出さない限りデバイスの外には出ません。直近の2,000件を保持します。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "실제 입력 방식에 맞게 인식을 조정할 수 있도록 제스처의 모양과 타이밍을 이 기기에 저장합니다. 문자나 텍스트는 저장하지 않으며, 암호·URL·이메일·코드 입력란의 내용도 저장하지 않고, 내보내지 않는 한 기기 밖으로 나가지 않습니다. 최근 2,000개의 제스처를 보관합니다."
+          }
+        }
+      }
+    },
+    "Stored Traces": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gespeicherte Aufzeichnungen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Traces enregistrées"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registros guardados"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tracce salvate"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сохранённые записи"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zapisane zapisy"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sparade spår"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tallennetut jäljet"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spremljeni tragovi"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "הקלטות שמורות"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dấu vết đã lưu"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mga naka-save na bakas"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Αποθηκευμένα ίχνη"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registos guardados"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Збережені записи"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "السجلات المحفوظة"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ردهای ذخیره‌شده"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "محفوظ شدہ ریکارڈ"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ร่องรอยที่บันทึกไว้"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "सहेजे गए रिकॉर्ड"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存済みの記録"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "저장된 기록"
+          }
+        }
+      }
+    },
+    "Export Traces": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aufzeichnungen exportieren"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exporter les traces"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exportar registros"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esporta le tracce"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Экспортировать записи"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eksportuj zapisy"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exportera spår"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vie jäljet"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izvezi tragove"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ייצא הקלטות"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xuất dấu vết"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I-export ang mga bakas"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Εξαγωγή ιχνών"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exportar registos"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Експортувати записи"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تصدير السجلات"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "خروجی گرفتن از ردها"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ریکارڈ برآمد کریں"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ส่งออกร่องรอย"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "रिकॉर्ड निर्यात करें"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "記録を書き出す"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "기록 내보내기"
+          }
+        }
+      }
+    },
+    "Clear Traces": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aufzeichnungen löschen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Effacer les traces"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Borrar registros"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancella le tracce"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Удалить записи"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Usuń zapisy"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rensa spår"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tyhjennä jäljet"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obriši tragove"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "נקה הקלטות"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xóa dấu vết"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I-clear ang mga bakas"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Διαγραφή ιχνών"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apagar registos"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Видалити записи"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مسح السجلات"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "پاک کردن ردها"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ریکارڈ صاف کریں"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ล้างร่องรอย"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "रिकॉर्ड मिटाएँ"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "記録を消去"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "기록 지우기"
+          }
+        }
+      }
+    },
+    "Clear all gesture traces?": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle Gestenaufzeichnungen löschen?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Effacer toutes les traces de gestes ?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Borrar todos los registros de gestos?"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancellare tutte le tracce dei gesti?"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Удалить все записи жестов?"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Usunąć wszystkie zapisy gestów?"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rensa alla gestspår?"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tyhjennetäänkö kaikki elejäljet?"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obrisati sve tragove pokreta?"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "למחוק את כל הקלטות המחוות?"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xóa tất cả dấu vết cử chỉ?"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I-clear ang lahat ng bakas ng galaw?"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Διαγραφή όλων των ιχνών χειρονομιών;"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apagar todos os registos de gestos?"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Видалити всі записи жестів?"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "هل تريد مسح كل سجلات الإيماءات؟"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "همهٔ ردهای حرکات پاک شود؟"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "کیا تمام اشاروں کے ریکارڈ صاف کریں؟"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ล้างร่องรอยท่าทางทั้งหมดหรือไม่"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "सभी संकेत रिकॉर्ड मिटाएँ?"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "すべてのジェスチャー記録を消去しますか?"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "모든 제스처 기록을 지울까요?"
+          }
+        }
+      }
+    },
+    "Every stored trace is deleted from this device. This cannot be undone.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jede gespeicherte Aufzeichnung wird von diesem Gerät gelöscht. Das kann nicht rückgängig gemacht werden."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toutes les traces enregistrées sont supprimées de cet appareil. Cette action est irréversible."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se elimina de este dispositivo cada registro guardado. Esta acción no se puede deshacer."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ogni traccia salvata viene eliminata da questo dispositivo. L'operazione non può essere annullata."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Все сохранённые записи будут удалены с этого устройства. Это действие нельзя отменить."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Każdy zapisany zapis zostanie usunięty z tego urządzenia. Tej operacji nie można cofnąć."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alla sparade spår raderas från den här enheten. Det går inte att ångra."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kaikki tallennetut jäljet poistetaan tältä laitteelta. Tätä ei voi perua."
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Svaki spremljeni trag bit će izbrisan s ovog uređaja. To se ne može poništiti."
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "כל ההקלטות השמורות יימחקו ממכשיר זה. לא ניתן לבטל פעולה זו."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mọi dấu vết đã lưu sẽ bị xóa khỏi thiết bị này. Không thể hoàn tác."
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Made-delete sa device na ito ang bawat naka-save na bakas. Hindi ito maaaring bawiin."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Κάθε αποθηκευμένο ίχνος διαγράφεται από αυτή τη συσκευή. Δεν μπορεί να αναιρεθεί."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Todos os registos guardados são apagados deste dispositivo. Isto não pode ser anulado."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Усі збережені записи буде видалено з цього пристрою. Цю дію не можна скасувати."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "سيُحذف كل سجل محفوظ من هذا الجهاز. لا يمكن التراجع عن ذلك."
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "همهٔ ردهای ذخیره‌شده از این دستگاه حذف می‌شود. این کار قابل بازگشت نیست."
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ہر محفوظ شدہ ریکارڈ اس ڈیوائس سے حذف ہو جائے گا۔ اسے واپس نہیں کیا جا سکتا۔"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ร่องรอยที่บันทึกไว้ทั้งหมดจะถูกลบออกจากอุปกรณ์นี้ ไม่สามารถยกเลิกได้"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "सहेजा गया हर रिकॉर्ड इस डिवाइस से हटा दिया जाएगा। इसे पूर्ववत नहीं किया जा सकता।"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存されているすべての記録がこのデバイスから削除されます。この操作は取り消せません。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "저장된 모든 기록이 이 기기에서 삭제됩니다. 이 작업은 되돌릴 수 없습니다."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

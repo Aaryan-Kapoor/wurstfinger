@@ -109,6 +109,9 @@ struct ExpertSettingsView: View {
                     NavigationLink("Keyboard Health") {
                         KeyboardHealthView()
                     }
+                    NavigationLink("Gesture Traces") {
+                        GestureTracesView()
+                    }
                 } header: {
                     Label("Tools", systemImage: "hammer.fill")
                 }

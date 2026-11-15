@@ -57,6 +57,9 @@ enum SettingsKey: String, CaseIterable, Sendable {
     /// What holding a key does: nothing, the key's digit, or its capital
     /// (`LongPressType` raw value, issue #308).
     case longPressBehaviour
+    /// Records the shape and timing of gestures (never characters) for tuning
+    /// the recognizer. Opt-in, Expert, needs Full Access (`GestureTraceRecord`).
+    case gestureTraceRecording
     /// What a circle on a letter key types, per direction (Expert,
     /// `CircleType` raw value).
     case clockwiseCircleBehaviour, counterclockwiseCircleBehaviour

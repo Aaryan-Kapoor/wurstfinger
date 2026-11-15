@@ -260,10 +260,29 @@ struct SpikeFilterTests {
         #expect(filter.filterSpikes(circle).count == circle.count)
     }
 
-    @Test func theEndsAreLeftAlone() {
+    @Test func theFirstAndLastSamplesAreLeftAlone() {
+        // The very first sample is the origin and the last is the release.
         var points = line(length: 80, samples: 9)
-        points[7].y += 30
+        points[8].y += 30
         #expect(filter.filterSpikes(points).count == 9)
+        var first = line(length: 80, samples: 9)
+        first[0].y += 30
+        #expect(filter.filterSpikes(first).count == 9)
+    }
+
+    @Test func aSpikeInTheFirstOrLastInteriorSampleIsCutOnTheOneSideItHas() {
+        var early = line(length: 80, samples: 9)
+        early[1].y += 30
+        #expect(filter.filterSpikes(early).count == 8)
+        var late = line(length: 80, samples: 9)
+        late[7].y -= 30
+        #expect(filter.filterSpikes(late).count == 8)
+    }
+
+    @Test func aGenuineTurnNearAnEndIsNotASpike() {
+        // A return swipe that turns back in its second sample.
+        let points: [CGPoint] = [.zero, CGPoint(x: 30, y: 0), CGPoint(x: 5, y: 0), CGPoint(x: 0, y: 0), CGPoint(x: -2, y: 0)]
+        #expect(filter.filterSpikes(points).count == points.count)
     }
 
     @Test func theBufferFormEqualsTheArrayForm() {

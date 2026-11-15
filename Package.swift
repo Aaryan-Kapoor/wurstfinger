@@ -128,7 +128,10 @@ let package = Package(
     .testTarget(
       name: "WurstfingerKitTests",
       dependencies: ["WurstfingerKit", "WurstfingerScenarioKit", "WurstfingerLayoutLab"],
-      path: "Tests/WurstfingerKitTests"
+      path: "Tests/WurstfingerKitTests",
+      // Read by path (`#filePath`), not bundled: a recorded-trace export the
+      // gesture lab replays.
+      exclude: ["Fixtures"]
     ),
   ],
   swiftLanguageModes: [.v6]

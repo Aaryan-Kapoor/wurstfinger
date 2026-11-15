@@ -839,6 +839,14 @@ enum Catalog {
             scenarios.append(Scenario(group: "app", name: "app-circles\(tail)") {
                 AppSurfaces.circles(scheme: scheme)
             })
+            scenarios.append(Scenario(group: "app", name: "app-gesturetraces\(tail)") {
+                AppSurfaces.gestureTraces(scheme: scheme)
+            })
+            if scheme == .light {
+                scenarios.append(Scenario(group: "app", name: "app-gesturetraces-nofullaccess") {
+                    AppSurfaces.gestureTraces(scheme: .light, fullAccess: false)
+                })
+            }
             scenarios.append(Scenario(group: "app", name: "app-longswipes\(tail)") {
                 AppSurfaces.longSwipes(scheme: scheme)
             })

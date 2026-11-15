@@ -210,6 +210,7 @@ final class KeyboardViewModel {
             let tuning = GestureTuning.load(from: sharedDefaults).applying(fieldTraits)
             if gestureTuning != tuning { gestureTuning = tuning }
             completionsConfigurationDidChange() // WORD COMPLETIONS hook
+            updateTraceRecording() // WP-A: traces
         }
     }
 
@@ -296,6 +297,11 @@ final class KeyboardViewModel {
     /// `ManualTimerSource` and drive it by hand.
     @ObservationIgnored let timers: any TimerSource
 
+    /// WP-A (gesture traces): the opt-in recorder, present only while recording
+    /// is on and allowed (`updateTraceRecording()`), and the file it writes to.
+    @ObservationIgnored var traceRecorder: GestureTraceRecorder?
+    @ObservationIgnored let traceStore: GestureTraceStore
+
     /// The engine's callbacks into this view model, built once: the closures
     /// hold the view model weakly and never change, so handing them to the
     /// engine on every layout update allocates nothing.
@@ -341,9 +347,11 @@ final class KeyboardViewModel {
         shouldPersistSettings: Bool = true,
         prewarmsLanguages: Bool = false,
         clipboard: (any Clipboard)? = nil,
-        timers: (any TimerSource)? = nil
+        timers: (any TimerSource)? = nil,
+        gestureTraceStore: GestureTraceStore? = nil
     ) {
         self.clipboard = clipboard ?? ClipboardStore.shared
+        traceStore = gestureTraceStore ?? .shared
         let timers = timers ?? SystemTimerSource()
         self.timers = timers
         touchEngine = TouchEngine(trail: GestureTrailRecorder(timers: timers), timers: timers)
@@ -401,6 +409,7 @@ final class KeyboardViewModel {
                 }
             }
         })
+        updateTraceRecording() // WP-A: traces
     }
 
     /// Updates the tracked view width. Called by the controller in
@@ -544,6 +553,7 @@ final class KeyboardViewModel {
         }
         typingBehavior = TypingBehavior.load(from: sharedDefaults, reusing: typingBehavior)
         completionsConfigurationDidChange() // WORD COMPLETIONS hook
+        updateTraceRecording() // WP-A: traces
         reloadEmojiRecents() // EMOJI MODE hook
 
         // The layout on screen was edited, or deleted, in the host app: load

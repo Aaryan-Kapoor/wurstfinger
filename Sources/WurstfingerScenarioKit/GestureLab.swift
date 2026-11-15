@@ -163,6 +163,45 @@ struct GestureTrace: Codable, Sendable {
     }
 }
 
+extension GestureTrace {
+    /// The trace a recorded gesture (`GestureTraceRecord`, as the on-device
+    /// recorder stores it) replays as: the label is what it was meant to be.
+    init(_ record: GestureTraceRecord) {
+        meant = record.meant
+        isReturn = record.meantIsReturn
+        points = record.translations.map { [Double($0.x), Double($0.y)] }
+        aspectRatio = record.keyHeight > 0 ? record.keyWidth / record.keyHeight : 1
+        keyWidth = record.keyWidth
+        keyHeight = record.keyHeight
+        peakTime = record.peakTime
+        duration = record.duration
+    }
+
+    /// Reads an export of the recorder (a JSON array of `GestureTraceRecord`).
+    static func traces(fromExport data: Data) throws -> [(record: GestureTraceRecord, trace: GestureTrace)] {
+        try JSONDecoder().decode([GestureTraceRecord].self, from: data).map { ($0, GestureTrace($0)) }
+    }
+}
+
+extension GestureTraceRecord {
+    /// A lab gesture as the recorder would have stored it, the finger landing
+    /// on the key's centre: for fixtures and for testing the replay.
+    init(_ gesture: LabGesture, classifiedAs verdict: LabLabel, slot: String = "center") {
+        let height = Double(gesture.keySize.height)
+        let count = max(gesture.positions.count - 1, 1)
+        self.init(
+            meant: gesture.label.gesture.rawValue, meantIsReturn: gesture.label.isReturn,
+            label: verdict == gesture.label ? .accepted : .corrected,
+            classified: verdict.gesture.rawValue, classifiedIsReturn: verdict.isReturn,
+            slot: slot, keyWidth: Double(gesture.keySize.width), keyHeight: height,
+            samples: gesture.positions.enumerated().map { index, point in
+                [Double(point.x) / height, Double(point.y) / height, gesture.duration * Double(index) / Double(count)]
+            },
+            peakTime: gesture.peakTime, duration: gesture.duration
+        )
+    }
+}
+
 extension GestureLab {
     /// The matrix of labelled gestures that were not generated here: replayed
     /// traces.

@@ -35,14 +35,23 @@ struct BenchRig {
     ///   - keyClicks: Switches key sounds on (the derived stroke per touch).
     init(
         isLongPressEnabled: Bool = false, language: String = "de_DE",
-        hasCompletions: Bool = false, keyClicks: Bool = false
+        hasCompletions: Bool = false, keyClicks: Bool = false, recordsTraces: Bool = false
     ) {
         let suite = "de.akator.wurstfinger.bench.rig"
         let defaults = UserDefaults(suiteName: suite)!
         defaults.removePersistentDomain(forName: suite)
         if hasCompletions { defaults.set(true, forKey: SettingsKey.wordCompletionsEnabled.rawValue) }
         defaults.set(keyClicks, forKey: SettingsKey.keyClicksEnabled.rawValue)
-        viewModel = KeyboardViewModel(userDefaults: defaults, shouldPersistSettings: false)
+        if recordsTraces {
+            defaults.set(true, forKey: SettingsKey.gestureTraceRecording.rawValue)
+            defaults.set(true, forKey: SettingsKey.keyboardFullAccess.rawValue)
+        }
+        // Traces go to a scratch file, never the user's own.
+        let traceFile = FileManager.default.temporaryDirectory
+            .appendingPathComponent("wurstfinger-bench-traces", isDirectory: true).appendingPathComponent("traces.jsonl")
+        viewModel = KeyboardViewModel(
+            userDefaults: defaults, shouldPersistSettings: false, gestureTraceStore: GestureTraceStore(fileURL: traceFile)
+        )
         target = BenchTextTarget()
         viewModel.bindTextInputTarget(target)
         if hasCompletions { viewModel.useCompletionSource(BenchCompletionSource()) }
@@ -408,6 +417,27 @@ func benchAllocations() async {
         sink.withLock { $0 &+= stroke.count }
     }
     reportAllocations("8p. derive a key voice + a return-swipe stroke", voices)
+    await drainMainActor()
+
+    // 8s / 8t: what the opt-in gesture trace recorder costs while it is ON
+    // (rows 8a-8p are the default, recorder off: the engine's sink is nil).
+    // Samples are collected per move and one record is built per lift; the
+    // file write is batched on a timer, off the keystroke.
+    rig = BenchRig(recordsTraces: true)
+    await KeyboardRegistry.prewarm(["de_DE"])
+    await drainMainActor()
+    let traceFrame = rig.frame(of: GridSlot.topLeft)
+    let traceCenter = CGPoint(x: traceFrame.midX, y: traceFrame.midY)
+    var traceSamples = [TouchSample](repeating: TouchSample(location: traceCenter, time: 0), count: 1)
+    reportAllocations("8s. tap keystroke, gesture traces ON", countAllocations(iterations: 5000) {
+        tap(rig.engine, at: traceCenter, clock: &clock)
+    })
+    reportAllocations("8t. flick keystroke, gesture traces ON", countAllocations(iterations: 5000) {
+        flick(rig.engine, across: traceFrame, samples: &traceSamples, clock: &clock)
+    })
+    try? FileManager.default.removeItem(
+        at: FileManager.default.temporaryDirectory.appendingPathComponent("wurstfinger-bench-traces", isDirectory: true)
+    )
     await drainMainActor()
 }
 

@@ -111,26 +111,32 @@ struct GestureLabTests {
         let matrix = Self.matrix(.realistic)
         expect(matrix, [.tap], atLeast: 0.995, "realistic")
         expect(matrix, LabLabel.flicks, atLeast: 0.98, "realistic")
-        expect(matrix, LabLabel.returns, atLeast: 0.985, "realistic")
-        expect(matrix, LabLabel.circles, atLeast: 0.99, "realistic")
-        #expect(matrix.accuracy(of: LabLabel.flicks) >= 0.987)
-        #expect(matrix.accuracy(of: LabLabel.returns) >= 0.993)
-        #expect(matrix.accuracy(of: LabLabel.circles) >= 0.993)
+        expect(matrix, LabLabel.returns, atLeast: 0.99, "realistic")
+        expect(matrix, LabLabel.circles, atLeast: 0.995, "realistic")
+        #expect(matrix.accuracy(of: LabLabel.flicks) >= 0.989)
+        #expect(matrix.accuracy(of: LabLabel.returns) >= 0.995)
+        #expect(matrix.accuracy(of: LabLabel.circles) >= 0.997)
+    }
+
+    @Test func circlesHoldAtScaleInBothDirections() {
+        // 6000 per direction: at a thousand a single spiked circle is a tenth of
+        // a percent. Measured cw 99.70%, ccw 99.65%.
+        let matrix = Self.matrix(.realistic, labels: LabLabel.circles, count: 6000)
+        expect(matrix, LabLabel.circles, atLeast: 0.995, "realistic circles at 6000")
     }
 
     /// The sloppiness profiles, with the floors each must clear: taps, flicks,
-    /// returns, circles. Measured at 1500 per class, set about half a point
-    /// under. Before the forgiveness mechanisms (quick-flick rule, key scaling,
+    /// returns, circles. Measured at 1500 per class, set a few tenths under. Before the forgiveness mechanisms (quick-flick rule, key scaling,
     /// direction from the body of the stroke, circle fit, spike filter) the same
     /// profiles read: fast typing flicks 74.0%, small keys flicks 84.6%, boundary
     /// aim returns 94.3%, fast typing returns 95.1%, leaning returns 98.1%.
     private static let sloppinessFloors: [(name: String, floors: (tap: Double, flick: Double, ret: Double, circle: Double))] = [
-        ("fast typing", (0.995, 0.955, 0.97, 0.98)),
-        ("hooky", (0.995, 0.988, 0.992, 0.992)),
-        ("leaning", (0.995, 0.99, 0.98, 0.992)),
-        ("small keys", (0.992, 0.982, 0.986, 0.986)),
-        ("large keys", (0.995, 0.995, 0.995, 0.99)),
-        ("boundary aim", (0.995, 0.988, 0.988, 0.992)),
+        ("fast typing", (0.995, 0.97, 0.985, 0.985)),
+        ("hooky", (0.995, 0.99, 0.995, 0.995)),
+        ("leaning", (0.995, 0.993, 0.98, 0.995)),
+        ("small keys", (0.992, 0.985, 0.988, 0.99)),
+        ("large keys", (0.995, 0.995, 0.995, 0.992)),
+        ("boundary aim", (0.995, 0.99, 0.99, 0.995)),
     ]
 
     @Test(arguments: sloppinessFloors.map(\.name))
