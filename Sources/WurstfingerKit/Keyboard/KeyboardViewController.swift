@@ -309,12 +309,11 @@ public final class KeyboardViewController: UIInputViewController {
     /// guaranteed entry is paired with a deferred second one below.
     private func shedMemoryBeforeSuspension(_ event: String) {
         autoreleasepool {
-            // Feel hook: let go of the Taptic Engine; the next appearance
-            // starts it again.
-            viewModel.suspendHaptics()
-            // The emoji typed this visit, should the process be killed while
-            // the emoji mode is still up (it is otherwise saved on leaving it).
-            viewModel.saveEmojiRecents()
+            // Let go of the Taptic Engine and the audio graph (the next
+            // appearance starts them again), and write the recent emoji and
+            // learned words now: a suspended keyboard may be killed without
+            // running again.
+            viewModel.prepareForSuspension()
             KeyboardRegistry.evictAll(except: selectedLanguageId)
             // The memoized grid layouts hold arrangement storage shared with the
             // definitions just evicted, so dropping them is part of the same

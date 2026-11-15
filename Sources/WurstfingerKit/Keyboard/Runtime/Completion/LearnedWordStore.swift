@@ -172,6 +172,18 @@ final class LearnedWordStore {
         }
     }
 
+    /// The keyboard is about to be suspended: writes a change still waiting
+    /// for `saveDelay` (the timer may never fire: a suspended keyboard is
+    /// often killed without running again), and lets go of the list, which is
+    /// read again at the next lookup. The clear token asked for survives.
+    func prepareForSuspension() {
+        if pendingSave != nil { saveNow() }
+        guard isLoaded, fileURL != nil else { return }
+        snapshot = Snapshot()
+        isLoaded = false
+        tick = 0
+    }
+
     /// Writes the list at once (also what the delayed save runs).
     func saveNow() {
         pendingSave?.cancel()
