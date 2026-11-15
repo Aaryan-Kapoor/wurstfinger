@@ -14216,6 +14216,7 @@
       "comment": "Label visibility subtitle; %@ is a list like 'letters, extra symbols'"
     },
     "letters": {
+      "generateSymbol": false,
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -18214,6 +18215,7 @@
       "comment": "ACCESSIBILITY label for the 123 key that switches to the numeric mode (VoiceOver)"
     },
     "Letters": {
+      "generateSymbol": false,
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -22330,6 +22332,7 @@
       }
     },
     "Up-Left": {
+      "generateSymbol": false,
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -22467,6 +22470,7 @@
       }
     },
     "Up-Right": {
+      "generateSymbol": false,
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -22604,6 +22608,7 @@
       }
     },
     "Down-Left": {
+      "generateSymbol": false,
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -22741,6 +22746,7 @@
       }
     },
     "Down-Right": {
+      "generateSymbol": false,
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -28360,6 +28366,7 @@
       }
     },
     "Long Press": {
+      "generateSymbol": false,
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -28771,6 +28778,7 @@
       }
     },
     "Tap": {
+      "generateSymbol": false,
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -28908,6 +28916,7 @@
       }
     },
     "Up Left": {
+      "generateSymbol": false,
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -29045,6 +29054,7 @@
       }
     },
     "Up Right": {
+      "generateSymbol": false,
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -29182,6 +29192,7 @@
       }
     },
     "Down Left": {
+      "generateSymbol": false,
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -29319,6 +29330,7 @@
       }
     },
     "Down Right": {
+      "generateSymbol": false,
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -32616,6 +32628,7 @@
       }
     },
     "tap": {
+      "generateSymbol": false,
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -34123,6 +34136,7 @@
       }
     },
     "long press": {
+      "generateSymbol": false,
       "extractionState": "manual",
       "localizations": {
         "de": {
