@@ -507,10 +507,13 @@ ios_make_sideload_inputs() {
     SIDELOAD_PREVIOUS_KEYCHAINS="$(security list-keychains -d user | tr -d '"' | tr '\n' ' ')"
     # shellcheck disable=SC2086
     security list-keychains -d user -s "$SIDELOAD_KEYCHAIN" $SIDELOAD_PREVIOUS_KEYCHAINS
-    # A self-signed certificate is not "valid" to find-identity, so name the
-    # certificate by its hash instead of asking for valid identities only.
-    SIDELOAD_IDENTITY="$(security find-certificate -c "$cert_name" -Z "$SIDELOAD_KEYCHAIN" | awk '/^SHA-1 hash:/ { print $3; exit }')"
-    [ -n "$SIDELOAD_IDENTITY" ] || die "could not find the throwaway certificate in $SIDELOAD_KEYCHAIN"
+    # Swift Bundler only offers identities `security find-identity -v` calls
+    # valid, which a self-signed one is not until it is trusted for code
+    # signing. ios_drop_sideload_inputs removes the trust again.
+    SIDELOAD_CERT="$work/cert.pem"
+    security add-trusted-cert -r trustRoot -p codeSign -k "$SIDELOAD_KEYCHAIN" "$SIDELOAD_CERT" ||
+        die "could not trust the throwaway certificate"
+    SIDELOAD_IDENTITY="$cert_name"
     ios_write_sideload_profile "$APP_PROFILE" "$APP_ID" "$team" "$work"
     ios_write_sideload_profile "$KEYBOARD_PROFILE" "$APP_ID.keyboard" "$team" "$work"
 }
@@ -523,6 +526,7 @@ ios_drop_sideload_inputs() {
         # shellcheck disable=SC2086
         security list-keychains -d user -s $SIDELOAD_PREVIOUS_KEYCHAINS || true
     fi
+    [ -z "${SIDELOAD_CERT:-}" ] || security remove-trusted-cert "$SIDELOAD_CERT" 2>/dev/null || true
     security delete-keychain "$SIDELOAD_KEYCHAIN" 2>/dev/null || true
 }
 
