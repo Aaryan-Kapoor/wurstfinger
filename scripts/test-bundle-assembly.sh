@@ -264,6 +264,29 @@ check "device dry run zips an IPA" grep -q 'zip -qry' "$TMP/dry-device.log"
 check "device dry run uses the build number" grep -q 'CFBundleVersion -string 7' "$TMP/dry-device.log"
 check "rejects --device without a profile" bash -c "! '$SCRIPT_DIR/bundle-ios.sh' --device --identity x >/dev/null 2>&1"
 
+# ---- sideload inputs -------------------------------------------------------------------------------
+
+echo "bundle-ios.sh --sideload"
+SIDELOAD_WORK="$TMP/sideload"
+SIDELOAD_OK=1
+ios_make_sideload_inputs "$SIDELOAD_WORK" >/dev/null 2>&1 || SIDELOAD_OK=0
+if [ "$SIDELOAD_OK" = 1 ]; then
+    security cms -D -i "$APP_PROFILE" -o "$TMP/app-profile.plist" 2>/dev/null || SIDELOAD_OK=0
+    security cms -D -i "$KEYBOARD_PROFILE" -o "$TMP/keyboard-profile.plist" 2>/dev/null || SIDELOAD_OK=0
+    cp "$APP/Wurstfinger" "$TMP/signed"
+    codesign --force --sign "$SIDELOAD_IDENTITY" "$TMP/signed" >/dev/null 2>&1 || SIDELOAD_OK=0
+fi
+ios_drop_sideload_inputs
+[ "$SIDELOAD_OK" = 1 ] && pass "throwaway identity and profiles are made, and the identity signs" || fail "throwaway identity and profiles are made, and the identity signs"
+check_eq "app profile grants the app id" "SIDELOAD00.$APP_ID" "$(plist_get "$TMP/app-profile.plist" 'Entitlements.application-identifier')"
+check_eq "keyboard profile grants the keyboard id" "SIDELOAD00.$APP_ID.keyboard" "$(plist_get "$TMP/keyboard-profile.plist" 'Entitlements.application-identifier')"
+check_eq "profile grants the repository's app group" "$group_id" "$(plist_get "$TMP/app-profile.plist" 'Entitlements.com\.apple\.security\.application-groups.0')"
+check "the temporary keychain is gone afterwards" test ! -e "$SIDELOAD_WORK/sideload.keychain-db"
+if "$SCRIPT_DIR/bundle-ios.sh" --sideload --dry-run >"$TMP/dry-sideload.log" 2>&1; then pass "sideload dry run exits 0"; else fail "sideload dry run exits 0"; fi
+check "sideload builds for a device" grep -q '^+ swift-bundler bundle Wurstfinger -p iOS ' "$TMP/dry-sideload.log"
+check "sideload zips an IPA" grep -q 'zip -qry' "$TMP/dry-sideload.log"
+check "sideload refuses a real identity" bash -c "! '$SCRIPT_DIR/bundle-ios.sh' --sideload --identity x --dry-run >/dev/null 2>&1"
+
 # ---- result -----------------------------------------------------------------------------------------
 
 echo

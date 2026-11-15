@@ -10,8 +10,40 @@ import Foundation
 /// Provides centralized access to shared UserDefaults for communication
 /// between the main app and keyboard extension
 enum SharedDefaults {
-    /// The app group identifier shared between the main app and keyboard extension
-    static let suiteName = "group.de.akator.wurstfinger.shared"
+    /// The app group identifier shared between the main app and keyboard extension.
+    ///
+    /// An App Store build holds `appGroup` itself. A build re-signed by a
+    /// sideloader (Impactor, SideStore) holds `appGroup` followed by the team
+    /// identifier of whoever signed it, because an app group is registered
+    /// once, to one team. `resolvedAppGroup` finds that out from the bundle
+    /// identifier, which the sideloader rewrites the same way.
+    static let suiteName = resolvedAppGroup(bundleIdentifier: Bundle.main.bundleIdentifier)
+
+    /// The group the App Store build is entitled to.
+    static let appGroup = "group.de.akator.wurstfinger.shared"
+
+    /// The App Store bundle identifier of the app; the keyboard's is this plus `.keyboard`.
+    static let appBundleIdentifier = "de.akator.wurstfinger"
+
+    /// `appGroup`, plus `.TEAM` when `bundleIdentifier` carries the team
+    /// identifier a sideloader inserts after `appBundleIdentifier`
+    /// (`de.akator.wurstfinger.TEAM`, `de.akator.wurstfinger.TEAM.keyboard`).
+    /// A team identifier is ten upper-case letters and digits, which no
+    /// component of the real identifiers is.
+    static func resolvedAppGroup(bundleIdentifier: String?) -> String {
+        guard let bundleIdentifier, bundleIdentifier.hasPrefix(appBundleIdentifier + ".") else {
+            return appGroup
+        }
+        let team = bundleIdentifier.dropFirst(appBundleIdentifier.count + 1)
+            .split(separator: ".")
+            .first { isTeamIdentifier($0) }
+        return team.map { "\(appGroup).\($0)" } ?? appGroup
+    }
+
+    private static func isTeamIdentifier(_ component: Substring) -> Bool {
+        component.utf8.count == 10
+            && component.utf8.allSatisfy { ($0 >= 0x41 && $0 <= 0x5A) || ($0 >= 0x30 && $0 <= 0x39) }
+    }
 
     /// Launch argument that swaps `store` for a throwaway suite. UI tests pass
     /// it (see `UITestApp`) so a setting they flip — or fail to flip back after

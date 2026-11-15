@@ -69,3 +69,31 @@ struct SharedDefaultsIsolationTests {
         #expect(plain === UserDefaults.standard)
     }
 }
+
+struct SharedDefaultsSideloadTests {
+    @Test func appStoreIdentifiersKeepTheAppGroup() {
+        #expect(SharedDefaults.resolvedAppGroup(bundleIdentifier: "de.akator.wurstfinger") == SharedDefaults.appGroup)
+        #expect(SharedDefaults.resolvedAppGroup(bundleIdentifier: "de.akator.wurstfinger.keyboard") == SharedDefaults.appGroup)
+        #expect(SharedDefaults.resolvedAppGroup(bundleIdentifier: nil) == SharedDefaults.appGroup)
+        #expect(SharedDefaults.resolvedAppGroup(bundleIdentifier: "com.example.other") == SharedDefaults.appGroup)
+    }
+
+    /// Impactor appends the team identifier to the app and puts it after the
+    /// app's identifier in the keyboard's, and registers the group with the same suffix.
+    @Test func sideloadedIdentifiersGetTheTeamSuffixOnBothSides() {
+        let expected = "group.de.akator.wurstfinger.shared.AB12CD34EF"
+        #expect(SharedDefaults.resolvedAppGroup(bundleIdentifier: "de.akator.wurstfinger.AB12CD34EF") == expected)
+        #expect(SharedDefaults.resolvedAppGroup(bundleIdentifier: "de.akator.wurstfinger.AB12CD34EF.keyboard") == expected)
+        #expect(SharedDefaults.resolvedAppGroup(bundleIdentifier: "de.akator.wurstfinger.keyboard.AB12CD34EF") == expected)
+    }
+
+    @Test func onlyTenUppercaseCharactersCountAsATeam() {
+        for tail in ["keyboard.beta", "ab12cd34ef", "AB12CD34E", "AB12CD34EFG", "AB12-D34EF"] {
+            #expect(SharedDefaults.resolvedAppGroup(bundleIdentifier: "de.akator.wurstfinger.\(tail)") == SharedDefaults.appGroup)
+        }
+    }
+
+    @Test func theResolvedGroupIsNeverTheWipeableSuite() {
+        #expect(!SharedDefaults.isWipeableSuite(SharedDefaults.resolvedAppGroup(bundleIdentifier: "de.akator.wurstfinger.AB12CD34EF")))
+    }
+}

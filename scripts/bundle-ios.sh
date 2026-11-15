@@ -7,7 +7,7 @@
 # Usage:
 #   scripts/bundle-ios.sh [--simulator [NAME]] [--device]
 #                         [--configuration debug|release]
-#                         [--install] [--launch] [--ipa OUT]
+#                         [--install] [--launch] [--ipa OUT] [--sideload]
 #                         [--identity ID] [--keychain PATH]
 #                         [--app-profile PATH] [--keyboard-profile PATH]
 #                         [--build-number N] [--dry-run]
@@ -17,6 +17,11 @@
 #                     available iPhone.
 # --device            Build for a device: signs with --identity and the two
 #                     provisioning profiles. This is the App Store build.
+# --sideload          Build an IPA for a sideloader (Impactor, SideStore, AltStore):
+#                     a device build signed with a throwaway identity and profiles
+#                     made on the spot. The sideloader replaces both with your own
+#                     Apple ID's, so the IPA only has to be well formed. Implies
+#                     --device, and --ipa defaults to .build/Wurstfinger-sideload.ipa.
 # --ipa OUT           Zip Payload/Wurstfinger.app into an IPA at OUT.
 # --keychain PATH     Keychain holding the identity (CI uses a temporary one).
 # --build-number N    CFBundleVersion for app and keyboard (default: Bundler.toml).
@@ -43,6 +48,7 @@ usage() {
 
 KIND=simulator
 SIMULATOR_NAME=""
+SIDELOAD=0
 CONFIGURATION=debug
 INSTALL=0
 LAUNCH=0
@@ -63,6 +69,10 @@ while [ $# -gt 0 ]; do
             fi
             ;;
         --device) KIND=device ;;
+        --sideload)
+            SIDELOAD=1
+            KIND=device
+            ;;
         --configuration | -c)
             [ $# -gt 1 ] || die "$1 needs debug or release"
             CONFIGURATION="$2"
@@ -115,7 +125,10 @@ case "$CONFIGURATION" in
     *) die "--configuration must be debug or release, not $CONFIGURATION" ;;
 esac
 
-if [ "$KIND" = device ]; then
+if [ "$SIDELOAD" = 1 ]; then
+    [ -z "$IDENTITY$APP_PROFILE$KEYBOARD_PROFILE$KEYCHAIN" ] || die "--sideload makes its own identity and profiles; drop --identity, --keychain and the profile options"
+    [ -n "$IPA_OUT" ] || IPA_OUT="$REPO_ROOT/.build/$APP_NAME-sideload.ipa"
+elif [ "$KIND" = device ]; then
     [ -n "$IDENTITY" ] || [ "$DRY_RUN" = 1 ] || die "--device needs --identity"
     [ -n "$APP_PROFILE" ] || [ "$DRY_RUN" = 1 ] || die "--device needs --app-profile"
     [ -n "$KEYBOARD_PROFILE" ] || [ "$DRY_RUN" = 1 ] || die "--device needs --keyboard-profile"
@@ -125,7 +138,7 @@ fi
 if [ "$KIND" = device ] && { [ "$INSTALL" = 1 ] || [ "$LAUNCH" = 1 ]; }; then
     die "--install/--launch work on the simulator; install an IPA on a device with Xcode or Apple Configurator"
 fi
-if [ "$KIND" = device ]; then
+if [ "$KIND" = device ] && [ "$SIDELOAD" != 1 ]; then
     IDENTITY="${IDENTITY:-<identity>}"
     APP_PROFILE="${APP_PROFILE:-<app.mobileprovision>}"
     KEYBOARD_PROFILE="${KEYBOARD_PROFILE:-<keyboard.mobileprovision>}"
@@ -186,7 +199,16 @@ KEYBOARD_ENT="$KEYBOARD_ENTITLEMENTS"
 SIGN_IDENTITY="-"
 if [ "$KIND" = device ]; then
     step "Signing inputs"
-    if [ "$DRY_RUN" = 1 ]; then
+    if [ "$SIDELOAD" = 1 ]; then
+        run mkdir -p "$WORK"
+        trap ios_drop_sideload_inputs EXIT
+        ios_make_sideload_inputs "$WORK"
+        IDENTITY="$SIDELOAD_IDENTITY"
+        KEYCHAIN="$SIDELOAD_KEYCHAIN"
+    fi
+    if [ "$DRY_RUN" = 1 ] || [ "$SIDELOAD" = 1 ]; then
+        # The throwaway certificate is self-signed, so `find-identity -v` would
+        # not list it; it is already named by its hash.
         SIGN_IDENTITY="$IDENTITY"
         note "resolve \"$IDENTITY\" to a SHA-1 with: security find-identity -v -p codesigning${KEYCHAIN:+ $KEYCHAIN}"
     else

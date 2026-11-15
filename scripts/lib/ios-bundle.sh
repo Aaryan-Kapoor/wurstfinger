@@ -468,6 +468,91 @@ ios_embed_profile() {
     run cp "$1" "$2/embedded.mobileprovision"
 }
 
+# ---- sideload inputs ---------------------------------------------------------
+
+# A sideloader (Impactor, SideStore, AltStore) signs the app with the user's own
+# Apple ID and replaces the signature and the profile, so the build only has to
+# get through Swift Bundler, which will not build an iOS app without an identity
+# and a profile. This makes throwaway ones: a self-signed code-signing
+# certificate in a temporary keychain, and one CMS-signed profile per bundle
+# that grants the repository's app group and nothing else. None of it is
+# trusted by a device; it never leaves WORK.
+#   ios_make_sideload_inputs WORK
+# Sets SIDELOAD_KEYCHAIN, SIDELOAD_IDENTITY, APP_PROFILE and KEYBOARD_PROFILE;
+# ios_drop_sideload_inputs undoes the keychain part.
+ios_make_sideload_inputs() {
+    local work="$1" team=SIDELOAD00 password cert_name="Wurstfinger Sideload"
+    SIDELOAD_KEYCHAIN="$work/sideload.keychain-db"
+    APP_PROFILE="$work/app.mobileprovision"
+    KEYBOARD_PROFILE="$work/keyboard.mobileprovision"
+    if [ "$DRY_RUN" = 1 ]; then
+        note "make a self-signed code-signing certificate in a temporary keychain, and two profiles granting $(ios_app_group)"
+        SIDELOAD_IDENTITY="<sideload identity>"
+        return 0
+    fi
+    run mkdir -p "$work"
+    password="$(uuidgen)"
+    printf '[req]\ndistinguished_name=dn\nx509_extensions=ext\nprompt=no\n[dn]\nCN=%s\n[ext]\nkeyUsage=critical,digitalSignature\nextendedKeyUsage=critical,codeSigning\n' \
+        "$cert_name" >"$work/cert.cnf"
+    /usr/bin/openssl req -x509 -newkey rsa:2048 -nodes -days 2 -config "$work/cert.cnf" \
+        -keyout "$work/key.pem" -out "$work/cert.pem" 2>/dev/null
+    /usr/bin/openssl pkcs12 -export -inkey "$work/key.pem" -in "$work/cert.pem" \
+        -out "$work/identity.p12" -passout "pass:$password" 2>/dev/null
+    security create-keychain -p "$password" "$SIDELOAD_KEYCHAIN"
+    security set-keychain-settings "$SIDELOAD_KEYCHAIN"
+    security unlock-keychain -p "$password" "$SIDELOAD_KEYCHAIN"
+    security import "$work/identity.p12" -k "$SIDELOAD_KEYCHAIN" -P "$password" -T /usr/bin/codesign >/dev/null
+    security set-key-partition-list -S apple-tool:,apple: -s -k "$password" "$SIDELOAD_KEYCHAIN" >/dev/null 2>&1 || true
+    # codesign only finds an identity in a keychain on the search list.
+    SIDELOAD_PREVIOUS_KEYCHAINS="$(security list-keychains -d user | tr -d '"' | tr '\n' ' ')"
+    # shellcheck disable=SC2086
+    security list-keychains -d user -s "$SIDELOAD_KEYCHAIN" $SIDELOAD_PREVIOUS_KEYCHAINS
+    # A self-signed certificate is not "valid" to find-identity, so name the
+    # certificate by its hash instead of asking for valid identities only.
+    SIDELOAD_IDENTITY="$(security find-certificate -c "$cert_name" -Z "$SIDELOAD_KEYCHAIN" | awk '/^SHA-1 hash:/ { print $3; exit }')"
+    [ -n "$SIDELOAD_IDENTITY" ] || die "could not find the throwaway certificate in $SIDELOAD_KEYCHAIN"
+    ios_write_sideload_profile "$APP_PROFILE" "$APP_ID" "$team" "$work"
+    ios_write_sideload_profile "$KEYBOARD_PROFILE" "$APP_ID.keyboard" "$team" "$work"
+}
+
+# Puts the search list back and deletes the throwaway keychain.
+ios_drop_sideload_inputs() {
+    [ "$DRY_RUN" != 1 ] || return 0
+    [ -n "${SIDELOAD_KEYCHAIN:-}" ] || return 0
+    if [ -n "${SIDELOAD_PREVIOUS_KEYCHAINS:-}" ]; then
+        # shellcheck disable=SC2086
+        security list-keychains -d user -s $SIDELOAD_PREVIOUS_KEYCHAINS || true
+    fi
+    security delete-keychain "$SIDELOAD_KEYCHAIN" 2>/dev/null || true
+}
+
+ios_app_group() {
+    plist_get "$APP_ENTITLEMENTS" 'com\.apple\.security\.application-groups.0'
+}
+
+# ios_write_sideload_profile OUT BUNDLE_ID TEAM WORK
+ios_write_sideload_profile() {
+    local out="$1" bundle_id="$2" team="$3" work="$4" plist group
+    plist="$work/$(basename "$out").plist"
+    group="$(ios_app_group)"
+    plutil -create xml1 "$plist"
+    plutil -insert Name -string "Wurstfinger sideload" "$plist"
+    plutil -insert UUID -string "$(uuidgen)" "$plist"
+    plutil -insert TeamIdentifier -json "[\"$team\"]" "$plist"
+    plutil -insert ApplicationIdentifierPrefix -json "[\"$team\"]" "$plist"
+    plutil -insert Platform -json '["iOS"]' "$plist"
+    plutil -insert CreationDate -date "$(/bin/date -u +%Y-%m-%dT%H:%M:%SZ)" "$plist"
+    plutil -insert ExpirationDate -date "$(/bin/date -u -v+1d +%Y-%m-%dT%H:%M:%SZ)" "$plist"
+    plutil -insert Entitlements -json '{}' "$plist"
+    plutil -insert Entitlements.application-identifier -string "$team.$bundle_id" "$plist"
+    plutil -insert 'Entitlements.com\.apple\.developer\.team-identifier' -string "$team" "$plist"
+    plutil -insert Entitlements.get-task-allow -bool true "$plist"
+    plutil -insert 'Entitlements.com\.apple\.security\.application-groups' -json "[\"$group\"]" "$plist"
+    # openssl signs the CMS envelope: `security cms -S` wants a trusted identity.
+    /usr/bin/openssl cms -sign -binary -outform DER -nodetach -signer "$work/cert.pem" -inkey "$work/key.pem" \
+        -in "$plist" -out "$out"
+}
+
 # ---- packaging -------------------------------------------------------------------
 
 # Zips Payload/Wurstfinger.app into an IPA.

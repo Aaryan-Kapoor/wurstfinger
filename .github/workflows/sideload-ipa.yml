@@ -1,0 +1,57 @@
+name: Sideload IPA
+
+# An unsigned-for-you IPA to put on your own iPhone with a sideloader (Impactor,
+# SideStore, AltStore), for when there is no Xcode on hand. The sideloader signs
+# it with your Apple ID. See docs/sideloading.md.
+#
+# Run it from the Actions tab (or `gh workflow run sideload-ipa.yml`), then
+# `gh run download` the artifact.
+
+on:
+  workflow_dispatch:
+    inputs:
+      configuration:
+        description: Build configuration
+        type: choice
+        options: [release, debug]
+        default: release
+
+permissions:
+  contents: read
+
+jobs:
+  ipa:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      # Newest Xcode on the image; the build needs the iOS SDK and nothing else
+      # of it.
+      - name: Select Xcode
+        run: |
+          XCODE_APP=$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -n 1)
+          if [ -z "$XCODE_APP" ]; then
+            echo "::error::No Xcode found on the runner image"
+            exit 1
+          fi
+          echo "Selecting $XCODE_APP"
+          sudo xcode-select -s "$XCODE_APP/Contents/Developer"
+          xcodebuild -version
+
+      - name: Set up Swift Bundler
+        uses: ./.github/actions/setup-swift-bundler
+
+      - name: Build the IPA
+        run: scripts/bundle-ios.sh --sideload --configuration "${{ inputs.configuration }}" --ipa "$RUNNER_TEMP/Wurstfinger-sideload.ipa"
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: Wurstfinger-sideload-ipa
+          path: ${{ runner.temp }}/Wurstfinger-sideload.ipa
+          if-no-files-found: error
+          retention-days: 14
