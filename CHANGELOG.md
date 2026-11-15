@@ -27,6 +27,7 @@
 
 ### Fixed
 
+- Urdu: the heh key types ہ (heh goal) instead of the Arabic ه, its down swipe the izafat ۂ instead of the Arabic ۀ, a left swipe on it types ھ (do-chashmi heh, for بھی، پھر، کھ), and the period gesture types the Urdu full stop ۔ with "." on its return swipe. The layout could not write Urdu's commonest words before
 - The Greek layout bound ω twice (top-left down-right and bottom-centre up) and left its 26th slot wasted. The second slot now holds ί, the commonest accented vowel, whose capital keeps its tonos (Ί, not Ι)
 
 - Flicks that launch out of a rolling start are recognized again. A flick that follows a slight drag — settling on the key, then flicking — lost every one of its fast samples, because the filter measured them against the drift and a drift is slow by definition. The letter that got committed came from the drift instead, which for a drift running across the flick is a neighbouring letter rather than the center one. A jump is now measured against the longer of the movement already established and the movement it leads into (#303)

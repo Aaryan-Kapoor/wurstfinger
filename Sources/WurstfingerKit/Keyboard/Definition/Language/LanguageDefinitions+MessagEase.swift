@@ -266,14 +266,20 @@ extension LanguageDefinitions {
             title: meta.title,
             localeIdentifier: meta.localeIdentifier,
             centerCharacters: [
-                ["ه", "ب", "م"],
+                ["ہ", "ب", "م"],
                 ["ی", "ا", "ر"],
                 ["و", "ن", "د"],
             ],
             directionalOverrides: ScriptPunctuation.arabicScript(adding: [
+                // Urdu's heh is ہ (heh goal, on the tap), not the Arabic ه, and
+                // its aspirates take ھ (do-chashmi heh: بھی، پھر، کھ), and its
+                // izafat ۂ (heh goal with hamza), not the Arabic ۀ. The
+                // reference layout has none of the three, which leaves Urdu
+                // unable to write its commonest words; ھ goes on the free left
+                // swipe beside ہ.
                 GridSlot.topLeft: [
-                    .swipeUp: "ٹ", .swipeRight: "ـ", .swipeDown: "ۀ",
-                    .swipeDownRight: "ق",
+                    .swipeUp: "ٹ", .swipeRight: "ـ", .swipeDown: "ۂ",
+                    .swipeDownRight: "ق", .swipeLeft: "ھ",
                 ],
                 GridSlot.topCenter: [
                     .swipeUp: "ُ", .swipeUpLeft: "ِ", .swipeUpRight: "َ",
@@ -294,9 +300,12 @@ extension LanguageDefinitions {
                     .swipeDown: "ڈ", .swipeDownLeft: "ع",
                 ],
                 GridSlot.bottomLeft: [.swipeUp: "ّ", .swipeUpLeft: "ٓ", .swipeUpRight: "ؤ"],
+                // Urdu's full stop ۔ where the other layouts type ".", which
+                // stays on the return swipe (as ؟ ، ؛ do for their Latin marks).
                 GridSlot.bottomCenter: [
                     .swipeUp: "ث", .swipeUpLeft: "ظ", .swipeUpRight: "غ",
                     .swipeLeft: "ء", .swipeRight: "ں", .swipeDownRight: "ئ",
+                    .swipeDown: "۔",
                 ],
                 GridSlot.bottomRight: [
                     .swipeUp: "ً", .swipeUpLeft: "گ", .swipeUpRight: "ْ",
@@ -307,6 +316,7 @@ extension LanguageDefinitions {
                 // See the Persian layout: the tatweel return types ZWNJ (U+200C).
                 GridSlot.topLeft: [.swipeRight: "\u{200C}", .swipeDown: "ة"],
                 GridSlot.topCenter: [.swipeUp: "ٌ", .swipeUpLeft: "ٍ", .swipeUpRight: "ً"],
+                GridSlot.bottomCenter: [.swipeDown: "."],
             ]),
             supportsCapitalization: false,
             numericBackToAlphaLabel: "ابپ",

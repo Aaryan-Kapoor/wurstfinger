@@ -332,11 +332,11 @@ struct LanguageAlphabetCoverageTests {
             id: "fa_IR", source: "Persian alphabet, hamza carriers, ZWNJ, Arabic-script punctuation",
             groups: ["ابپتثجچحخدذرزژسشصضطظعغفقکگلمنوهی", "ءآأؤئةۀ", "؟،؛٭", "\u{200C}"]
         ),
-        // The reference layout has no ہ (heh goal) and no ھ (do-chashmi heh)
-        // anywhere; adding them would mean inventing positions.
+        // With ہ (heh goal) and ھ (do-chashmi heh), which the reference layout
+        // lacks, and the Urdu full stop ۔.
         AlphabetInventory(
-            id: "ur", source: "Urdu alphabet as the reference layout defines it",
-            groups: ["ابپتٹثجچحخدڈذرڑزژسشصضطظعغفقکگلمنںوی", "ےۓءآؤئۀ", "؟،؛٭", "\u{200C}"]
+            id: "ur", source: "Urdu alphabet, hamza carriers, ZWNJ, Urdu punctuation",
+            groups: ["ابپتٹثجچحخدڈذرڑزژسشصضطظعغفقکگلمنںوہھی", "ےۓءآؤئۂ", "؟،؛٭۔", "\u{200C}"]
         ),
         // Without ฅ (khokhon): obsolete, and absent from the reference layout.
         AlphabetInventory(
