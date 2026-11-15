@@ -84,7 +84,9 @@ final class SystemCompletionSource: CompletionSource {
     // iOS-ONLY (compiled on the device, not on the build machine). UITextChecker
     // calls below are the documented API; their behaviour in a keyboard
     // extension is verified only on a device (docs/ios-verification.md).
-    private let checker = UITextChecker()
+    // Lazy: a keyboard with the row off never looks a word up, so it never
+    // builds one.
+    private lazy var checker = UITextChecker()
 
     private static var availableLanguages: [String] { UITextChecker.availableLanguages }
 

@@ -67,6 +67,11 @@ extension KeyboardViewModel {
         completions.noteKeystroke()
     }
 
+    /// The keyboard is about to be suspended (`prepareForSuspension`).
+    func completionsWillSuspend() {
+        completions.learned.prepareForSuspension()
+    }
+
     /// The pipeline's piece of the feature.
     func makeCompletionMiddleware() -> CompletionMiddleware {
         CompletionMiddleware(completions: completions, acceptTop: { [weak self] in

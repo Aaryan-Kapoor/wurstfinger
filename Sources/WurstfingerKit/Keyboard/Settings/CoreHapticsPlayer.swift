@@ -231,10 +231,13 @@ final class CoreHapticsRenderer: HapticRenderer {
     private var players: [HapticCue: CHHapticPatternPlayer] = [:]
     private var patterns: [HapticCue: HapticPatternSpec] = [:]
     /// `HapticClickBank.cellCount × alternates` one-click players, cell-major;
-    /// empty until the engine exists.
-    private var clicks: [CHHapticPatternPlayer] = []
+    /// empty until the engine exists, and filling in while `clickBankBuild`
+    /// runs (a nil slot is not built yet).
+    private var clicks: [CHHapticPatternPlayer?] = []
     /// Which alternate each cell plays next.
     private var nextAlternate: [UInt8] = []
+    /// The build filling `clicks` a batch per main-actor turn, while it runs.
+    private var clickBankBuild: Task<Void, Never>?
 
     /// Whether this device has a Taptic Engine Core Haptics can drive.
     static var isSupportedByHardware: Bool {
@@ -275,7 +278,11 @@ final class CoreHapticsRenderer: HapticRenderer {
         else { return false }
         let alternate = Int(nextAlternate[cell])
         nextAlternate[cell] = UInt8((alternate + 1) % HapticClickBank.alternates)
-        let player = clicks[cell * HapticClickBank.alternates + alternate]
+        let base = cell * HapticClickBank.alternates
+        // While the bank is still being built, the other alternate may exist
+        // already; with neither, the caller plays the designed pattern.
+        guard let player = clicks[base + alternate] ?? clicks[base + (alternate + 1) % HapticClickBank.alternates]
+        else { return false }
         let time = delay > 0 ? engine.currentTime + delay : CHHapticTimeImmediate
         do {
             try player.start(atTime: time)
@@ -369,20 +376,32 @@ final class CoreHapticsRenderer: HapticRenderer {
     private func engineReset() {
         guard lifecycle.reset() else { return }
         // Every player died with the server, the click bank's included.
+        clickBankBuild?.cancel()
+        clickBankBuild = nil
         clicks.removeAll()
         startIfNeeded()
         rebuildPlayers()
     }
 
-    fileprivate func setClickBank(_ bank: [CHHapticPatternPlayer]) {
-        clicks = bank
-        nextAlternate = [UInt8](repeating: 0, count: HapticClickBank.cellCount)
+    /// Puts a built player in its slot, unless the build it belongs to was
+    /// superseded (an engine reset started another).
+    fileprivate func setClick(_ player: CHHapticPatternPlayer, at slot: Int, for build: Task<Void, Never>?) {
+        guard build != nil, clickBankBuild == build, clicks.indices.contains(slot) else { return }
+        clicks[slot] = player
+    }
+
+    /// A build ended, done or failed (`complete` false empties the bank: a
+    /// partial bank would play some hits and drop others).
+    fileprivate func finishClickBank(_ build: Task<Void, Never>?, complete: Bool) {
+        guard build != nil, clickBankBuild == build else { return }
+        clickBankBuild = nil
+        if !complete { clicks.removeAll() }
     }
 
     private func rebuildPlayers() {
         players.removeAll(keepingCapacity: true)
         guard let engine, state != .unavailable else { return }
-        if clicks.isEmpty { rebuildClickBank(on: engine) }
+        if clicks.isEmpty, clickBankBuild == nil { rebuildClickBank(on: engine) }
         for (cue, spec) in patterns {
             guard let pattern = try? CHHapticPattern(spec) else { continue }
             // The ramp is scheduled ahead and cancelled when the finger moves,
@@ -396,22 +415,44 @@ final class CoreHapticsRenderer: HapticRenderer {
 }
 
 extension CoreHapticsRenderer {
+    /// Players built per main-actor turn: each is a call into the haptic
+    /// server, and touches must get through between batches.
+    static let clickBankBatch = 8
+
     /// Builds the click bank: one single-transient player per cell and
     /// alternate. Gain-independent, so only the engine's own resets rebuild it.
+    ///
+    /// A batch per main-actor turn rather than all at once: building every
+    /// player synchronously would put ~100 haptic-server calls on the frame the
+    /// keyboard first appears, ahead of its first touch. The first alternate of
+    /// every cell comes first, so the whole plane plays early; until a slot is
+    /// built `playClick` returns false and the cue's designed pattern plays.
     fileprivate func rebuildClickBank(on engine: CHHapticEngine) {
-        var bank: [CHHapticPatternPlayer] = []
-        bank.reserveCapacity(HapticClickBank.cellCount * HapticClickBank.alternates)
-        for cell in 0 ..< HapticClickBank.cellCount {
-            let (intensity, sharpness) = HapticClickBank.parameters(of: cell)
-            let spec = HapticPatternSpec(events: [.click(intensity, sharpness: sharpness)])
-            for _ in 0 ..< HapticClickBank.alternates {
-                guard let pattern = try? CHHapticPattern(spec), let player = try? engine.makePlayer(with: pattern) else {
-                    return // a partial bank would play some hits and drop others: none at all
+        clicks = Array(repeating: nil, count: HapticClickBank.cellCount * HapticClickBank.alternates)
+        nextAlternate = [UInt8](repeating: 0, count: HapticClickBank.cellCount)
+        let build = Task { @MainActor [weak self] in
+            // Its own handle: assigned below before this body can run, since
+            // both are on the main actor and the assignment comes first.
+            let build = self?.clickBankBuild
+            var built = 0
+            for alternate in 0 ..< HapticClickBank.alternates {
+                for cell in 0 ..< HapticClickBank.cellCount {
+                    guard !Task.isCancelled, let self else { return }
+                    let (intensity, sharpness) = HapticClickBank.parameters(of: cell)
+                    let spec = HapticPatternSpec(events: [.click(intensity, sharpness: sharpness)])
+                    guard let pattern = try? CHHapticPattern(spec), let player = try? engine.makePlayer(with: pattern)
+                    else {
+                        finishClickBank(build, complete: false)
+                        return
+                    }
+                    setClick(player, at: cell * HapticClickBank.alternates + alternate, for: build)
+                    built += 1
+                    if built % Self.clickBankBatch == 0 { await Task.yield() }
                 }
-                bank.append(player)
             }
+            self?.finishClickBank(build, complete: true)
         }
-        setClickBank(bank)
+        clickBankBuild = build
     }
 }
 

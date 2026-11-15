@@ -646,6 +646,16 @@ final class KeyboardViewModel {
         prepareKeySounds() // Feel hook
     }
 
+    /// The keyboard is about to be suspended (the controller sheds memory
+    /// then): lets go of the Taptic Engine and the audio graph, and writes
+    /// what would otherwise wait for a moment that may never come — the
+    /// emoji typed this visit, learned words still waiting for their save.
+    func prepareForSuspension() {
+        suspendHaptics()
+        saveEmojiRecents()
+        completionsWillSuspend()
+    }
+
     /// Releases the Taptic Engine while the keyboard is off screen.
     func suspendHaptics() {
         hapticPlayer.suspend()

@@ -643,6 +643,30 @@ struct LearnedWordStoreTests {
         #expect(restarted.completions(for: "kes", language: "en", limit: 3) == ["Kestrel"])
     }
 
+    /// A keyboard dismissed within `saveDelay` of its last word is suspended
+    /// before the timer fires, and may be killed there: the save happens at
+    /// suspension, and the list leaves memory until the next lookup.
+    @Test func suspensionWritesAPendingSaveAndUnloads() throws {
+        let file = temporaryFile()
+        defer { try? FileManager.default.removeItem(at: file.deletingLastPathComponent()) }
+        let timers = ManualTimerSource()
+        let store = LearnedWordStore(fileURL: file, timers: timers)
+        store.applyClearToken("token-1")
+        for _ in 0 ..< 2 { store.note("Kestrel", language: "en") }
+        store.prepareForSuspension()
+        #expect(FileManager.default.fileExists(atPath: file.path), "written without waiting for the timer")
+        #expect(timers.pendingCount == 0)
+
+        let killed = LearnedWordStore(fileURL: file, timers: timers)
+        #expect(killed.completions(for: "kes", language: "en", limit: 3) == ["Kestrel"])
+        // The suspended store reads its list back on the next lookup, and the
+        // token it already handled wipes nothing.
+        #expect(store.completions(for: "kes", language: "en", limit: 3) == ["Kestrel"])
+        store.note("Kestrel", language: "en")
+        store.saveNow()
+        #expect(LearnedWordStore(fileURL: file, timers: timers).count == 1)
+    }
+
     @Test func aBurstOfNotesWritesOnce() {
         let file = temporaryFile()
         defer { try? FileManager.default.removeItem(at: file.deletingLastPathComponent()) }

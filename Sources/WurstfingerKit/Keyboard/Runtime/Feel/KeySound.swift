@@ -186,20 +186,24 @@ struct KeySoundQueue: Sendable {
 ///
 /// Up to `maxVoices` notes at once (fast typing overlaps a few), the oldest
 /// cut off when a new one needs its place. Each voice reads its instrument at
-/// its own rate with linear interpolation. Nothing allocates while rendering:
-/// the voice slots are a fixed array made at init.
+/// its own rate with linear interpolation.
+///
+/// **Real-time safe.** The render thread must never allocate, wait, or touch
+/// a reference count. Everything it reads or writes is therefore made at
+/// `init` behind raw pointers: the instruments back to back in one buffer,
+/// their spans, the voice slots and the clock. A Swift array read there would
+/// retain its storage, and a class's `var` would pass through the runtime's
+/// exclusivity check, on every buffer.
 ///
 /// `@unchecked Sendable` because the render block captures it: after `init`
-/// it is touched only by `render`, which Core Audio calls serially on its
-/// render thread (and by tests, from one thread). The instruments are
-/// immutable.
+/// it is touched only by `render` and `drain`, which Core Audio calls
+/// serially on its render thread (and by tests, from one thread).
 final class KeySoundMixer: @unchecked Sendable {
     static let maxVoices = 8
     /// Overall level: key sounds sit well under anything the user listens to.
     static let masterGain: Float = 0.32
 
     let sampleRate: Double
-    private let instruments: [[Float]]
 
     private struct Voice {
         var instrument = 0
@@ -212,21 +216,53 @@ final class KeySoundMixer: @unchecked Sendable {
         var age = 0
     }
 
-    private var voices = [Voice](repeating: Voice(), count: maxVoices)
-    private var clock = 0
+    private struct Span {
+        var start: Int
+        var count: Int
+    }
+
+    /// Every instrument's samples, one after another.
+    private let samples: UnsafeMutableBufferPointer<Float>
+    /// Where each instrument lies in `samples`.
+    private let spans: UnsafeMutableBufferPointer<Span>
+    private let instrumentCount: Int
+    private let voices: UnsafeMutableBufferPointer<Voice>
+    /// Counts started notes, to find the oldest voice.
+    private let clock: UnsafeMutablePointer<Int>
 
     init(instruments: [[Float]], sampleRate: Double) {
-        self.instruments = instruments
         self.sampleRate = sampleRate
+        samples = .allocate(capacity: max(instruments.reduce(0) { $0 + $1.count }, 1))
+        spans = .allocate(capacity: max(instruments.count, 1))
+        var offset = 0
+        for (index, instrument) in instruments.enumerated() {
+            _ = UnsafeMutableBufferPointer(rebasing: samples[offset ..< offset + instrument.count])
+                .initialize(from: instrument)
+            spans.initializeElement(at: index, to: Span(start: offset, count: instrument.count))
+            offset += instrument.count
+        }
+        instrumentCount = instruments.count
+        voices = .allocate(capacity: Self.maxVoices)
+        voices.initialize(repeating: Voice())
+        clock = .allocate(capacity: 1)
+        clock.initialize(to: 0)
+    }
+
+    deinit {
+        samples.deallocate()
+        spans.deallocate()
+        voices.deallocate()
+        clock.deallocate()
     }
 
     /// Starts a note in a free slot, or in the oldest one.
     func start(_ trigger: KeySoundTrigger) {
         let instrument = Int(trigger.timbre)
-        guard instrument < instruments.count, trigger.gain > 0, trigger.rate > 0 else { return }
+        guard instrument < instrumentCount, spans[instrument].count > 1, trigger.gain > 0, trigger.rate > 0
+        else { return }
         var slot = 0
         var oldest = Int.max
-        for index in voices.indices {
+        for index in 0 ..< Self.maxVoices {
             if !voices[index].isActive {
                 slot = index
                 break
@@ -236,17 +272,17 @@ final class KeySoundMixer: @unchecked Sendable {
                 slot = index
             }
         }
-        clock &+= 1
+        clock.pointee &+= 1
         voices[slot] = Voice(
             instrument: instrument, position: 0, rate: trigger.rate, gain: trigger.gain,
-            wait: max(Int(Double(trigger.delay) * sampleRate), 0), isActive: true, age: clock
+            wait: max(Int(Double(trigger.delay) * sampleRate), 0), isActive: true, age: clock.pointee
         )
     }
 
     /// Takes whatever notes are waiting, if the lock is free right now.
     func drain(_ queue: OSAllocatedUnfairLock<KeySoundQueue>) {
         queue.withLockIfAvailable { pending in
-            for trigger in pending.items { start(trigger) }
+            for index in pending.items.indices { start(pending.items[index]) }
             pending.removeAll()
         }
     }
@@ -257,27 +293,26 @@ final class KeySoundMixer: @unchecked Sendable {
     func render(frames: Int, into output: UnsafeMutablePointer<Float>) -> Bool {
         output.update(repeating: 0, count: frames)
         var sounded = false
-        for index in voices.indices where voices[index].isActive {
+        for index in 0 ..< Self.maxVoices where voices[index].isActive {
             sounded = true
             var voice = voices[index]
-            let samples = instruments[voice.instrument]
-            let last = Float(samples.count - 1)
+            let span = spans[voice.instrument]
+            let source = samples.baseAddress! + span.start
+            let last = Float(span.count - 1)
             let gain = voice.gain * Self.masterGain
-            samples.withUnsafeBufferPointer { source in
-                var frame = 0
-                if voice.wait > 0 {
-                    let skip = min(voice.wait, frames)
-                    voice.wait -= skip
-                    frame = skip
-                }
-                while frame < frames, voice.position < last {
-                    let base = Int(voice.position)
-                    let fraction = voice.position - Float(base)
-                    let value = source[base] + (source[base + 1] - source[base]) * fraction
-                    output[frame] += value * gain
-                    voice.position += voice.rate
-                    frame += 1
-                }
+            var frame = 0
+            if voice.wait > 0 {
+                let skip = min(voice.wait, frames)
+                voice.wait -= skip
+                frame = skip
+            }
+            while frame < frames, voice.position < last {
+                let base = Int(voice.position)
+                let fraction = voice.position - Float(base)
+                let value = source[base] + (source[base + 1] - source[base]) * fraction
+                output[frame] += value * gain
+                voice.position += voice.rate
+                frame += 1
             }
             if voice.wait == 0, voice.position >= last { voice.isActive = false }
             voices[index] = voice
