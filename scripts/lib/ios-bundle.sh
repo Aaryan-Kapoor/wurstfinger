@@ -535,6 +535,9 @@ ios_trust_sideload_certificate() {
 ios_drop_sideload_inputs() {
     [ "$DRY_RUN" != 1 ] || return 0
     [ -n "${SIDELOAD_KEYCHAIN:-}" ] || return 0
+    # A CI runner is thrown away with the job; undoing the trust there only
+    # risks a stuck `security` call holding the job open after a failure.
+    [ "${CI:-}" != true ] || return 0
     if [ -n "${SIDELOAD_PREVIOUS_KEYCHAINS:-}" ]; then
         # shellcheck disable=SC2086
         security list-keychains -d user -s $SIDELOAD_PREVIOUS_KEYCHAINS || true

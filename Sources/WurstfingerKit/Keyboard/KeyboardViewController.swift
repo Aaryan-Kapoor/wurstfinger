@@ -45,7 +45,7 @@ public final class KeyboardViewController: UIInputViewController {
     /// Reports the active keyboard language to iOS (shown in Settings > Keyboards).
     /// Reads directly from SharedDefaults to pick up language changes made in the host app,
     /// since the LanguageSettings singleton may hold a stale value from its init.
-    override var primaryLanguage: String? {
+    public override var primaryLanguage: String? {
         get {
             // Resolve the locale from lightweight registry metadata only. iOS may
             // query this eagerly/repeatedly, so it must never build a layout.
@@ -58,7 +58,7 @@ public final class KeyboardViewController: UIInputViewController {
         }
     }
 
-    override func viewDidLoad() {
+    public override func viewDidLoad() {
         super.viewDidLoad()
         KeyboardHealthLog.shared.record("viewDidLoad.start")
 
@@ -100,7 +100,7 @@ public final class KeyboardViewController: UIInputViewController {
         KeyboardHealthLog.shared.record("viewDidLoad.end")
     }
 
-    override func viewWillAppear(_ animated: Bool) {
+    public override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         // Heartbeat: one entry per keyboard appearance. Its absence at the time
         // of a "system keyboard showed instead" incident proves iOS never
@@ -116,7 +116,7 @@ public final class KeyboardViewController: UIInputViewController {
         refreshForAppearance(resettingMode: true)
     }
 
-    override func viewDidAppear(_ animated: Bool) {
+    public override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         // Pairs with the `viewWillAppear` entry: the timestamp delta bounds
         // what an appearance actually costs. The suspension teardown makes
@@ -200,7 +200,7 @@ public final class KeyboardViewController: UIInputViewController {
         loadDefinitionIfNeeded()
     }
 
-    override func textDidChange(_ textInput: UITextInput?) {
+    public override func textDidChange(_ textInput: UITextInput?) {
         super.textDidChange(textInput)
         // Fires when the host text or caret position changes outside our own
         // key actions (field switch, caret relocation, external edits) — and
@@ -285,7 +285,7 @@ public final class KeyboardViewController: UIInputViewController {
         viewModel.loadDefinition(for: languageId)
     }
 
-    override func viewDidDisappear(_ animated: Bool) {
+    public override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
         shedMemoryBeforeSuspension("viewDidDisappear")
     }
@@ -491,17 +491,17 @@ public final class KeyboardViewController: UIInputViewController {
                 // mode is deliberately kept: the user returns to the same field
                 // mid-typing. (A definition reload inside the refresh still
                 // resets it — a new language's layout cannot keep the old mode.)
-                if viewIfLoaded?.window != nil {
-                    refreshForAppearance(resettingMode: false)
+                if self.viewIfLoaded?.window != nil {
+                    self.refreshForAppearance(resettingMode: false)
                     // Feel hook: the shedding stopped the Taptic Engine.
-                    viewModel.prepareHaptics()
+                    self.viewModel.prepareHaptics()
                 }
                 KeyboardHealthLog.shared.record("hostWillEnterForeground")
             }
         }))
     }
 
-    override func didReceiveMemoryWarning() {
+    public override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         KeyboardHealthLog.shared.record("didReceiveMemoryWarning")
         // Free cached layouts for languages other than the active one. The
@@ -538,7 +538,7 @@ public final class KeyboardViewController: UIInputViewController {
     /// frame: the height change rides on it instead of a spring of our own.
     private var isInSystemTransition = false
 
-    override func viewWillTransition(to size: CGSize, with coordinator: any UIViewControllerTransitionCoordinator) {
+    public override func viewWillTransition(to size: CGSize, with coordinator: any UIViewControllerTransitionCoordinator) {
         super.viewWillTransition(to: size, with: coordinator)
         // The keys settle in exactly the rotation's time, landing with the
         // keyboard's frame (`LayoutMotionClock`).
@@ -568,7 +568,7 @@ public final class KeyboardViewController: UIInputViewController {
         )
     }
 
-    override func viewWillLayoutSubviews() {
+    public override func viewWillLayoutSubviews() {
         super.viewWillLayoutSubviews()
         view.backgroundColor = .clear
         // Update viewModel with current width so SwiftUI re-renders after
