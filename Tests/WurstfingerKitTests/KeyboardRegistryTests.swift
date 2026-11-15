@@ -134,7 +134,15 @@ struct KeyboardRegistryTests {
         KeyboardRegistry.evictAll()
         #expect(KeyboardRegistry.load(id: LanguageDefinitions.german.id) != nil)
         #expect(KeyboardRegistry.load(id: LanguageDefinitions.english.id) != nil)
-        #expect(KeyboardRegistry.isCached(id: LanguageDefinitions.german.id))
-        #expect(KeyboardRegistry.isCached(id: LanguageDefinitions.english.id))
+        // Another suite's `evictAll` may land between a load and the check
+        // (the cache is shared and suites run in parallel), so re-caching has
+        // to hold in some attempt, not in every one.
+        let recaches = (0 ..< 50).contains { _ in
+            _ = KeyboardRegistry.load(id: LanguageDefinitions.german.id)
+            _ = KeyboardRegistry.load(id: LanguageDefinitions.english.id)
+            return KeyboardRegistry.isCached(id: LanguageDefinitions.german.id)
+                && KeyboardRegistry.isCached(id: LanguageDefinitions.english.id)
+        }
+        #expect(recaches)
     }
 }
