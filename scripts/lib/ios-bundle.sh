@@ -511,11 +511,24 @@ ios_make_sideload_inputs() {
     # valid, which a self-signed one is not until it is trusted for code
     # signing. ios_drop_sideload_inputs removes the trust again.
     SIDELOAD_CERT="$work/cert.pem"
-    security add-trusted-cert -r trustRoot -p codeSign -k "$SIDELOAD_KEYCHAIN" "$SIDELOAD_CERT" ||
-        die "could not trust the throwaway certificate"
+    ios_trust_sideload_certificate
     SIDELOAD_IDENTITY="$cert_name"
     ios_write_sideload_profile "$APP_PROFILE" "$APP_ID" "$team" "$work"
     ios_write_sideload_profile "$KEYBOARD_PROFILE" "$APP_ID.keyboard" "$team" "$work"
+}
+
+# Trusts the throwaway certificate for code signing, in the admin trust domain
+# with passwordless sudo, as on a CI runner. The user-domain call raises an
+# authorization prompt that can block for good, so there is no fallback to it:
+# without sudo the build stops here. SIDELOAD_SKIP_TRUST=1 skips the step for
+# the assembly test, which only signs by name and never goes through Swift Bundler.
+ios_trust_sideload_certificate() {
+    [ "${SIDELOAD_SKIP_TRUST:-0}" != 1 ] || return 0
+    sudo -n true 2>/dev/null ||
+        die "--sideload trusts a throwaway certificate and needs passwordless sudo (a CI runner has it; run it from the Sideload IPA workflow)"
+    SIDELOAD_TRUST_ADMIN=1
+    sudo -n security add-trusted-cert -d -r trustRoot -p codeSign -k /Library/Keychains/System.keychain "$SIDELOAD_CERT" ||
+        die "could not trust the throwaway certificate"
 }
 
 # Puts the search list back and deletes the throwaway keychain.
@@ -526,7 +539,13 @@ ios_drop_sideload_inputs() {
         # shellcheck disable=SC2086
         security list-keychains -d user -s $SIDELOAD_PREVIOUS_KEYCHAINS || true
     fi
-    [ -z "${SIDELOAD_CERT:-}" ] || security remove-trusted-cert "$SIDELOAD_CERT" 2>/dev/null || true
+    if [ -n "${SIDELOAD_CERT:-}" ]; then
+        if [ "${SIDELOAD_TRUST_ADMIN:-0}" = 1 ]; then
+            sudo -n security remove-trusted-cert -d "$SIDELOAD_CERT" 2>/dev/null || true
+        else
+            security remove-trusted-cert "$SIDELOAD_CERT" 2>/dev/null || true
+        fi
+    fi
     security delete-keychain "$SIDELOAD_KEYCHAIN" 2>/dev/null || true
 }
 

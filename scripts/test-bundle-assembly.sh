@@ -269,7 +269,7 @@ check "rejects --device without a profile" bash -c "! '$SCRIPT_DIR/bundle-ios.sh
 echo "bundle-ios.sh --sideload"
 SIDELOAD_WORK="$TMP/sideload"
 SIDELOAD_OK=1
-ios_make_sideload_inputs "$SIDELOAD_WORK" >/dev/null 2>&1 || SIDELOAD_OK=0
+SIDELOAD_SKIP_TRUST=1 ios_make_sideload_inputs "$SIDELOAD_WORK" >/dev/null 2>&1 || SIDELOAD_OK=0
 if [ "$SIDELOAD_OK" = 1 ]; then
     security cms -D -i "$APP_PROFILE" -o "$TMP/app-profile.plist" 2>/dev/null || SIDELOAD_OK=0
     security cms -D -i "$KEYBOARD_PROFILE" -o "$TMP/keyboard-profile.plist" 2>/dev/null || SIDELOAD_OK=0
