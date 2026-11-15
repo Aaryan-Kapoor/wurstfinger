@@ -139,6 +139,20 @@ final class GestureTraceRecorder {
         }
     }
 
+    /// The keyboard is about to be suspended: writes everything finished, the
+    /// gesture still waiting for a correction included, on this thread — a
+    /// suspended keyboard may be killed before a background write gets to run.
+    /// Skipped while a background write is in flight: two appends to the file
+    /// must never interleave.
+    func flushForSuspension() {
+        pendingFlush?.cancel()
+        pendingFlush = nil
+        ready.append(contentsOf: labeler.settle(at: timers.now, force: true))
+        guard let store, !ready.isEmpty, !isWriting else { return }
+        store.append(ready)
+        ready = []
+    }
+
     /// Writes the finished records now. `force` also decides the gesture still
     /// waiting for a correction (accepted).
     func flush(force: Bool = false) {
@@ -161,7 +175,7 @@ final class GestureTraceRecorder {
         isWriting = true
         // The write itself runs off the main actor; its completion comes back.
         Task { @MainActor [weak self] in
-            await Task.detached(priority: .utility) { store.append(batch) }.value
+            _ = await Task.detached(priority: .utility) { store.append(batch) }.value
             guard let self else { return }
             isWriting = false
             if !ready.isEmpty { scheduleFlush() }

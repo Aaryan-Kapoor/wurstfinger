@@ -37,7 +37,7 @@ Wurstfinger does not require network access and does not connect to the internet
 
 Your keyboard preferences (such as haptic feedback intensity and keyboard scale) are stored locally on your device using iOS's standard settings storage. This data never leaves your device.
 
-The keyboard also remembers two things on your device, and nothing else of what you type:
+The keyboard also remembers two things on your device:
 
 - **Recent emoji:** the last nine emoji you typed, for the emoji mode's recent key. Kept with your keyboard preferences.
 - **Learned words:** when word suggestions are on, words you type that the system dictionary does not know, so they can be suggested back to you. Kept in a file only the keyboard can read, capped at 1,500 words, and erased with "Clear Learned Words" in the app. Turn off "Learn New Words" to stop it.

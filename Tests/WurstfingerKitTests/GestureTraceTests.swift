@@ -267,6 +267,22 @@ struct GestureTraceRecorderTests {
         #expect(abs(r.peakTime - 0.06) < 1e-9)
     }
 
+    /// A keyboard suspended before its batch timer fires may be killed there:
+    /// the batch, and the gesture still waiting for a correction, are written
+    /// at suspension, on the spot, even by a recorder that writes off-main.
+    @Test func suspensionWritesTheBatchAtOnce() {
+        let store = temporaryStore()
+        defer { cleanUp(store) }
+        let clock = ManualTimerSource(now: 100)
+        let recorder = makeRecorder(store: store, timers: clock, inline: false)
+        gesture(recorder, to: CGPoint(x: 30, y: 0), start: 100)
+        gesture(recorder, to: CGPoint(x: 0, y: 30), start: 100.5, classified: .swipeDown)
+        #expect(store.count() == 0)
+        recorder.flushForSuspension()
+        #expect(store.count() == 2)
+        #expect(clock.pendingCount == 0, "no batch timer left behind")
+    }
+
     @Test func recordsAreWrittenInOneBatchOnTheTimerNeverPerGesture() {
         let store = temporaryStore()
         defer { cleanUp(store) }
