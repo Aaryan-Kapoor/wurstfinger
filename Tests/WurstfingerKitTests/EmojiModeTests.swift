@@ -562,3 +562,219 @@ struct EmojiModePresentationTests {
         #expect(!EmojiText.isSingleEmoji("😂😂"))
     }
 }
+
+// MARK: - Skin tones
+
+struct EmojiSkinToneTests {
+    /// The emoji of the map that have skin-tone variants in `emoji-test.txt` of
+    /// Emoji 15.0 (a fully-qualified sequence with U+1F3FB…1F3FF after the base),
+    /// in map order. Written down from that file; the runtime's own
+    /// `Emoji_Modifier_Base` property has to agree with it.
+    private static let toneCapable: Set<String> = [
+        "🫶", "🤘", "🤙", "🤝", "👏", "👍", "🙇", "🙏", "👌", "🤞", "👊", "👎", "🤷", "💃",
+        "✌️", "💪", "🙌", "🤲", "✊", "🤦", "🛌", "🕺", "🤟", "👋", "🙆", "💁", "🫱", "🫰",
+        "🙋", "🤛", "🫵", "🖕", "🧘",
+    ]
+
+    private var allEmoji: [String] {
+        EmojiLayouts.families.flatMap { family in
+            [family.main, family.returns, family.more].flatMap { $0.split(separator: " ").map(String.init) }
+        }
+    }
+
+    @Test func exactlyTheEmojiWithToneVariantsTakeATone() {
+        let capable = Set(allEmoji.filter(EmojiSkinTone.supportsTone))
+        #expect(capable == Self.toneCapable, "differs: \(capable.symmetricDifference(Self.toneCapable))")
+        #expect(capable.count == 33)
+    }
+
+    @Test func aToneIsAModifierAfterTheBaseAndNothingElseChanges() {
+        #expect(EmojiSkinTone.none.applying(to: "👍") == "👍")
+        #expect(EmojiSkinTone.light.applying(to: "👍") == "👍\u{1F3FB}")
+        #expect(EmojiSkinTone.dark.applying(to: "👍") == "👍\u{1F3FF}")
+        // The selector drops out of a text-default base.
+        #expect(EmojiSkinTone.medium.applying(to: "✌️") == "✌\u{1F3FD}")
+        // Faces, hearts and sequences are not touched.
+        for unchanged in ["😂", "❤️", "❤️‍🔥", "😮‍💨", "🎉", "a"] {
+            #expect(EmojiSkinTone.dark.applying(to: unchanged) == unchanged, "\(unchanged)")
+        }
+        #expect(EmojiSkinTone.allCases.map(\.sample).count == Set(EmojiSkinTone.allCases.map(\.sample)).count,
+                "six distinct samples")
+        #expect(EmojiSkinTone.allCases.first?.sample == "👍")
+    }
+
+    @Test func everyToneOfEveryMemberIsOneEmojiGraphemeCluster() {
+        for tone in EmojiSkinTone.allCases {
+            for emoji in allEmoji {
+                let result = tone.applying(to: emoji)
+                #expect(EmojiText.isSingleEmoji(result), "\(emoji) in \(tone) -> \(result)")
+                if tone != .none, Self.toneCapable.contains(emoji) {
+                    #expect(result.unicodeScalars.last == tone.modifier)
+                    #expect(!result.unicodeScalars.contains { $0.value == 0xFE0F })
+                } else {
+                    #expect(result == emoji)
+                }
+            }
+        }
+    }
+
+    @Test func thePreferenceIsReadFromTheStoreAndDefaultsToNone() {
+        let defaults = InMemoryUserDefaults()
+        #expect(EmojiSkinTone.load(from: defaults) == .none)
+        defaults.set(3, forKey: SettingsKey.emojiSkinTone.rawValue)
+        #expect(EmojiSkinTone.load(from: defaults) == .medium)
+        defaults.set(99, forKey: SettingsKey.emojiSkinTone.rawValue)
+        #expect(EmojiSkinTone.load(from: defaults) == .none, "unknown values are the default")
+    }
+
+    @Test func thePagesCarryTheToneOnTheHandsOnly() throws {
+        let toned = EmojiLayouts.modes(tone: .mediumDark)
+        let plain = EmojiLayouts.modes()
+        let key = try #require(toned[ModeNames.emoji]?.keys[GridSlot.bottomRight])
+        #expect(key.bindings[.tap]?.label == "👍\u{1F3FE}")
+        #expect(key.bindings[.tap]?.action == .commitText("👍\u{1F3FE}"))
+        #expect(key.bindings[.swipeUp]?.label == "👏\u{1F3FE}")
+        #expect(key.bindings[.swipeUp]?.returnAction == .commitText("🙌\u{1F3FE}"))
+        #expect(key.bindings[.longPress]?.action == .commitText("👍\u{1F3FE}"))
+        #expect(key.bindings[.tap]?.accessibilityLabel?.contains("👍\u{1F3FE}") == true)
+        // The joy key has no hand but 🎉, and the default pages are untouched.
+        #expect(toned[ModeNames.emoji]?.keys[GridSlot.topRight] == plain[ModeNames.emoji]?.keys[GridSlot.topRight])
+        #expect(plain[ModeNames.emoji]?.keys[GridSlot.bottomRight]?.bindings[.tap]?.label == "👍")
+        // The recent key holds what was typed, whatever the tone is now.
+        #expect(toned[ModeNames.emoji]?.keys[GridSlot.recent] == plain[ModeNames.emoji]?.keys[GridSlot.recent])
+        // Second page, too.
+        #expect(toned[ModeNames.emojiMore]?.keys[GridSlot.bottomRight]?.bindings[.swipeUp]?.label == "👋\u{1F3FE}")
+    }
+
+    @Test func everyBindingOfTheTonedPagesIsOneGraphemeCluster() {
+        for tone in EmojiSkinTone.allCases {
+            for (_, mode) in EmojiLayouts.modes(tone: tone) {
+                for slot in GridSlot.allSlots.flatMap(\.self) {
+                    for binding in Array(mode.keys[slot]?.bindings.values ?? [:].values) {
+                        for action in [binding.action, binding.returnAction].compactMap(\.self) {
+                            guard case let .commitText(text) = action else { continue }
+                            #expect(EmojiText.isSingleEmoji(text), "\(tone) \(slot): \(text)")
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@MainActor
+struct EmojiSkinToneBehaviourTests {
+    @Test func theChosenToneIsOnTheHintsAndIsTyped() throws {
+        let scenario = KeyboardScenario(
+            language: "en_US", autoCapitalize: false, settings: [.emojiSkinTone: 2]
+        )
+        scenario.viewModel.reloadSettings()
+        scenario.swipe(UtilitySlot.symbols, .swipeDownRight)
+        let key = try #require(scenario.viewModel.activeModeFromDefinition?.keys[GridSlot.bottomRight])
+        #expect(key.bindings[.tap]?.label == "👍\u{1F3FC}", "the hint follows the preference")
+        scenario.tap(GridSlot.bottomRight)
+        scenario.swipe(GridSlot.bottomRight, .swipeUp)
+        scenario.returnSwipe(GridSlot.bottomRight, .swipeUp)
+        scenario.tap(GridSlot.center) // a face: untouched
+        #expect(scenario.text == "👍\u{1F3FC}👏\u{1F3FC}🙌\u{1F3FC}😜")
+        #expect(scenario.viewModel.previewLabel(for: .swipeDown, keyId: GridSlot.bottomRight, isReturn: false)
+            == "🙏\u{1F3FC}", "so does the guide card")
+    }
+
+    @Test func recentsHoldTheTonedFormAsTyped() {
+        let scenario = KeyboardScenario(
+            language: "en_US", autoCapitalize: false, settings: [.emojiSkinTone: 5]
+        )
+        scenario.viewModel.reloadSettings()
+        scenario.swipe(UtilitySlot.symbols, .swipeDownRight)
+        scenario.tap(GridSlot.bottomRight)
+        scenario.tap(UtilitySlot.symbols)
+        #expect(scenario.defaults.stringArray(forKey: SettingsKey.emojiRecents.rawValue)?.first == "👍\u{1F3FF}")
+        scenario.swipe(UtilitySlot.symbols, .swipeDownRight)
+        scenario.target.reset()
+        scenario.tap(GridSlot.recent)
+        #expect(scenario.text == "👍\u{1F3FF}")
+    }
+
+    @Test func aChangedPreferenceRebuildsThePagesAndBackToDefaultRestoresThem() throws {
+        let scenario = KeyboardScenario(language: "en_US", autoCapitalize: false)
+        scenario.swipe(UtilitySlot.symbols, .swipeDownRight)
+        scenario.tap(UtilitySlot.symbols)
+        scenario.defaults.set(1, forKey: SettingsKey.emojiSkinTone.rawValue)
+        scenario.viewModel.reloadSettings()
+        scenario.swipe(UtilitySlot.symbols, .swipeDownRight)
+        scenario.tap(GridSlot.bottomRight)
+        #expect(scenario.text == "👍\u{1F3FB}")
+        scenario.tap(UtilitySlot.symbols)
+        scenario.defaults.set(0, forKey: SettingsKey.emojiSkinTone.rawValue)
+        scenario.viewModel.reloadSettings()
+        scenario.swipe(UtilitySlot.symbols, .swipeDownRight)
+        scenario.tap(GridSlot.bottomRight)
+        #expect(scenario.text == "👍\u{1F3FB}👍")
+        // The compiled tables follow the rebuilt definition.
+        let definition = try #require(scenario.viewModel.currentDefinition)
+        let fresh = CompiledDefinition(definition)
+        for page in [ModeNames.emoji, ModeNames.emojiMore] {
+            #expect(scenario.viewModel.compiledDefinition?.mode(page)?.bindings == fresh.mode(page)?.bindings)
+        }
+    }
+
+    @Test func theToneSurvivesALanguageSwitch() {
+        let scenario = KeyboardScenario(
+            language: "en_US", autoCapitalize: false, settings: [.emojiSkinTone: 4]
+        )
+        scenario.viewModel.reloadSettings()
+        scenario.viewModel.loadDefinition(for: "de_DE")
+        scenario.swipe(UtilitySlot.symbols, .swipeDownRight)
+        scenario.tap(GridSlot.bottomRight)
+        #expect(scenario.text == "👍\u{1F3FE}")
+    }
+}
+
+// MARK: - Sharing between layouts
+
+@MainActor
+struct EmojiSharingTests {
+    @Test func layoutsWithTheSameBackLabelShareTheirPages() throws {
+        let english = try #require(KeyboardRegistry.load(id: "en_US"))
+        let german = try #require(KeyboardRegistry.load(id: "de_DE"))
+        let thumb = try #require(KeyboardRegistry.load(id: "en_US_thumbkey"))
+        for page in [ModeNames.emoji, ModeNames.emojiMore] {
+            #expect(english.mode(page) == german.mode(page))
+            #expect(english.mode(page) == thumb.mode(page))
+        }
+        let hebrew = try #require(KeyboardRegistry.load(id: "he_IL"))
+        #expect(hebrew.mode(ModeNames.emoji) != english.mode(ModeNames.emoji), "its back key says אבג")
+        // Memoized, not rebuilt: the same call gives the same value.
+        #expect(EmojiLayouts.sharedModes(backToAlphaLabel: "abc") == EmojiLayouts.sharedModes(backToAlphaLabel: "abc"))
+    }
+
+    /// The shared tables are what compiling this language's own page gives.
+    @Test func theSharedTablesEqualACompilePerLanguage() throws {
+        for id in ["en_US", "de_DE", "he_IL", "ru_RU", "ar", "en_US_thumbkey"] {
+            guard let definition = KeyboardRegistry.load(id: id) else { continue }
+            let shared = CompiledDefinition(definition)
+            for page in [ModeNames.emoji, ModeNames.emojiMore] {
+                let own = CompiledMode(
+                    mode: try #require(definition.mode(page)), fallbackMode: definition.mode(ModeNames.numeric),
+                    shiftedMode: definition.mode(ModeNames.shifted), locale: definition.locale
+                )
+                let table = try #require(shared.mode(page))
+                #expect(table.bindings == own.bindings, "\(id)/\(page)")
+                #expect(table.table == own.table, "\(id)/\(page)")
+                #expect(table.circularTable == own.circularTable, "\(id)/\(page)")
+            }
+        }
+    }
+
+    @Test func enteringTheModeLeavesTheSharedPagesAndOtherLayoutsAlone() throws {
+        let scenario = KeyboardScenario(language: "en_US", autoCapitalize: false, settings: [.emojiSkinTone: 3])
+        scenario.viewModel.reloadSettings()
+        scenario.swipe(UtilitySlot.symbols, .swipeDownRight)
+        scenario.tap(GridSlot.bottomRight)
+        #expect(scenario.text == "👍\u{1F3FD}")
+        let german = try #require(KeyboardRegistry.load(id: "de_DE"))
+        #expect(german.mode(ModeNames.emoji)?.keys[GridSlot.bottomRight]?.bindings[.tap]?.label == "👍")
+        #expect(KeyboardRegistry.load(id: "en_US")?.mode(ModeNames.emoji)?.keys[GridSlot.bottomRight]?.bindings[.tap]?.label == "👍")
+    }
+}

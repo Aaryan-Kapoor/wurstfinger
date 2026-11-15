@@ -15,6 +15,9 @@ struct Options {
     /// Render the derived key sounds of a typed phrase to this WAV file
     /// instead of taking pictures.
     var soundDemo: String?
+    /// Measure the emoji mode's glyph ink at the standard widths and print
+    /// what overflows or crowds (`EmojiInkAudit`) instead of taking pictures.
+    var emojiAudit = false
 
     static let usage = """
     Usage: swift run WurstfingerSnapshots [options]
@@ -27,6 +30,8 @@ struct Options {
       --list             Print the scenario names and exit
       --scale N          Render scale, pixels per point (default 3)
       --sound-demo FILE  Render the key sounds of a typed phrase to a WAV file
+      --emoji-audit      Measure every emoji of the emoji mode from the pixels and
+                         report overflow and crowding at the iPhone SE, iPhone and iPad
       -h, --help         Show this help
 
     For the speed of an optimised build:
@@ -66,6 +71,7 @@ struct Options {
                 }
                 options.scale = CGFloat(scale)
             case "--sound-demo": options.soundDemo = try value(for: argument)
+            case "--emoji-audit": options.emojiAudit = true
             case "-h", "--help": options.showHelp = true
             // Added by the launcher so the tool runs against a throwaway
             // defaults suite (see `main.swift`).

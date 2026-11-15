@@ -153,11 +153,16 @@ enum EmojiLayouts {
 
     /// Both pages, for a layout whose "back to letters" key is labelled
     /// `backToAlphaLabel` (the same label the numeric mode uses), with the
-    /// recent key carrying `recents`.
+    /// recent key carrying `recents` and the hands and people in `tone` (the
+    /// recent key is not toned: it holds what was typed, in the tone it was
+    /// typed in).
     static func modes(
         backToAlphaLabel: String = NumericLayouts.defaultBackToAlphaLabel,
-        recents: EmojiRecents = EmojiRecents()
+        recents: EmojiRecents = EmojiRecents(),
+        tone: EmojiSkinTone = .none
     ) -> [String: KeyboardMode] {
+        let firstPageKeys = tone == .none ? Self.firstPageKeys : pageKeys(second: false, tone: tone)
+        let secondPageKeys = tone == .none ? Self.secondPageKeys : pageKeys(second: true, tone: tone)
         func page(_ name: String, keys familyKeys: [String: KeyDefinition], label: String) -> KeyboardMode {
             var keys = familyKeys
             keys[GridSlot.recent] = recentKey(recents, onSecondPage: name == ModeNames.emojiMore)
@@ -174,11 +179,63 @@ enum EmojiLayouts {
         ]
     }
 
-    /// `definition` with the emoji pages rebuilt around `recents`. Everything
-    /// else in the definition is shared with it, not copied.
-    static func applying(_ recents: EmojiRecents, to definition: KeyboardDefinition) -> KeyboardDefinition {
+    // MARK: - Sharing between layouts
+
+    /// The default pages (no recents typed, no tone) of a layout whose back key
+    /// is labelled `backToAlphaLabel`, built once per label for the process.
+    ///
+    /// The pages of two layouts differ only by that label, yet every definition
+    /// used to build its own copy (about 43 KB of heap each, almost half of a
+    /// definition). A `KeyboardMode` is a value over copy-on-write storage, so
+    /// handing every definition the same value shares the keys, and a later
+    /// `applying(_:tone:to:)` builds new pages for the one definition that
+    /// enters the mode without touching the shared ones.
+    static func sharedModes(backToAlphaLabel: String) -> [String: KeyboardMode] {
+        sharedPages.value(for: backToAlphaLabel) { modes(backToAlphaLabel: backToAlphaLabel) }
+    }
+
+    private static let sharedPages = LockedCache<String, [String: KeyboardMode]>()
+
+    /// A shared page's compiled tables, with the same sharing: the tables of a
+    /// default page do not depend on the language (every emoji key binds every
+    /// gesture itself, and the utility keys that fall back to the numeric mode
+    /// find the same bindings there in every language), only on the label of
+    /// its back key, so they are compiled once per label.
+    ///
+    /// Thread-safe, because the prewarm compiles definitions concurrently, and
+    /// touched only when a definition is compiled, never on the typing path,
+    /// where a lookup is the array index it always was. A page that is not the
+    /// default one (recents typed, a tone chosen, a custom definition) is
+    /// compiled for itself, and `CompiledModeTests` holds every shared table to
+    /// what compiling that language's page alone gives.
+    static func compiled(
+        _ mode: KeyboardMode, fallbackMode: KeyboardMode?, shiftedMode: KeyboardMode?, locale: Locale
+    ) -> CompiledMode {
+        let label = mode.keys[UtilitySlot.symbols]?.bindings[.tap]?.label ?? ""
+        let entry = sharedTables.value(for: "\(mode.name)|\(label)") {
+            SharedTables(
+                source: mode,
+                compiled: CompiledMode(mode: mode, fallbackMode: fallbackMode, shiftedMode: shiftedMode, locale: locale)
+            )
+        }
+        if entry.source == mode { return entry.compiled }
+        return CompiledMode(mode: mode, fallbackMode: fallbackMode, shiftedMode: shiftedMode, locale: locale)
+    }
+
+    private struct SharedTables: Sendable {
+        let source: KeyboardMode
+        let compiled: CompiledMode
+    }
+
+    private static let sharedTables = LockedCache<String, SharedTables>()
+
+    /// `definition` with the emoji pages rebuilt around `recents` and `tone`.
+    /// Everything else in the definition is shared with it, not copied.
+    static func applying(
+        _ recents: EmojiRecents, tone: EmojiSkinTone = .none, to definition: KeyboardDefinition
+    ) -> KeyboardDefinition {
         var updated = definition
-        let pages = modes(backToAlphaLabel: definition.numericBackToAlphaLabel, recents: recents)
+        let pages = modes(backToAlphaLabel: definition.numericBackToAlphaLabel, recents: recents, tone: tone)
         for (name, mode) in pages {
             updated = updated.replacingMode(name, with: mode)
         }
@@ -213,30 +270,26 @@ enum EmojiLayouts {
         )
     }
 
-    private static let firstPageKeys: [String: KeyDefinition] = {
-        var keys: [String: KeyDefinition] = [:]
-        for family in families {
-            keys[family.slot] = key(
-                id: family.slot, name: family.name,
-                cells: family.main.split(separator: " ").map(String.init),
-                returns: family.returns.split(separator: " ").map(String.init),
-                pageSwitch: toSecondPage
-            )
-        }
-        return keys
-    }()
+    /// The default-tone keys, built once for the process.
+    private static let firstPageKeys = pageKeys(second: false, tone: .none)
+    private static let secondPageKeys = pageKeys(second: true, tone: .none)
 
-    private static let secondPageKeys: [String: KeyDefinition] = {
+    /// The nine family keys of a page, the hands and people in `tone`.
+    private static func pageKeys(second: Bool, tone: EmojiSkinTone) -> [String: KeyDefinition] {
+        func toned(_ cells: String) -> [String] {
+            cells.split(separator: " ").map { tone.applying(to: String($0)) }
+        }
         var keys: [String: KeyDefinition] = [:]
         for family in families {
             keys[family.slot] = key(
                 id: family.slot, name: family.name,
-                cells: family.more.split(separator: " ").map(String.init),
-                returns: [], pageSwitch: toFirstPage
+                cells: toned(second ? family.more : family.main),
+                returns: second ? [] : toned(family.returns),
+                pageSwitch: second ? toFirstPage : toSecondPage
             )
         }
         return keys
-    }()
+    }
 
     /// A circle turns the page, in either direction (as everywhere else, a
     /// thumb circle rarely comes out the way it was meant).

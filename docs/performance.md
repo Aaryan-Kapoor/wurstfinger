@@ -207,8 +207,9 @@ What the rows say:
 
 | What | Before | After |
 | --- | --- | --- |
-| heap per language definition (mean over 26) | 47.4 KB | 47.3 KB (unchanged: the definition model was not touched) |
-| all 26 definitions resident | 1.20 MB | 1.20 MB |
+| heap per language definition (mean over 61 layouts, row 9a) | 90.4 KB with a private copy of the emoji pages per layout | 78.4 KB: the emoji pages are built once per back-key label and shared (`EmojiLayouts.sharedModes`), which leaves the emoji mode costing 0.9 KB per layout (77.4 KB with the mode removed altogether). The 47.4 KB this table once showed was 26 layouts; the layouts added since account for the rest |
+| all 61 definitions resident | 5.52 MB | 4.78 MB |
+| `KeyboardRegistry.prewarm(all 61)` heap delta (row 9b) | 15.2 MB | 12.3 MB: the compiled tables of the default emoji pages are shared too, one set per back-key label (`EmojiLayouts.compiled`, under a lock that is taken only while a definition compiles) |
 | `KeyboardRegistry.prewarm(all 26)` heap delta | 1.19 MB | 3.2 MB — the prewarm now also compiles every language's tables (~77 KB per language: the deduplicated binding pool dominates, the `Int32` tables are ~1.3 KB per mode). In the keyboard only the *enabled* languages are prewarmed (one to three), and the pre-suspension shedding evicts the tables with the definitions, so the suspended footprint is unchanged. |
 | `GridLayoutSolver` memo, 8 distinct arrangements | 8 KB | 8 KB |
 | one keyboard view graph, marginal heap / `phys_footprint` (off-screen `NSHostingView`, 390 pt, de_DE) | 3.1 MB / 5.5 MB | 3.1 MB / 5.6 MB (noise: ±0.2 MB run to run) |

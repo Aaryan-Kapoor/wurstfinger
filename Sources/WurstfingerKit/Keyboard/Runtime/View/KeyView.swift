@@ -55,7 +55,7 @@ struct KeyTypography: Equatable {
     let hintMedium: Font
     let hintBold: Font
     /// Emoji hints and the emoji on a key's centre (EMOJI MODE): smaller than the
-    /// text at the same slot. A colour glyph is as wide as it is tall, about
+    /// text at the same slot (sizes: `emojiHintFraction`). A colour glyph is as wide as it is tall, about
     /// 1.2 times its point size, and nine of them share one key: a hint sized
     /// like a letter's would run into the centre emoji and its neighbours.
     let hintEmoji: Font
@@ -69,8 +69,17 @@ struct KeyTypography: Equatable {
     /// Hint padding from the key edge, scaled with the hint font.
     let hintHorizontalPadding: CGFloat
     let hintVerticalPadding: CGFloat
+    /// What `HintFit` fits the glyphs to: the visible key, and the point sizes
+    /// the fonts above were made with (a `Font` cannot be asked its size).
+    let keySize: CGSize
+    let hintPointSize: CGFloat
+    let emojiHintPointSize: CGFloat
+    let emojiCenterPointSize: CGFloat
+    let primaryLabelPointSize: CGFloat
 
     init(metrics: KeyboardLayoutMetrics) {
+        keySize = CGSize(width: metrics.cellWidth, height: metrics.cellHeight)
+        primaryLabelPointSize = Self.primaryLabelSize(metrics: metrics)
         labels = KeyStyle.allCases.map { style in
             Font.system(
                 size: KeyView.clampedFontSize(
@@ -83,18 +92,16 @@ struct KeyTypography: Equatable {
                 weight: .semibold, design: .rounded
             )
         }
-        let hintSize = KeyView.clampedFontSize(
-            base: KeyboardConstants.FontSizes.hintBaseSize,
-            metrics: metrics,
-            minimum: KeyboardConstants.FontSizes.hintMinSize,
-            maximum: KeyboardConstants.FontSizes.hintMaxSize,
-            cellFraction: KeyboardConstants.FontSizes.hintMaxCellFraction
-        )
+        let hintSize = Self.hintSize(metrics: metrics)
         hintRegular = .system(size: hintSize, weight: .regular, design: .rounded)
         hintMedium = .system(size: hintSize, weight: .medium, design: .rounded)
         hintBold = .system(size: hintSize, weight: .bold, design: .rounded)
-        hintEmoji = .system(size: hintSize * Self.emojiHintScale)
-        centerEmoji = .system(size: Self.primaryLabelSize(metrics: metrics) * Self.emojiCenterScale)
+        let cell = min(metrics.cellWidth, metrics.cellHeight)
+        hintPointSize = hintSize
+        emojiHintPointSize = cell * Self.emojiHintFraction
+        emojiCenterPointSize = cell * Self.emojiCenterFraction
+        hintEmoji = .system(size: emojiHintPointSize)
+        centerEmoji = .system(size: emojiCenterPointSize)
         languageLabel = .system(size: hintSize * 0.75, weight: .semibold, design: .rounded)
         globeIcon = .system(size: hintSize * 0.75, weight: .medium)
         symbolIcon = .system(size: hintSize * 0.6, weight: .regular)
@@ -104,12 +111,21 @@ struct KeyTypography: Equatable {
         hintVerticalPadding = KeyboardConstants.FontSizes.hintBaseVerticalPadding * fontRatio
     }
 
-    /// Emoji sizes relative to the text they replace; see `hintEmoji`.
-    static let emojiHintScale: CGFloat = 0.74
-    static let emojiCenterScale: CGFloat = 0.58
+    /// Emoji sizes as a fraction of the key's shorter side; see `hintEmoji`.
+    ///
+    /// Of the key, not of the letter sizes the text uses: those are clamped
+    /// (a hint never below 10 or above 22 pt, a letter between 20 and 34), and
+    /// a clamp that is right for letters flattens nine emoji: on an iPad the
+    /// hints grew with the cap while the centre stopped at 34, until the
+    /// prototype was the size of its neighbours, and on the smallest keys the
+    /// floor left them crowding. A fraction keeps one picture at every size:
+    /// 0.19 and 0.28 are what the phone keys (57.75 pt) have had since
+    /// `EmojiInkAudit` showed every neighbour at least 1.5 pt clear there.
+    static let emojiHintFraction: CGFloat = 0.19
+    static let emojiCenterFraction: CGFloat = 0.28
 
     /// The size of the centre label of a primary key (the letters).
-    private static func primaryLabelSize(metrics: KeyboardLayoutMetrics) -> CGFloat {
+    static func primaryLabelSize(metrics: KeyboardLayoutMetrics) -> CGFloat {
         KeyView.clampedFontSize(
             base: KeyView.baseFontSize(for: .primary),
             metrics: metrics,
@@ -118,6 +134,18 @@ struct KeyTypography: Equatable {
             cellFraction: KeyboardConstants.FontSizes.mainLabelMaxCellFraction
         )
     }
+
+    /// The size of a text hint at `metrics`.
+    static func hintSize(metrics: KeyboardLayoutMetrics) -> CGFloat {
+        KeyView.clampedFontSize(
+            base: KeyboardConstants.FontSizes.hintBaseSize,
+            metrics: metrics,
+            minimum: KeyboardConstants.FontSizes.hintMinSize,
+            maximum: KeyboardConstants.FontSizes.hintMaxSize,
+            cellFraction: KeyboardConstants.FontSizes.hintMaxCellFraction
+        )
+    }
+
 
     func label(for style: KeyStyle) -> Font {
         labels[KeyStyle.allCases.firstIndex(of: style) ?? 0]
@@ -241,7 +269,7 @@ struct KeyView: View, Equatable {
     }
 
     /// Maps emoji labels to SF Symbol names for utility keys.
-    private static let sfSymbolMap: [String: String] = [
+    nonisolated private static let sfSymbolMap: [String: String] = [
         "🌐": "globe",
         "⌫": "delete.backward",
         "↵": "return",
@@ -419,10 +447,53 @@ struct KeyView: View, Equatable {
                         .minimumScaleFactor(0.5)
                 }
             }
+            .scaleEffect(centerFit)
             .foregroundStyle(centerStyle)
             .opacity(guidance == .swipe ? 0.35 : 1)
             .animation(Self.guidanceAnimation, value: guidance)
         }
+    }
+
+    /// How much smaller the centre letter is drawn so that it keeps clear of the
+    /// hints to its left and right (`HintFit.centerScale`).
+    private var centerFit: CGFloat {
+        Self.centerFit(key: key, typography: typography, isLabelVisible: isLabelVisible)
+    }
+
+    /// `centerFit` for any key: the letters of the grid only (the utility keys'
+    /// labels shrink to fit by themselves). Shared with `EmojiInkAudit`, which
+    /// renders what the key draws.
+    nonisolated static func centerFit(
+        key: KeyDefinition, typography: KeyTypography, isLabelVisible: (KeyBinding) -> Bool
+    ) -> CGFloat {
+        guard key.style == .primary, let tap = key.bindings[.tap], !tap.label.isEmpty,
+              sfSymbolMap[tap.label] == nil
+        else { return 1 }
+        let metrics = HintFit.inkMetrics(
+            of: tap.label,
+            pointSize: EmojiText.isEmoji(tap.label) ? typography.emojiCenterPointSize : typography.primaryLabelPointSize
+        )
+        let hPad = typography.hintHorizontalPadding, vPad = typography.hintVerticalPadding
+        /// How far the hint on `gesture`, as drawn (scaled), reaches into the key; 0 when it shows none.
+        func reach(_ gesture: GestureType) -> CGSize {
+            guard let binding = key.bindings[gesture], isLabelVisible(binding), !binding.label.isEmpty,
+                  hintIcon(for: binding.action) == nil, binding.action != .switchToNextLanguage
+            else { return .zero }
+            let hintMetrics = HintFit.inkMetrics(
+                of: binding.label,
+                pointSize: EmojiText.isEmoji(binding.label) ? typography.emojiHintPointSize : typography.hintPointSize
+            )
+            let fit = hintFit(for: binding, gesture: gesture, typography: typography)
+            return HintFit.reach(
+                metrics: hintMetrics, gesture: gesture, scale: fit, horizontalPadding: hPad, verticalPadding: vPad
+            )
+        }
+        return HintFit.centerScale(
+            metrics: metrics, key: typography.keySize, horizontalPadding: hPad, verticalPadding: vPad,
+            left: reach(.swipeLeft).width, right: reach(.swipeRight).width,
+            top: reach(.swipeUp).height, bottom: reach(.swipeDown).height,
+            gap: HintFit.gap(forEmoji: EmojiText.isEmoji(tap.label))
+        )
     }
 
     // MARK: - Hint Overlay
@@ -601,7 +672,10 @@ struct KeyView: View, Equatable {
                         // the target without searching.
                         hintContent(for: binding, isTarget: isTarget)
                             .fixedSize()
-                            .scaleEffect(isTarget ? 1.5 : 1, anchor: Self.hintAnchor(for: gesture))
+                            .scaleEffect(
+                                (isTarget ? 1.5 : 1) * Self.hintFit(for: binding, gesture: gesture, typography: typography),
+                                anchor: Self.hintAnchor(for: gesture)
+                            )
                             .opacity(guidance != .none && !isTarget ? 0.3 : 1)
                             .padding(Self.hintEdgePadding(for: gesture, horizontal: hPad, vertical: vPad))
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: alignment)
@@ -611,6 +685,18 @@ struct KeyView: View, Equatable {
         }
         .animation(Self.guidanceAnimation, value: pressCell?.candidate)
         .allowsHitTesting(false)
+    }
+
+    /// The scale `HintFit` gives a text or emoji hint (1 for an icon): the same
+    /// number the canvas uses, so the two renderers draw the same picture.
+    nonisolated static func hintFit(for binding: KeyBinding, gesture: GestureType, typography: KeyTypography) -> CGFloat {
+        guard hintIcon(for: binding.action) == nil, !binding.label.isEmpty,
+              let slot = hintGestureOrder.firstIndex(of: gesture)
+        else { return 1 }
+        let content: KeyHintCanvas.Hint.Content = EmojiText.isEmoji(binding.label)
+            ? .emoji(binding.label)
+            : .text(binding.label, isLetter: binding.label.first?.isLetter ?? false)
+        return KeyHintCanvas.Hint(slot: slot, content: content).fit(typography: typography)
     }
 
     /// The point an emphasized hint grows from: its own corner or edge, so it

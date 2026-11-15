@@ -240,4 +240,26 @@ struct KeyHintCanvasTests {
         try expectSamePicture(globeKey, candidate: .swipeDown)
         try expectSamePicture(richKey, candidate: .circularClockwise)
     }
+
+    /// The hints that `HintFit` scales down (wide Arabic letters, an emoji
+    /// row) are scaled by the same number in both renderings, and the picture
+    /// stays the same. The key must really be fitted, or this compares nothing new.
+    @Test func aFittedKeyDrawsTheSamePictureAsTheViewStacks() throws {
+        let key = KeyDefinition(
+            id: "midLeft",
+            bindings: [
+                .tap: binding("ى"),
+                .swipeRight: binding("ش"), .swipeUpRight: binding("ص"), .swipeDownRight: binding("ط"),
+                .swipeUp: binding("ض"), .swipeDown: binding("خ"),
+                .swipeDownLeft: binding("پ"), .swipeUpLeft: binding("ج"),
+            ],
+            swipeMode: .eightWay, slideType: .none, style: .primary, tapCycleActions: nil
+        )
+        let typography = KeyTypography(metrics: .reference)
+        let wide = binding("ش")
+        #expect(KeyView.hintFit(for: wide, gesture: .swipeRight, typography: typography) < 1, "the hint is fitted")
+        #expect(KeyView.centerFit(key: key, typography: typography, isLabelVisible: { _ in true }) < 1, "so is the centre")
+        try expectSamePicture(key)
+        try expectSamePicture(key, candidate: .swipeRight, scheme: .dark)
+    }
 }

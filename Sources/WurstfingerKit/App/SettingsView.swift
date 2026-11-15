@@ -45,6 +45,9 @@ struct SettingsView: View {
     @AppStorage(SettingsKey.longPressBehaviour.rawValue, store: SharedDefaults.store)
     private var longPressRaw = LongPressType.default.rawValue
 
+    @AppStorage(SettingsKey.emojiSkinTone.rawValue, store: SharedDefaults.store)
+    private var emojiSkinToneRaw = EmojiSkinTone.none.rawValue
+
     @AppStorage(SettingsKey.doubleSpacePeriodEnabled.rawValue, store: SharedDefaults.store)
     private var doubleSpacePeriodEnabled = false
 
@@ -163,6 +166,20 @@ struct SettingsView: View {
                     icon: "timer", color: .pink,
                     title: "Long Press",
                     subtitle: longPressDescription
+                )
+            }
+
+            // EMOJI MODE: the choices are the thumbs-up in each tone, which says
+            // more than a name and is read by VoiceOver in the user's language.
+            Picker(selection: $emojiSkinToneRaw) {
+                ForEach(EmojiSkinTone.allCases, id: \.rawValue) { tone in
+                    Text(verbatim: tone.sample).tag(tone.rawValue)
+                }
+            } label: {
+                SettingsRow(
+                    icon: "hand.thumbsup", color: .yellow,
+                    title: "Emoji Skin Tone",
+                    subtitle: String(localized: "Hands and people in the emoji keyboard")
                 )
             }
 

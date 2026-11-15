@@ -23,6 +23,7 @@ extension KeyboardViewModel {
         else { return }
         let definition = applyNumpadType(to: base)
         currentDefinition = definition
+        emojiPagesTone = .none // EMOJI MODE hook: the registry's pages are in the default tone
         // Record the signature of what was actually loaded (the id may differ
         // from the requested one after the English fallback) so the controller
         // can skip redundant rebuilds on the next appearance.
