@@ -46,6 +46,13 @@ clipboard need it).
 Requires Full Access. Check tap/drag intensity settings take effect, the first keystroke after a pause is not
 late (generators are prepared on appearance and touch-down).
 
+| Check | How | Expected |
+| --- | --- | --- |
+| Click bank build | Kill the keyboard (switch keyboards, reopen the host), then type the moment it appears | The first touches are not late; derived clicks take over from the designed patterns within a few frames (`CoreHapticsRenderer.rebuildClickBank`, eight players per main-actor turn) |
+| Derived clicks | Tap neighbouring letter keys, then flick in each direction | Neighbours feel different; a flick's detent sharpens and softens with its direction; nothing feels stepped between bank cells |
+| Key sounds | Haptics › Key Clicks on, Full Access on; type, flick, return-swipe, circle | Each key its own pitch, rising up and to the right; no click, dropout or delay against the touch (`KeySoundMixer`, 5 ms IO buffer); other audio keeps playing; silent switch silences it |
+| Height spring | Drag the keyboard-size slider in the app, then toggle the numpad column | Keys and the keyboard's top edge move as one (`KeyboardSpring`), no wobble, no lag behind the slider |
+
 ## Settings sync
 
 With the keyboard visible in a split-view or Slide Over host, change a setting in the Wurstfinger app: the keyboard
@@ -56,6 +63,10 @@ should update within a frame or two (Darwin notification, debounced 50 ms), not 
 The health log records the footprint at every lifecycle point. A normal session should stay far below the
 extension's jetsam limit (~48–66 MB depending on device); the `postShedSettled` entry after dismissal shows what
 survives into suspension.
+
+Before dismissing, type a new name twice (word suggestions on) and a few emoji, then dismiss within five seconds and
+kill the keyboard process (switch to another keyboard and back from a fresh host). On reopening, the name is still
+offered and the emoji are on the recent key: both are written in `prepareForSuspension`, not only by their timers.
 
 ## Word suggestions (`Sources/WurstfingerKit/Keyboard/Runtime/Completion`)
 
