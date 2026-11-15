@@ -573,6 +573,7 @@ extension KeyboardViewModel {
             // Snapshot the type once so a mid-drag settings change can't switch
             // this gesture between discrete and continuous classification.
             spaceDragCursorType = cursorMovementType
+            spaceSlideSpeed.reset()
             feelSlideBegan(.moveCursor, key: key)
         case let .changed(deltaX):
             guard isSpaceDragging, deltaX != 0 else { return }
@@ -584,7 +585,13 @@ extension KeyboardViewModel {
                     spaceDragPeak = spaceDragResidual
                 }
             } else {
-                stepContinuousCursor()
+                // Normal speed moves the caret by characters, a sweep by words.
+                let wasSweeping = spaceSlideSpeed.isSweeping
+                let isSweeping = spaceSlideSpeed.note(deltaX: deltaX, at: touchEngine.slideSampleTime)
+                // The two steps are different distances: leftover travel
+                // measured in one must not be spent in the other.
+                if isSweeping != wasSweeping { spaceDragResidual = 0 }
+                stepContinuousCursor(byWords: isSweeping)
             }
         case .ended:
             if spaceDragCursorType == .discrete {
@@ -656,8 +663,8 @@ extension KeyboardViewModel {
     /// *before* the first move — measuring the same cluster twice and skipping
     /// a character or landing inside an emoji. Device-only: the mock target
     /// updates its context in place.
-    private func stepContinuousCursor() {
-        let step = KeyboardConstants.SpaceGestures.dragStep
+    private func stepContinuousCursor(byWords: Bool = false) {
+        let step = byWords ? KeyboardConstants.SpaceGestures.wordStep : KeyboardConstants.SpaceGestures.dragStep
         // A legitimate 120 Hz update owes one or two steps; the cap keeps a
         // corrupt residual (non-finite or absurd) from trapping the `Int`
         // conversion or emitting an unbounded burst. Whatever is left over
@@ -669,9 +676,21 @@ extension KeyboardViewModel {
         let context = direction > 0
             ? textInputTarget?.documentContextAfterInput
             : textInputTarget?.documentContextBeforeInput
-        for width in Self.clusterWidths(in: context ?? "", count: abs(steps), fromEnd: direction < 0) {
-            dispatchAction(.moveCursor(offset: direction * width))
-            feelSlideStep(.moveCursor, direction: direction)
+        if byWords {
+            let widths = WordBoundary.steps(
+                in: context ?? "", count: abs(steps), backward: direction < 0,
+                locale: pipelineLocale ?? Locale(identifier: "en_US")
+            )
+            for width in widths {
+                dispatchAction(.moveCursor(offset: direction * width))
+                feelSlideStep(.moveCursor, direction: direction)
+                feelWordStep(direction: direction)
+            }
+        } else {
+            for width in Self.clusterWidths(in: context ?? "", count: abs(steps), fromEnd: direction < 0) {
+                dispatchAction(.moveCursor(offset: direction * width))
+                feelSlideStep(.moveCursor, direction: direction)
+            }
         }
         spaceDragResidual -= CGFloat(steps) * step
     }

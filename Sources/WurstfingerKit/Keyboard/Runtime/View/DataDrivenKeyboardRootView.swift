@@ -105,6 +105,7 @@ struct DataDrivenKeyboardRootView: View {
                     // Feel hook: the grid's overlay draws the view model's board.
                     .environment(\.feelBoard, viewModel.feel.board)
                     .environment(\.showsTypedCharacters, !viewModel.fieldTraits.isSensitive)
+                    .environment(\.offersCompletionAction, metrics.accessoryHeight > 0) // WORD COMPLETIONS hook
                     .padding(.horizontal, KeyboardConstants.Layout.horizontalPadding)
                     .padding(.top, KeyboardConstants.Layout.verticalPaddingTop)
                     .padding(.bottom, KeyboardConstants.Layout.verticalPaddingBottom)

@@ -31,9 +31,19 @@ protocol CompletionSource: AnyObject {
     /// with `prefix` apart from case and is longer than it.
     func completions(for prefix: String, locale: Locale, limit: Int) -> [String]
 
+    /// Loads whatever the first lookup in `locale` would otherwise pay for (the
+    /// dictionary), so that lookup is as fast as the rest. Called off the
+    /// touch path, on a timer, when the keyboard appears and the language
+    /// changes. Does nothing by default.
+    func warm(_ locale: Locale)
+
     /// Whether the dictionary of `locale` has `word` (so a word it lacks can
     /// be learned).
     func knows(_ word: String, locale: Locale) -> Bool
+}
+
+extension CompletionSource {
+    func warm(_ locale: Locale) {}
 }
 
 /// The source of a keyboard with nothing to complete with: previews, tests and
@@ -137,6 +147,14 @@ final class SystemCompletionSource: CompletionSource {
             .filter { $0.count > prefix.count && $0.lowercased().hasPrefix(lowered) }
             .prefix(limit)
             .map { $0 }
+    }
+
+    func warm(_ locale: Locale) {
+        guard let language = language(for: locale) else { return }
+        // One throwaway lookup: the checker loads its dictionary for the
+        // language on first use, which is the slow part (about 300 ms measured
+        // with `NSSpellChecker`; unmeasured on a device).
+        _ = rawCompletions("a", language: language)
     }
 
     func knows(_ word: String, locale: Locale) -> Bool {

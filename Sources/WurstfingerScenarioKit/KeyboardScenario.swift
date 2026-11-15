@@ -161,9 +161,9 @@ final class KeyboardScenario {
     /// A straight drag over the key, for the space bar's cursor slide and the
     /// delete key's slide-to-delete.
     @discardableResult
-    func drag(_ keyId: String, by translation: CGSize) -> GestureOutcome {
+    func drag(_ keyId: String, by translation: CGSize, speed: CGFloat = 500) -> GestureOutcome {
         var synth = synthesizer(for: keyId)
-        return perform(synth.drag(by: translation), on: keyId)
+        return perform(synth.drag(by: translation, speed: speed), on: keyId)
     }
 
     /// Runs an arbitrary touch path over the key, through the view model's

@@ -38,6 +38,10 @@ private struct GestureTrailRecorderOverrideKey: EnvironmentKey {
     static let defaultValue: GestureTrailRecorder? = nil
 }
 
+private struct OffersCompletionActionKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
 private struct ForcedPressedCompletionKey: EnvironmentKey {
     static let defaultValue: Int? = nil
 }
@@ -47,6 +51,14 @@ extension EnvironmentValues {
     var forcedActiveKeyIds: Set<String> {
         get { self[ForcedActiveKeyIdsKey.self] }
         set { self[ForcedActiveKeyIdsKey.self] = newValue }
+    }
+
+    /// Whether the word completion row is on, so the space bar offers
+    /// "Accept suggestion" to VoiceOver (set by the root view from the row's
+    /// height; off elsewhere, where the action would do nothing).
+    var offersCompletionAction: Bool {
+        get { self[OffersCompletionActionKey.self] }
+        set { self[OffersCompletionActionKey.self] = newValue }
     }
 
     /// Index of the word completion drawn pressed regardless of touch state.

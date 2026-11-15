@@ -22,10 +22,25 @@ struct KeyAccessibilityActions: ViewModifier {
     let key: KeyDefinition
     let onGesture: (KeyDefinition, GestureType, Bool) -> Void
 
+    /// Whether the word completion row is on (`offersCompletionAction`): the
+    /// space bar's "Accept suggestion" is only worth a rotor entry then.
+    @Environment(\.offersCompletionAction) private var offersCompletionAction
+
+    private var actions: [KeyAccessibilityAction] {
+        Self.actions(for: key, offersCompletionAction: offersCompletionAction)
+    }
+
+    /// The key's actions, without the ones that do nothing right now.
+    static func actions(for key: KeyDefinition, offersCompletionAction: Bool) -> [KeyAccessibilityAction] {
+        key.accessibilityActions.filter {
+            offersCompletionAction || key.bindings[$0.gesture]?.action != .acceptCompletion
+        }
+    }
+
     func body(content: Content) -> some View {
         withActivation(content)
             .accessibilityActions {
-                ForEach(key.accessibilityActions, id: \.name) { action in
+                ForEach(actions, id: \.name) { action in
                     Button { onGesture(key, action.gesture, action.isReturn) } label: { label(for: action) }
                 }
             }

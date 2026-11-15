@@ -240,6 +240,19 @@ struct WordCompletionGestureTests {
         #expect(action.name == "Accept suggestion")
     }
 
+    @Test func theActionIsOfferedOnlyWhileTheRowIsOn() throws {
+        let definition = try #require(KeyboardRegistry.load(id: "en_US"))
+        let space = try #require(definition.mode(ModeNames.main)?.key(for: UtilitySlot.space))
+        let withRow = KeyAccessibilityActions.actions(for: space, offersCompletionAction: true)
+        let withoutRow = KeyAccessibilityActions.actions(for: space, offersCompletionAction: false)
+        #expect(withRow.contains { $0.name == "Accept suggestion" })
+        #expect(!withoutRow.contains { $0.name == "Accept suggestion" })
+        #expect(withRow.count == withoutRow.count + 1)
+        // Other keys are untouched.
+        let delete = try #require(definition.mode(ModeNames.main)?.key(for: UtilitySlot.delete))
+        #expect(KeyAccessibilityActions.actions(for: delete, offersCompletionAction: false) == delete.accessibilityActions)
+    }
+
     @Test func theLabelTogglesOnTheSameKeyStillWork() {
         let session = Session()
         session.scenario.drag(UtilitySlot.space, by: CGSize(width: 0, height: -60))

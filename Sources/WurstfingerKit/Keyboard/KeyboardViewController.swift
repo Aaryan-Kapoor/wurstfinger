@@ -176,6 +176,7 @@ public final class KeyboardViewController: UIInputViewController {
         // fires on appearance, but that is not guaranteed in every host app;
         // the refresh is idempotent, so evaluating in both paths is safe.
         viewModel.refreshAutoCapitalization()
+        viewModel.completionsKeyboardDidAppear() // WORD COMPLETIONS hook (iOS-only)
     }
 
     /// Picks up state that may have changed outside this process while the

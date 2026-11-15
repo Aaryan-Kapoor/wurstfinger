@@ -226,6 +226,11 @@ enum KeyboardConstants {
         /// Provides smooth, controlled cursor navigation.
         static let dragStep: CGFloat = 14
 
+        /// Distance per word step when the slide is a sweep
+        /// (`SlideSpeedTracker`): four characters' travel, so a sweep covers a
+        /// word of about seven characters in two thirds of the distance.
+        static let wordStep: CGFloat = 56
+
         /// Maximum ratio of final displacement to peak displacement for a return swipe.
         /// Below this threshold, the gesture is classified as a return swipe (word movement).
         static let returnSwipeThreshold: CGFloat = 0.3
