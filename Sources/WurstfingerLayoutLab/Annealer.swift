@@ -63,6 +63,13 @@ struct LayoutOptimizer {
     private let transition: [Double]
     private let letterCount: Int
     private let tokenCount: Int
+    private let positionCount: Int
+    /// For each token: the letter whose position it follows (-1 for a fixed press)...
+    private let tokenAnchor: [Int]
+    /// ...and the offset added to that position (0 letter, n form), or the absolute position of a fixed press.
+    private let tokenOffset: [Int]
+    /// The tokens that move with each letter: the letter itself and its form presses.
+    private let tokensOfLetter: [[Int]]
     /// Positions on each grid key: `[key][0]` is the tap, the rest swipes.
     private let keyPositions: [[Int]]
     private let keyOfPosition: [Int]
@@ -71,10 +78,12 @@ struct LayoutOptimizer {
         self.problem = problem
         self.text = text
         self.model = model
-        positionSlots = problem.movableSlots + text.fixedSlots
-        letterCount = text.letterCount
+        let n = text.letterCount
+        positionSlots = problem.movableSlots + problem.movableSlots.map(\.formSlot) + text.fixedSlots
+        letterCount = n
         tokenCount = text.tokenCount
         let count = positionSlots.count
+        positionCount = count
         var matrix = [Double](repeating: 0, count: count * count)
         for from in 0 ..< count {
             for to in 0 ..< count {
@@ -82,6 +91,24 @@ struct LayoutOptimizer {
             }
         }
         transition = matrix
+        var anchors: [Int] = []
+        var offsets: [Int] = []
+        var perLetter = [[Int]](repeating: [], count: n)
+        var fixedSeen = 0
+        for (index, token) in text.tokens.enumerated() {
+            switch token {
+            case .letter:
+                anchors.append(index); offsets.append(0); perLetter[index].append(index)
+            case let .form(letter):
+                let anchor = text.letters.firstIndex(of: letter)!
+                anchors.append(anchor); offsets.append(n); perLetter[anchor].append(index)
+            case .fixed:
+                anchors.append(-1); offsets.append(2 * n + fixedSeen); fixedSeen += 1
+            }
+        }
+        tokenAnchor = anchors
+        tokenOffset = offsets
+        tokensOfLetter = perLetter
         var perKey = [[Int]](repeating: [], count: 9)
         for (index, slot) in problem.movableSlots.enumerated() {
             if slot.gesture == .tap { perKey[slot.key].insert(index, at: 0) } else { perKey[slot.key].append(index) }
@@ -97,12 +124,12 @@ struct LayoutOptimizer {
         var total = 0.0
         let count = tokenCount
         for a in 0 ..< count {
-            let pa = a < letterCount ? position[a] : a
+            let pa = tokenAnchor[a] >= 0 ? position[tokenAnchor[a]] + tokenOffset[a] : tokenOffset[a]
             for b in 0 ..< count {
                 let weight = text.weights[a * count + b]
                 if weight == 0 { continue }
-                let pb = b < letterCount ? position[b] : b
-                total += weight * transition[pa * count + pb]
+                let pb = tokenAnchor[b] >= 0 ? position[tokenAnchor[b]] + tokenOffset[b] : tokenOffset[b]
+                total += weight * transition[pa * positionCount + pb]
             }
         }
         return total
@@ -143,25 +170,40 @@ struct LayoutOptimizer {
         return true
     }
 
-    /// Cost change of swapping the positions of letters `i` and `k`.
-    private func swapDelta(_ i: Int, _ k: Int, _ position: [Int]) -> Double {
+    /// The cost of every transition that touches letter `i` or `k` (or their forms), at `position`.
+    private func touching(_ i: Int, _ k: Int, _ position: [Int]) -> Double {
         let count = tokenCount
-        let pi = position[i], pk = position[k]
-        func partial(_ pi: Int, _ pk: Int) -> Double {
-            var sum = 0.0
-            for b in 0 ..< count {
-                let pb: Int
-                if b == i { pb = pi } else if b == k { pb = pk } else { pb = b < letterCount ? position[b] : b }
-                sum += text.weights[i * count + b] * transition[pi * count + pb]
-                sum += text.weights[k * count + b] * transition[pk * count + pb]
-                if b != i, b != k {
-                    sum += text.weights[b * count + i] * transition[pb * count + pi]
-                    sum += text.weights[b * count + k] * transition[pb * count + pk]
+        var sum = 0.0
+        func place(_ t: Int) -> Int {
+            tokenAnchor[t] >= 0 ? position[tokenAnchor[t]] + tokenOffset[t] : tokenOffset[t]
+        }
+        func moves(_ t: Int) -> Bool { tokenAnchor[t] == i || tokenAnchor[t] == k }
+        for letter in [i, k] {
+            for a in tokensOfLetter[letter] {
+                let pa = place(a)
+                for b in 0 ..< count {
+                    sum += text.weights[a * count + b] * transition[pa * positionCount + place(b)]
                 }
             }
-            return sum
         }
-        return partial(pk, pi) - partial(pi, pk)
+        for a in 0 ..< count where !moves(a) {
+            let pa = place(a)
+            for letter in [i, k] {
+                for b in tokensOfLetter[letter] {
+                    sum += text.weights[a * count + b] * transition[pa * positionCount + place(b)]
+                }
+            }
+        }
+        return sum
+    }
+
+    /// Cost change of swapping the positions of letters `i` and `k`.
+    private func swapDelta(_ i: Int, _ k: Int, _ position: inout [Int]) -> Double {
+        let before = touching(i, k, position)
+        position.swapAt(i, k)
+        let after = touching(i, k, position)
+        position.swapAt(i, k)
+        return after - before
     }
 
     // MARK: Search
@@ -201,7 +243,7 @@ struct LayoutOptimizer {
         var deltas: [Double] = []
         for _ in 0 ..< 400 {
             let i = random.below(letterCount), k = random.below(letterCount)
-            if i != k { deltas.append(abs(swapDelta(i, k, position))) }
+            if i != k { deltas.append(abs(swapDelta(i, k, &position))) }
         }
         deltas.sort()
         let median = deltas.isEmpty ? 1e-3 : max(deltas[deltas.count / 2], 1e-9)
@@ -214,7 +256,7 @@ struct LayoutOptimizer {
             let temperature = hot * pow(cold / hot, Double(step) / Double(max(steps - 1, 1)))
             let i = random.below(letterCount), k = random.below(letterCount)
             if i == k || !valid(i, k) { continue }
-            let delta = swapDelta(i, k, position)
+            let delta = swapDelta(i, k, &position)
             if delta <= 0 || random.unit() < exp(-delta / temperature) {
                 swap(i, k)
                 current += delta
@@ -234,7 +276,7 @@ struct LayoutOptimizer {
             var bestGain = -1e-12
             for i in 0 ..< letterCount {
                 for k in (i + 1) ..< letterCount where valid(i, k) {
-                    let delta = swapDelta(i, k, position)
+                    let delta = swapDelta(i, k, &position)
                     if delta < bestGain { bestGain = delta; bestPair = (i, k) }
                 }
             }

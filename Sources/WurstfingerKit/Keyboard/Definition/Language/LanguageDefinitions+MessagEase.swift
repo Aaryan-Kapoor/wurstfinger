@@ -84,9 +84,13 @@ extension LanguageDefinitions {
                 ],
                 GridSlot.midRight: [.swipeLeft: "μ"],
                 GridSlot.bottomLeft: [.swipeUpRight: "ψ"],
-                GridSlot.bottomCenter: [.swipeUp: "ω", .swipeRight: "ζ"],
+                // ί, the most frequent accented vowel, takes the 26th slot. It held a second ω
+                // (the top-left key already has one) — see the note on `returnOverrides`.
+                GridSlot.bottomCenter: [.swipeUp: "ί", .swipeRight: "ζ"],
                 GridSlot.bottomRight: [.swipeUpLeft: "φ"],
             ],
+            // Greek locale uppercasing would turn ί into a bare Ι; its capital keeps the tonos.
+            returnOverrides: [GridSlot.bottomCenter: [.swipeUp: "Ί"]],
             numericBackToAlphaLabel: "αβγ"
         )
     }

@@ -76,8 +76,9 @@ enum GridKeyboardFactory {
         )
         // An optimized variant is the same declaration under another id, with
         // its letters in the slots the optimizer chose (`OptimizedArrangements`).
-        let (centerCharacters, directionalOverrides) = OptimizedArrangements.applying(
-            toId: id, centerCharacters: centerCharacters, directionalOverrides: directionalOverrides
+        let (centerCharacters, directionalOverrides, returnOverrides, circularOverrides) = OptimizedArrangements.applying(
+            toId: id, centerCharacters: centerCharacters, directionalOverrides: directionalOverrides,
+            returnOverrides: returnOverrides, circularOverrides: circularOverrides
         )
 
         let locale = Locale(identifier: localeIdentifier)

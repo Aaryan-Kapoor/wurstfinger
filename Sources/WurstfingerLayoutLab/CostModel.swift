@@ -17,11 +17,25 @@ import Foundation
 struct LabSlot: Hashable, Comparable {
     var key: Int
     var gesture: GestureType
+    /// The *form* of what this slot types: a return swipe out of a swipe slot, a
+    /// circle on a tap slot. Hebrew's final letters (ך ם ן ף ץ) and the capital
+    /// of a letter whose capital needs an accent are typed this way; the thumb
+    /// ends the gesture back on the key.
+    var form = false
+
+    init(key: Int, gesture: GestureType, form: Bool = false) {
+        self.key = key
+        self.gesture = gesture
+        self.form = form
+    }
 
     static let space = LabSlot(key: 9, gesture: .tap)
 
+    /// The same slot, reached by its form gesture.
+    var formSlot: LabSlot { LabSlot(key: key, gesture: gesture, form: true) }
+
     static func < (lhs: LabSlot, rhs: LabSlot) -> Bool {
-        (lhs.key, lhs.gesture.rawValue) < (rhs.key, rhs.gesture.rawValue)
+        (lhs.key, lhs.gesture.rawValue, lhs.form ? 1 : 0) < (rhs.key, rhs.gesture.rawValue, rhs.form ? 1 : 0)
     }
 
     /// The grid slot name (`GridSlot.topLeft` ...) of a grid key.
@@ -107,6 +121,23 @@ struct CostModel {
         log2(distance / width + 1)
     }
 
+    /// Out and back, plus the timing of the turn: the classifier wants the peak
+    /// in the middle 20-80 % of the path, a one-dimensional pointing task of
+    /// width 0.6 around the ideal 0.5.
+    func returnSwipeBits(_ gesture: GestureType) -> Double {
+        2 * strokeBits(gesture) + log2(1 + 0.5 / 0.6)
+    }
+
+    /// A circle: the steering law, a 270 degree arc of radius cell/3 through a
+    /// tube of width cell/3, which is its angle in radians.
+    var circleBits: Double { 1.5 * Double.pi }
+
+    /// What the gesture of `slot` costs after the thumb has landed, in bits.
+    func gestureBits(_ slot: LabSlot) -> Double {
+        guard slot.form else { return strokeBits(slot.gesture) }
+        return slot.gesture == .tap ? circleBits : returnSwipeBits(slot.gesture)
+    }
+
     /// The swipe as a second constrained movement, in bits; a tap is 0.
     func strokeBits(_ gesture: GestureType) -> Double {
         guard gesture != .tap else { return 0 }
@@ -126,14 +157,14 @@ struct CostModel {
     /// same-key repeat floor, and the next gesture's stroke.
     func transitionBits(from previous: LabSlot, to next: LabSlot) -> Double {
         let start = centres[previous.key]
-        let end = endOffset(previous.gesture)
+        let end = previous.form ? (x: 0.0, y: 0.0) : endOffset(previous.gesture)
         let target = centres[next.key]
         let dx = target.x - (start.x + end.x)
         let dy = target.y - (start.y + end.y)
         let distance = hypot(dx, dy)
         let width = min(sizes[next.key].width, sizes[next.key].height)
         let pointing = distance < 1e-9 ? 0 : Self.fittsID(distance: distance, width: width)
-        let stroke = strokeBits(next.gesture)
+        let stroke = gestureBits(next)
         if previous.key == next.key {
             return max(pointing, floorBits(key: next.key)) + stroke
         }
@@ -143,7 +174,7 @@ struct CostModel {
     /// Straight-line travel in points between the end of `previous` and the next key.
     func travel(from previous: LabSlot, to next: LabSlot) -> Double {
         let start = centres[previous.key]
-        let end = endOffset(previous.gesture)
+        let end = previous.form ? (x: 0.0, y: 0.0) : endOffset(previous.gesture)
         let target = centres[next.key]
         return hypot(target.x - (start.x + end.x), target.y - (start.y + end.y))
     }

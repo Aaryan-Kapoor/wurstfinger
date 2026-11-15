@@ -79,6 +79,12 @@ extension ComposeEngine {
 /// auto-capitalization disabled in their definition settings.
 enum CaselessLanguages {
     static let ids: Set<String> = ["he_IL", "ar", "fa_IR", "ur", "th_TH", "hi_IN", "ja_JP", "ja_JP_katakana", "ko_KR"]
+
+    /// Whether the layout is caseless; an optimized variant is as caseless as its base.
+    static func contains(layout id: String) -> Bool {
+        let base = KeyboardRegistry.available.first { $0.id == id }?.variantOf ?? id
+        return ids.contains(base)
+    }
 }
 
 /// Creates a KeyboardViewModel wired to a MockTextTarget for testing.

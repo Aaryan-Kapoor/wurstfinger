@@ -3,13 +3,13 @@ meta	license	CC-BY-SA-4.0
 meta	list	et_full.txt
 meta	sha256	8b0dbb18efd797a497878caae9597fe230be5162dcc6a39d4a35299bb8c60e14
 meta	source	OpenSubtitles 2018 via FrequencyWords 2018 (hermitdave)
-meta	tokens_kept	65669343
+meta	tokens_kept	65669345
 meta	url	https://github.com/hermitdave/FrequencyWords
-meta	words_kept	979034
+meta	words_kept	979035
 meta	words_seen	1004977
 init	-	1044
 init	.	252
-init	a	2767460
+init	a	2767462
 init	b	288246
 init	c	229824
 init	d	288777
@@ -95,6 +95,7 @@ final	w	26465
 final	x	25020
 final	y	272113
 final	z	13475
+final	ª	2
 final	ß	10
 final	à	133
 final	á	75
@@ -223,7 +224,7 @@ big	a	n	2702869
 big	a	o	145626
 big	a	p	369927
 big	a	q	1764
-big	a	r	1467357
+big	a	r	1467359
 big	a	s	3890608
 big	a	t	1698760
 big	a	u	365362
@@ -793,6 +794,7 @@ big	m	w	880
 big	m	x	94
 big	m	y	21581
 big	m	z	153
+big	m	ª	2
 big	m	á	33
 big	m	â	12
 big	m	ã	75
@@ -995,7 +997,7 @@ big	r	i	1218958
 big	r	j	167411
 big	r	k	149643
 big	r	l	59665
-big	r	m	282305
+big	r	m	282307
 big	r	n	120014
 big	r	o	444005
 big	r	p	18498

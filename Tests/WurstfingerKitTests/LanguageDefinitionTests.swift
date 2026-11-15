@@ -30,7 +30,7 @@ struct LanguageDefinitionValidationTests {
         #expect(layout.modes[ModeNames.numeric] != nil, "\(layout.id) missing numeric mode")
         // Caseless scripts (Hebrew) carry no shift affordance at all; every
         // other layout must have both shifted and capsLock.
-        if CaselessLanguages.ids.contains(layout.id) {
+        if CaselessLanguages.contains(layout: layout.id) {
             #expect(layout.modes[ModeNames.shifted] == nil, "\(layout.id) must not have a shifted mode")
             #expect(layout.modes[ModeNames.capsLock] == nil, "\(layout.id) must not have a capsLock mode")
         } else {
@@ -220,7 +220,7 @@ struct CaselessScriptTests {
         #expect(vm.activeModeName == ModeNames.main)
     }
 
-    @Test(arguments: LanguageDefinitions.all.filter { !CaselessLanguages.ids.contains($0.id) })
+    @Test(arguments: LanguageDefinitions.all.filter { !CaselessLanguages.contains(layout: $0.id) })
     func casedLanguagesKeepShiftAndAutoCapitalization(descriptor: LanguageDescriptor) throws {
         let layout = descriptor.makeDefinition()
         #expect(layout.settings.autoCapitalize, "\(layout.id) must keep autoCapitalize")

@@ -39,6 +39,13 @@ struct LanguageResult {
 }
 
 enum LabPipeline {
+    /// Spellings a language's text uses that its layout types as another character.
+    /// Persian and Urdu subtitles are often written with the Arabic yeh and kaf.
+    static let foldings: [String: [String: String]] = [
+        "fa_IR": ["\u{064A}": "\u{06CC}", "\u{0643}": "\u{06A9}"],
+        "ur": ["\u{064A}": "\u{06CC}", "\u{0643}": "\u{06A9}"],
+    ]
+
     /// Corpus table → typable characters for `problem`.
     static func isTypable(problem: LayoutProblem) -> (String) -> Bool {
         var letterIndex: [String: Int] = [:]
@@ -52,7 +59,8 @@ enum LabPipeline {
     ) throws -> (table: CorpusTable, kept: Int, seen: Int) {
         let problem = try LayoutProblem(languageId: languageId)
         return CorpusTable.fromWordList(
-            wordList, locale: problem.locale, isTypable: isTypable(problem: problem), limit: limit
+            wordList, locale: problem.locale, folding: foldings[languageId] ?? [:],
+            isTypable: isTypable(problem: problem), limit: limit
         )
     }
 

@@ -3,9 +3,9 @@ meta	license	CC-BY-SA-4.0
 meta	list	hr_full.txt
 meta	sha256	da16b6f9931902d04c04a6446b808c0d5834b5ef257c253404337f253753dddb
 meta	source	OpenSubtitles 2018 via FrequencyWords 2018 (hermitdave)
-meta	tokens_kept	213644388
+meta	tokens_kept	213644395
 meta	url	https://github.com/hermitdave/FrequencyWords
-meta	words_kept	1474193
+meta	words_kept	1474195
 meta	words_seen	1517660
 init	-	1442
 init	.	1453
@@ -35,8 +35,9 @@ init	w	291832
 init	x	13473
 init	y	92146
 init	z	8322357
+init	ª	1
 init	á	265
-init	â	100
+init	â	106
 init	ä	410
 init	å	7
 init	æ	3291
@@ -90,7 +91,7 @@ final	e	41530415
 final	f	93055
 final	g	1863543
 final	h	2168007
-final	i	34548542
+final	i	34548543
 final	j	3571725
 final	k	2455553
 final	l	661884
@@ -108,6 +109,7 @@ final	w	84275
 final	x	65627
 final	y	811554
 final	z	946232
+final	ª	6
 final	ß	45
 final	à	19
 final	á	408
@@ -495,7 +497,7 @@ big	e	b	1824590
 big	e	c	683138
 big	e	d	4368267
 big	e	e	140765
-big	e	f	214322
+big	e	f	214323
 big	e	g	1233904
 big	e	h	108615
 big	e	i	121199
@@ -566,7 +568,7 @@ big	f	e	209248
 big	f	f	65183
 big	f	g	3980
 big	f	h	267
-big	f	i	342113
+big	f	i	342114
 big	f	j	730
 big	f	k	1544
 big	f	l	63282
@@ -731,7 +733,7 @@ big	i	e	359099
 big	i	f	118619
 big	i	g	977013
 big	i	h	1627197
-big	i	i	71664
+big	i	i	71665
 big	i	j	6986034
 big	i	k	2318879
 big	i	l	4193323
@@ -1429,6 +1431,7 @@ big	t	w	12426
 big	t	x	244
 big	t	y	69155
 big	t	z	19711
+big	t	ª	6
 big	t	à	2
 big	t	á	226
 big	t	â	46
@@ -1772,6 +1775,7 @@ big	z	š	116
 big	z	ţ	1
 big	z	ů	2
 big	z	ž	59
+big	ª	e	1
 big	ß	-	1
 big	ß	a	4
 big	ß	b	1
@@ -1851,7 +1855,7 @@ big	â	o	25
 big	â	q	1
 big	â	r	8
 big	â	s	22
-big	â	t	148
+big	â	t	154
 big	â	w	1
 big	â	â	2
 big	â	ä	1

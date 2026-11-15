@@ -13,6 +13,50 @@ extension OptimizedArrangements {
     /// Variant id → key slot → gesture → letter. `_optimized` is the gentle
     /// variant, `_full` the unconstrained optimum, both under the language's corpus.
     static let table: [String: [String: [GestureType: String]]] = [
+        // العربية (Arabic): cost 1.6964 vs shipped 1.7650 bits per character; moved د ر ل ه
+        "ar_optimized": [
+            GridSlot.topLeft: [.swipeDown: "ة", .swipeDownRight: "ق", .tap: "د"],
+            GridSlot.topCenter: [
+                .swipeDown: "خ", .swipeDownLeft: "ض", .swipeUp: "ُ", .swipeUpLeft: "ِ",
+                .swipeUpRight: "َ", .tap: "ب",
+            ],
+            GridSlot.topRight: [.swipeDownLeft: "إ", .tap: "م"],
+            GridSlot.midLeft: [.swipeDown: "ى", .swipeDownRight: "ط", .swipeRight: "ح", .swipeUpRight: "ص", .tap: "ي"],
+            GridSlot.center: [
+                .swipeDown: "ت", .swipeDownLeft: "ر", .swipeDownRight: "ك", .swipeLeft: "س",
+                .swipeRight: "آ", .swipeUp: "ج", .swipeUpLeft: "ف", .swipeUpRight: "ش",
+                .tap: "ا",
+            ],
+            GridSlot.midRight: [.swipeDownLeft: "ع", .swipeLeft: "ز", .swipeUpLeft: "ٰ", .tap: "ل"],
+            GridSlot.bottomLeft: [.swipeUp: "ّ", .swipeUpLeft: "ٓ", .swipeUpRight: "ؤ", .tap: "و"],
+            GridSlot.bottomCenter: [
+                .swipeDownRight: "ئ", .swipeLeft: "ء", .swipeRight: "أ", .swipeUp: "ث",
+                .swipeUpLeft: "ظ", .swipeUpRight: "غ", .tap: "ن",
+            ],
+            GridSlot.bottomRight: [.swipeLeft: "ذ", .swipeUp: "ً", .swipeUpLeft: "ۋ", .swipeUpRight: "ْ", .tap: "ه"],
+        ],
+        // العربية (Arabic): cost 1.5686 vs shipped 1.7650 bits per character; moved ء آ أ ؤ إ ئ ا ب ة ت ث ج ح خ د ذ ر ز ش ص ض ط ظ ع غ ف ق ك ل م ن ه و ى ي ً َ ُ ِ ّ ْ ٓ ٰ ۋ
+        "ar_full": [
+            GridSlot.topLeft: [.swipeDown: "ّ", .swipeDownRight: "ُ", .tap: "ح"],
+            GridSlot.topCenter: [
+                .swipeDown: "ؤ", .swipeDownLeft: "َ", .swipeUp: "ْ", .swipeUpLeft: "ۋ",
+                .swipeUpRight: "ٰ", .tap: "د",
+            ],
+            GridSlot.topRight: [.swipeDownLeft: "ٓ", .tap: "ق"],
+            GridSlot.midLeft: [.swipeDown: "ص", .swipeDownRight: "ظ", .swipeRight: "خ", .swipeUpRight: "ِ", .tap: "ت"],
+            GridSlot.center: [
+                .swipeDown: "ر", .swipeDownLeft: "ش", .swipeDownRight: "ج", .swipeLeft: "س",
+                .swipeRight: "ع", .swipeUp: "ف", .swipeUpLeft: "ئ", .swipeUpRight: "ض",
+                .tap: "ي",
+            ],
+            GridSlot.midRight: [.swipeDownLeft: "ز", .swipeLeft: "ط", .swipeUpLeft: "ً", .tap: "و"],
+            GridSlot.bottomLeft: [.swipeUp: "أ", .swipeUpLeft: "آ", .swipeUpRight: "غ", .tap: "ن"],
+            GridSlot.bottomCenter: [
+                .swipeDownRight: "ة", .swipeLeft: "ك", .swipeRight: "ه", .swipeUp: "م",
+                .swipeUpLeft: "ب", .swipeUpRight: "ذ", .tap: "ا",
+            ],
+            GridSlot.bottomRight: [.swipeLeft: "ى", .swipeUp: "إ", .swipeUpLeft: "ث", .swipeUpRight: "ء", .tap: "ل"],
+        ],
         // Español-Català (Spanish-Catalan): cost 1.6321 vs shipped 1.7049 bits per character; moved a l o w
         "ca_ES_optimized": [
             GridSlot.topLeft: [.swipeDown: "á", .swipeDownRight: "v", .swipeUp: "à", .tap: "o"],
@@ -77,7 +121,7 @@ extension OptimizedArrangements {
             GridSlot.bottomCenter: [.swipeRight: "u", .swipeUp: "d", .tap: "n"],
             GridSlot.bottomRight: [.swipeUpLeft: "ß", .tap: "s"],
         ],
-        // Ελληνικά (Greek): cost 1.7345 vs shipped 1.7813 bits per character; moved α ι ν ρ
+        // Ελληνικά (Greek): cost 1.7275 vs shipped 1.7754 bits per character; moved α ι ν ρ
         "el_GR_optimized": [
             GridSlot.topLeft: [.swipeDownRight: "ω", .tap: "ν"],
             GridSlot.topCenter: [.swipeDown: "λ", .tap: "α"],
@@ -90,23 +134,23 @@ extension OptimizedArrangements {
             ],
             GridSlot.midRight: [.swipeLeft: "μ", .tap: "ι"],
             GridSlot.bottomLeft: [.swipeUpRight: "ψ", .tap: "τ"],
-            GridSlot.bottomCenter: [.swipeRight: "ζ", .tap: "ε"],
+            GridSlot.bottomCenter: [.swipeRight: "ζ", .swipeUp: "ί", .tap: "ε"],
             GridSlot.bottomRight: [.swipeUpLeft: "φ", .tap: "σ"],
         ],
-        // Ελληνικά (Greek): cost 1.6610 vs shipped 1.7813 bits per character; moved α β γ δ ε ζ η θ ι κ λ μ ν ξ ο π ρ ς σ τ υ φ χ ψ ω
+        // Ελληνικά (Greek): cost 1.6375 vs shipped 1.7754 bits per character; moved ί α β δ ε ζ η θ ι κ λ μ ν ξ ο π ρ ς σ τ υ φ χ ψ ω
         "el_GR_full": [
-            GridSlot.topLeft: [.swipeDownRight: "ψ", .tap: "λ"],
-            GridSlot.topCenter: [.swipeDown: "υ", .tap: "ο"],
+            GridSlot.topLeft: [.swipeDownRight: "ψ", .tap: "υ"],
+            GridSlot.topCenter: [.swipeDown: "χ", .tap: "ο"],
             GridSlot.topRight: [.swipeDownLeft: "ζ", .tap: "σ"],
-            GridSlot.midLeft: [.swipeRight: "γ", .tap: "ι"],
+            GridSlot.midLeft: [.swipeRight: "δ", .tap: "μ"],
             GridSlot.center: [
-                .swipeDown: "μ", .swipeDownLeft: "χ", .swipeDownRight: "θ", .swipeLeft: "ρ",
-                .swipeRight: "ω", .swipeUp: "π", .swipeUpLeft: "δ", .swipeUpRight: "φ",
+                .swipeDown: "ρ", .swipeDownLeft: "γ", .swipeDownRight: "θ", .swipeLeft: "λ",
+                .swipeRight: "ί", .swipeUp: "π", .swipeUpLeft: "φ", .swipeUpRight: "ω",
                 .tap: "ε",
             ],
             GridSlot.midRight: [.swipeLeft: "η", .tap: "τ"],
-            GridSlot.bottomLeft: [.swipeUpRight: "β", .tap: "κ"],
-            GridSlot.bottomCenter: [.swipeRight: "ς", .tap: "α"],
+            GridSlot.bottomLeft: [.swipeUpRight: "β", .tap: "ι"],
+            GridSlot.bottomCenter: [.swipeRight: "ς", .swipeUp: "κ", .tap: "α"],
             GridSlot.bottomRight: [.swipeUpLeft: "ξ", .tap: "ν"],
         ],
         // English: cost 1.5593 vs shipped 1.6277 bits per character; moved a b c d e f g h i j k l m n o p q r t u v w x y z
@@ -189,6 +233,50 @@ extension OptimizedArrangements {
             GridSlot.bottomCenter: [.swipeLeft: "t", .swipeRight: "k", .swipeUp: "m", .tap: "a"],
             GridSlot.bottomRight: [.swipeLeft: "j", .swipeUpLeft: "w", .tap: "s"],
         ],
+        // فارسی (Persian): cost 1.6284 vs shipped 1.6931 bits per character; moved د م ه و
+        "fa_IR_optimized": [
+            GridSlot.topLeft: [.swipeDown: "ۀ", .swipeDownRight: "ق", .tap: "د"],
+            GridSlot.topCenter: [
+                .swipeDown: "خ", .swipeDownLeft: "ض", .swipeDownRight: "پ", .swipeUp: "ُ",
+                .swipeUpLeft: "ِ", .swipeUpRight: "َ", .tap: "ب",
+            ],
+            GridSlot.topRight: [.swipeDownLeft: "چ", .tap: "و"],
+            GridSlot.midLeft: [.swipeDownRight: "ط", .swipeRight: "ش", .swipeUpRight: "ص", .tap: "ی"],
+            GridSlot.center: [
+                .swipeDown: "ت", .swipeDownLeft: "ل", .swipeDownRight: "ک", .swipeLeft: "س",
+                .swipeRight: "آ", .swipeUp: "ح", .swipeUpLeft: "ف", .swipeUpRight: "ج",
+                .tap: "ا",
+            ],
+            GridSlot.midRight: [.swipeDownLeft: "ع", .swipeLeft: "ز", .swipeUpLeft: "ژ", .tap: "ر"],
+            GridSlot.bottomLeft: [.swipeUp: "ّ", .swipeUpLeft: "ٓ", .swipeUpRight: "ؤ", .tap: "م"],
+            GridSlot.bottomCenter: [
+                .swipeDownRight: "ئ", .swipeLeft: "ء", .swipeRight: "أ", .swipeUp: "ث",
+                .swipeUpLeft: "ظ", .swipeUpRight: "غ", .tap: "ن",
+            ],
+            GridSlot.bottomRight: [.swipeLeft: "ذ", .swipeUp: "ً", .swipeUpLeft: "گ", .swipeUpRight: "ْ", .tap: "ه"],
+        ],
+        // فارسی (Persian): cost 1.5224 vs shipped 1.6931 bits per character; moved ء آ أ ؤ ئ ب ت ث ج ح خ د ذ ز س ش ص ض ط ظ ع غ ف ق ل م ن ه و ً َ ُ ِ ّ ْ ٓ پ چ ژ ک گ ۀ ی
+        "fa_IR_full": [
+            GridSlot.topLeft: [.swipeDown: "ُ", .swipeDownRight: "ّ", .tap: "ق"],
+            GridSlot.topCenter: [
+                .swipeDown: "ظ", .swipeDownLeft: "أ", .swipeDownRight: "ؤ", .swipeUp: "ً",
+                .swipeUpLeft: "ْ", .swipeUpRight: "ٓ", .tap: "ت",
+            ],
+            GridSlot.topRight: [.swipeDownLeft: "َ", .tap: "ف"],
+            GridSlot.midLeft: [.swipeDownRight: "ئ", .swipeRight: "ط", .swipeUpRight: "ء", .tap: "و"],
+            GridSlot.center: [
+                .swipeDown: "ل", .swipeDownLeft: "ع", .swipeDownRight: "ص", .swipeLeft: "ز",
+                .swipeRight: "ح", .swipeUp: "س", .swipeUpLeft: "ض", .swipeUpRight: "ث",
+                .tap: "ا",
+            ],
+            GridSlot.midRight: [.swipeDownLeft: "غ", .swipeLeft: "ذ", .swipeUpLeft: "ۀ", .tap: "ر"],
+            GridSlot.bottomLeft: [.swipeUp: "ج", .swipeUpLeft: "ژ", .swipeUpRight: "پ", .tap: "ن"],
+            GridSlot.bottomCenter: [
+                .swipeDownRight: "ش", .swipeLeft: "م", .swipeRight: "د", .swipeUp: "ب",
+                .swipeUpLeft: "خ", .swipeUpRight: "ک", .tap: "ی",
+            ],
+            GridSlot.bottomRight: [.swipeLeft: "چ", .swipeUp: "گ", .swipeUpLeft: "آ", .swipeUpRight: "ِ", .tap: "ه"],
+        ],
         // Suomi (Finnish): cost 1.6147 vs shipped 1.6856 bits per character; moved h i o ä
         "fi_FI_optimized": [
             GridSlot.topLeft: [.swipeDown: "h", .swipeDownRight: "v", .swipeUp: "å", .tap: "a"],
@@ -252,6 +340,38 @@ extension OptimizedArrangements {
             GridSlot.bottomLeft: [.swipeDown: "à", .swipeRight: "j", .swipeUp: "q", .swipeUpRight: "z", .tap: "t"],
             GridSlot.bottomCenter: [.swipeLeft: "n", .swipeRight: "d", .swipeUp: "l", .tap: "e"],
             GridSlot.bottomRight: [.swipeUpLeft: "y", .tap: "s"],
+        ],
+        // עברית (Hebrew): cost 1.6485 vs shipped 1.6820 bits per character; moved א מ ס ת
+        "he_IL_optimized": [
+            GridSlot.topLeft: [.swipeDownRight: "ן", .tap: "ר"],
+            GridSlot.topCenter: [.swipeDown: "ג", .tap: "ב"],
+            GridSlot.topRight: [.swipeDownLeft: "צ", .tap: "ס"],
+            GridSlot.midLeft: [.swipeRight: "ם", .tap: "ת"],
+            GridSlot.center: [
+                .swipeDown: "נ", .swipeDownLeft: "כ", .swipeDownRight: "ש", .swipeLeft: "ע",
+                .swipeRight: "ד", .swipeUp: "ח", .swipeUpLeft: "ק", .swipeUpRight: "פ",
+                .tap: "י",
+            ],
+            GridSlot.midRight: [.tap: "ו"],
+            GridSlot.bottomLeft: [.swipeUpRight: "ז", .tap: "א"],
+            GridSlot.bottomCenter: [.swipeUp: "מ", .tap: "ה"],
+            GridSlot.bottomRight: [.swipeUpLeft: "ט", .tap: "ל"],
+        ],
+        // עברית (Hebrew): cost 1.6139 vs shipped 1.6820 bits per character; moved א ג ד ה ו ז ח ט כ ל ם מ ן נ ס ע צ ק ש
+        "he_IL_full": [
+            GridSlot.topLeft: [.swipeDownRight: "ט", .tap: "ר"],
+            GridSlot.topCenter: [.swipeDown: "צ", .tap: "ב"],
+            GridSlot.topRight: [.swipeDownLeft: "ג", .tap: "ע"],
+            GridSlot.midLeft: [.swipeRight: "ק", .tap: "ו"],
+            GridSlot.center: [
+                .swipeDown: "כ", .swipeDownLeft: "ח", .swipeDownRight: "ם", .swipeLeft: "נ",
+                .swipeRight: "ש", .swipeUp: "ד", .swipeUpLeft: "ס", .swipeUpRight: "פ",
+                .tap: "י",
+            ],
+            GridSlot.midRight: [.tap: "ל"],
+            GridSlot.bottomLeft: [.swipeUpRight: "ן", .tap: "ת"],
+            GridSlot.bottomCenter: [.swipeUp: "מ", .tap: "א"],
+            GridSlot.bottomRight: [.swipeUpLeft: "ז", .tap: "ה"],
         ],
         // Hrvatski (Croatian): cost 1.6739 vs shipped 1.7378 bits per character; moved a h o v
         "hr_HR_optimized": [
@@ -349,7 +469,7 @@ extension OptimizedArrangements {
             GridSlot.bottomCenter: [.swipeLeft: "w", .swipeRight: "m", .swipeUp: "p", .tap: "o"],
             GridSlot.bottomRight: [.swipeLeft: "ć", .swipeUpLeft: "f", .tap: "t"],
         ],
-        // Português (Portuguese): cost 1.6136 vs shipped 1.6618 bits per character; moved a d o t
+        // Português (Portuguese): cost 1.6137 vs shipped 1.6618 bits per character; moved a d o t
         "pt_PT_optimized": [
             GridSlot.topLeft: [
                 .swipeDown: "á", .swipeDownRight: "v", .swipeLeft: "ã", .swipeUp: "ô",

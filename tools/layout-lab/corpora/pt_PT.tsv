@@ -3,43 +3,44 @@ meta	license	CC-BY-SA-4.0
 meta	list	pt_full.txt
 meta	sha256	21ac5ba5840001d522f2a7b91cc7cd0b25d24a8dcea3ecf997277662859b8f2f
 meta	source	OpenSubtitles 2018 via FrequencyWords 2018 (hermitdave)
-meta	tokens_kept	216857886
+meta	tokens_kept	216866928
 meta	url	https://github.com/hermitdave/FrequencyWords
-meta	words_kept	750461
+meta	words_kept	750605
 meta	words_seen	770227
 init	-	311
 init	.	916
-init	a	21547570
-init	b	4353227
-init	c	14272529
-init	d	18416207
-init	e	21513545
-init	f	7555525
-init	g	1994682
+init	a	21547596
+init	b	4353234
+init	c	14272554
+init	d	18419067
+init	e	21513616
+init	f	7555533
+init	g	1994684
 init	h	2382632
-init	i	4789754
-init	j	1860868
+init	i	4789762
+init	j	1860869
 init	k	334221
-init	l	3669501
-init	m	12661920
-init	n	12886491
-init	o	12424754
-init	p	16516075
-init	q	11512953
-init	r	3256484
-init	s	13874361
-init	t	11823943
+init	l	3669514
+init	m	12661949
+init	n	12886492
+init	o	12424756
+init	p	16516309
+init	q	11513006
+init	r	3256491
+init	s	13879348
+init	t	11824002
 init	u	5275212
-init	v	7524895
+init	v	7525536
 init	w	271618
 init	x	45613
 init	y	74135
 init	z	119210
+init	ª	6
 init	ß	4
 init	à	735441
 init	á	185390
 init	â	10265
-init	ã	2254
+init	ã	2256
 init	ä	71
 init	å	43
 init	æ	24
@@ -70,38 +71,39 @@ init	ŕ	37
 init	š	64
 init	ž	34
 init	ǻ	39
-final	-	5800
-final	.	414029
-final	a	39356016
+final	-	5803
+final	.	414265
+final	a	39356062
 final	b	91501
 final	c	92199
 final	d	381002
-final	e	37736941
+final	e	37736953
 final	f	60987
-final	g	175775
+final	g	175776
 final	h	456509
 final	i	5548583
 final	j	13995
 final	k	400261
 final	l	2434770
-final	m	15205313
+final	m	15205338
 final	n	1176107
-final	o	46113866
+final	o	46113888
 final	p	80174
 final	q	4689
 final	r	15285491
-final	s	28676208
-final	t	407775
-final	u	8238692
+final	s	28676316
+final	t	407776
+final	u	8238693
 final	v	45586
 final	w	60802
 final	x	103088
 final	y	942947
 final	z	1479118
+final	ª	8583
 final	ß	6
 final	à	603263
 final	á	4467830
-final	â	2007
+final	â	2011
 final	ã	250325
 final	ä	1165
 final	å	28
@@ -143,8 +145,8 @@ big	-	h	17570
 big	-	i	31435
 big	-	j	4299
 big	-	k	2703
-big	-	l	963719
-big	-	m	1228892
+big	-	l	963744
+big	-	m	1228898
 big	-	n	334285
 big	-	o	252202
 big	-	p	27909
@@ -176,10 +178,10 @@ big	-	õ	3
 big	-	ö	1
 big	-	ø	1
 big	-	ú	38
-big	.	-	179
+big	.	-	182
 big	.	.	176
 big	.	a	7788
-big	.	b	2277
+big	.	b	2278
 big	.	c	5002
 big	.	d	3974
 big	.	e	3032
@@ -187,16 +189,16 @@ big	.	f	931
 big	.	g	1020
 big	.	h	1615
 big	.	i	3782
-big	.	j	4077
+big	.	j	4078
 big	.	k	1269
 big	.	l	1736
-big	.	m	1930
-big	.	n	1463
+big	.	m	1931
+big	.	n	1464
 big	.	o	2895
-big	.	p	2444
+big	.	p	2445
 big	.	q	250
 big	.	r	2469
-big	.	s	4158
+big	.	s	4159
 big	.	t	2740
 big	.	u	1965
 big	.	v	1015
@@ -204,6 +206,7 @@ big	.	w	715
 big	.	x	148
 big	.	y	497
 big	.	z	86
+big	.	ª	2981
 big	.	à	1
 big	.	á	6
 big	.	â	3
@@ -220,33 +223,34 @@ big	.	û	1
 big	.	ü	1
 big	.	ý	2
 big	a	-	773528
-big	a	.	77122
+big	a	.	77124
 big	a	a	28220
 big	a	b	2284556
-big	a	c	2669848
-big	a	d	5912623
+big	a	c	2669849
+big	a	d	5912626
 big	a	e	84266
 big	a	f	294735
-big	a	g	1602922
+big	a	g	1602924
 big	a	h	133731
 big	a	i	3754892
 big	a	j	423664
 big	a	k	84352
-big	a	l	6106041
+big	a	l	6106042
 big	a	m	6197254
-big	a	n	6969111
+big	a	n	6969120
 big	a	o	777051
-big	a	p	1577682
-big	a	q	1436762
-big	a	r	14521757
-big	a	s	11098017
-big	a	t	2511466
-big	a	u	548307
-big	a	v	2095489
+big	a	p	1577686
+big	a	q	1436763
+big	a	r	14521763
+big	a	s	11098023
+big	a	t	2511467
+big	a	u	548308
+big	a	v	2095506
 big	a	w	39227
 big	a	x	69863
 big	a	y	151954
-big	a	z	1691334
+big	a	z	1691339
+big	a	ª	1
 big	a	ß	15
 big	a	à	8
 big	a	á	62
@@ -281,11 +285,11 @@ big	b	a	1668411
 big	b	b	57180
 big	b	c	9823
 big	b	d	8793
-big	b	e	3237363
+big	b	e	3237369
 big	b	f	176
 big	b	g	368
 big	b	h	3601
-big	b	i	680947
+big	b	i	680948
 big	b	j	27065
 big	b	k	358
 big	b	l	318598
@@ -294,19 +298,19 @@ big	b	n	1353
 big	b	o	1607604
 big	b	p	651
 big	b	q	47
-big	b	r	1807618
+big	b	r	1807620
 big	b	s	111654
-big	b	t	23378
+big	b	t	23380
 big	b	u	310662
 big	b	v	24954
 big	b	w	557
 big	b	x	95
 big	b	y	57481
-big	b	z	299
+big	b	z	300
 big	b	à	25
 big	b	á	20488
 big	b	â	597
-big	b	ã	2900
+big	b	ã	2905
 big	b	ä	38
 big	b	å	9
 big	b	æ	7
@@ -329,22 +333,22 @@ big	b	ă	2
 big	b	ę	4
 big	b	œ	4
 big	c	-	2530
-big	c	.	9511
+big	c	.	9512
 big	c	a	5876122
 big	c	b	3118
 big	c	c	38966
 big	c	d	6619
-big	c	e	2955528
+big	c	e	2955529
 big	c	f	1145
 big	c	g	10109
 big	c	h	2197244
-big	c	i	3052327
+big	c	i	3052372
 big	c	j	528
 big	c	k	262887
 big	c	l	492261
 big	c	m	4910
 big	c	n	31603
-big	c	o	10503892
+big	c	o	10503898
 big	c	p	2450
 big	c	q	3930
 big	c	r	965728
@@ -356,10 +360,11 @@ big	c	w	215
 big	c	x	36
 big	c	y	34247
 big	c	z	1868
+big	c	ª	25
 big	c	à	149
 big	c	á	191422
 big	c	â	46443
-big	c	ã	54977
+big	c	ã	55599
 big	c	ä	440
 big	c	å	1
 big	c	ç	86262
@@ -387,15 +392,15 @@ big	c	ę	111
 big	c	œ	2
 big	d	-	2821
 big	d	.	9411
-big	d	a	7557280
+big	d	a	7557281
 big	d	b	3440
 big	d	c	5228
 big	d	d	52813
-big	d	e	14496065
+big	d	e	14496068
 big	d	f	3741
 big	d	g	20366
 big	d	h	8455
-big	d	i	4645447
+big	d	i	4645449
 big	d	j	6997
 big	d	k	3073
 big	d	l	16501
@@ -404,19 +409,20 @@ big	d	n	23255
 big	d	o	9322517
 big	d	p	1278
 big	d	q	3402
-big	d	r	375342
+big	d	r	378168
 big	d	s	34092
 big	d	t	7151
-big	d	u	529615
-big	d	v	44163
+big	d	u	529616
+big	d	v	44166
 big	d	w	17948
 big	d	x	211
 big	d	y	89288
 big	d	z	1759
+big	d	ª	30
 big	d	à	341
 big	d	á	223529
 big	d	â	1583
-big	d	ã	56715
+big	d	ã	56733
 big	d	ä	227
 big	d	å	111
 big	d	æ	1
@@ -445,29 +451,29 @@ big	d	ž	8
 big	e	-	540092
 big	e	.	8927
 big	e	a	544216
-big	e	b	569048
-big	e	c	2960154
+big	e	b	569053
+big	e	c	2960158
 big	e	d	1154189
-big	e	e	236767
-big	e	f	409920
-big	e	g	1669085
+big	e	e	236768
+big	e	f	409925
+big	e	g	1669087
 big	e	h	17278
-big	e	i	4624225
+big	e	i	4624226
 big	e	j	493109
 big	e	k	31522
-big	e	l	6236258
-big	e	m	8982774
-big	e	n	10334257
+big	e	l	6236259
+big	e	m	8982787
+big	e	n	10334297
 big	e	o	277109
 big	e	p	711254
-big	e	q	289846
-big	e	r	13555085
-big	e	s	17495865
-big	e	t	1226905
+big	e	q	289851
+big	e	r	13555105
+big	e	s	17495867
+big	e	t	1226906
 big	e	u	5008901
-big	e	v	1468894
-big	e	w	54048
-big	e	x	809957
+big	e	v	1468899
+big	e	w	54049
+big	e	x	809984
 big	e	y	188972
 big	e	z	1065748
 big	e	à	13
@@ -499,25 +505,25 @@ big	e	ŕ	1
 big	e	š	69
 big	e	ž	3
 big	f	-	1044
-big	f	.	3676
-big	f	a	2937179
+big	f	.	3883
+big	f	a	2937184
 big	f	b	21684
 big	f	c	1182
 big	f	d	1130
-big	f	e	1235700
+big	f	e	1235706
 big	f	f	79119
 big	f	g	653
 big	f	h	267
-big	f	i	2159740
+big	f	i	2159741
 big	f	j	186
 big	f	k	1230
-big	f	l	126649
+big	f	l	126651
 big	f	m	2539
 big	f	n	1267
 big	f	o	2079132
 big	f	p	321
 big	f	q	19
-big	f	r	485738
+big	f	r	485742
 big	f	s	3304
 big	f	t	12211
 big	f	u	475155
@@ -526,6 +532,7 @@ big	f	w	137
 big	f	x	62
 big	f	y	5490
 big	f	z	109
+big	f	ª	41
 big	f	à	79
 big	f	á	74909
 big	f	â	6304
@@ -563,15 +570,15 @@ big	g	c	982
 big	g	d	4050
 big	g	e	1024495
 big	g	f	3866
-big	g	g	33758
-big	g	h	52421
+big	g	g	33759
+big	g	h	52422
 big	g	i	675175
 big	g	j	264
 big	g	k	922
 big	g	l	86410
 big	g	m	11891
 big	g	n	144927
-big	g	o	2608312
+big	g	o	2608314
 big	g	p	3499
 big	g	q	147
 big	g	r	973849
@@ -583,10 +590,11 @@ big	g	w	5695
 big	g	x	108
 big	g	y	9658
 big	g	z	360
+big	g	ª	1
 big	g	à	42
 big	g	á	40144
 big	g	â	4557
-big	g	ã	17995
+big	g	ã	18007
 big	g	ä	216
 big	g	å	13
 big	g	ç	9
@@ -611,11 +619,11 @@ big	g	ă	4
 big	g	ę	3
 big	h	-	4700
 big	h	.	4725
-big	h	a	3936128
+big	h	a	3936129
 big	h	b	3388
 big	h	c	2460
 big	h	d	2483
-big	h	e	2353275
+big	h	e	2353278
 big	h	f	5858
 big	h	g	588
 big	h	h	9165
@@ -630,7 +638,7 @@ big	h	p	640
 big	h	q	156
 big	h	r	45948
 big	h	s	6151
-big	h	t	26317
+big	h	t	26319
 big	h	u	334950
 big	h	v	805
 big	h	w	5049
@@ -662,37 +670,38 @@ big	h	ü	243
 big	h	ă	14
 big	i	-	290117
 big	i	.	20606
-big	i	a	4894415
+big	i	a	4894456
 big	i	b	235630
-big	i	c	2621221
-big	i	d	2997624
-big	i	e	748648
+big	i	c	2621223
+big	i	d	2997627
+big	i	e	748649
 big	i	f	480745
-big	i	g	2170050
+big	i	g	2170051
 big	i	h	13839
-big	i	i	17601
+big	i	i	17603
 big	i	j	78703
 big	i	k	72349
-big	i	l	1622010
-big	i	m	3921407
-big	i	n	5935149
-big	i	o	2319271
+big	i	l	1622014
+big	i	m	3921408
+big	i	n	5935160
+big	i	o	2319278
 big	i	p	519580
 big	i	q	140256
-big	i	r	3887313
-big	i	s	8294249
-big	i	t	3244205
+big	i	r	3887315
+big	i	s	8294253
+big	i	t	3244208
 big	i	u	315744
-big	i	v	1344195
+big	i	v	1344196
 big	i	w	2777
 big	i	x	829429
 big	i	y	6353
 big	i	z	1390116
+big	i	ª	1
 big	i	ß	9
 big	i	à	107
 big	i	á	54959
 big	i	â	1985
-big	i	ã	113751
+big	i	ã	113752
 big	i	ä	409
 big	i	å	1
 big	i	æ	21
@@ -723,7 +732,7 @@ big	i	š	82
 big	i	ž	2
 big	j	-	630
 big	j	.	8694
-big	j	a	880863
+big	j	a	880865
 big	j	b	345
 big	j	c	584
 big	j	d	905
@@ -783,7 +792,7 @@ big	k	d	1010
 big	k	e	249080
 big	k	f	1771
 big	k	g	4558
-big	k	h	17755
+big	k	h	17756
 big	k	i	133568
 big	k	j	1100
 big	k	k	6382
@@ -826,36 +835,37 @@ big	k	ă	3
 big	k	š	1
 big	l	-	13417
 big	l	.	6664
-big	l	a	4325807
+big	l	a	4325819
 big	l	b	28621
 big	l	c	80796
-big	l	d	222575
+big	l	d	222584
 big	l	e	4422938
 big	l	f	43101
 big	l	g	1013519
 big	l	h	2839134
-big	l	i	2419093
+big	l	i	2419095
 big	l	j	1084
 big	l	k	19738
 big	l	l	419478
 big	l	m	517615
 big	l	n	14448
-big	l	o	2176492
+big	l	o	2176509
 big	l	p	375617
 big	l	q	150241
 big	l	r	4902
 big	l	s	141968
-big	l	t	1000469
-big	l	u	607923
-big	l	v	536325
+big	l	t	1000470
+big	l	u	607925
+big	l	v	536326
 big	l	w	3363
 big	l	x	128
 big	l	y	129539
 big	l	z	4106
+big	l	ª	1
 big	l	à	1471
 big	l	á	815856
 big	l	â	30246
-big	l	ã	20450
+big	l	ã	20456
 big	l	ä	163
 big	l	å	11
 big	l	æ	1
@@ -880,39 +890,40 @@ big	l	û	9
 big	l	ü	188
 big	l	ă	4
 big	l	ę	4
-big	m	-	410258
+big	m	-	410259
 big	m	.	7948
-big	m	a	9380696
+big	m	a	9380700
 big	m	b	940631
 big	m	c	33542
 big	m	d	2562
-big	m	e	8152121
+big	m	e	8152134
 big	m	f	1654
 big	m	g	1947
 big	m	h	1864
-big	m	i	3012133
+big	m	i	3012137
 big	m	j	732
 big	m	k	964
 big	m	l	5371
 big	m	m	88481
-big	m	n	9450
-big	m	o	6634183
-big	m	p	1823247
+big	m	n	9452
+big	m	o	6634185
+big	m	p	1823248
 big	m	q	141
 big	m	r	46160
 big	m	s	26977
 big	m	t	2696
-big	m	u	1581537
+big	m	u	1581538
 big	m	v	861
 big	m	w	1996
 big	m	x	273
 big	m	y	64793
 big	m	z	582
+big	m	ª	20
 big	m	ß	1
 big	m	à	135
 big	m	á	164400
 big	m	â	8918
-big	m	ã	571528
+big	m	ã	571533
 big	m	ä	1757
 big	m	å	27
 big	m	æ	2
@@ -937,36 +948,37 @@ big	m	ă	78
 big	m	ę	2
 big	n	-	13546
 big	n	.	2847
-big	n	a	4037021
+big	n	a	4037022
 big	n	b	11541
-big	n	c	2087919
-big	n	d	3989306
-big	n	e	1876787
-big	n	f	438605
-big	n	g	920718
-big	n	h	4016117
-big	n	i	1600762
+big	n	c	2087967
+big	n	d	3989312
+big	n	e	1876791
+big	n	f	438642
+big	n	g	920720
+big	n	h	4016118
+big	n	i	1600767
 big	n	j	152735
 big	n	k	83104
 big	n	l	22295
 big	n	m	3604
-big	n	n	270471
+big	n	n	270472
 big	n	o	4290979
 big	n	p	2954
 big	n	q	133353
 big	n	r	70408
-big	n	s	2535580
-big	n	t	9082747
+big	n	s	2535584
+big	n	t	9082751
 big	n	u	939124
 big	n	v	409751
 big	n	w	5100
 big	n	x	6137
 big	n	y	103653
 big	n	z	42323
+big	n	ª	3
 big	n	à	236
 big	n	á	86160
 big	n	â	7504
-big	n	ã	6208833
+big	n	ã	6208836
 big	n	ä	18447
 big	n	å	3
 big	n	æ	1
@@ -994,25 +1006,25 @@ big	n	ă	700
 big	o	-	508324
 big	o	.	9112
 big	o	a	780118
-big	o	b	1395021
-big	o	c	1715329
+big	o	b	1395024
+big	o	c	1715941
 big	o	d	2239047
 big	o	e	209851
-big	o	f	271511
+big	o	f	271724
 big	o	g	534531
 big	o	h	213752
 big	o	i	2501678
 big	o	j	213655
 big	o	k	141266
-big	o	l	2484041
-big	o	m	5669534
-big	o	n	5634870
+big	o	l	2484043
+big	o	m	5669536
+big	o	n	5634875
 big	o	o	180626
 big	o	p	388916
 big	o	q	62237
-big	o	r	9042517
-big	o	s	12350622
-big	o	t	769996
+big	o	r	9042532
+big	o	s	12350629
+big	o	t	770000
 big	o	u	4779555
 big	o	v	708572
 big	o	w	100640
@@ -1049,11 +1061,11 @@ big	o	š	32
 big	o	ž	37
 big	p	-	3321
 big	p	.	4931
-big	p	a	6625778
+big	p	a	6625783
 big	p	b	3059
 big	p	c	12198
 big	p	d	2229
-big	p	e	4628288
+big	p	e	4628291
 big	p	f	1499
 big	p	g	875
 big	p	h	78587
@@ -1063,10 +1075,10 @@ big	p	k	2001
 big	p	l	494795
 big	p	m	2848
 big	p	n	10229
-big	p	o	6660610
+big	p	o	6660628
 big	p	p	37963
 big	p	q	83
-big	p	r	3900563
+big	p	r	3900778
 big	p	s	70983
 big	p	t	214835
 big	p	u	355605
@@ -1078,7 +1090,7 @@ big	p	z	342
 big	p	à	137
 big	p	á	153709
 big	p	â	11625
-big	p	ã	16723
+big	p	ã	16724
 big	p	ä	143
 big	p	å	2
 big	p	æ	2
@@ -1124,12 +1136,13 @@ big	q	q	188
 big	q	r	240
 big	q	s	64
 big	q	t	81
-big	q	u	14771756
+big	q	u	14771828
 big	q	v	36
 big	q	w	132
 big	q	x	7
 big	q	y	35
 big	q	z	12
+big	q	ª	2
 big	q	ã	7
 big	q	ç	4
 big	q	è	9
@@ -1142,37 +1155,38 @@ big	q	ú	17
 big	q	û	2
 big	q	ü	2770
 big	r	-	913833
-big	r	.	239685
-big	r	a	12889192
+big	r	.	242287
+big	r	a	12889198
 big	r	b	87128
 big	r	c	583443
-big	r	d	1348563
-big	r	e	9036203
+big	r	d	1348565
+big	r	e	9036216
 big	r	f	108248
-big	r	g	567877
+big	r	g	567884
 big	r	h	10160
-big	r	i	5224892
+big	r	i	5224894
 big	r	j	10468
 big	r	k	89153
-big	r	l	147578
-big	r	m	1232004
-big	r	n	455545
-big	r	o	5150225
+big	r	l	147579
+big	r	m	1232005
+big	r	n	455546
+big	r	o	5150440
 big	r	p	169521
-big	r	q	744633
-big	r	r	1733584
+big	r	q	744647
+big	r	r	1733585
 big	r	s	369725
-big	r	t	2481480
+big	r	t	2482400
 big	r	u	542082
 big	r	v	283923
 big	r	w	7532
 big	r	x	1486
 big	r	y	168091
 big	r	z	8611
+big	r	ª	4249
 big	r	à	614
 big	r	á	814086
-big	r	â	20937
-big	r	ã	169930
+big	r	â	20938
+big	r	ã	169974
 big	r	ä	820
 big	r	å	11
 big	r	æ	4
@@ -1201,37 +1215,38 @@ big	r	ę	23
 big	r	š	3
 big	r	ž	3
 big	s	-	183176
-big	s	.	26244
+big	s	.	26252
 big	s	a	6077474
 big	s	b	25830
-big	s	c	1564643
+big	s	c	1564646
 big	s	d	93975
-big	s	e	9120493
-big	s	f	126640
+big	s	e	9120499
+big	s	f	126643
 big	s	g	44955
-big	s	h	214465
-big	s	i	3194602
+big	s	h	214467
+big	s	i	3194607
 big	s	j	1060
 big	s	k	45549
 big	s	l	77257
 big	s	m	601712
 big	s	n	27627
-big	s	o	5250093
-big	s	p	1402765
+big	s	o	5250094
+big	s	p	1402766
 big	s	q	226500
-big	s	r	251478
-big	s	s	6307523
-big	s	t	10832315
+big	s	r	256417
+big	s	s	6307526
+big	s	t	10832350
 big	s	u	1280629
 big	s	v	20570
 big	s	w	16706
 big	s	x	103
 big	s	y	28177
 big	s	z	1866
+big	s	ª	5
 big	s	à	90
 big	s	á	127544
 big	s	â	619
-big	s	ã	678825
+big	s	ã	678826
 big	s	ä	1889
 big	s	å	2
 big	s	æ	1
@@ -1258,37 +1273,38 @@ big	s	ă	74
 big	s	ę	4
 big	s	œ	2
 big	t	-	18746
-big	t	.	6331
-big	t	a	8553068
+big	t	.	6496
+big	t	a	8553069
 big	t	b	4983
 big	t	c	41237
-big	t	d	850
-big	t	e	13289576
+big	t	d	851
+big	t	e	13289580
 big	t	f	4863
 big	t	g	2669
-big	t	h	248965
-big	t	i	4104575
+big	t	h	248966
+big	t	i	4104576
 big	t	j	1174
 big	t	k	2264
 big	t	l	49993
 big	t	m	22529
 big	t	n	11488
-big	t	o	8213733
+big	t	o	8213735
 big	t	p	3015
 big	t	q	43
-big	t	r	3957847
+big	t	r	3957887
 big	t	s	49934
 big	t	t	161153
-big	t	u	2223357
+big	t	u	2223358
 big	t	v	13088
 big	t	w	14327
 big	t	x	376
-big	t	y	67908
+big	t	y	67909
 big	t	z	21800
+big	t	ª	784
 big	t	à	2399
 big	t	á	2579694
 big	t	â	42948
-big	t	ã	1184560
+big	t	ã	1184592
 big	t	ä	3238
 big	t	å	7
 big	t	ç	21
@@ -1319,20 +1335,20 @@ big	u	a	2850274
 big	u	b	334962
 big	u	c	434736
 big	u	d	1291111
-big	u	e	12002517
+big	u	e	12002519
 big	u	f	93354
-big	u	g	290704
+big	u	g	290705
 big	u	h	23109
 big	u	i	3131873
 big	u	j	39911
 big	u	k	27420
-big	u	l	1355170
+big	u	l	1355171
 big	u	m	6019902
 big	u	n	1690871
 big	u	o	41618
 big	u	p	462380
-big	u	q	27320
-big	u	r	1415113
+big	u	q	27321
+big	u	r	1415114
 big	u	s	1648866
 big	u	t	1155172
 big	u	u	2949
@@ -1341,11 +1357,12 @@ big	u	w	1181
 big	u	x	99544
 big	u	y	5561
 big	u	z	150709
+big	u	ª	1
 big	u	ß	5
 big	u	à	31
 big	u	á	9537
 big	u	â	1535
-big	u	ã	13284
+big	u	ã	13355
 big	u	ä	18
 big	u	æ	6
 big	u	ç	121883
@@ -1368,22 +1385,22 @@ big	u	ę	35
 big	u	š	26
 big	u	ž	8
 big	v	-	654
-big	v	.	2635
+big	v	.	2636
 big	v	a	3894546
 big	v	b	63
 big	v	c	2068
 big	v	d	2830
-big	v	e	4764712
+big	v	e	4764716
 big	v	f	125
 big	v	g	515
 big	v	h	322
-big	v	i	2753273
+big	v	i	2753277
 big	v	j	67
 big	v	k	640
 big	v	l	3813
 big	v	m	344
 big	v	n	2045
-big	v	o	3050791
+big	v	o	3051404
 big	v	p	478
 big	v	q	5
 big	v	r	176664
@@ -1395,10 +1412,11 @@ big	v	w	77
 big	v	x	230
 big	v	y	4998
 big	v	z	62
+big	v	ª	20
 big	v	à	374
 big	v	á	222230
 big	v	â	2373
-big	v	ã	170904
+big	v	ã	170930
 big	v	ä	526
 big	v	å	2
 big	v	æ	4
@@ -1449,6 +1467,7 @@ big	w	x	29
 big	w	y	8642
 big	w	z	98
 big	w	á	14
+big	w	â	1
 big	w	ä	31
 big	w	é	11
 big	w	ê	1
@@ -1457,16 +1476,16 @@ big	w	ó	2
 big	w	ö	6
 big	w	ü	20
 big	x	-	15519
-big	x	.	2647
+big	x	.	2651
 big	x	a	598566
 big	x	b	758
-big	x	c	76553
+big	x	c	76558
 big	x	d	53
 big	x	e	331058
 big	x	f	1369
 big	x	g	41
 big	x	h	552
-big	x	i	294548
+big	x	i	294550
 big	x	j	30
 big	x	k	46
 big	x	l	2119
@@ -1484,6 +1503,7 @@ big	x	w	1182
 big	x	x	2872
 big	x	y	7965
 big	x	z	33
+big	x	ª	18
 big	x	à	41
 big	x	á	21967
 big	x	â	14
@@ -1520,7 +1540,7 @@ big	y	n	43348
 big	y	o	44882
 big	y	p	5350
 big	y	q	85
-big	y	r	12473
+big	y	r	12474
 big	y	s	25291
 big	y	t	9363
 big	y	u	12461
@@ -1576,11 +1596,11 @@ big	z	v	939
 big	z	w	684
 big	z	x	118
 big	z	y	6440
-big	z	z	28026
+big	z	z	28028
 big	z	à	8
 big	z	á	6687
-big	z	â	320
-big	z	ã	98497
+big	z	â	321
+big	z	ã	98502
 big	z	ä	216
 big	z	ç	6
 big	z	è	3
@@ -1600,6 +1620,22 @@ big	z	ü	55
 big	z	ý	3
 big	z	ă	8
 big	z	ę	8
+big	ª	-	30
+big	ª	.	236
+big	ª	a	1
+big	ª	b	1
+big	ª	e	4
+big	ª	k	1
+big	ª	l	1
+big	ª	m	25
+big	ª	n	48
+big	ª	p	1
+big	ª	s	106
+big	ª	t	2
+big	ª	u	1
+big	ª	x	2
+big	ª	ª	2
+big	ª	â	1
 big	ß	-	1
 big	ß	a	1
 big	ß	e	29
@@ -1732,6 +1768,7 @@ big	ã	u	9
 big	ã	v	13
 big	ã	x	2
 big	ã	z	1157
+big	ã	ª	854
 big	ã	à	3
 big	ã	â	1
 big	ã	ã	455

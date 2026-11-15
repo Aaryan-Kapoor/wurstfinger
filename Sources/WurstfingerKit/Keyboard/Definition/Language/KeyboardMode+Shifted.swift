@@ -17,6 +17,10 @@ extension String {
     /// `GridKeyboardFactory`, so the two stay consistent.
     func keyboardUppercased(with locale: Locale) -> String {
         if self == "ß" { return "ẞ" }
+        // The Greek locale's rule drops the tonos in capitals (ΙΣΩΣ), which is right for
+        // a word in all caps and wrong for the capital of a word: Ίσως keeps it. A
+        // single typed capital is the second case, so ί becomes Ί, not Ι.
+        if locale.language.languageCode?.identifier == "el" { return uppercased() }
         return uppercased(with: locale)
     }
 }

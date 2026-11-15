@@ -115,21 +115,31 @@ struct LayoutProblemTests {
         #expect(problem.triggerSlots["´"] != nil)
     }
 
-    @Test func onlyGreekRepeatsALetterAndTheRepeatStaysWhereItIs() throws {
-        for id in ["en_US", "de_DE", "fr_FR", "es_ES", "ca_ES", "it_IT", "pt_PT", "pl_PL", "hr_HR", "sv_SE",
-                   "fi_FI", "et_EE", "tl_PH", "vi_VN", "ru_RU", "uk_UA"] {
-            #expect(try LayoutProblem(languageId: id).duplicateSlots.isEmpty, "\(id)")
+    @Test func noShippedLayoutRepeatsALetter() throws {
+        // The Greek layout used to bind ω twice; its second slot now holds ί.
+        for language in KeyboardRegistry.available where language.variantOf == nil {
+            guard let problem = try? LayoutProblem(languageId: language.id) else { continue }
+            #expect(problem.duplicateSlots.isEmpty, "\(language.id)")
         }
-        // The Greek layout binds ω twice (top-left down-right and bottom-centre up).
         let greek = try LayoutProblem(languageId: "el_GR")
-        #expect(greek.duplicateSlots == [LabSlot(key: 7, gesture: .swipeUp): "ω"])
-        #expect(greek.movableSlots.count == 25, "one slot of the 26 is the repeat")
+        #expect(greek.movableSlots.count == 26)
+        #expect(greek.letters.contains("ί") && greek.letters.filter { $0 == "ω" }.count == 1)
     }
 
-    @Test func caselessAndSequentialScriptsAreRefusedWithAReason() {
-        for id in ["he_IL", "ar", "th_TH", "hi_IN", "ja_JP", "ko_KR", "fa_IR", "ur", "ja_JP_katakana"] {
-            #expect(throws: LabError.self) { try LayoutProblem(languageId: id) }
+    @Test func theCaselessRightToLeftLayoutsAreProblemsToo() throws {
+        for id in ["he_IL", "ar", "fa_IR"] {
+            let problem = try LayoutProblem(languageId: id)
+            #expect(problem.movableSlots.count >= 22, "\(id)")
         }
+        // Hebrew's final letters ride the return swipe of their base letter.
+        let hebrew = try LayoutProblem(languageId: "he_IL")
+        #expect(hebrew.formOfLetter["כ"] == "ך")
+        #expect(hebrew.formOfLetter["פ"] == "ף")
+        #expect(hebrew.formOfLetter["צ"] == "ץ")
+        // The tatweel is a decoration and stays put, and so does its ZWNJ return in Persian.
+        let persian = try LayoutProblem(languageId: "fa_IR")
+        #expect(!persian.letters.contains("ـ"))
+        #expect(persian.fixedCharacters["\u{200C}"]?.form == true)
     }
 
     @Test func everyCasedLanguageIsAProblem() {
@@ -316,6 +326,12 @@ struct OptimizedVariantTests {
             #expect(variant.triggerSlots == base.triggerSlots, "\(id): compose triggers did not move")
             #expect(variant.cycleSlot == base.cycleSlot, "\(id): the accent cycle did not move")
             #expect(variant.duplicateSlots == base.duplicateSlots, "\(id): a repeated letter stays put")
+            // Forms that are not just the capital (final letters, accented capitals) travel with their letter;
+            // the capital itself is a return swipe only on a swipe slot, so it comes and goes with the slot kind.
+            func special(_ forms: [String: String]) -> [String: String] {
+                forms.filter { $0.value != $0.key.uppercased() && $0.value != $0.key.keyboardUppercased(with: base.locale) }
+            }
+            #expect(special(variant.formOfLetter) == special(base.formOfLetter), "\(id): what a letter's form types travels with the letter")
         }
     }
 
@@ -364,7 +380,8 @@ struct OptimizedVariantTests {
                        "fi_FI": "Hyvää päivää", "sv_SE": "Hur mår du i dag", "it_IT": "Perché non andiamo",
                        "pt_PT": "O coração não tem razão", "hr_HR": "Čovjek je šetao", "uk_UA": "Добрий день",
                        "vi_VN": "xin chao", "tl_PH": "Magandang umaga po", "ca_ES": "Bon dia, com estàs",
-                       "et_EE": "Tere hommikust", "en_US": "the quick brown fox jumps over the lazy dog"]
+                       "et_EE": "Tere hommikust", "en_US": "the quick brown fox jumps over the lazy dog",
+                       "he_IL": "שלום עולם מה שלומך", "ar": "مرحبا بالعالم", "fa_IR": "سلام دنیا"]
         var checked = 0
         for id in Self.table.keys.sorted() {
             guard let sample = samples[baseId(id)] else { continue }
@@ -472,5 +489,157 @@ struct LayoutSwitchingTests {
         #expect(languages.enabledLanguageIds == ["en_US", "de_DE"])
         #expect(languages.selectedLanguageId == "de_DE")
         #expect(LanguageSettings.resolvedLanguageId("de_DE") == "de_DE")
+    }
+}
+
+
+// MARK: - Forms travel with their letters
+
+@MainActor
+struct FormTravelTests {
+    private func locate(_ letter: String, in definition: KeyboardDefinition) -> (KeyDefinition, GestureType)? {
+        guard let main = definition.mode(ModeNames.main) else { return nil }
+        for (_, key) in main.keys {
+            for (gesture, binding) in key.bindings where binding.action == .commitText(letter) && (gesture == .tap || gesture.isSwipe) {
+                return (key, gesture)
+            }
+        }
+        return nil
+    }
+
+    /// What the gesture that makes the letter's form types, wherever the letter sits.
+    private func form(of letter: String, in definition: KeyboardDefinition) -> String? {
+        guard let (key, gesture) = locate(letter, in: definition) else { return nil }
+        let binding = gesture == .tap ? key.bindings[.circularClockwise] : key.bindings[gesture]
+        let action = gesture == .tap ? binding?.action : binding?.returnAction
+        if case let .commitText(text)? = action { return text }
+        return nil
+    }
+
+    @Test func hebrewFinalLettersStayOnTheirBaseLettersInEveryVariant() throws {
+        let finals = ["כ": "ך", "פ": "ף", "צ": "ץ", "נ": "ן"]
+        for id in ["he_IL", "he_IL_optimized", "he_IL_full"] {
+            let definition = try #require(KeyboardRegistry.load(id: id))
+            for (base, final) in finals {
+                #expect(form(of: base, in: definition) == final, "\(id): \(base) must still give \(final) on its form gesture")
+            }
+        }
+    }
+
+    @Test func aFinalLetterThatLandsOnATapIsOnItsCircle() throws {
+        // Wherever the optimizer put a letter with a final form, the form is reachable:
+        // a return swipe on a swipe slot, the circle on a tap (a tap has no return swipe).
+        for id in ["he_IL_optimized", "he_IL_full"] {
+            let definition = try #require(KeyboardRegistry.load(id: id))
+            let main = try #require(definition.mode(ModeNames.main))
+            for base in ["כ", "פ", "צ", "נ"] {
+                let (key, gesture) = try #require(locate(base, in: definition))
+                if gesture == .tap {
+                    #expect(key.bindings[.circularClockwise] != nil && key.bindings[.circularCounterclockwise] != nil, "\(id) \(base)")
+                } else {
+                    #expect(key.bindings[gesture]?.returnAction != nil, "\(id) \(base)")
+                }
+                _ = main
+            }
+        }
+    }
+
+    @Test func everyCharacterOfTheBaseStillHasAGestureInTheCaselessVariants() throws {
+        for base in ["he_IL", "ar", "fa_IR"] {
+            for suffix in ["optimized", "full"] {
+                let id = "\(base)_\(suffix)"
+                let variant = try #require(KeyboardRegistry.load(id: id))
+                let original = try #require(KeyboardRegistry.load(id: base))
+                func produced(_ definition: KeyboardDefinition) -> Set<String> {
+                    var out = Set<String>()
+                    for (_, mode) in definition.modes {
+                        for (_, key) in mode.keys {
+                            for (_, binding) in key.bindings {
+                                if case let .commitText(text) = binding.action { out.insert(text) }
+                                if case let .commitText(text)? = binding.returnAction { out.insert(text) }
+                            }
+                        }
+                    }
+                    return out
+                }
+                #expect(produced(variant) == produced(original), "\(id)")
+            }
+        }
+    }
+
+    @Test func caselessVariantsAreRegisteredAndUrduAndThaiAreNot() {
+        for id in ["he_IL", "ar", "fa_IR"] {
+            #expect(OptimizedArrangements.table["\(id)_optimized"] != nil && OptimizedArrangements.table["\(id)_full"] != nil, "\(id)")
+        }
+        for id in ["ur", "th_TH", "hi_IN", "ja_JP", "ko_KR"] {
+            #expect(OptimizedArrangements.table["\(id)_optimized"] == nil, "\(id) is not modelled")
+        }
+    }
+
+    @Test func greekHasNoRepeatedLetterAndItsCapitalKeepsTheAccent() throws {
+        let greek = try #require(KeyboardRegistry.load(id: "el_GR"))
+        let (key, gesture) = try #require(locate("ί", in: greek))
+        #expect(gesture == .swipeUp)
+        #expect(form(of: "ί", in: greek) == "Ί")
+        #expect("ί".keyboardUppercased(with: Locale(identifier: "el_GR")) == "Ί")
+        #expect(form(of: "ω", in: greek) != nil || locate("ω", in: greek) != nil)
+        _ = key
+        // The shifted mode agrees with the return swipe.
+        let shifted = try #require(greek.mode(ModeNames.shifted))
+        #expect(shifted.keys.values.contains { $0.bindings.values.contains { $0.action == .commitText("Ί") } })
+    }
+}
+
+// MARK: - What a language starts on
+
+@MainActor
+struct StartingLayoutTests {
+    @Test func aLanguageWithAnOptimizedVariantStartsOnIt() {
+        #expect(LanguageSettings.startingLayoutId(for: "de_DE") == "de_DE_optimized")
+        #expect(LanguageSettings.startingLayoutId(for: "he_IL") == "he_IL_optimized")
+        #expect(LanguageSettings.startingLayoutId(for: "en_US") == "en_US_optimized", "the frozen English one")
+    }
+
+    @Test func everythingElseStartsOnItself() {
+        for id in ["ur", "th_TH", "hi_IN", "ja_JP", "ko_KR", "en_US_thumbkey", "de_DE_optimized", "de_DE_full", "no_such_layout"] {
+            #expect(LanguageSettings.startingLayoutId(for: id) == id, "\(id)")
+        }
+    }
+
+    private func settings(enabled: [String]? = nil, selected: String? = nil) -> LanguageSettings {
+        let defaults = InMemoryUserDefaults()
+        if let enabled { LanguageSettings.saveEnabledLanguageIds(enabled, to: defaults) }
+        if let selected { defaults.set(selected, forKey: SettingsKey.selectedLanguageId.rawValue) }
+        return LanguageSettings(userDefaults: defaults)
+    }
+
+    @Test func aFreshInstallationStartsOnTheSystemLanguagesOptimizedLayout() {
+        let languages = settings()
+        let expected = LanguageSettings.startingLayoutId(for: LanguageSettings.detectSystemLanguage())
+        #expect(languages.enabledLanguageIds == [expected])
+        #expect(languages.selectedLanguageId == expected)
+    }
+
+    @Test func aStoredSelectionWithoutAListIsNotRewritten() {
+        // An older version stored only the selection: that is somebody's choice.
+        let languages = settings(selected: "de_DE")
+        #expect(languages.enabledLanguageIds == ["de_DE"])
+        #expect(languages.selectedLanguageId == "de_DE")
+    }
+
+    @Test func languagesAlreadyEnabledAreNeverChanged() {
+        let languages = settings(enabled: ["de_DE", "fr_FR", "ru_RU"], selected: "fr_FR")
+        languages.reloadFromStore()
+        #expect(languages.enabledLanguageIds == ["de_DE", "fr_FR", "ru_RU"])
+        #expect(languages.selectedLanguageId == "fr_FR")
+    }
+
+    @Test func turningALanguageOnStartsItOnTheOptimizedLayoutAndTheMenuCanGoBack() throws {
+        let languages = settings(enabled: ["en_US"], selected: "en_US")
+        let german = try #require(LanguageMetadata.language(withId: "de_DE"))
+        languages.toggleLanguage(LanguageSettings.startingLayout(for: german))
+        #expect(languages.enabledLanguageIds == ["en_US", "de_DE_optimized"])
+        languages.switchLayout(from: "de_DE_optimized", to: "de_DE")
+        #expect(languages.enabledLanguageIds == ["en_US", "de_DE"], "Standard is one menu pick away")
     }
 }

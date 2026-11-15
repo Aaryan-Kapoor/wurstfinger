@@ -3,9 +3,9 @@ meta	license	CC-BY-SA-4.0
 meta	list	ca_full.txt
 meta	sha256	af4cc4d9e44a3d40a5fe038d677003ae725aecc02d1fae37023f9264749c8c5f
 meta	source	OpenSubtitles 2018 via FrequencyWords 2018 (hermitdave)
-meta	tokens_kept	3267246
+meta	tokens_kept	3267268
 meta	url	https://github.com/hermitdave/FrequencyWords
-meta	words_kept	71046
+meta	words_kept	71047
 meta	words_seen	71184
 init	a	327779
 init	b	60170
@@ -33,6 +33,7 @@ init	w	3952
 init	x	3643
 init	y	1032
 init	z	1215
+init	ª	22
 init	à	1508
 init	á	23
 init	â	50
@@ -78,6 +79,7 @@ final	w	882
 final	x	9010
 final	y	14786
 final	z	574
+final	ª	22
 final	à	32800
 final	á	137
 final	â	68
