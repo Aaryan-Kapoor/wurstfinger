@@ -141,7 +141,7 @@ extension GestureType {
     /// How a character action names the gesture that types it.
     var spokenName: String {
         switch self {
-        case .tap: String(localized: "tap")
+        case .tap: String(localized: "spokenName.tap")
         case .swipeUp: String(localized: "swipe up")
         case .swipeDown: String(localized: "swipe down")
         case .swipeLeft: String(localized: "swipe left")
@@ -152,7 +152,7 @@ extension GestureType {
         case .swipeDownRight: String(localized: "swipe down right")
         case .circularClockwise: String(localized: "circle clockwise")
         case .circularCounterclockwise: String(localized: "circle counterclockwise")
-        case .longPress: String(localized: "long press")
+        case .longPress: String(localized: "spokenName.longPress")
         }
     }
 

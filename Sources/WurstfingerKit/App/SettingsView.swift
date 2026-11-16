@@ -409,7 +409,7 @@ struct SettingsView: View {
 
     private var labelVisibilityDescription: String {
         let hidden = [
-            areLetterLabelsHidden ? String(localized: "letters") : nil,
+            areLetterLabelsHidden ? String(localized: "labelVisibility.letters") : nil,
             areStandardSymbolLabelsHidden ? String(localized: "standard symbols") : nil,
             areExtraSymbolLabelsHidden ? String(localized: "extra symbols") : nil,
         ].compactMap(\.self)

@@ -14215,7 +14215,7 @@
       },
       "comment": "Label visibility subtitle; %@ is a list like 'letters, extra symbols'"
     },
-    "letters": {
+    "labelVisibility.letters": {
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -14348,6 +14348,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "글자"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "letters"
           }
         }
       },
@@ -22329,7 +22335,7 @@
         }
       }
     },
-    "Up-Left": {
+    "longSwipe.upLeft": {
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -22463,10 +22469,16 @@
             "state": "translated",
             "value": "왼쪽 위"
           }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Up-Left"
+          }
         }
       }
     },
-    "Up-Right": {
+    "longSwipe.upRight": {
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -22600,10 +22612,16 @@
             "state": "translated",
             "value": "오른쪽 위"
           }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Up-Right"
+          }
         }
       }
     },
-    "Down-Left": {
+    "longSwipe.downLeft": {
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -22737,10 +22755,16 @@
             "state": "translated",
             "value": "왼쪽 아래"
           }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Down-Left"
+          }
         }
       }
     },
-    "Down-Right": {
+    "longSwipe.downRight": {
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -22873,6 +22897,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "오른쪽 아래"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Down-Right"
           }
         }
       }
@@ -32615,7 +32645,7 @@
         }
       }
     },
-    "tap": {
+    "spokenName.tap": {
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -32748,6 +32778,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "탭"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tap"
           }
         }
       }
@@ -34122,7 +34158,7 @@
         }
       }
     },
-    "long press": {
+    "spokenName.longPress": {
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -34255,6 +34291,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "길게 누르기"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "long press"
           }
         }
       }

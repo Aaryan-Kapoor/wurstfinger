@@ -99,10 +99,10 @@ private struct LongSwipeActionPicker: View {
         case .swipeDown: "Down"
         case .swipeLeft: "Left"
         case .swipeRight: "Right"
-        case .swipeUpLeft: "Up-Left"
-        case .swipeUpRight: "Up-Right"
-        case .swipeDownLeft: "Down-Left"
-        case .swipeDownRight: "Down-Right"
+        case .swipeUpLeft: "longSwipe.upLeft"
+        case .swipeUpRight: "longSwipe.upRight"
+        case .swipeDownLeft: "longSwipe.downLeft"
+        case .swipeDownRight: "longSwipe.downRight"
         default: ""
         }
     }

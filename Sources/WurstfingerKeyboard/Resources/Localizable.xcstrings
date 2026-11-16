@@ -3727,7 +3727,7 @@
         }
       }
     },
-    "tap": {
+    "spokenName.tap": {
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -3860,6 +3860,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "탭"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tap"
           }
         }
       }
@@ -5234,7 +5240,7 @@
         }
       }
     },
-    "long press": {
+    "spokenName.longPress": {
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -5367,6 +5373,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "길게 누르기"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "long press"
           }
         }
       }
