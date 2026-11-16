@@ -232,8 +232,15 @@ step "Swift Bundler: build $APP_NAME and $KEYBOARD_NAME, bundle the app"
 BUNDLE_ARGS=(bundle "$APP_NAME" -p "$BUNDLER_PLATFORM" -c "$CONFIGURATION")
 # Xcode would generate Swift symbols from the string catalog, and keys that
 # differ only by case or punctuation (Down-Left, Down Left) collide there. The
-# code looks strings up by key, so the symbols are not wanted.
-BUNDLE_ARGS+=(--Xxcodebuild STRING_CATALOG_GENERATE_SYMBOLS=NO)
+# code looks strings up by key, so the symbols are not wanted. The setting goes
+# in an xcconfig that xcodebuild reads from the environment: Swift Bundler hands
+# its xcodebuild arguments to the plain `swift build` of the extension too,
+# which rejects a build setting.
+run mkdir -p "$WORK"
+if [ "$DRY_RUN" != 1 ]; then
+    printf 'STRING_CATALOG_GENERATE_SYMBOLS = NO\n' > "$WORK/no-string-symbols.xcconfig"
+fi
+export XCODE_XCCONFIG_FILE="$WORK/no-string-symbols.xcconfig"
 if [ "$KIND" = simulator ]; then
     # Swift Bundler signs simulator builds ad hoc by itself; it is signed again
     # below once the extension is inside.
