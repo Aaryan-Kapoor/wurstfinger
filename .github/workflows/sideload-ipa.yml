@@ -4,8 +4,9 @@ name: Sideload IPA
 # SideStore, AltStore), for when there is no Xcode on hand. The sideloader signs
 # it with your Apple ID. See docs/sideloading.md.
 #
-# Run it from the Actions tab (or `gh workflow run sideload-ipa.yml`), then
-# `gh run download` the artifact.
+# Run it from the Actions tab (or `gh workflow run sideload-ipa.yml`). The IPA
+# is kept as an artifact and also published on the `sideload-latest` release,
+# whose download link opens straight from Safari on the phone.
 
 on:
   # Until this is on the default branch, GitHub will not dispatch it by name, so
@@ -23,10 +24,15 @@ on:
 permissions:
   contents: read
 
+env:
+  RELEASE_TAG: sideload-latest
+
 jobs:
   ipa:
     runs-on: macos-latest
     timeout-minutes: 60
+    permissions:
+      contents: write # the release the IPA is published on
 
     steps:
       - name: Checkout
@@ -60,3 +66,19 @@ jobs:
           path: ${{ runner.temp }}/Wurstfinger-sideload.ipa
           if-no-files-found: error
           retention-days: 14
+
+      # One rolling pre-release, so the link never changes: the same asset name,
+      # replaced on every build. Only the branch push and a manual run reach here.
+      - name: Publish on the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          IPA="$RUNNER_TEMP/Wurstfinger-sideload.ipa"
+          NOTES="Built from $GITHUB_SHA by run $GITHUB_RUN_ID. Signed with a throwaway certificate: a sideloader re-signs it with your Apple ID (docs/sideloading.md)."
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release edit "$RELEASE_TAG" --notes "$NOTES"
+          else
+            gh release create "$RELEASE_TAG" --prerelease --target "$GITHUB_SHA" \
+              --title "Wurstfinger sideload build" --notes "$NOTES"
+          fi
+          gh release upload "$RELEASE_TAG" "$IPA" --clobber

@@ -6,9 +6,13 @@ sideloader) signs it with your Apple ID and installs it over USB.
 
 ## Steps
 
-1. **Build.** Run the *Sideload IPA* workflow (Actions tab, or
-   `gh workflow run sideload-ipa.yml`), then
-   `gh run download --name Wurstfinger-sideload-ipa`.
+1. **Get the IPA.** Every run of the *Sideload IPA* workflow (Actions tab, or
+   `gh workflow run sideload-ipa.yml`) replaces the file on the
+   [`sideload-latest` release](https://github.com/philocalyst/wurstfinger/releases/tag/sideload-latest):
+   <https://github.com/philocalyst/wurstfinger/releases/download/sideload-latest/Wurstfinger-sideload.ipa>.
+   Open that link in Safari on the iPhone to download it (Files > Downloads),
+   or on the Mac for Impactor. `gh run download --name Wurstfinger-sideload-ipa`
+   fetches the run's own copy.
 2. **Install Impactor.** Download `Impactor-macos-universal.dmg` from its
    [releases](https://github.com/claration/impactor/releases) (or
    `brew install --cask impactor`).
@@ -19,6 +23,12 @@ sideloader) signs it with your Apple ID and installs it over USB.
    Management.
 5. **Add the keyboard:** Settings > General > Keyboard > Keyboards > Add New
    Keyboard > Wurstfinger, then allow Full Access.
+
+The IPA has to be signed with your Apple ID before iOS will run it, so the
+download alone does not install anything. To do it from the phone, share the
+downloaded file to [SideStore](https://sidestore.io) or
+[AltStore](https://altstore.io) and let it install; Impactor does the same from
+a Mac over USB.
 
 With a free Apple ID the install lasts seven days; run Impactor again to renew
 it. Apple also limits a free account to a few App IDs per week; the app and its
