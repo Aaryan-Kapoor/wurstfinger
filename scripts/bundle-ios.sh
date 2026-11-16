@@ -232,15 +232,17 @@ step "Swift Bundler: build $APP_NAME and $KEYBOARD_NAME, bundle the app"
 BUNDLE_ARGS=(bundle "$APP_NAME" -p "$BUNDLER_PLATFORM" -c "$CONFIGURATION")
 # Xcode would generate Swift symbols from the string catalog, and keys that
 # differ only by case or punctuation (Down-Left, Down Left) collide there. The
-# code looks strings up by key, so the symbols are not wanted. The setting goes
-# in an xcconfig that xcodebuild reads from the environment: Swift Bundler hands
-# its xcodebuild arguments to the plain `swift build` of the extension too,
-# which rejects a build setting.
-run mkdir -p "$WORK"
+# code looks strings up by key, so the symbols are not wanted. The setting has
+# to be on xcodebuild's command line: the package's own target settings beat an
+# xcconfig, and Swift Bundler hands its xcodebuild arguments to the extension's
+# plain `swift build` as well, which rejects a build setting. So xcodebuild is
+# wrapped, for this one command, by a script that appends it.
+run mkdir -p "$WORK/bin"
 if [ "$DRY_RUN" != 1 ]; then
-    printf 'STRING_CATALOG_GENERATE_SYMBOLS = NO\n' > "$WORK/no-string-symbols.xcconfig"
+    printf '#!/bin/sh\nexec /usr/bin/xcodebuild "$@" STRING_CATALOG_GENERATE_SYMBOLS=NO\n' > "$WORK/bin/xcodebuild"
+    chmod +x "$WORK/bin/xcodebuild"
 fi
-export XCODE_XCCONFIG_FILE="$WORK/no-string-symbols.xcconfig"
+export PATH="$WORK/bin:$PATH"
 if [ "$KIND" = simulator ]; then
     # Swift Bundler signs simulator builds ad hoc by itself; it is signed again
     # below once the extension is inside.
