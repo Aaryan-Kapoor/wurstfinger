@@ -217,3 +217,24 @@ export function classifyStroke(raw, keyW, keyH, peakTime = 0) {
   // y points down, so a positive cross product is a clockwise turn on screen.
   return { type: 'hook', dir, turn: cross > 0 ? 'cw' : 'ccw', corner };
 }
+
+// ---------------------------------------------------------------- space bar
+
+// The space bar is a wide key that also slides the caret, so it reads its
+// flicks by their real angle on the glass: within 25 degrees of level is the
+// caret's, and the rest of the circle is split into up-left, up, up-right and
+// the same three downward.
+export const SPACE_LEVEL = 25;
+
+/** { type: 'tap' } or { type: 'flick', dir } for a release on the space bar. */
+export function classifySpace(raw, keyH, peakTime = 0) {
+  const base = classify(raw, keyH, keyH, peakTime);           // square: no aspect correction
+  if (base.gesture === 'tap') return { type: 'tap' };
+  const p = base.path, far = p[base.far ?? p.length - 1] || p.at(-1);
+  const x = far.x - p[0].x, y = far.y - p[0].y;
+  const level = Math.atan2(Math.abs(y), Math.abs(x)) * 180 / Math.PI;      // 0 = level, 90 = vertical
+  if (level < SPACE_LEVEL) return { type: 'flick', dir: x > 0 ? 'e' : 'w' };
+  const vertical = y < 0 ? 'n' : 's';
+  if (level > 62) return { type: 'flick', dir: vertical };
+  return { type: 'flick', dir: vertical + (x > 0 ? 'e' : 'w') };
+}

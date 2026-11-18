@@ -1,63 +1,58 @@
-// A stroke drawn small: nine dots for the keys, and the finger's path from
-// the key it starts on. This is the notation the ribbon, the coach and the
+// A stroke drawn small: the key it starts on, with its letter, and the
+// finger's path leaving it. This is the notation the ribbon, the coach and the
 // lookup tool show, so a stroke always looks the same wherever you meet it.
 
-import { KEYS, KEY_POS, DIR_VEC, parseStroke, turned, LETTER_HOME, strokeId } from '../layout.js';
+import { DIR_VEC, parseStroke, turned, LETTER_HOME, strokeId } from '../layout.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 
 /**
- * SVG markup for one stroke.
+ * SVG markup for one stroke: the key it starts on, drawn as a small key with
+ * its letter, and the finger's path leaving it.
  * @param id    stroke id (`T-n-cw`, `T`, `T-circle`, `SP-ne`)
- * @param size  pixel size of the square glyph
+ * @param size  pixel height of the glyph
  */
-export function glyph(id, size = 26) {
+export function glyph(id, size = 28) {
   const circle = id.endsWith('-circle');
   const s = parseStroke(circle ? id.slice(0, -7) : id);
   if (!s) return '';
-  const pad = 5, step = (24 - 2 * pad) / 2;                  // viewBox is 24 x 24, space bar below the grid
-  const at = k => ({ x: pad + KEY_POS[k].col * step, y: 4 + KEY_POS[k].row * step });
   const isSpace = s.key === 'SP';
-  const start = isSpace ? { x: 8.5, y: 21.5 } : at(s.key);
-
-  let dots = '';
-  for (const k of KEYS) {
-    const p = at(k);
-    dots += `<circle cx="${p.x}" cy="${p.y}" r="${k === s.key ? 0 : 1.05}" class="g-dot"/>`;
-  }
-  dots += `<rect x="${pad - 1.2}" y="20.4" width="${step + 2.4}" height="2.2" rx="1.1" class="${isSpace ? 'g-bar g-on' : 'g-bar'}"/>`;
-  dots += `<circle cx="${pad + 2 * step}" cy="21.5" r="1.05" class="g-dot"/>`;
-
+  const c = 18;                                              // centre of a 36 x 36 box
+  const half = isSpace ? { x: 9, y: 4.6 } : { x: 6, y: 6 };
+  const tap = !s.dir && !circle;
+  const key = `<rect x="${c - half.x}" y="${c - half.y}" width="${2 * half.x}" height="${2 * half.y}" rx="3.2" class="g-key${tap ? ' g-on' : ''}"/>`
+    + (isSpace ? '' : `<text x="${c}" y="${c + 3.6}" text-anchor="middle" class="g-letter${tap ? ' g-on' : ''}">${s.key.toLowerCase()}</text>`);
   let path = '';
   if (circle) {
-    path = `<circle cx="${start.x}" cy="${start.y}" r="3.4" class="g-line" fill="none"/>`;
-  } else if (!s.dir) {
-    path = `<circle cx="${start.x}" cy="${start.y}" r="2.6" class="g-tap"/>`;
-  } else {
+    path = `<circle cx="${c}" cy="${c}" r="10" class="g-line" fill="none" stroke-dasharray="52 12" transform="rotate(-70 ${c} ${c})"/>`;
+  } else if (s.dir) {
     const v = DIR_VEC[s.dir], n = Math.hypot(v[0], v[1]);
-    const L = 6.4;
-    const a = { x: start.x + v[0] / n * L, y: start.y + v[1] / n * L };
-    let d = `M${start.x} ${start.y} L${a.x} ${a.y}`;
-    let end = a, heading = v;
+    const ux = v[0] / n, uy = v[1] / n;
+    // Leave from the key's edge in the stroke's direction.
+    const edge = Math.min(v[0] ? half.x / Math.abs(ux) : Infinity, v[1] ? half.y / Math.abs(uy) : Infinity) + 1.2;
+    const reach = s.turn && s.turn !== 'back' ? 13.4 : 16;
+    const p0 = { x: c + ux * edge, y: c + uy * edge };
+    const p1 = { x: c + ux * reach, y: c + uy * reach };
+    let d, end = p1, hx = ux, hy = uy;
     if (s.turn === 'back') {
-      const off = { x: -v[1] / n * 1.9, y: v[0] / n * 1.9 };
-      end = { x: start.x + v[0] / n * 1.6 + off.x, y: start.y + v[1] / n * 1.6 + off.y };
-      d = `M${start.x} ${start.y} L${a.x} ${a.y} Q${a.x + off.x * 1.4 + v[0] / n * 1.2} ${a.y + off.y * 1.4 + v[1] / n * 1.2} ${a.x + off.x} ${a.y + off.y} L${end.x} ${end.y}`;
-      heading = [-v[0], -v[1]];
+      const ox = -uy * 3.4, oy = ux * 3.4;
+      end = { x: p0.x + ox + ux * 0.6, y: p0.y + oy + uy * 0.6 };
+      d = `M${p0.x} ${p0.y} L${p1.x} ${p1.y} C${p1.x + ux * 2.4 + ox * 0.2} ${p1.y + uy * 2.4 + oy * 0.2} ${p1.x + ux * 2.4 + ox} ${p1.y + uy * 2.4 + oy} ${p1.x + ox} ${p1.y + oy} L${end.x} ${end.y}`;
+      hx = -ux; hy = -uy;
     } else if (s.turn) {
       const w = DIR_VEC[turned(s.dir, s.turn)], m = Math.hypot(w[0], w[1]);
-      end = { x: a.x + w[0] / m * 5.2, y: a.y + w[1] / m * 5.2 };
-      const c1 = { x: a.x + v[0] / n * 1.4, y: a.y + v[1] / n * 1.4 };
-      d = `M${start.x} ${start.y} L${a.x - v[0] / n * 1.2} ${a.y - v[1] / n * 1.2} Q${c1.x - v[0] / n * 1.2} ${c1.y - v[1] / n * 1.2} ${a.x + w[0] / m * 1.4} ${a.y + w[1] / m * 1.4} L${end.x} ${end.y}`;
-      heading = w;
+      const wx = w[0] / m, wy = w[1] / m;
+      end = { x: p1.x + wx * 9, y: p1.y + wy * 9 };
+      d = `M${p0.x} ${p0.y} L${p1.x - ux * 2.6} ${p1.y - uy * 2.6} Q${p1.x} ${p1.y} ${p1.x + wx * 2.6} ${p1.y + wy * 2.6} L${end.x} ${end.y}`;
+      hx = wx; hy = wy;
+    } else {
+      d = `M${p0.x} ${p0.y} L${p1.x} ${p1.y}`;
     }
-    const hn = Math.hypot(heading[0], heading[1]);
-    const hx = heading[0] / hn, hy = heading[1] / hn;
-    const head = `M${end.x - hx * 2.6 - hy * 1.9} ${end.y - hy * 2.6 + hx * 1.9} L${end.x} ${end.y} L${end.x - hx * 2.6 + hy * 1.9} ${end.y - hy * 2.6 - hx * 1.9}`;
-    path = `<path d="${d}" class="g-line" fill="none"/><path d="${head}" class="g-line" fill="none"/>`
-      + `<circle cx="${start.x}" cy="${start.y}" r="1.9" class="g-start"/>`;
+    const a = 3, bq = 2.3;
+    const head = `M${end.x - hx * a - hy * bq} ${end.y - hy * a + hx * bq} L${end.x} ${end.y} L${end.x - hx * a + hy * bq} ${end.y - hy * a - hx * bq}`;
+    path = `<path d="${d}" class="g-line" fill="none"/><path d="${head}" class="g-line" fill="none"/>`;
   }
-  return `<svg xmlns="${NS}" class="glyph" width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true">${dots}${path}</svg>`;
+  return `<svg xmlns="${NS}" class="glyph" width="${size}" height="${size}" viewBox="0 0 36 36" aria-hidden="true">${key}${path}</svg>`;
 }
 
 /** The stroke that types a letter: a tap or a flick. */

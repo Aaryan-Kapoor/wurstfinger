@@ -66,7 +66,7 @@ export class Guide {
     // Centred above the key; the top row's guide rides up over the ribbon.
     let x = rc.x + rc.w / 2 - cardW / 2;
     let y = rc.y - cardH - 8;
-    x = Math.max(-18, Math.min(GEO.block + 18 - cardW, x));
+    x = Math.max(-14, Math.min(GEO.block + 14 - cardW, x));
     const root = el('div', 'guide');
     const card = el('div', 'card');
     Object.assign(card.style, { left: x + 'px', top: y + 'px', width: cardW + 'px', height: cardH + 'px' });
@@ -139,7 +139,7 @@ export class Guide {
       let hx = centre.x + v[0] / n * (g.size.w * 0.5 + w * 0.5 + 4) * reach - w / 2;
       let hy = centre.y + v[1] / n * (g.size.h + 5) * reach - 13;
       if (v[0] === 0) hx = centre.x - w / 2;
-      hx = Math.max(-18, Math.min(GEO.block + 18 - w, hx));
+      hx = Math.max(-16, Math.min(GEO.block + 16 - w, hx));
       Object.assign(h.style, { left: hx + 'px', top: hy + 'px', width: w + 'px' });
       h.classList.add('on');
       h.classList.toggle('sel', c.turn === turn);

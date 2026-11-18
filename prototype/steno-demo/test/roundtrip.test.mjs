@@ -45,7 +45,7 @@ test('held-out messages round-trip exactly', { skip: !fs.existsSync(new URL('../
       const text = raw.replace(/\s+/g, ' ').replace(/ ([,.?!])/g, '$1').trim();
       // Skipped: other alphabets and digits, dashes used as punctuation, quotes, and
       // apostrophes that are not inside a word.
-      if (!/^[A-Z]/.test(text) || /[^A-Za-z ,.?!'-]/.test(text) || / - |- |-$|\.\.|--|''|(^|[^A-Za-z])'|'([^A-Za-z]|$)|[,.?!][A-Za-z]/.test(text)) { skipped++; continue; }
+      if (!/^[A-Z]/.test(text) || /[^A-Za-z ,.?!'-]/.test(text) || / -|- |-$|\.\.|--|''|(^|[^A-Za-z])'|'([^A-Za-z]|$)|[,.?!][A-Za-z]/.test(text)) { skipped++; continue; }
       const r = run(text, 'all');
       if (!r) { skipped++; continue; }
       tried++;

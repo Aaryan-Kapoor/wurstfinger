@@ -5,7 +5,7 @@
 // and the drawing can never disagree.
 
 import { KEYS, KEY_POS, DIRS, DETAIL, NUMERIC, ENDING_DIRS, strokeId } from '../layout.js';
-import { classify, classifyStroke } from '../recognizer.js';
+import { classify, classifyStroke, classifySpace, SPACE_LEVEL } from '../recognizer.js';
 import { labelOf } from '../packs.js';
 
 export const GEO = { block: 349, padX: 12, padTop: 4, padBottom: 10, gap: 5, cellH: 66 };
@@ -272,8 +272,9 @@ export class Keyboard {
   }
 
   slideSpace(t, q) {
-    if (!t.sliding && Math.abs(q.x) >= 8 && Math.abs(q.x) > 2.2 * Math.abs(q.y)) {
-      t.sliding = true; t.lastX = Math.sign(q.x) * 8;
+    // Level, and far enough: the caret's. A steeper stroke is an ending.
+    if (!t.sliding && Math.abs(q.x) >= 12 && Math.abs(q.y) < Math.abs(q.x) * Math.tan(SPACE_LEVEL * Math.PI / 180)) {
+      t.sliding = true; t.lastX = Math.sign(q.x) * 12;
       this.ratchet.classList.remove('del'); this.ratchet.classList.add('on');
       this.setCandidate(t, null);
     }
@@ -309,7 +310,7 @@ export class Keyboard {
       return act ? { action: act, dir: c.dir, type: 'flick', label: '' } : null;
     }
     if (t.key === 'SP') {
-      const c = classifyStroke(t.path, w, h, t.peakTime);
+      const c = classifySpace(t.path, h, t.peakTime);
       if (c.type === 'tap') return this.mode === 'steno' ? { id: 'SP', type: 'tap', label: '␣' } : { literal: ' ', type: 'tap', label: '␣' };
       if (this.mode === 'steno' && ENDING_DIRS.includes(c.dir)) {
         const id = strokeId('SP', c.dir);

@@ -152,9 +152,9 @@ function renderRibbon() {
   const lastSeq = engine.tape.at(-1)?.seq;
   for (const e of recent) {
     const old = e.seq !== lastSeq || !!pending;
-    if (e.kind === 'undefined') chips.push(`<span class="chip raw${old ? ' old' : ''}" data-seq="${e.seq}">${glyph(e.id, 22)}<span>no stroke here</span></span>`);
+    if (e.kind === 'undefined') chips.push(`<span class="chip raw${old ? ' old' : ''}" data-seq="${e.seq}">${glyph(e.id, 32)}<span>no stroke here</span></span>`);
     else if (e.expanded) chips.push(`<span class="chip${old ? ' old' : ''}" data-seq="${e.seq}" style="padding-left:9px">${esc(e.out.trim())}</span>`);
-    else chips.push(`<span class="chip${old ? ' old' : ''}" data-seq="${e.seq}">${e.id && parseStroke(e.id) ? glyph(e.id, 22) : ''}<span>${esc(e.kind === 'ending' ? e.label : e.out.trim() || e.label)}</span></span>`);
+    else chips.push(`<span class="chip${old ? ' old' : ''}" data-seq="${e.seq}">${e.id && parseStroke(e.id) ? glyph(e.id, 32) : ''}<span>${esc(e.kind === 'ending' ? e.label : e.out.trim() || e.label)}</span></span>`);
   }
   if (engine.lastEvent?.kind === 'undo' && engine.lastEvent.seq >= (lastSeq || 0)) {
     chips.push(`<span class="chip undo" data-seq="u${engine.lastEvent.seq}">${esc(engine.lastEvent.removed.trim() || engine.lastEvent.label)}</span>`);
@@ -164,7 +164,7 @@ function renderRibbon() {
     chips.push(`<span class="chip spelling" data-seq="p">${esc(pending.typed)}${more}</span>`);
   } else if (state.coach) {
     const c = state.coach;
-    chips.push(`<button class="chip coach" data-seq="c${c.word}" id="coachChip" title="Show me">${partsHtml(c.parts, 22)}<span>${esc(c.word)}</span><span class="why">${esc(c.why)}</span></button>`);
+    chips.push(`<button class="chip coach" data-seq="c${c.word}" id="coachChip" title="Show me">${partsHtml(c.parts, 32)}<span>${esc(c.word)}</span><span class="why">${esc(c.why)}</span></button>`);
   }
   const key = chips.join('');
   if (key === ribbonKey) return;
@@ -277,7 +277,7 @@ export function setContext(context) {
   $('ctxTerminal').setAttribute('aria-pressed', terminal);
   $('thread').hidden = terminal; $('terminal').hidden = !terminal;
   $('who').textContent = terminal ? 'zsh' : 'Maya';
-  $('whoSub').textContent = terminal ? 'wurstfinger · engine' : 'iMessage';
+  $('whoSub').textContent = terminal ? '~/wurstfinger' : 'iMessage';
   $('field').classList.toggle('mono', terminal);
   // A field that asks for no capitals and no correction gets the shell pack.
   packs.find(p => p.id === 'shell').enabled = terminal;
@@ -325,15 +325,19 @@ function drawTrails() {
     if (fade <= 0) { trails.splice(i, 1); continue; }
     const pts = tr.t.path.map(p => ({ x: tr.t.origin.x + p.x, y: tr.t.origin.y + p.y }));
     if (pts.length < 2) continue;
+    // One path, stroked once, so the ink does not pile up where samples overlap.
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-    const n = pts.length;
-    for (let j = 1; j < n; j++) {
-      const k = j / (n - 1);
-      ctx.strokeStyle = ink;
-      ctx.globalAlpha = 0.38 * fade * (0.3 + 0.7 * k);
-      ctx.lineWidth = 2.5 + 7 * Math.pow(k, 0.55);
-      ctx.beginPath(); ctx.moveTo(pts[j - 1].x, pts[j - 1].y); ctx.lineTo(pts[j].x, pts[j].y); ctx.stroke();
+    ctx.strokeStyle = ink;
+    ctx.globalAlpha = 0.3 * fade;
+    ctx.lineWidth = 7;
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let j = 1; j < pts.length - 1; j++) {
+      const mx = (pts[j].x + pts[j + 1].x) / 2, my = (pts[j].y + pts[j + 1].y) / 2;
+      ctx.quadraticCurveTo(pts[j].x, pts[j].y, mx, my);
     }
+    ctx.lineTo(pts.at(-1).x, pts.at(-1).y);
+    ctx.stroke();
   }
   ctx.globalAlpha = 1;
   trailRaf = trails.length ? requestAnimationFrame(drawTrails) : 0;

@@ -27,8 +27,8 @@ export function scriptFor(text, planner, entries, level = 'all') {
   let sentenceStart = true;
   let glued = false;                   // a hyphen attaches what follows
 
-  const spell = (word, kind) => {
-    for (const ch of word) {
+  const spell = (letters, word, kind) => {
+    for (const ch of letters) {
       const lower = ch.toLowerCase();
       const id = lower === "'" ? markStroke["'"] : letterStroke(lower);
       if (!id) return false;
@@ -60,9 +60,9 @@ export function scriptFor(text, planner, entries, level = 'all') {
       if (plan.kind === 'flick' || plan.kind === 'hook') out.push({ id: plan.strokes[0], word: tok, kind: plan.kind });
       else if (plan.kind === 'ending') {
         if (plan.base.strokes) out.push({ id: plan.base.strokes[0], word: tok, kind: plan.base.kind });
-        else if (!spell(plan.base.outline, plan.base.kind)) return null;
+        else if (!spell(plan.base.outline, tok, plan.base.kind)) return null;
         out.push({ id: plan.strokes.at(-1), word: tok, kind: 'ending' });
-      } else if (!spell(plan.outline, plan.kind)) return null;
+      } else if (!spell(plan.outline, tok, plan.kind)) return null;
       owesSpace = plan.spelled;
       sentenceStart = false; glued = false;
       continue;

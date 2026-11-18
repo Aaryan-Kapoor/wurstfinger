@@ -33,7 +33,8 @@ const gauss = r => Math.sqrt(-2 * Math.log(1 - r())) * Math.cos(2 * Math.PI * r(
 export function pathFor(id, keyW, keyH, sloppy = 0, random = Math.random) {
   const s = parseStroke(id.replace(/-circle$/, ''));
   const circle = id.endsWith('-circle');
-  const aspect = keyW / keyH;
+  // The space bar is read by real angles, so its strokes are drawn square.
+  const aspect = s && s.key === 'SP' ? 1 : keyW / keyH;
   const unit = Math.min(keyW, keyH);
   const g = () => sloppy ? gauss(random) : 0;
   const jitter = () => ({ x: g() * sloppy * 1.0, y: g() * sloppy * 1.0 });

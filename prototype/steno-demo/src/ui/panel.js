@@ -69,14 +69,14 @@ export function mountPanel(api) {
     const pane = $('pane-learn');
     pane.innerHTML = `<h2>Four rules</h2>` + rules.map((r, i) => `
       <div class="card rule">
-        <button class="demo" data-rule="${i}" title="Show me">${glyph(r.ids[0], 34)}</button>
+        <button class="demo" data-rule="${i}" title="Show me">${glyph(r.ids[0], 44)}</button>
         <div><h3>${r.title}</h3><p>${r.text}</p></div>
       </div>`).join('')
       + `<h2>Try it</h2>` + LESSONS.map(l => `
       <div class="card lesson" data-lesson="${l.id}">
         <h3>${esc(l.title)}</h3>
         <p>${esc(l.blurb)}</p>
-        <div class="target">${lessonWords(l).map((w, i) => `<span class="w${w.punct ? ' punct' : ''}" data-i="${i}"><span>${esc(w.text)}</span><span class="strokes">${api.partsHtml(w.parts, 22)}</span></span>`).join('')}</div>
+        <div class="target">${lessonWords(l).map((w, i) => `<span class="w${w.punct ? ' punct' : ''}" data-i="${i}"><span>${esc(w.text)}</span><span class="strokes">${api.partsHtml(w.parts, 40)}</span></span>`).join('')}</div>
         <div class="row"><button class="btn" data-watch="${l.id}">${PLAY} Watch</button><button class="btn quiet" data-try="${l.id}">Try it yourself</button><span class="meta" data-meta="${l.id}"></span></div>
       </div>`).join('')
       + `<p class="note">The words under each key and every stroke above were assigned by a program from 4.3 million words of conversation and real text messages. “Numbers” has the method and what it buys.</p>`;
@@ -159,7 +159,7 @@ export function mountPanel(api) {
       : plan.kind === 'hook' ? `${describe(plan.strokes[0])}`
       : plan.kind === 'brief' ? `spell <b>${esc(plan.outline)}</b>; the next stroke or space finishes it`
       : `${esc(plan.base.word)}, then ${describe(plan.strokes.at(-1))}`;
-    out.innerHTML = `<div class="strokes">${api.partsHtml(s.parts, 30)}</div><span class="how"><b>${s.gestures} ${s.gestures === 1 ? 'stroke' : 'strokes'}</b> instead of ${raw.length + 1}. ${how[0].toUpperCase() + how.slice(1)}.</span><button class="btn quiet" id="lookupShow">${PLAY} Show me</button>`;
+    out.innerHTML = `<div class="strokes">${api.partsHtml(s.parts, 36)}</div><span class="how"><b>${s.gestures} ${s.gestures === 1 ? 'stroke' : 'strokes'}</b> instead of ${raw.length + 1}. ${how[0].toUpperCase() + how.slice(1)}.</span><button class="btn quiet" id="lookupShow">${PLAY} Show me</button>`;
     $('lookupShow').addEventListener('click', () => api.demonstrate(s.parts));
   }
 
@@ -200,7 +200,7 @@ export function mountPanel(api) {
       <h2>${esc(pack.name)}</h2>
       <div class="lookup"><input id="packFilter" type="text" placeholder="Filter ${Object.keys(pack.entries).length} entries" value="${esc(filter)}" autocomplete="off" spellcheck="false"></div>
       <div class="entries">${entries.slice(0, 150).map(([o, t]) => `
-        <div class="e"><span>${isStrokeId(o) ? glyph(o, 22) : ''}</span><code>${esc(o)}</code><span class="t">${esc(t)}</span>${pack.editable ? `<button class="x" data-del="${esc(o)}" aria-label="Remove">×</button>` : '<span></span>'}</div>`).join('') || '<div class="e"><span></span><code></code><span class="t" style="color:var(--ink-3)">Nothing here yet.</span><span></span></div>'}
+        <div class="e"><span>${isStrokeId(o) ? glyph(o, 26) : ''}</span><code>${esc(o)}</code><span class="t">${esc(t)}</span>${pack.editable ? `<button class="x" data-del="${esc(o)}" aria-label="Remove">×</button>` : '<span></span>'}</div>`).join('') || '<div class="e"><span></span><code></code><span class="t" style="color:var(--ink-3)">Nothing here yet.</span><span></span></div>'}
       </div>
       ${entries.length > 150 ? `<div class="note">Showing 150 of ${entries.length}. Filter to narrow it.</div>` : ''}
       ${pack.editable ? `

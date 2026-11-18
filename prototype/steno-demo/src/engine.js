@@ -233,6 +233,7 @@ export class Engine {
     if (caretMark !== null) {
       s.after = s.text.slice(caretMark) + s.after;
       s.text = s.text.slice(0, caretMark);
+      s.attachNext = true;                                       // what is typed next goes exactly where the caret was put
     }
     return kind;
   }
