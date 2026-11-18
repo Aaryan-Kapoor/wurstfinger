@@ -6,6 +6,11 @@ import { DIR_VEC, parseStroke, turned, LETTER_HOME, strokeId } from '../layout.j
 
 const NS = 'http://www.w3.org/2000/svg';
 
+// What a key is called in a glyph. A key's name is its position; what the
+// reader knows it by is what it types when tapped, which the page supplies.
+let nameOf = key => key.toLowerCase();
+export const setKeyNamer = fn => { nameOf = fn; };
+
 /**
  * SVG markup for one stroke: the key it starts on, drawn as a small key with
  * its letter, and the finger's path leaving it.
@@ -16,12 +21,19 @@ export function glyph(id, size = 28) {
   const circle = id.endsWith('-circle');
   const s = parseStroke(circle ? id.slice(0, -7) : id);
   if (!s) return '';
-  const isSpace = s.key === 'SP';
+  const isSpace = s.key === 'SP' || s.key === 'SR';
   const c = 18;                                              // centre of a 36 x 36 box
-  const half = isSpace ? { x: 9, y: 4.6 } : { x: 6, y: 6 };
+  const name = isSpace ? '' : String(nameOf(s.key) || '').slice(0, 3);
+  // The mini key grows a little for a two- or three-letter name.
+  const half = isSpace ? { x: 9, y: 4.6 } : { x: name.length > 1 ? 7.5 : 6, y: 6 };
   const tap = !s.dir && !circle;
-  const key = `<rect x="${c - half.x}" y="${c - half.y}" width="${2 * half.x}" height="${2 * half.y}" rx="3.2" class="g-key${tap ? ' g-on' : ''}"/>`
-    + (isSpace ? '' : `<text x="${c}" y="${c + 3.6}" text-anchor="middle" class="g-letter${tap ? ' g-on' : ''}">${s.key.toLowerCase()}</text>`);
+  // The space bar is drawn whole, with the half the stroke starts on filled in.
+  const key = isSpace
+    ? `<rect x="${c - 9}" y="${c - 4.6}" width="18" height="9.2" rx="3.2" class="g-key"/>` + (s.dir ? `<rect x="${s.key === 'SP' ? c - 9 : c}" y="${c - 4.6}" width="9" height="9.2" rx="3.2" class="g-key g-half"/>` : `<rect x="${c - 9}" y="${c - 4.6}" width="18" height="9.2" rx="3.2" class="g-key g-on"/>`)
+    : `<rect x="${c - half.x}" y="${c - half.y}" width="${2 * half.x}" height="${2 * half.y}" rx="3.2" class="g-key${tap ? ' g-on' : ''}"/>`
+      + `<text x="${c}" y="${c + 3.6}" text-anchor="middle" class="g-letter${tap ? ' g-on' : ''}${name.length > 2 ? ' g-small' : ''}">${name}</text>`;
+  // A stroke from a half of the space bar leaves from the middle of that half.
+  const ox = isSpace && s.dir ? (s.key === 'SP' ? -4.5 : 4.5) : 0;
   let path = '';
   if (circle) {
     path = `<circle cx="${c}" cy="${c}" r="10" class="g-line" fill="none" stroke-dasharray="52 12" transform="rotate(-70 ${c} ${c})"/>`;
@@ -31,8 +43,8 @@ export function glyph(id, size = 28) {
     // Leave from the key's edge in the stroke's direction.
     const edge = Math.min(v[0] ? half.x / Math.abs(ux) : Infinity, v[1] ? half.y / Math.abs(uy) : Infinity) + 1.2;
     const reach = s.turn && s.turn !== 'back' ? 13.4 : 16;
-    const p0 = { x: c + ux * edge, y: c + uy * edge };
-    const p1 = { x: c + ux * reach, y: c + uy * reach };
+    const p0 = { x: c + ox + ux * edge, y: c + uy * edge };
+    const p1 = { x: c + ox + ux * reach, y: c + uy * reach };
     let d, end = p1, hx = ux, hy = uy;
     if (s.turn === 'back') {
       const ox = -uy * 3.4, oy = ux * 3.4;
@@ -67,9 +79,9 @@ export function describe(id) {
   const s = parseStroke(circle ? id.slice(0, -7) : id);
   if (!s) return id;
   const NAMES = { n: 'up', ne: 'up-right', e: 'right', se: 'down-right', s: 'down', sw: 'down-left', w: 'left', nw: 'up-left' };
-  const key = s.key === 'SP' ? 'the space bar' : s.key;
+  const key = s.key === 'SP' ? 'the left of the space bar' : s.key === 'SR' ? 'the right of the space bar' : `the ${String(nameOf(s.key)).toUpperCase()} key`;
   if (circle) return `circle on ${key}`;
-  if (!s.dir) return `tap ${key}`;
+  if (!s.dir) return s.key.startsWith('S') ? 'tap the space bar' : `tap ${key}`;
   const turn = { cw: ', then curl right', ccw: ', then curl left', back: ' and back' }[s.turn] || '';
   return `flick ${NAMES[s.dir]} on ${key}${turn}`;
 }

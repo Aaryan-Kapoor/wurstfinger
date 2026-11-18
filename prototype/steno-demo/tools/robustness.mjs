@@ -50,34 +50,32 @@ function resolve(key, path) {
   return hook in entries ? hook : (flick in entries ? flick : null);
 }
 
-// What is typed, and how often: word strokes by the words' weight, letters by letter frequency.
-const LETTER_FREQ = { e: 12.0, t: 9.1, a: 8.1, o: 7.7, i: 7.3, n: 7.0, s: 6.3, h: 5.9, r: 6.0, d: 4.3, l: 4.0, u: 2.9, c: 2.7, m: 2.6, w: 2.1, f: 2.3, g: 2.0, y: 2.1, p: 1.8, b: 1.5, v: 1.1, k: 0.7, j: 0.2, x: 0.2, q: 0.1, z: 0.1 };
+// What is typed, and how often: pieces by how often each is written, curls by the words' weight, endings by their share.
 const strokes = [];
 for (const [id, t] of Object.entries(entries)) {
   const s = parseStroke(id);
   if (!s || id.includes('/')) continue;
-  const text = labelOf(t);
   if (s.key === 'SP') { if (s.dir && /^\{\^/.test(t)) strokes.push({ id, kind: 'ending', weight: (theory.meta.endingMass[t.slice(2, -1)] || 0.05) * 100 / (s.turn && t === "{^'ll}" ? 2 : 1) }); continue; }
-  if (/^\{&[a-z]\}$/.test(t)) { strokes.push({ id, kind: s.dir ? 'letter flick' : 'letter tap', weight: LETTER_FREQ[text] * 40 }); continue; }
-  const weight = theory.weight[text.toLowerCase()];
-  if (!weight || !s.dir) continue;
-  strokes.push({ id, kind: s.turn ? 'curl' : 'word flick', weight });
+  if (s.key === 'SR') continue;
+  if (id in theory.chunks) { strokes.push({ id, kind: s.dir ? 'piece flick' : 'piece tap', weight: Math.max(1, theory.usage[id]) / 100 }); continue; }
+  const weight = theory.weight[labelOf(t).toLowerCase()];
+  if (weight && s.turn) strokes.push({ id, kind: 'curl', weight: weight / 100 });
 }
 const outcomeOf = (meant, got) => {
   if (got === meant.id) return 'right';
   if (got === null || got === 'caret') return 'nothing';
   const g = parseStroke(got), m = parseStroke(meant.id);
-  if (m.turn && g && !g.turn && g.dir === m.dir) return 'own flick';          // the curl fell short: the flicked word
-  const typed = entries[got];
-  return /^\{&[a-zA-Z]\}$/.test(typed) ? 'a letter' : 'another word';
+  if (m.turn && g && !g.turn && g.dir === m.dir && g.key === m.key) return 'own flick';   // the curl fell short: the piece it started from
+  return got in theory.chunks ? 'another piece' : 'another word';
 };
+const OUTCOMES = ['right', 'own flick', 'another piece', 'another word', 'nothing'];
 
 function run(hand, seed, trialsPerStroke = 60) {
   const random = rng(seed);
   const by = {};
   for (const st of strokes) {
     const key = parseStroke(st.id).key, rc = keyRect(key);
-    const tally = by[st.kind] ||= { weight: 0, right: 0, 'own flick': 0, 'another word': 0, 'a letter': 0, nothing: 0 };
+    const tally = by[st.kind] ||= Object.fromEntries([['weight', 0], ...OUTCOMES.map(o => [o, 0])]);
     for (let i = 0; i < trialsPerStroke; i++) {
       // A new thumb each time: the population, not one person.
       const h = {
@@ -92,20 +90,20 @@ function run(hand, seed, trialsPerStroke = 60) {
     }
   }
   const rate = (t, k) => t[k] / t.weight;
-  const kinds = Object.fromEntries(Object.entries(by).map(([k, t]) => [k, Object.fromEntries(['right', 'own flick', 'another word', 'a letter', 'nothing'].map(o => [o, rate(t, o)]))]));
+  const kinds = Object.fromEntries(Object.entries(by).map(([k, t]) => [k, Object.fromEntries(OUTCOMES.map(o => [o, rate(t, o)]))]));
   return kinds;
 }
 
-/** Error rates for one kind of thumb, for the speed model: { flick: {...}, curl: {...}, ending: {...}, letter: {...} }. */
+/** Error rates for one kind of thumb, for the speed model. */
 export function errorRates(hand, seed = 7) {
   const k = run(hand, seed, 40);
-  const wrong = r => r['another word'] + r['a letter'] + r.nothing;
-  const letters = (k['letter flick'].right * 0.4 + k['letter tap'].right * 0.6);
+  const share = { tap: 0, flick: 0 };
+  for (const st of strokes) { if (st.kind === 'piece tap') share.tap += st.weight; if (st.kind === 'piece flick') share.flick += st.weight; }
+  const pieceRight = (k['piece tap'].right * share.tap + k['piece flick'].right * share.flick) / (share.tap + share.flick);
   return {
-    flick: { wrong: wrong(k['word flick']) },
-    curl: { ownFlick: k.curl['own flick'], wrong: wrong(k.curl) },
+    piece: { wrong: 1 - pieceRight },
+    curl: { ownFlick: k.curl['own flick'], wrong: 1 - k.curl.right - k.curl['own flick'] },
     ending: { wrong: 1 - k.ending.right },
-    letter: { wrong: 1 - letters },
   };
 }
 export const HANDS = {
@@ -132,8 +130,8 @@ if (process.argv.includes('--json')) {
   console.log(`key ${key.w} x ${key.h} pt (${(key.w / POINTS_PER_MM).toFixed(1)} x ${(key.h / POINTS_PER_MM).toFixed(1)} mm); ${strokes.length} strokes of the English dictionary, weighted by use`);
   for (const g of [...grid, { ...noTails, note: 'no tails' }, { ...allTails, note: 'a tail on every stroke' }]) {
     console.log(`\nleg ${g.leg} mm, aim sd ${g.aim} deg, tails on ${g.tailShare * 100} % of strokes ${g.note ? '(' + g.note + ')' : ''}`);
-    console.log('                 right  own flick  another word  a letter  nothing');
-    for (const [k, r] of Object.entries(g.kinds)) console.log(`  ${k.padEnd(13)} ${pct(r.right)}      ${pct(r['own flick'])}         ${pct(r['another word'])}     ${pct(r['a letter'])}    ${pct(r.nothing)}`);
+    console.log('                 right  own flick  another piece  another word  nothing');
+    for (const [k, r] of Object.entries(g.kinds)) console.log(`  ${k.padEnd(13)} ${pct(r.right)}      ${pct(r['own flick'])}          ${pct(r['another piece'])}         ${pct(r['another word'])}    ${pct(r.nothing)}`);
   }
 }
 }

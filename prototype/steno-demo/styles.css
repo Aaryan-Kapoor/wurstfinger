@@ -31,6 +31,9 @@
   --hint-kept: rgba(255, 255, 255, .62);
   --hint-word: #86bbff;
   --hint-token: #7fe0c4;
+  --bank-onset: #8fb8ff;
+  --bank-vowel: #ffc46b;
+  --bank-coda: #7fe0b0;
   --accent: #0a84ff;
   --accent-ink: #fff;
   --accent-soft: rgba(10, 132, 255, .2);
@@ -67,6 +70,9 @@
   --hint-kept: rgba(0, 0, 0, .62);
   --hint-word: #0057c7;
   --hint-token: #00715c;
+  --bank-onset: #1f5fd1;
+  --bank-vowel: #a35a00;
+  --bank-coda: #0a7a4d;
   --accent: #007aff;
   --accent-soft: rgba(0, 122, 255, .14);
   --guide: rgba(252, 252, 254, .96);
@@ -206,6 +212,8 @@ button { font: inherit; color: inherit; }
 .glyph { flex: none; overflow: visible; }
 .glyph .g-key { fill: color-mix(in srgb, currentColor 16%, transparent); stroke: color-mix(in srgb, currentColor 32%, transparent); stroke-width: 1; }
 .glyph .g-key.g-on { fill: var(--accent); stroke: var(--accent); }
+.glyph .g-key.g-half { fill: color-mix(in srgb, currentColor 40%, transparent); stroke: none; }
+.glyph .g-letter.g-small { font-size: 8px; }
 .glyph .g-letter { font: 800 10.5px var(--rounded); fill: currentColor; }
 .glyph .g-letter.g-on { fill: #fff; }
 .glyph .g-line { stroke: var(--accent); stroke-width: 2.3; stroke-linecap: round; stroke-linejoin: round; }
@@ -252,6 +260,21 @@ button { font: inherit; color: inherit; }
 
 .key.space .c { font: 600 12px var(--rounded); color: var(--hint-mark); letter-spacing: .3px; }
 .key.space .h.word { font-size: 12.5px; }
+.key.space .half { position: absolute; top: 0; bottom: 0; width: 50%; }
+.key.space .half.left { left: 0; }
+.key.space .half.right { right: 0; box-shadow: inset 1px 0 0 var(--line); }
+.key.space .h.mark.kept { font-size: 16px; }
+.key .c.c2 { font-size: 24px; letter-spacing: -.5px; }
+.key .c.c3 { font-size: 20px; letter-spacing: -.5px; }
+.key .c.c4 { font-size: 17px; letter-spacing: -.5px; }
+.key .h.letter.chunk { font-size: 14px; font-weight: 600; letter-spacing: -.2px; }
+/* The three banks: what starts a syllable, its vowel, what ends it. */
+.keys[data-context='messages'] .key[data-bank='0'] { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--bank-onset) 55%, transparent); }
+.keys[data-context='messages'] .key[data-bank='1'] { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--bank-vowel) 55%, transparent); }
+.keys[data-context='messages'] .key[data-bank='2'] { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--bank-coda) 55%, transparent); }
+.keys[data-context='messages'] .key[data-bank='0'] .c { color: var(--bank-onset); }
+.keys[data-context='messages'] .key[data-bank='1'] .c { color: var(--bank-vowel); }
+.keys[data-context='messages'] .key[data-bank='2'] .c { color: var(--bank-coda); }
 .key.space .h.word.token { font-family: var(--rounded); font-size: 12px; font-weight: 700; letter-spacing: 0; }
 .key.utility .c svg { width: 26px; height: 26px; }
 .key.utility .h.icon { color: var(--hint-letter); font: 700 11px var(--rounded); }

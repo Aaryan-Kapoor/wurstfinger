@@ -33,8 +33,8 @@ test('lesson sentences come out exactly, at every level of knowledge', () => {
   for (const text of ['I think you are right about that.', 'What is it like in here?', "Thanks, that's good. See you tomorrow.",
     'He wants to keep working on it.', 'She is probably at the restaurant with everybody.', "I don't know, maybe we should ask Sarah first?",
     'Are you coming to the party tonight? I can pick you up.', "Sorry, I didn't think you were coming!",
-    "I'm going to be a little late, no problem.", 'We stopped running and tried walking.', "They're well-known; it's fine: really."]) {
-    for (const level of ['letters', 'flicks', 'all']) {
+    "I'm going to be a little late, no problem.", 'We stopped running and tried walking.', "They're well-known, it's fine: really."]) {
+    for (const level of ['pieces', 'all']) {
       const r = run(text, level);
       assert.ok(r, `no script for: ${text}`);
       assert.equal(r.text, text, `${level}: ${text}`);
@@ -66,5 +66,5 @@ test('held-out messages round-trip exactly', { skip: !fs.existsSync(new URL('../
   }
   console.log('round trip:', JSON.stringify(report), 'strokes by kind:', JSON.stringify(kinds));
   assert.deepEqual(failures, []);
-  for (const k of ['flick', 'hook', 'phrase', 'ending', 'completion', 'complete', 'spell', 'mark', 'space', 'shift']) assert.ok(kinds[k] > 0, `no ${k} stroke was exercised`);
+  for (const k of ['piece', 'curl', 'ending', 'completion', 'complete', 'mark', 'space', 'shift']) assert.ok(kinds[k] > 0, `no ${k} stroke was exercised`);
 });

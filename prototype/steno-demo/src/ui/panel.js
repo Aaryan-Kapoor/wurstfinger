@@ -10,12 +10,12 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;',
 const PLAY = '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 2.5v11l9-5.5z"/></svg>';
 
 const LESSONS = [
-  { id: 'flicks', title: 'Words on a flick', blurb: 'Every word here is one flick from the key of its first letter. You never touch the space bar.', text: 'I think you are right about that.' },
-  { id: 'flicks2', title: 'More flicks', blurb: 'Seven strokes for twenty-four characters.', text: 'What is it like in here?' },
-  { id: 'hooks', title: 'Curl for another word', blurb: 'Flick, then turn a corner without lifting. “that” curled right is “that’s”; “to” curled right is “tomorrow”.', text: "Thanks, that's good. See you tomorrow." },
-  { id: 'endings', title: 'End a word on the space bar', blurb: 'Flick the space bar up for -s, up-right for -ing, up-left for the past. It works on any word, stroked or spelled.', text: 'He wants to keep working on it.' },
-  { id: 'spell', title: 'Spell the rest, take the offer', blurb: 'Any other word you spell. When the grey letters show the whole word, pull the space bar down and it is finished.', text: 'We stopped at the restaurant together.' },
-  { id: 'shell', title: 'A terminal, with its own dictionaries', context: 'terminal', blurb: 'No English here: every character is exact. g, c and a pull on the space bar is a commit with the caret inside the quotes.', strokes: ['O-sw', 'O-w', 'SP-s', 'S-nw', 'I', 'I-sw', 'SP', 'T', 'T-ne', 'O-ne', 'O'], expect: 'git commit -m "fix typo"' },
+  { id: 'pieces', title: 'Write by pieces', blurb: 'A word is what starts it, its vowel and what ends it: left column, middle column, right column. “th” is one tap, “nk” is one flick.', text: 'I think that is right.' },
+  { id: 'chords', title: 'Two thumbs, one chord', blurb: 'Put both thumbs down together. Pieces are read left to right whichever thumb moved first, so “the” is one chord: th and e.', text: 'What is the weather like there?' },
+  { id: 'curls', title: 'Curl for a whole word', blurb: 'Flick to a piece, then turn a corner: a word that starts with that piece, or ends with it. “nd” curled is and, find, mind.', text: 'I would like to know what you think.' },
+  { id: 'endings', title: 'End a word on the space bar', blurb: 'The left half of the space bar finishes a word: -ed, -s, -ing above, n’t and ’s below. The right half is punctuation.', text: 'He wants to keep working on it.' },
+  { id: 'offer', title: 'Take the offer', blurb: 'When the pieces so far can only be one word, the rest shows in grey. Pull the left of the space bar down to take it.', text: 'We stopped at the restaurant together.' },
+  { id: 'shell', title: 'A terminal, with its own dictionaries', context: 'terminal', blurb: 'No English here: the keys are the letter page, every character is exact. g, c and a pull on the space bar is a commit with the caret inside the quotes.', strokes: ['O-sw', 'O-w', 'SP-s', 'S-nw', 'I', 'I-sw', 'SP', 'T', 'T-ne', 'O-ne', 'O'], expect: 'git commit -m "fix typo"' },
 ];
 
 export function mountPanel(api) {
@@ -50,36 +50,29 @@ export function mountPanel(api) {
     let i = 0;
     for (const tok of tokens) {
       const parts = [];
-      let letters = '';
-      const flush = () => { if (letters) { parts.push({ letters }); letters = ''; } };
       if (!/^[A-Za-z]/.test(tok)) {
         if (script[i]?.kind === 'mark') { parts.push({ stroke: script[i].id }); i++; }
         out.push({ text: tok, punct: true, parts });
         continue;
       }
       while (script[i] && (script[i].kind === 'space' || script[i].kind === 'shift')) { if (script[i].kind === 'space') parts.push({ stroke: script[i].id }); i++; }
-      while (script[i] && script[i].word && script[i].word.split(' ')[0] === tok) {
-        const s = script[i++];
-        if (['spell', 'completion'].includes(s.kind)) letters += labelOf(engine.lookup(s.id));
-        else { flush(); parts.push({ stroke: s.id }); }
-        if (s.kind === 'phrase') { out.push({ text: s.word, parts }); break; }
-      }
-      flush();
-      if (!out.length || out.at(-1).parts !== parts) out.push({ text: tok, parts });
+      while (script[i] && script[i].word === tok) parts.push({ stroke: script[i++].id });
+      out.push({ text: tok, parts });
     }
-    // A phrase stroke covers the words after it too.
-    return out.filter((w, k) => !(k > 0 && out[k - 1].text.includes(' ') && out[k - 1].text.split(' ').slice(1).includes(w.text) && !w.parts.length));
+    return out;
   }
 
   const wordsHtml = (l, size) => lessonWords(l).map((w, i) => `<span class="w${w.punct ? ' punct' : ''}" data-i="${i}"><span class="t">${esc(w.text)}</span><span class="strokes">${api.partsHtml(w.parts, size)}</span></span>`).join('');
 
   function renderLearn() {
+    const th = Object.entries(theory.chunks).find(([, c]) => c === 'th')[0];
+    const e = Object.entries(theory.chunks).find(([, c]) => c === 'e')[0];
+    const nd = Object.entries(theory.chunks).find(([, c]) => c === 'nd')[0];
     const rules = [
-      { demo: ['T-n'], glyphs: ['T-n'], title: 'A flick is a word', text: 'Letters are where they always were: tap a key for its big letter, flick toward a small one for that. The blue words work the same way: <b>flick toward one and it is typed, with its space</b>. Each sits on the key of its first letter.' },
-      { demo: ['T-n-ccw'], glyphs: ['T-n-ccw'], title: 'A curl is another word from that key', text: 'Finish a flick with a corner, without lifting, for a second word: the flicked word’s contraction (<b>right is ’s / ’re / ’m, left is n’t / ’ll, back is ’ve</b>), a word that begins with it, or another word with the same first letter.' },
-      { demo: ['T-nw', 'SP-ne'], glyphs: ['SP-ne'], title: 'The space bar ends a word', text: 'Flick it instead of tapping it: <b>-s, -ing, -ed</b> along the top, <b>n’t</b> and <b>’s</b> below, on any word, with the spelling English uses. Tapping it is always safe: a word already has its space.' },
-      { demo: ['R', 'E', 'S', 'T', 'A', 'O-n', 'SP-s'], glyphs: ['SP-s'], title: 'Spell anything; take an offer if you like', text: 'No word is out of reach, because letters never stop working. When what you have spelled can only be one word, the rest appears in grey: <b>pull the space bar down</b> to take it. Nothing is ever changed for you.' },
-      { demo: ['T-n-cw', 'UT-e', 'UT'], glyphs: ['UT'], corner: true, title: 'One key undoes, sends and fixes', text: 'The corner key: <b>tap to take back a whole stroke</b>, flick right to turn a misread curl into its neighbour, flick up to send, hold and drag left to delete letter by letter.' },
+      { demo: [th, e], glyphs: [th], title: 'Three columns, in the order you say a syllable', text: 'Left is <b>what starts it</b>, middle is <b>its vowel</b>, right is <b>what ends it</b>. Every key has nine pieces: tap for the big one, flick toward a small one. A word is its pieces: th·i·nk, w·ea·th·er.' },
+      { demo: [`${nd}-cw`], glyphs: [`${nd}-cw`], title: 'A curl is a whole word', text: 'Flick to a piece and turn a corner without lifting: a common word that <b>starts with that piece</b> (left and middle columns) or <b>ends with it</b> (right column). These are shortcuts. Any word can always be written by its pieces.' },
+      { demo: ['SP-ne'], glyphs: ['SP-ne'], title: 'The space bar ends a word', text: 'Tap it for a space. Flick its <b>left half</b> for an ending (-ed, -s, -ing, n’t, ’s, with the spelling English uses) and its <b>right half</b> for a mark. Pull the left half down to take a word that is offered in grey.' },
+      { demo: ['UT'], glyphs: ['UT'], corner: true, title: 'One key undoes, sends and fixes', text: 'The corner key: <b>tap to take back a whole stroke</b>, flick right to turn a misread curl into its neighbour, flick up to send, hold and drag left to delete letter by letter.' },
     ];
     $('pane-learn').innerHTML = `
       <h2>How it works</h2>` + rules.map((r, i) => `
@@ -88,7 +81,7 @@ export function mountPanel(api) {
         <div><h3>${r.title}</h3><p>${r.text}</p></div>
       </div>`).join('') + `
       <h2>Try it</h2>
-      <p>Watch a sentence being written, then write it yourself. Drag with a mouse, or use a thumb on a phone.</p>` + LESSONS.map((l, i) => `
+      <p>Watch a sentence being written, then write it yourself. Drag with a mouse, or use both thumbs on a phone.</p>` + LESSONS.map((l, i) => `
       <div class="card lesson" data-lesson="${l.id}">
         <h3><span class="num">${i + 1}</span>${esc(l.title)}</h3>
         <p>${esc(l.blurb)}</p>
@@ -205,13 +198,13 @@ export function mountPanel(api) {
     // Anything an entry types as a whole: a phrase, an abbreviation's expansion, a command.
     const outlines = planner.producing(raw).filter(o => !o.includes('/'));
     const word = raw.toLowerCase();
-    const plan = /^[a-z']+$/.test(word) ? planner.plan(word) : null;
+    const plan = /^[a-z]+$/.test(word) ? planner.plan(word) : null;
     const s = plan && api.planStrokes(plan);
     if (s) {
-      const how = plan.kind === 'flick' ? `One stroke: ${describe(plan.strokes[0])}.`
-        : plan.kind === 'hook' ? `One stroke: ${describe(plan.strokes[0])}.`
-        : plan.kind === 'completion' ? `Spell <b>${esc(plan.outline)}</b>, then pull the space bar down: ${s.gestures} strokes instead of ${word.length + 1}.`
-        : `${esc(plan.base.word)}, then ${describe(plan.strokes.at(-1))}: ${s.gestures} ${s.gestures === 1 ? 'stroke' : 'strokes'} instead of ${word.length + 1}.`;
+      const how = plan.kind === 'curl' ? `One stroke: ${describe(plan.strokes[0])}.`
+        : plan.kind === 'pieces' ? `By its pieces: <b>${esc(plan.parts.join(' · '))}</b>, ${plan.gestures} strokes, or ${planner.chords(plan.strokes)} with two thumbs. Letter by letter it is ${word.length}.`
+        : plan.kind === 'completion' ? `<b>${esc(plan.parts.join(' · '))}</b>, then pull the left of the space bar down: ${s.gestures} strokes instead of ${word.length + 1}.`
+        : `${esc(plan.base.word)}, then ${describe(plan.strokes.at(-1))}: ${s.gestures} strokes instead of ${word.length + 1}.`;
       show(s.parts, how);
       return;
     }
@@ -406,17 +399,17 @@ export function mountPanel(api) {
       <p>A tenth of each corpus was set aside before any stroke was assigned. A model typist then typed it: <b>${r.messages.toLocaleString()} messages, ${r.chars.toLocaleString()} characters</b>. Each row adds what a learner would pick up next. The letter keyboard takes <b>${r.letterStrokesPerWord} strokes a word</b>.</p>
       <div class="seg" id="corpusSeg">${Object.keys(results.evaluation).map(c => `<button data-corpus="${c}" aria-pressed="${c === corpus}">${names[c]}</button>`).join('')}</div>
       <div class="bars">${r.stages.map(s => `<div class="bar"><span class="lbl">${esc(s.stage)}</span><div class="track"><div class="fill" style="width:${(s.strokesPerWord / max * 100).toFixed(1)}%"></div></div><span class="val">${s.strokesPerWord.toFixed(2)}</span></div>`).join('')}</div>
-      <table class="t"><tr><th>You know</th><th>Strokes a word</th><th>Fewer</th><th>WPM, bare model</th><th>careful thumb</th><th>hurried thumb</th></tr>
+      <table class="t"><tr><th>You use</th><th>Strokes a word</th><th>Chords a word</th><th>WPM, bare model</th><th>careful thumb</th><th>hurried thumb</th></tr>
         <tr><td>the letter keyboard</td><td>${r.letterStrokesPerWord}</td><td></td><td>${r.letterWpm.bare}</td><td>${r.letterWpm.careful}</td><td>${r.letterWpm.hurried}</td></tr>
-        ${r.stages.map(s => `<tr><td>${esc(s.stage)}</td><td>${s.strokesPerWord.toFixed(2)}</td><td>${s.saving.toFixed(0)} %</td><td>${s.wpm.bare}</td><td>${s.wpm.careful}</td><td>${s.wpm.hurried}</td></tr>`).join('')}
+        ${r.stages.map(s => `<tr><td>${esc(s.stage)}</td><td>${s.strokesPerWord.toFixed(2)}</td><td>${s.chordsPerWord.toFixed(2)}</td><td>${s.wpm.bare}</td><td>${s.wpm.careful}</td><td>${s.wpm.hurried}</td></tr>`).join('')}
       </table>
       <p class="note"><b>Stroke counts are exact; speeds are a model, not a measurement of people.</b> The bare model has no mistakes and no recall time. The careful thumb makes 6 mm strokes and aims within 6°; the hurried one makes 4.5 mm strokes and aims within 9°. Both pay to notice and redo every mistake, at the rates in the table below, and to recall each stroke that is not a letter. The word flicks pay under every assumption. The curls pay only for the careful thumb.</p>
       <h2>Where the words come from</h2>
-      <p>${tokens.toLocaleString()} words from three corpora: film dialogue, written everyday dialogue and real text messages. A word’s weight is the geometric mean of its frequency in all three, so it has to be common everywhere. The ${theory.meta.counts.flicks} flick words are ${theory.meta.share.flicks} % of all word tokens; the ${theory.meta.counts.hooks} curled words another ${theory.meta.share.hooks} %.</p>
+      <p>${tokens.toLocaleString()} words from three corpora: film dialogue, written everyday dialogue and real text messages. A word’s weight is the geometric mean of its frequency in all three, so it has to be common everywhere. Written by its pieces a word takes ${theory.meta.piecesPerWord} strokes on average where its letters take ${theory.meta.lettersPerWord}; the ${theory.meta.counts.curls} curled words are ${theory.meta.share.curls} % of all word tokens.</p>
       <h2>How often a stroke types the wrong thing</h2>
-      <p>A population of synthetic thumbs wrote with the real dictionary on keys of the real size (${results.robustness.key.mm.map(x => x.toFixed(1)).join(' × ')} mm), each with its own bias, stroke length, bowed path, cut corner and, a third of the time, a tail as it lifts. Strokes are weighted by how often they are used. This is a model of error, not a measurement of people.</p>
-      <table class="t"><tr><th>Stroke length, aim</th><th>Word flick right</th><th>wrong word</th><th>Curl right</th><th>its own flick</th><th>wrong word</th></tr>
-        ${rows.map(g => `<tr><td>${g.leg} mm, ${g.aim}°</td><td>${pct(g.kinds['word flick'].right)} %</td><td>${pct(g.kinds['word flick']['another word'])} %</td><td>${pct(g.kinds.curl.right)} %</td><td>${pct(g.kinds.curl['own flick'])} %</td><td>${pct(g.kinds.curl['another word'])} %</td></tr>`).join('')}
+      <p>A population of synthetic thumbs wrote with the real dictionary on keys of the real size (${results.robustness.key.mm.map(x => x.toFixed(1)).join(' × ')} mm), each with its own bias, stroke length, bowed path, cut corner and, a third of the time, a tail as it lifts. Strokes are weighted by how often they are used. This is a model of error, not a measurement of people. “Strokes” is one thumb; “chords” is two thumbs pressing neighbouring pieces together.</p>
+      <table class="t"><tr><th>Stroke length, aim</th><th>Piece flick right</th><th>another piece</th><th>Curl right</th><th>its own piece</th><th>something else</th></tr>
+        ${rows.map(g => `<tr><td>${g.leg} mm, ${g.aim}°</td><td>${pct(g.kinds['piece flick'].right)} %</td><td>${pct(g.kinds['piece flick']['another piece'])} %</td><td>${pct(g.kinds.curl.right)} %</td><td>${pct(g.kinds.curl['own flick'])} %</td><td>${pct(g.kinds.curl['another piece'] + g.kinds.curl['another word'])} %</td></tr>`).join('')}
       </table>
       <p class="note">A curl that falls short types the word that was flicked, which the corner key’s “change” puts right in one move. Curls want legs of about 6 mm; shorter ones are unreliable in this model, and that is the first thing a study with real thumbs should measure.</p>`;
     $('corpusSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (b) renderNumbers(b.dataset.corpus); });

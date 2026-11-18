@@ -18,10 +18,10 @@ const r1 = x => +x.toFixed(1), r2 = x => +x.toFixed(2), r3 = x => +x.toFixed(3);
 const slim = {};
 for (const [corpus, r] of Object.entries(evaluation)) {
   slim[corpus] = {
-    messages: r.messages, chars: r.chars, letterStrokesPerWord: r2(r.letterGesturesPerWord),
+    messages: r.messages, chars: r.chars, letterStrokesPerWord: r2(r.letterStrokesPerWord),
     letterWpm: Object.fromEntries(Object.entries(r.letterWpm).map(([k, v]) => [k, r1(v)])),
     stages: r.rows.map(row => ({
-      stage: row.stage, strokesPerWord: r2(row.gesturesPerWord), saving: r1(row.saving * 100),
+      stage: row.stage, strokesPerWord: r2(row.strokesPerWord), chordsPerWord: r2(row.chordsPerWord), saving: r1(row.saving * 100), chordSaving: r1(row.chordSaving * 100),
       wpm: Object.fromEntries(Object.entries(row.wpm).map(([k, v]) => [k, r1(v)])),
       share: Object.fromEntries(Object.entries(row.share).map(([k, v]) => [k, r1(v * 100)])),
     })),

@@ -17,5 +17,10 @@ const rectOf = (col, row, span = 1) => ({
   w: span * GEO.cellW + (span - 1) * GEO.gap, h: GEO.cellH,
 });
 
-/** A key's rectangle. 'SP' is the space bar, 'UT' the corner key. */
-export const keyRect = key => key === 'SP' ? rectOf(0, 3, 2) : key === 'UT' ? rectOf(2, 3) : rectOf(KEY_POS[key].col, KEY_POS[key].row);
+/**
+ * A key's rectangle. 'SPACE' is the whole space bar; 'SP' and 'SR' are its
+ * left and right halves, which type different things when flicked; 'UT' is
+ * the corner key.
+ */
+export const keyRect = key => key === 'SPACE' ? rectOf(0, 3, 2) : key === 'SP' ? rectOf(0, 3) : key === 'SR' ? rectOf(1, 3)
+  : key === 'UT' ? rectOf(2, 3) : rectOf(KEY_POS[key].col, KEY_POS[key].row);

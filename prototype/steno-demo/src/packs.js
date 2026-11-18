@@ -34,7 +34,7 @@
 import { KEYS, DIRS, DETAIL, letterOf, strokeId } from './layout.js';
 import { display } from './orthography.js';
 
-const STROKE = /^(SP|[ANIHORTES])(?:-(?:circle|(?:n|ne|e|se|s|sw|w|nw)(?:-(?:cw|ccw|back))?))?$/;
+const STROKE = /^(SP|SR|[ANIHORTES])(?:-(?:circle|(?:n|ne|e|se|s|sw|w|nw)(?:-(?:cw|ccw|back))?))?$/;
 export const isStrokeOutline = o => typeof o === 'string' && o.length > 0 && o.split('/').every(p => STROKE.test(p));
 export const isSpelledOutline = o => /^[a-z][a-z0-9']*$/.test(o);
 
@@ -75,7 +75,7 @@ export function validateEntry(outline, translation) {
     const parts = outline.split('/');
     if (parts.length > MAX_STROKES) return `An outline can be at most ${MAX_STROKES} strokes long.`;
     // Level strokes on the space bar move the caret, and the complete stroke has no turns: none of them can be an entry.
-    const dead = parts.find(p => /^SP-(e|w)(-|$)/.test(p) || /^SP-(n|ne|nw|s)-/.test(p) || p === 'SP-circle');
+    const dead = parts.find(p => /^S[PR]-(e|w)(-|$)/.test(p) || /^S[PR]-(n|ne|nw|s)-/.test(p) || /^S[PR]-circle$/.test(p) || p === 'SR');
     if (dead) return `${dead} is not a stroke the space bar can make.`;
   }
   if (typeof translation !== 'string' || translation === '') return 'It has to type something.';
@@ -164,26 +164,32 @@ export function lettersPack() {
 
 // ---------------------------------------------------------------- English
 
-// Prose punctuation: the six everyday marks where they have always been, and
-// their relatives on a curl of the same flick.
+// Prose punctuation lives on the right half of the space bar: like an ending,
+// a mark is something that finishes a word. The quieter marks are a curl of
+// the two lower ones.
 export const PROSE_MARKS = {
-  'E-s': '{.}', 'E-sw': '{,}', 'I-w': '{?}', 'N-e': '{!}', 'E-ne': "{&'}", 'A-e': '{^}-{^}',
-  'E-s-cw': '{:}', 'E-s-ccw': '{^}…', 'E-sw-cw': '{;}', 'E-ne-cw': '{"}',
-  'A-e-cw': '{(^}', 'A-e-ccw': '{^)}', 'A-e-back': '—',
-  'I-w-cw': '{^}/{^}', 'N-e-cw': '&', 'N-e-ccw': '{@^}',
+  'SR-nw': '{,}', 'SR-n': '{.}', 'SR-ne': '{?}',
+  'SR-sw': "{&'}", 'SR-s': '{^}-{^}', 'SR-se': '{!}',
+  'SR-sw-cw': '{"}', 'SR-sw-ccw': '{:}', 'SR-se-cw': '{(^}', 'SR-se-ccw': '{^)}',
 };
 
-/** The generated English theory as one dictionary. */
+/**
+ * The generated English theory as one dictionary: a chunk on every tap and
+ * flick, whole words on the curls, endings on the left half of the space bar
+ * and marks on the right, and completions as spelled entries.
+ */
 export function englishPack(theory) {
   const e = { ...PROSE_MARKS };
-  for (const [id, w] of Object.entries(theory.slots)) e[id] = display(w);
-  for (const [id, w] of Object.entries(theory.hooks)) e[id] = display(w);
+  for (const [id, chunk] of Object.entries(theory.chunks)) e[id] = `{&${chunk}}`;
+  // A circle on any key capitalises what is written next.
+  for (const k of KEYS) e[`${k}-circle`] = '{-|}';
+  for (const [id, w] of Object.entries(theory.curls)) e[id] = display(w);
   for (const [id, ending] of Object.entries(theory.endings)) e[id] = `{^${ending}}`;
   for (const [outline, w] of Object.entries(theory.completions)) e[outline] = display(w);
   const words = Object.values(theory.meta.corpora).reduce((s, c) => s + c.trainingTokens, 0);
   return {
     id: 'english', name: 'English', editable: false,
-    description: `Words, endings and prose punctuation, assigned by program from ${(words / 1e6).toFixed(1)} million words of conversation and real text messages.`,
+    description: `Three banks of chunks (what starts a syllable, its vowel, what ends it), whole words on the curls, endings and marks on the space bar. Assigned by program from ${(words / 1e6).toFixed(1)} million words of conversation and real text messages.`,
     options: { spacing: 'auto', autoCapitalize: true, pronounI: true },
     entries: e,
   };

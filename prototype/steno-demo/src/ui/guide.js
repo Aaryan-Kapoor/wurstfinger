@@ -45,8 +45,8 @@ export class Guide {
       out.c = { label: 'undo', cls: 'action' };
       return out;
     }
-    if (t.key === 'SP') {
-      for (const d of ENDING_DIRS) { const l = this.kb.spaceLabel(d); if (l) out[d] = { label: l, cls: 'word' }; }
+    if (t.key === 'SP' || t.key === 'SR') {
+      for (const d of ENDING_DIRS) { const l = this.kb.spaceLabel(d, t.key); if (l) out[d] = { label: l, cls: /^[a-z'-]/i.test(l) ? 'word' : 'mark' }; }
       out.c = { label: 'space', cls: 'action' };
       return out;
     }

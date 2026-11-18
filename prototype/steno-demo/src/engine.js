@@ -372,7 +372,7 @@ export class Engine {
       if ((ch === "'" || ch === '-') && this.prose) this.takeBackSpace();
       if (wordy || ch === '-') s.pending = { start: s.text.length - TOKEN_TAIL.exec(s.text)[0].length };
     }
-    s.text += /^[A-Za-z]$/.test(ch) ? this.cased(ch) : ch;
+    s.text += /^[A-Za-z]+$/.test(ch) ? this.cased(ch) : ch;        // a chunk is cased as the letters it is
     if (!wordy && ch !== '-') s.pending = null;
     s.attachNext = false; s.autoSpace = false; s.swallowed = false;
   }

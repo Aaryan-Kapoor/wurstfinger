@@ -4,7 +4,7 @@
 // Everything is laid out in points from src/geometry.js, so the hit map and
 // the drawing can never disagree.
 
-import { KEYS, DIRS, DETAIL, NUMERIC, ENDING_DIRS, strokeId, parseStroke } from '../layout.js';
+import { KEYS, DIRS, DETAIL, NUMERIC, ENDING_DIRS, strokeId, parseStroke, columnOf } from '../layout.js';
 import { GEO, keyRect } from '../geometry.js';
 import { classify, classifyStroke, classifySpace, SPACE_LEVEL } from '../recognizer.js';
 import { labelOf, parseTranslation } from '../packs.js';
@@ -91,7 +91,7 @@ export class Keyboard {
 
     this.spaceEl = el('div', 'key space');
     this.utilEl = el('div', 'key utility');
-    for (const [e, key] of [[this.spaceEl, 'SP'], [this.utilEl, 'UT']]) {
+    for (const [e, key] of [[this.spaceEl, 'SPACE'], [this.utilEl, 'UT']]) {
       const rc = keyRect(key);
       Object.assign(e.style, { left: rc.x + 'px', top: rc.y + 'px', width: rc.w + 'px', height: rc.h + 'px' });
       r.appendChild(e);
@@ -111,7 +111,7 @@ export class Keyboard {
       if (!label) return null;
       // A mark a dictionary above the letters pack chose to keep is one people use in every message.
       const kept = this.engine.source[strokeId(key, dir)] !== 'letters';
-      if (isGlue(t)) return { label, cls: /^[a-z]$/i.test(label) ? 'letter' : kept ? 'mark kept' : 'mark' };
+      if (isGlue(t)) return { label, cls: /^[a-z]+$/i.test(label) ? (label.length > 1 ? 'letter chunk' : 'letter') : kept ? 'mark kept' : 'mark' };
       if ([...label].length === 1 && !/[a-z0-9]/i.test(label)) return { label, cls: 'mark kept' };
       return { label, cls: 'word' + (label.length > 4 ? ' long' : '') + (/^[^a-z]/i.test(label) ? ' token' : '') };
     }
@@ -124,18 +124,23 @@ export class Keyboard {
   }
 
   tapLabel(mode, key) {
+    // On the steno page a key is whatever the dictionaries make its tap.
+    if (mode === 'steno') return this.engine.label(key) || '';
     const tap = (mode === 'numeric' ? NUMERIC : DETAIL)[key].tap;
     return mode === 'detail' && this.detailShift ? tap.toUpperCase() : tap;
   }
 
   renderFaces() {
     for (const mode of MODES) for (const key of KEYS) {
-      let html = `<span class="c">${escapeHtml(this.tapLabel(mode, key))}</span>`;
+      const tap = this.tapLabel(mode, key);
+      let html = `<span class="c${tap.length > 1 ? ' c' + Math.min(4, tap.length) : ''}">${escapeHtml(tap)}</span>`;
       for (const dir of DIRS) {
         const s = this.slot(mode, key, dir);
         if (s) html += `<span class="h ${dir} ${s.cls}" data-dir="${dir}">${escapeHtml(s.label)}</span>`;
       }
       this.keyEls[mode][key].innerHTML = html;
+      // The steno page's columns are banks: what starts a syllable, its vowel, what ends it.
+      this.keyEls[mode][key].dataset.bank = mode === 'steno' ? columnOf(key) : '';
     }
     this.renderBottom();
     this.fitHints();
@@ -166,7 +171,8 @@ export class Keyboard {
   }
 
   /** The label of a space-bar flick in the current mode, or ''. */
-  spaceLabel(dir) { return this.mode === 'steno' ? this.engine.label(strokeId('SP', dir)) : ''; }
+  /** The label of a flick on one half of the space bar ('SP' left, 'SR' right) in the current mode, or ''. */
+  spaceLabel(dir, half = 'SP') { return this.mode === 'steno' ? this.engine.label(strokeId(half, dir)) : ''; }
 
   cornerLabel(dir) {
     if (dir === 's') return this.mode === 'numeric' ? 'abc' : '123';
@@ -183,10 +189,15 @@ export class Keyboard {
   }
 
   renderBottom() {
+    // Each half of the space bar has its own flicks; a tap anywhere is a space.
     let space = '<span class="c">space</span>';
-    for (const dir of ENDING_DIRS) {
-      const label = this.spaceLabel(dir);
-      if (label) space += `<span class="h ${dir} word${/^[^a-z'-]/i.test(label) ? ' token' : ''}" data-dir="${dir}">${escapeHtml(label)}</span>`;
+    for (const half of ['SP', 'SR']) {
+      space += `<div class="half ${half === 'SP' ? 'left' : 'right'}" data-half="${half}">`;
+      for (const dir of ENDING_DIRS) {
+        const label = this.spaceLabel(dir, half);
+        if (label) space += `<span class="h ${dir} ${/^[a-z'-]/i.test(label) ? 'word' : 'mark kept'}" data-dir="${dir}">${escapeHtml(label)}</span>`;
+      }
+      space += '</div>';
     }
     this.spaceEl.innerHTML = space;
     let util = `<span class="c">${ICON.delete}</span>`;
@@ -245,11 +256,11 @@ export class Keyboard {
   hit(p) {
     const col = Math.max(0, Math.min(2, Math.floor((p.x - GEO.padX + GEO.gap / 2) / (GEO.cellW + GEO.gap))));
     const row = Math.max(0, Math.min(3, Math.floor((p.y - GEO.padTop + GEO.gap / 2) / (GEO.cellH + GEO.gap))));
-    if (row === 3) return col === 2 ? 'UT' : 'SP';
+    if (row === 3) return col === 2 ? 'UT' : col === 1 ? 'SR' : 'SP';
     return KEYS[row * 3 + col];
   }
 
-  elementFor(key) { return key === 'SP' ? this.spaceEl : key === 'UT' ? this.utilEl : this.keyEls[this.mode][key]; }
+  elementFor(key) { return key === 'SP' || key === 'SR' ? this.spaceEl : key === 'UT' ? this.utilEl : this.keyEls[this.mode][key]; }
 
   down(e) {
     if (e.button > 0) return;
@@ -289,7 +300,7 @@ export class Keyboard {
     const d = Math.hypot(q.x, q.y);
     if (d > t.maxD) { t.maxD = d; t.peakTime = (now - t.t0) / 1000; }
     if (this.pageSwipe(t)) return;
-    if (t.key === 'SP') this.slideSpace(t, q);
+    if (t.key === 'SP' || t.key === 'SR') this.slideSpace(t, q);
     else if (t.key === 'UT') this.slideDelete(t, q, now);
     if (!t.sliding) this.speculate(t);
   }
@@ -351,12 +362,12 @@ export class Keyboard {
       if (!this.cornerHas(c.dir)) return null;
       return { action: CORNER[c.dir].action, dir: c.dir, type: 'flick', label: this.cornerLabel(c.dir) };
     }
-    if (t.key === 'SP') {
+    if (t.key === 'SP' || t.key === 'SR') {
       const c = classifySpace(t.path, h, t.peakTime);
       if (c.type === 'tap') return this.mode === 'steno' ? { id: 'SP', type: 'tap', label: 'space' } : { literal: ' ', type: 'tap', label: 'space' };
       if (this.mode === 'steno' && ENDING_DIRS.includes(c.dir)) {
-        const flick = strokeId('SP', c.dir);
-        const hook = c.type === 'hook' ? strokeId('SP', c.dir, c.turn) : null;
+        const flick = strokeId(t.key, c.dir);
+        const hook = c.type === 'hook' ? strokeId(t.key, c.dir, c.turn) : null;
         if (hook && (this.engine.lookup(hook) !== undefined || raw)) return { id: hook, dir: c.dir, turn: c.turn, type: 'hook', label: this.engine.label(hook) };
         return this.engine.lookup(flick) !== undefined || raw ? { id: flick, dir: c.dir, type: 'flick', label: this.engine.label(flick), tail: hook ? c.turn : undefined } : null;
       }
@@ -403,7 +414,8 @@ export class Keyboard {
     k.classList.toggle('aiming', !!c && c.type !== 'circle');
     k.classList.toggle('circling', !!c && c.type === 'circle');
     for (const h of k.querySelectorAll('.h.target')) h.classList.remove('target');
-    if (c && c.dir) k.querySelector(`.h.${c.dir}`)?.classList.add('target');
+    const scope = t.key === 'SP' || t.key === 'SR' ? k.querySelector(`[data-half="${t.key}"]`) || k : k;
+    if (c && c.dir) scope.querySelector(`.h.${c.dir}`)?.classList.add('target');
     this.hooks.onCandidate?.(t);
   }
 
@@ -445,7 +457,20 @@ export class Keyboard {
       else if (c && !t.dry) entry = this.commit(c, t);
       this.hooks.onRelease?.(t, c, entry);
     };
-    // Two thumbs overlap: what was pressed first is typed first, even if it is
+    // On the steno page two thumbs make a chord: pieces whose touches overlap
+    // are typed in bank order, left to right, whichever thumb moved first. That
+    // is steno order, and it is what lets both thumbs go down together.
+    if (this.mode === 'steno' && KEYS.includes(t.key) && !capture) {
+      (this.chord ||= []).push({ col: columnOf(t.key), t0: t.t0, land });
+      const others = [...this.touches.values()].some(f => KEYS.includes(f.key) && !f.paging);
+      if (!others) {
+        const group = this.chord.sort((a, b) => a.col - b.col || a.t0 - b.t0);
+        this.chord = [];
+        for (const g of group) g.land();
+      }
+      return;
+    }
+    // Elsewhere, what was pressed first is typed first, even if it is
     // lifted second. A finger that went down earlier and has not decided yet is
     // waited for, for at most a quarter of a second after it went down.
     const earlier = [...this.touches.values()].filter(f => f.t0 < t.t0 && !f.sliding && !f.paging);
@@ -486,7 +511,7 @@ export class Keyboard {
    */
   siblings(id) {
     const s = parseStroke(id);
-    if (!s || !s.dir || s.key === 'SP') return [];
+    if (!s || !s.dir || s.key === 'SP' || s.key === 'SR') return [];
     const base = strokeId(s.key, s.dir);
     return [base, `${base}-cw`, `${base}-ccw`, `${base}-back`].filter(x => this.engine.lookup(x) !== undefined);
   }

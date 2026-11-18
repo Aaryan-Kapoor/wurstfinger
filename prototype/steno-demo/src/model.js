@@ -36,8 +36,9 @@ export const TIMING = {
 // draws the real dictionary's strokes with that kind of thumb. A mistake
 // costs the time to notice it, take it back and write it again; a curl that
 // came out as its own flick costs noticing and one "change" stroke. They also
-// charge for recalling a stroke that is not a letter, and price a hook more
-// slowly.
+// charge for recalling a curl or an ending, and price a hook more slowly. A
+// piece is charged nothing for recall: it is a letter or a cluster in a fixed
+// place, like a key.
 export const SCENARIOS = {
   bare: { hook: 560, recall: 0, hand: null },
   careful: { hook: 702, recall: 150, hand: 'careful' },
@@ -48,12 +49,11 @@ const NOTICE = 400;
 /** Per-stroke costs for a scenario, given the mistake rates measured for its thumb. */
 export function costsFor(scenario, rates) {
   const s = SCENARIOS[scenario];
-  if (!rates) return { hook: s.hook, recall: 0, letterError: 0, flickError: 0, hookError: 0, endingError: 0 };
+  if (!rates) return { hook: s.hook, recall: 0, pieceError: 0, hookError: 0, endingError: 0 };
   const redo = ms => NOTICE + TIMING.letter + ms;            // notice, undo, write again
   return {
     hook: s.hook, recall: s.recall,
-    letterError: rates.letter.wrong * redo(TIMING.letter),
-    flickError: rates.flick.wrong * redo(TIMING.flick),
+    pieceError: rates.piece.wrong * redo(TIMING.letter),
     hookError: rates.curl.wrong * redo(s.hook) + rates.curl.ownFlick * (NOTICE + TIMING.flick),
     endingError: rates.ending.wrong * redo(TIMING.ending),
   };

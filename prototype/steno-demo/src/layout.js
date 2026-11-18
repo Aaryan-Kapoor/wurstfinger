@@ -9,7 +9,11 @@
 //
 // A stroke is written KEY-direction[-turn]: `T-n` is a flick north on T,
 // `T-n-cw` the same flick finished with a clockwise curl, `T-n-ccw` with a
-// counter-clockwise curl, `T-n-back` an out-and-back. `SP` is the space bar.
+// counter-clockwise curl, `T-n-back` an out-and-back. `SP` is the left half of
+// the space bar and `SR` its right half; a tap on either is `SP`.
+//
+// The names are positions. On the letter page a key types the letter it is
+// named for; on the steno page it types whatever the dictionaries put there.
 
 export const KEYS = ['A', 'N', 'I', 'H', 'O', 'R', 'T', 'E', 'S'];
 export const KEY_POS = Object.fromEntries(KEYS.map((k, i) => [k, { col: i % 3, row: Math.floor(i / 3) }]));
@@ -115,7 +119,11 @@ export const ENDING_DIRS = ['n', 'ne', 'nw', 's', 'se', 'sw'];
 
 export const strokeId = (key, dir, turn) => turn ? `${key}-${dir}-${turn}` : dir ? `${key}-${dir}` : key;
 export function parseStroke(id) {
-  const m = /^(SP|[ANIHORTES])(?:-(n|ne|e|se|s|sw|w|nw)(?:-(cw|ccw|back))?)?$/.exec(id);
+  const m = /^(SP|SR|[ANIHORTES])(?:-(n|ne|e|se|s|sw|w|nw)(?:-(cw|ccw|back))?)?$/.exec(id);
   return m ? { key: m[1], dir: m[2] || null, turn: m[3] || null } : null;
 }
 export const isStrokeId = id => parseStroke(id) !== null;
+
+/** The column a key is in: 0, 1 or 2. On the steno page these are the onset, vowel and coda banks. */
+export const columnOf = key => KEY_POS[key]?.col ?? (key === 'SP' ? 0 : key === 'SR' ? 1 : 2);
+export const BANK_NAMES = ['onset', 'vowel', 'coda'];

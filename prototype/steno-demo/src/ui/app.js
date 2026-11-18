@@ -10,7 +10,7 @@ import { pathFor } from '../robot.js';
 import { parseStroke } from '../layout.js';
 import { Keyboard, GEO, MODES, MODE_LABEL, keyRect } from './keyboard.js';
 import { Guide } from './guide.js';
-import { glyph, letterStroke } from './glyph.js';
+import { glyph, setKeyNamer } from './glyph.js';
 import { mountPanel } from './panel.js';
 
 const $ = id => document.getElementById(id);
@@ -141,6 +141,8 @@ const kb = new Keyboard($('keys'), engine, {
   otherStackLabel: () => SHORT[otherContext()] || '',
 });
 const guide = new Guide(overlay, kb, engine, settings);
+// In a stroke's picture a key is named by what it types when tapped.
+setKeyNamer(key => engine.label(key) || key.toLowerCase());
 
 /** What lifts off the guide when a stroke is released: what it wrote, not what it is called. */
 function liftText(c, entry) {
@@ -204,7 +206,7 @@ function toast(text) {
 function noteStroke(entry, c) {
   if (!entry) return;
   entry.guessed = !!(c && c.tail);       // a curl that means nothing was read as its flick
-  const letter = entry.kind === 'letter' || (entry.kind === 'literal' && /^[A-Za-z']$/.test(entry.outline));
+  const letter = entry.kind === 'letter' || (entry.kind === 'literal' && /^[A-Za-z']$/.test(entry.outline));   // a piece of a word
   if (letter) {
     state.spelled++;
     state.word = engine.pendingOutline()?.typed || '';
@@ -222,20 +224,20 @@ function noteStroke(entry, c) {
 function coachFor(word, typedGestures) {
   if (!word || word.length < 2 || !/^[a-z']+$/.test(word)) return null;
   const plan = planner.plan(word);
-  const shown = planStrokes(plan);
+  const shown = plan && planStrokes(plan);
   if (!shown || shown.gestures >= typedGestures) return null;
   return { word, ...shown };
 }
 
-/** A plan as what to show: stroke glyphs and, for spelled parts, the letters. Null for plain spelling. */
+/** A plan as what to show: the strokes that write it, and a few words on why. */
 function planStrokes(plan) {
-  if (plan.kind === 'flick') return { parts: [{ stroke: plan.strokes[0] }], gestures: 1, why: 'one flick' };
-  if (plan.kind === 'hook') return { parts: [{ stroke: plan.strokes[0] }], gestures: 1, why: 'flick and curl' };
-  if (plan.kind === 'completion') return { parts: [{ letters: plan.outline }, { stroke: plan.strokes[0] }], gestures: plan.gestures, why: `${plan.outline}, then pull space down` };
+  const parts = plan.strokes.map(stroke => ({ stroke }));
+  if (plan.kind === 'curl') return { parts, gestures: 1, why: 'one stroke: flick and curl' };
+  if (plan.kind === 'pieces') return { parts, gestures: plan.gestures, why: plan.parts.join(' · ') };
+  if (plan.kind === 'completion') return { parts, gestures: plan.gestures, why: `${plan.parts.join(' · ')}, then pull space down` };
   if (plan.kind === 'ending') {
-    const base = planStrokes(plan.base)?.parts || [{ letters: plan.base.outline }];
     const ending = plan.ending.startsWith("'") || plan.ending === "n't" ? plan.ending : `-${plan.ending}`;
-    return { parts: [...base, { stroke: plan.strokes.at(-1) }], gestures: plan.gestures, why: `${plan.base.word}, then ${ending}` };
+    return { parts, gestures: plan.gestures, why: `${plan.base.word}, then ${ending}` };
   }
   return null;
 }
@@ -541,7 +543,7 @@ const stopPlaying = () => { if (state.playing) state.cancel = true; };
 
 /** Shows how a plan is written, without typing anything. */
 function demonstrate(parts) {
-  const ids = parts.flatMap(p => p.stroke ? [p.stroke] : [...p.letters].map(letterStroke).filter(Boolean));
+  const ids = parts.map(p => p.stroke).filter(Boolean);
   if (kb.mode !== 'steno') kb.setMode('steno');
   return playStrokes(ids, { dry: true, speed: 0.4, teach: true, gap: 320 });
 }
