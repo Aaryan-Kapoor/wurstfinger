@@ -2,7 +2,7 @@
 //
 // `classify` is the keyboard's existing classifier, transcribed from
 // docs/steno/research/03-current-keyboard-spec.md §6.5 (tap, eight flick
-// directions, return swipe, circle). Detail mode uses it unchanged.
+// directions, return swipe, circle), with one change noted at `preprocess`.
 //
 // `classifyStroke` is what steno mode adds on top: it looks for one corner in
 // the path and reports the stroke as a flick (no corner), a hook (the path
@@ -20,13 +20,21 @@ const SECTORS = ['swipeRight', 'swipeDownRight', 'swipeDown', 'swipeDownLeft', '
 const sectorIndex = a => Math.floor((((a * 180 / Math.PI) % 360 + 360) % 360 + 22.5) / 45) % 8;
 export const dirOfAngle = a => DIRS[sectorIndex(a)];
 
-/** Jitter filter, aspect normalisation and Savitzky-Golay smoothing (spec §6.2). */
-export function preprocess(raw, keyW, keyH) {
+/**
+ * Jitter filter and Savitzky-Golay smoothing (spec §6.2).
+ *
+ * The Swift classifier also divides x by the key's width-to-height ratio, so
+ * that a diagonal aims at the corner of a wide key. That is a no-op on the
+ * square keys it ships with. On the wider keys of the three-column layout it
+ * would make a sideways flick need half as much again as an upward one and
+ * squeeze the sideways sectors to under fifteen degrees, so here directions
+ * are the real angles on the glass, each with the same 45 degree sector, and
+ * every distance is a real distance.
+ */
+export function preprocess(raw) {
   let p = [raw[0]], last = raw[0];
   for (const q of raw.slice(1)) if (D(q, last) >= 3) { p.push(q); last = q; }
   if (D(raw.at(-1), last) >= 0.1) p.push(raw.at(-1));
-  const aspect = keyW / keyH;
-  p = p.map(q => ({ x: q.x / aspect, y: q.y }));
   if (p.length >= 5) {
     const k = [-3, 12, 17, 12, -3].map(v => v / 35), e = p.length - 1, src = p;
     p = src.map((_, i) => k.reduce((s, w, j) => {
@@ -37,11 +45,15 @@ export function preprocess(raw, keyW, keyH) {
   return p;
 }
 
-export const keyScale = keyH => Math.min(Math.max(keyH / 58, 0.7), 1.6);
+// The Swift classifier lengthens the tap/flick boundary on keys taller than
+// 58 pt, up to 1.6 times. A flick is a movement of the thumb, not of the key,
+// and it does not get longer because the key did, so the boundary here only
+// ever shrinks with small keys: 20 pt (3.1 mm) on anything 58 pt or more.
+export const keyScale = (keyW, keyH) => Math.min(Math.max(Math.min(keyW, keyH) / 58, 0.7), 1);
 
 /** The existing classifier: { gesture, isReturn }. */
 export function classify(raw, keyW, keyH, peakTime = 0) {
-  const p = preprocess(raw, keyW, keyH);
+  const p = preprocess(raw);
   const n = p.length;
   if (n < 2) return { gesture: 'tap', isReturn: false, path: p };
 
@@ -49,7 +61,7 @@ export function classify(raw, keyW, keyH, peakTime = 0) {
   let len = 0; for (let i = 1; i < n; i++) len += D(p[i - 1], p[i]);
   let maxD = 0, far = 0; p.forEach((q, i) => { const d = D(o, q); if (d > maxD) { maxD = d; far = i; } });
   const chord = D(o, p[n - 1]), progress = far / (n - 1), ratio = len > 0 ? chord / len : 1;
-  const scale = keyScale(keyH), swipeLen = 20 * scale;
+  const scale = keyScale(keyW, keyH), swipeLen = 20 * scale;
   const outBack = ratio < 0.5 && progress >= 0.2 && progress <= 0.8;
   const samplesOut = p.filter(q => D(q, o) >= maxD / 2).length;
   const fast = peakTime > 0 && (chord >= 0.6 * maxD || (samplesOut >= 3 && outBack))

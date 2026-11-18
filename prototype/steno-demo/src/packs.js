@@ -94,9 +94,10 @@ export function labelOf(translation) {
     const op = atoms[0].op;
     if (op === '-|') return '⇧';
     if (op === '^ ^') return '␣';
-    if (op === '=') return '⤓';
-    if (op === '^') return '⌒';
-    if (/^\^[a-z]/.test(op) && !op.endsWith('^')) return '-' + op.slice(1);
+    if (op === '=') return 'finish';
+    if (op === '^') return 'join';
+    if (/^\^[a-z]+$/.test(op)) return '-' + op.slice(1);
+    if (/^\^[^^]+$/.test(op)) return op.slice(1);
   }
   const KEY_GLYPH = { Return: '⏎', Tab: '⇥', Escape: 'esc', BackSpace: '⌫', Up: '↑', Down: '↓', Left: '←', Right: '→' };
   return atoms.map(a => {

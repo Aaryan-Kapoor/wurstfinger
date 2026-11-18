@@ -20,68 +20,83 @@ const gauss = r => Math.sqrt(-2 * Math.log(1 - r())) * Math.cos(2 * Math.PI * r(
 
 /**
  * The path for a stroke, as [{x, y, t}] translations from the touch-down
- * point (points, milliseconds).
+ * point (points, milliseconds), drawn at real angles on the glass.
  *
- * @param id     stroke id; taps and circles are understood too
- * @param keyW   key width in points
- * @param keyH   key height in points
- * @param sloppy 0 for the textbook stroke; 1 for a hurried thumb (direction
- *               off by about 9 degrees, lengths varying by a quarter, a
- *               rounded corner, a point of jitter)
- * @param random random source in [0, 1)
+ * @param id      stroke id; taps and circles are understood too
+ * @param keyW    key width in points
+ * @param keyH    key height in points
+ * @param hand    0 for the textbook stroke, or how a thumb departs from it:
+ *                { aim: degrees of direction error (sd), reach: fraction of length error (sd),
+ *                  leg: length of a leg in points, corner: how much the corner is cut (0..1),
+ *                  arc: degrees the path bows, as a thumb pivoting at its base does,
+ *                  jitter: points of sensor noise (sd) }
+ *                A number n is shorthand for a hurried thumb scaled by n.
+ * @param random  random source in [0, 1)
  */
-export function pathFor(id, keyW, keyH, sloppy = 0, random = Math.random) {
+export function pathFor(id, keyW, keyH, hand = 0, random = Math.random) {
   const s = parseStroke(id.replace(/-circle$/, ''));
   const circle = id.endsWith('-circle');
-  // The space bar is read by real angles, so its strokes are drawn square.
-  const aspect = s && s.key === 'SP' ? 1 : keyW / keyH;
   const unit = Math.min(keyW, keyH);
-  const g = () => sloppy ? gauss(random) : 0;
-  const jitter = () => ({ x: g() * sloppy * 1.0, y: g() * sloppy * 1.0 });
+  const h = typeof hand === 'number'
+    ? { aim: 9 * hand, reach: 0.25 * hand, leg: 0, corner: hand ? 0.35 : 0, arc: 0, jitter: hand }
+    : { aim: 0, reach: 0, leg: 0, corner: 0, arc: 0, jitter: 0, ...hand };
+  const noisy = h.aim || h.reach || h.jitter;
+  const g = () => noisy ? gauss(random) : 0;
   const pts = [{ x: 0, y: 0, t: 0 }];
-  const push = (x, y, t) => { const j = jitter(); pts.push({ x: x + j.x, y: y + j.y, t }); };
+  const push = (x, y, t) => pts.push({ x: x + g() * h.jitter, y: y + g() * h.jitter, t });
 
   if (circle) {
-    const r = unit * 0.22, steps = 28;
+    const r = unit * 0.24, steps = 28;
     for (let i = 1; i <= steps; i++) {
       const a = -Math.PI / 2 + (i / steps) * 2 * Math.PI * 0.95;
-      push(r * Math.cos(a) * aspect, r + r * Math.sin(a), i * 9);
+      push(r * Math.cos(a), r + r * Math.sin(a), i * 9);
     }
     return pts;
   }
-  if (!s || !s.dir) { push(g() * sloppy, g() * sloppy, 60); return pts; }
+  if (!s || !s.dir) { push(g() * h.jitter, g() * h.jitter, 60); return pts; }
 
-  // Directions are aimed the way the hints are laid out: a diagonal follows the key's shape.
-  const leg = (dir, length, wobbleDeg) => {
-    const v = DIR_VEC[dir], norm = Math.hypot(v[0], v[1]);
-    const a = Math.atan2(v[1] / norm, v[0] / norm) + wobbleDeg * Math.PI / 180;
-    return { x: Math.cos(a) * length * aspect, y: Math.sin(a) * length };
+  const legLength = h.leg || unit * 0.5;
+  const reach = () => Math.exp(g() * h.reach);
+  const leg = (dir, length, offDeg) => {
+    const v = DIR_VEC[dir];
+    const a = Math.atan2(v[1], v[0]) + offDeg * Math.PI / 180;
+    return { x: Math.cos(a) * length, y: Math.sin(a) * length, a };
   };
-  const lengthNoise = () => Math.exp(g() * 0.25 * sloppy);
-  const first = leg(s.dir, unit * 0.52 * lengthNoise(), g() * 9 * sloppy);
-  const stepsA = 9;
-  for (let i = 1; i <= stepsA; i++) push(first.x * i / stepsA, first.y * i / stepsA, i * 9);
+  // A leg drawn as an arc that bows by `arc` degrees from end to end.
+  const draw = (from, l, t0, steps) => {
+    for (let i = 1; i <= steps; i++) {
+      const k = i / steps;
+      const bow = (h.arc * Math.PI / 180) * (k - 1);           // sets off to one side and curves home onto the target
+      const len = Math.hypot(l.x, l.y) * k;
+      push(from.x + Math.cos(l.a + bow) * len, from.y + Math.sin(l.a + bow) * len, t0 + i * 9);
+    }
+    return { x: from.x + l.x, y: from.y + l.y };
+  };
+  const steps = 9;
+  const first = leg(s.dir, legLength * reach(), g() * h.aim);
+  const corner = draw({ x: 0, y: 0 }, first, 0, steps);
   if (!s.turn) return pts;
 
-  const tA = stepsA * 9;
+  const tA = steps * 9;
   if (s.turn === 'back') {
-    const back = 0.8 * lengthNoise();
-    const drift = g() * 0.12 * sloppy;                      // sideways slip on the way home
-    for (let i = 1; i <= stepsA; i++) {
-      const k = 1 - back * i / stepsA;
-      push(first.x * k - first.y * drift * i / stepsA, first.y * k + first.x * drift * i / stepsA, tA + 20 + i * 9);
+    const home = 0.8 * reach();
+    const slip = g() * h.aim * 0.6 * Math.PI / 180;           // the way back is not quite the way out
+    for (let i = 1; i <= steps; i++) {
+      const k = home * i / steps;
+      push(corner.x - Math.cos(first.a + slip) * Math.hypot(first.x, first.y) * k,
+        corner.y - Math.sin(first.a + slip) * Math.hypot(first.x, first.y) * k, tA + 20 + i * 9);
     }
     return pts;
   }
-  const second = leg(turned(s.dir, s.turn), unit * 0.46 * lengthNoise(), g() * 12 * sloppy);
-  // A hurried corner is cut: blend the end of the first leg into the second.
-  const round = sloppy ? 0.25 + 0.2 * random() : 0;
-  const stepsB = 9;
-  for (let i = 1; i <= stepsB; i++) {
-    const k = i / stepsB;
-    const cut = round * Math.max(0, 1 - k / 0.5);           // fades out over the first half
-    push(first.x * (1 - cut * 0.5) + second.x * k, first.y * (1 - cut * 0.5) + second.y * k, tA + 30 + i * 9);
+  const second = leg(turned(s.dir, s.turn), legLength * 0.9 * reach(), g() * h.aim * 1.3);
+  // A hurried corner is cut: the finger starts turning before the first leg is done.
+  const cut = h.corner ? h.corner * (0.6 + 0.8 * random()) : 0;
+  if (cut) {
+    const keep = Math.max(2, Math.round(steps * (1 - cut * 0.5)));
+    pts.length = 1 + keep;
   }
+  const from = pts.at(-1);
+  draw({ x: from.x, y: from.y }, second, tA + 30, steps);
   return pts;
 }
 

@@ -17,12 +17,13 @@
         <div class="status"><span>9:41</span><span class="right"><span>5G</span><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.5" stroke="currentColor" opacity=".45"/><rect x="2" y="2" width="16" height="8" rx="2" fill="currentColor"/><rect x="23" y="4" width="1.6" height="4" rx=".8" fill="currentColor" opacity=".45"/></svg></span></div>
         <div class="app-bar">
           <div class="who" id="who">Maya</div>
-          <div class="sub" id="whoSub">iMessage</div>
+          <div class="sub" id="whoSub">Messages</div>
           <div class="app-switch" role="group" aria-label="App">
             <button id="ctxMessages" aria-pressed="true">Messages</button>
             <button id="ctxTerminal" aria-pressed="false">Terminal</button>
           </div>
         </div>
+        <div class="lesson-card lesson" id="lessonCard" hidden></div>
         <div class="thread" id="thread"></div>
         <div class="terminal" id="terminal" hidden></div>
         <div class="composer">
@@ -42,9 +43,11 @@
     </div>
   </div>
 
+  <button class="sheet-open" id="sheetOpen">Learn &amp; set up</button>
   <aside class="panel">
+    <button class="sheet-close" id="sheetClose" aria-label="Back to the keyboard">Back to the keyboard</button>
     <h1>Steno mode</h1>
-    <p class="lede">Letters stay where they are. Whole words live in the directions that used to be empty, and a curl at the end of a flick reaches their relatives. Drag on the keyboard with a mouse, or use your thumbs on a phone.</p>
+    <p class="lede">A keyboard of nine keys that writes whole words. The letters are where they always were; the blue words are one flick each, and a curl at the end of a flick reaches more.</p>
     <div class="tabs" role="tablist" id="tabs">
       <button role="tab" data-tab="learn" aria-selected="true">Learn</button>
       <button role="tab" data-tab="lookup" aria-selected="false">Look up</button>

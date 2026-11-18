@@ -4,126 +4,155 @@ export default {
   "movie": {
    "messages": 4000,
    "chars": 196496,
-   "letterWpm": 45.8,
+   "letterStrokesPerWord": 5.22,
+   "letterWpm": {
+    "model": 45.8,
+    "cautious": 43.5,
+    "pessimistic": 43.5
+   },
    "stages": [
     {
-     "stage": "letters only (day one)",
-     "gesturesPerWord": 5.09,
-     "saving": 2.6,
-     "wpm": 46.6,
-     "wpmSlow": 46.6,
-     "wpmRecall": 46.6,
+     "stage": "letters only",
+     "strokesPerWord": 5.08,
+     "saving": 2.7,
+     "wpm": {
+      "model": 46.6,
+      "cautious": 44.4,
+      "pessimistic": 44.4
+     },
      "share": {
       "flick": 0,
       "hook": 0,
+      "phrase": 0,
       "ending": 0,
-      "brief": 0,
+      "completion": 0,
       "spell": 100
      }
     },
     {
      "stage": "12 word flicks",
-     "gesturesPerWord": 4.48,
-     "saving": 14.2,
-     "wpm": 52.5,
-     "wpmSlow": 52.5,
-     "wpmRecall": 50.1,
+     "strokesPerWord": 4.47,
+     "saving": 14.4,
+     "wpm": {
+      "model": 52.5,
+      "cautious": 48.7,
+      "pessimistic": 47.3
+     },
      "share": {
-      "flick": 18.6,
+      "flick": 22.5,
       "hook": 0,
+      "phrase": 0,
       "ending": 0,
-      "brief": 0,
-      "spell": 81.4
+      "completion": 0,
+      "spell": 77.5
      }
     },
     {
      "stage": "24 word flicks",
-     "gesturesPerWord": 4.24,
-     "saving": 18.7,
-     "wpm": 55.3,
-     "wpmSlow": 55.3,
-     "wpmRecall": 51.7,
+     "strokesPerWord": 4.18,
+     "saving": 19.9,
+     "wpm": {
+      "model": 55.9,
+      "cautious": 51.2,
+      "pessimistic": 49.1
+     },
      "share": {
-      "flick": 25.8,
+      "flick": 30.6,
       "hook": 0,
+      "phrase": 0,
       "ending": 0,
-      "brief": 0,
-      "spell": 74.2
+      "completion": 0,
+      "spell": 69.4
      }
     },
     {
      "stage": "all 48 word flicks",
-     "gesturesPerWord": 3.95,
-     "saving": 24.2,
-     "wpm": 59,
-     "wpmSlow": 59,
-     "wpmRecall": 53.9,
+     "strokesPerWord": 3.9,
+     "saving": 25.2,
+     "wpm": {
+      "model": 59.6,
+      "cautious": 53.9,
+      "pessimistic": 51.1
+     },
      "share": {
-      "flick": 33.3,
+      "flick": 38.3,
       "hook": 0,
+      "phrase": 0,
       "ending": 0,
-      "brief": 0,
-      "spell": 66.7
+      "completion": 0,
+      "spell": 61.7
      }
     },
     {
-     "stage": "+ endings",
-     "gesturesPerWord": 3.87,
-     "saving": 25.9,
-     "wpm": 60.3,
-     "wpmSlow": 60.3,
-     "wpmRecall": 54.3,
+     "stage": "and the five endings",
+     "strokesPerWord": 3.84,
+     "saving": 26.4,
+     "wpm": {
+      "model": 60.5,
+      "cautious": 54.4,
+      "pessimistic": 51.1
+     },
      "share": {
-      "flick": 33.3,
+      "flick": 38.3,
       "hook": 0,
-      "ending": 4.4,
-      "brief": 0,
-      "spell": 62.3
+      "phrase": 0,
+      "ending": 4.5,
+      "completion": 0,
+      "spell": 57.3
      }
     },
     {
-     "stage": "+ 40 hooks",
-     "gesturesPerWord": 3.45,
-     "saving": 33.9,
-     "wpm": 63.9,
-     "wpmSlow": 62.4,
-     "wpmRecall": 54.4,
+     "stage": "and 40 hooks",
+     "strokesPerWord": 3.37,
+     "saving": 35.3,
+     "wpm": {
+      "model": 64.4,
+      "cautious": 54.9,
+      "pessimistic": 50.3
+     },
      "share": {
-      "flick": 33.3,
-      "hook": 10.9,
-      "ending": 4.8,
-      "brief": 0,
-      "spell": 51
+      "flick": 37.9,
+      "hook": 11.9,
+      "phrase": 0.6,
+      "ending": 5.7,
+      "completion": 0,
+      "spell": 43.8
      }
     },
     {
-     "stage": "+ all hooks",
-     "gesturesPerWord": 3.02,
-     "saving": 42.1,
-     "wpm": 69.1,
-     "wpmSlow": 66.1,
-     "wpmRecall": 55.9,
+     "stage": "and every hook",
+     "strokesPerWord": 2.93,
+     "saving": 43.9,
+     "wpm": {
+      "model": 69.7,
+      "cautious": 56.9,
+      "pessimistic": 51.1
+     },
      "share": {
-      "flick": 33.3,
-      "hook": 19.2,
-      "ending": 5.3,
-      "brief": 0,
-      "spell": 42.3
+      "flick": 37.7,
+      "hook": 20.7,
+      "phrase": 1.1,
+      "ending": 6.3,
+      "completion": 0,
+      "spell": 34.1
      }
     },
     {
-     "stage": "+ spelled briefs (everything)",
-     "gesturesPerWord": 2.73,
-     "saving": 47.6,
-     "wpm": 75.3,
-     "wpmSlow": 71.7,
-     "wpmRecall": 57.7,
+     "stage": "and completions",
+     "strokesPerWord": 2.9,
+     "saving": 44.5,
+     "wpm": {
+      "model": 70.4,
+      "cautious": 57.2,
+      "pessimistic": 51.2
+     },
      "share": {
-      "flick": 33.3,
-      "hook": 19.2,
-      "ending": 6.7,
-      "brief": 11.4,
-      "spell": 29.5
+      "flick": 37.7,
+      "hook": 20.7,
+      "phrase": 1.1,
+      "ending": 6.4,
+      "completion": 1.1,
+      "spell": 32.9
      }
     }
    ]
@@ -131,126 +160,155 @@ export default {
   "daily": {
    "messages": 4000,
    "chars": 222104,
-   "letterWpm": 45.8,
+   "letterStrokesPerWord": 5.14,
+   "letterWpm": {
+    "model": 45.8,
+    "cautious": 43.5,
+    "pessimistic": 43.5
+   },
    "stages": [
     {
-     "stage": "letters only (day one)",
-     "gesturesPerWord": 5.04,
+     "stage": "letters only",
+     "strokesPerWord": 5.04,
      "saving": 1.9,
-     "wpm": 46.3,
-     "wpmSlow": 46.3,
-     "wpmRecall": 46.3,
+     "wpm": {
+      "model": 46.4,
+      "cautious": 44.1,
+      "pessimistic": 44.1
+     },
      "share": {
       "flick": 0,
       "hook": 0,
+      "phrase": 0,
       "ending": 0,
-      "brief": 0,
+      "completion": 0,
       "spell": 100
      }
     },
     {
      "stage": "12 word flicks",
-     "gesturesPerWord": 4.39,
-     "saving": 14.6,
-     "wpm": 52.9,
-     "wpmSlow": 52.9,
-     "wpmRecall": 50.3,
+     "strokesPerWord": 4.39,
+     "saving": 14.7,
+     "wpm": {
+      "model": 52.8,
+      "cautious": 48.8,
+      "pessimistic": 47.3
+     },
      "share": {
-      "flick": 19.8,
+      "flick": 23.8,
       "hook": 0,
+      "phrase": 0,
       "ending": 0,
-      "brief": 0,
-      "spell": 80.2
+      "completion": 0,
+      "spell": 76.2
      }
     },
     {
      "stage": "24 word flicks",
-     "gesturesPerWord": 4.15,
-     "saving": 19.2,
-     "wpm": 55.7,
-     "wpmSlow": 55.7,
-     "wpmRecall": 51.9,
+     "strokesPerWord": 4.1,
+     "saving": 20.3,
+     "wpm": {
+      "model": 56.3,
+      "cautious": 51.4,
+      "pessimistic": 49.2
+     },
      "share": {
-      "flick": 26.8,
+      "flick": 32,
       "hook": 0,
+      "phrase": 0,
       "ending": 0,
-      "brief": 0,
-      "spell": 73.2
+      "completion": 0,
+      "spell": 68
      }
     },
     {
      "stage": "all 48 word flicks",
-     "gesturesPerWord": 3.84,
-     "saving": 25.3,
-     "wpm": 60,
-     "wpmSlow": 60,
-     "wpmRecall": 54.5,
+     "strokesPerWord": 3.81,
+     "saving": 25.9,
+     "wpm": {
+      "model": 60.3,
+      "cautious": 54.4,
+      "pessimistic": 51.3
+     },
      "share": {
-      "flick": 34.6,
+      "flick": 39.8,
       "hook": 0,
+      "phrase": 0,
       "ending": 0,
-      "brief": 0,
-      "spell": 65.4
+      "completion": 0,
+      "spell": 60.2
      }
     },
     {
-     "stage": "+ endings",
-     "gesturesPerWord": 3.74,
+     "stage": "and the five endings",
+     "strokesPerWord": 3.74,
      "saving": 27.2,
-     "wpm": 61.4,
-     "wpmSlow": 61.4,
-     "wpmRecall": 55,
+     "wpm": {
+      "model": 61.3,
+      "cautious": 54.8,
+      "pessimistic": 51.3
+     },
      "share": {
-      "flick": 34.6,
+      "flick": 39.8,
       "hook": 0,
-      "ending": 4.7,
-      "brief": 0,
-      "spell": 60.7
+      "phrase": 0,
+      "ending": 4.8,
+      "completion": 0,
+      "spell": 55.4
      }
     },
     {
-     "stage": "+ 40 hooks",
-     "gesturesPerWord": 3.34,
-     "saving": 35,
-     "wpm": 65,
-     "wpmSlow": 63.5,
-     "wpmRecall": 54.9,
+     "stage": "and 40 hooks",
+     "strokesPerWord": 3.28,
+     "saving": 36.1,
+     "wpm": {
+      "model": 65.2,
+      "cautious": 55.2,
+      "pessimistic": 50.4
+     },
      "share": {
-      "flick": 34.6,
-      "hook": 10.8,
-      "ending": 5.1,
-      "brief": 0,
-      "spell": 49.6
+      "flick": 39.6,
+      "hook": 12.4,
+      "phrase": 0.5,
+      "ending": 5.7,
+      "completion": 0,
+      "spell": 41.8
      }
     },
     {
-     "stage": "+ all hooks",
-     "gesturesPerWord": 2.87,
-     "saving": 44.1,
-     "wpm": 71.1,
-     "wpmSlow": 67.7,
-     "wpmRecall": 56.5,
+     "stage": "and every hook",
+     "strokesPerWord": 2.79,
+     "saving": 45.7,
+     "wpm": {
+      "model": 71.5,
+      "cautious": 57.5,
+      "pessimistic": 51.3
+     },
      "share": {
-      "flick": 34.6,
-      "hook": 19.9,
-      "ending": 5.5,
-      "brief": 0,
-      "spell": 39.9
+      "flick": 39.2,
+      "hook": 22,
+      "phrase": 1.3,
+      "ending": 6.4,
+      "completion": 0,
+      "spell": 31.1
      }
     },
     {
-     "stage": "+ spelled briefs (everything)",
-     "gesturesPerWord": 2.51,
-     "saving": 51.2,
-     "wpm": 79.9,
-     "wpmSlow": 75.6,
-     "wpmRecall": 59.3,
+     "stage": "and completions",
+     "strokesPerWord": 2.75,
+     "saving": 46.6,
+     "wpm": {
+      "model": 72.4,
+      "cautious": 58,
+      "pessimistic": 51.6
+     },
      "share": {
-      "flick": 34.6,
-      "hook": 19.9,
-      "ending": 7.3,
-      "brief": 13.1,
-      "spell": 25.1
+      "flick": 39.2,
+      "hook": 22,
+      "phrase": 1.3,
+      "ending": 6.6,
+      "completion": 1.5,
+      "spell": 29.5
      }
     }
    ]
@@ -258,158 +316,352 @@ export default {
   "sms": {
    "messages": 4000,
    "chars": 193032,
-   "letterWpm": 45.8,
+   "letterStrokesPerWord": 4.99,
+   "letterWpm": {
+    "model": 45.8,
+    "cautious": 43.5,
+    "pessimistic": 43.5
+   },
    "stages": [
     {
-     "stage": "letters only (day one)",
-     "gesturesPerWord": 5,
-     "saving": -0.3,
-     "wpm": 44.6,
-     "wpmSlow": 44.6,
-     "wpmRecall": 44.6,
+     "stage": "letters only",
+     "strokesPerWord": 4.96,
+     "saving": 0.5,
+     "wpm": {
+      "model": 44.8,
+      "cautious": 42.7,
+      "pessimistic": 42.7
+     },
      "share": {
       "flick": 0,
       "hook": 0,
+      "phrase": 0,
       "ending": 0,
-      "brief": 0,
+      "completion": 0,
       "spell": 100
      }
     },
     {
      "stage": "12 word flicks",
-     "gesturesPerWord": 4.64,
-     "saving": 6.9,
-     "wpm": 47.8,
-     "wpmSlow": 47.8,
-     "wpmRecall": 46.5,
+     "strokesPerWord": 4.58,
+     "saving": 8.2,
+     "wpm": {
+      "model": 48.3,
+      "cautious": 45.2,
+      "pessimistic": 44.4
+     },
      "share": {
-      "flick": 11.1,
+      "flick": 14.4,
       "hook": 0,
+      "phrase": 0,
       "ending": 0,
-      "brief": 0,
-      "spell": 88.9
+      "completion": 0,
+      "spell": 85.6
      }
     },
     {
      "stage": "24 word flicks",
-     "gesturesPerWord": 4.48,
-     "saving": 10.2,
-     "wpm": 49.4,
-     "wpmSlow": 49.4,
-     "wpmRecall": 47.5,
+     "strokesPerWord": 4.4,
+     "saving": 11.8,
+     "wpm": {
+      "model": 50.1,
+      "cautious": 46.5,
+      "pessimistic": 45.4
+     },
      "share": {
-      "flick": 16.3,
+      "flick": 19.8,
       "hook": 0,
+      "phrase": 0,
       "ending": 0,
-      "brief": 0,
-      "spell": 83.7
+      "completion": 0,
+      "spell": 80.2
      }
     },
     {
      "stage": "all 48 word flicks",
-     "gesturesPerWord": 4.29,
-     "saving": 14,
-     "wpm": 51.4,
-     "wpmSlow": 51.4,
-     "wpmRecall": 48.8,
+     "strokesPerWord": 4.21,
+     "saving": 15.5,
+     "wpm": {
+      "model": 52.1,
+      "cautious": 48.1,
+      "pessimistic": 46.5
+     },
      "share": {
-      "flick": 21.1,
+      "flick": 24.7,
       "hook": 0,
+      "phrase": 0,
       "ending": 0,
-      "brief": 0,
-      "spell": 78.9
+      "completion": 0,
+      "spell": 75.3
      }
     },
     {
-     "stage": "+ endings",
-     "gesturesPerWord": 4.2,
-     "saving": 15.8,
-     "wpm": 52.4,
-     "wpmSlow": 52.4,
-     "wpmRecall": 49.2,
+     "stage": "and the five endings",
+     "strokesPerWord": 4.16,
+     "saving": 16.5,
+     "wpm": {
+      "model": 52.7,
+      "cautious": 48.4,
+      "pessimistic": 46.6
+     },
      "share": {
-      "flick": 21.1,
+      "flick": 24.7,
       "hook": 0,
-      "ending": 4.2,
-      "brief": 0,
-      "spell": 74.7
+      "phrase": 0,
+      "ending": 3.4,
+      "completion": 0,
+      "spell": 71.8
      }
     },
     {
-     "stage": "+ 40 hooks",
-     "gesturesPerWord": 3.87,
-     "saving": 22.3,
-     "wpm": 54.7,
-     "wpmSlow": 53.8,
-     "wpmRecall": 49.3,
+     "stage": "and 40 hooks",
+     "strokesPerWord": 3.84,
+     "saving": 23,
+     "wpm": {
+      "model": 54.8,
+      "cautious": 48.8,
+      "pessimistic": 46.2
+     },
      "share": {
-      "flick": 21.1,
-      "hook": 8.1,
-      "ending": 4.6,
-      "brief": 0,
-      "spell": 66.2
+      "flick": 24.7,
+      "hook": 8.5,
+      "phrase": 0.1,
+      "ending": 3.9,
+      "completion": 0,
+      "spell": 62.8
      }
     },
     {
-     "stage": "+ all hooks",
-     "gesturesPerWord": 3.48,
-     "saving": 30.2,
-     "wpm": 58.3,
-     "wpmSlow": 56.3,
-     "wpmRecall": 50.3,
+     "stage": "and every hook",
+     "strokesPerWord": 3.39,
+     "saving": 32,
+     "wpm": {
+      "model": 58.8,
+      "cautious": 50.4,
+      "pessimistic": 46.9
+     },
      "share": {
-      "flick": 21.1,
-      "hook": 16.1,
-      "ending": 4.9,
-      "brief": 0,
-      "spell": 57.9
+      "flick": 24.6,
+      "hook": 17.7,
+      "phrase": 0.3,
+      "ending": 4.4,
+      "completion": 0,
+      "spell": 53
      }
     },
     {
-     "stage": "+ spelled briefs (everything)",
-     "gesturesPerWord": 3.26,
-     "saving": 34.7,
-     "wpm": 61.8,
-     "wpmSlow": 59.6,
-     "wpmRecall": 51.5,
+     "stage": "and completions",
+     "strokesPerWord": 3.37,
+     "saving": 32.4,
+     "wpm": {
+      "model": 59.1,
+      "cautious": 50.6,
+      "pessimistic": 47
+     },
      "share": {
-      "flick": 21.1,
-      "hook": 16.1,
-      "ending": 6,
-      "brief": 9.7,
-      "spell": 47.1
+      "flick": 24.6,
+      "hook": 17.7,
+      "phrase": 0.3,
+      "ending": 4.5,
+      "completion": 0.7,
+      "spell": 52.3
      }
     }
    ]
   }
  },
  "robustness": {
-  "1": {
-   "accuracy": 97.57,
-   "shapes": {
-    "flick": 98.6,
-    "cw": 97.1,
-    "ccw": 96.8,
-    "back": 97.8
-   }
+  "key": {
+   "w": 94,
+   "h": 70,
+   "mm": [
+    14.647852760736196,
+    10.9079754601227
+   ]
   },
-  "0.5": {
-   "accuracy": 100,
-   "shapes": {
+  "grid": [
+   {
+    "leg": 3.5,
+    "aim": 6,
+    "arc": 0,
+    "all": 87.3,
+    "flick": 99.5,
+    "right": 80,
+    "left": 78.3,
+    "back": 91.3,
+    "curlToFlick": 20.3,
+    "ending": 99,
+    "endingAsCaret": 0
+   },
+   {
+    "leg": 3.5,
+    "aim": 9,
+    "arc": 0,
+    "all": 84.2,
+    "flick": 97.3,
+    "right": 72,
+    "left": 75,
+    "back": 92.5,
+    "curlToFlick": 24.4,
+    "ending": 95.8,
+    "endingAsCaret": 1.2
+   },
+   {
+    "leg": 3.5,
+    "aim": 12,
+    "arc": 0,
+    "all": 80.4,
+    "flick": 91.8,
+    "right": 71.5,
+    "left": 70.5,
+    "back": 88,
+    "curlToFlick": 21.6,
+    "ending": 88.2,
+    "endingAsCaret": 4.2
+   },
+   {
+    "leg": 4.5,
+    "aim": 6,
+    "arc": 0,
+    "all": 98.8,
     "flick": 100,
-    "cw": 100,
-    "ccw": 100,
-    "back": 100
+    "right": 99,
+    "left": 97.5,
+    "back": 98.8,
+    "curlToFlick": 1.1,
+    "ending": 99.8,
+    "endingAsCaret": 0
+   },
+   {
+    "leg": 4.5,
+    "aim": 9,
+    "arc": 0,
+    "all": 95.7,
+    "flick": 98,
+    "right": 92.8,
+    "left": 93.5,
+    "back": 98.5,
+    "curlToFlick": 4.1,
+    "ending": 93.6,
+    "endingAsCaret": 2
+   },
+   {
+    "leg": 4.5,
+    "aim": 12,
+    "arc": 0,
+    "all": 91.3,
+    "flick": 94.5,
+    "right": 86.8,
+    "left": 89.5,
+    "back": 94.3,
+    "curlToFlick": 5.3,
+    "ending": 90.2,
+    "endingAsCaret": 4.4
+   },
+   {
+    "leg": 6,
+    "aim": 6,
+    "arc": 0,
+    "all": 99.8,
+    "flick": 100,
+    "right": 99.5,
+    "left": 99.8,
+    "back": 100,
+    "curlToFlick": 0.1,
+    "ending": 99.6,
+    "endingAsCaret": 0.2
+   },
+   {
+    "leg": 6,
+    "aim": 9,
+    "arc": 0,
+    "all": 97.9,
+    "flick": 98.5,
+    "right": 96.5,
+    "left": 97.5,
+    "back": 99.3,
+    "curlToFlick": 0.6,
+    "ending": 97.6,
+    "endingAsCaret": 0.4
+   },
+   {
+    "leg": 6,
+    "aim": 12,
+    "arc": 0,
+    "all": 90.6,
+    "flick": 93,
+    "right": 89.5,
+    "left": 88.5,
+    "back": 91.3,
+    "curlToFlick": 3.6,
+    "ending": 88.2,
+    "endingAsCaret": 3.4
+   },
+   {
+    "leg": 8,
+    "aim": 6,
+    "arc": 0,
+    "all": 99.9,
+    "flick": 100,
+    "right": 99.8,
+    "left": 100,
+    "back": 100,
+    "curlToFlick": 0,
+    "ending": 100,
+    "endingAsCaret": 0
+   },
+   {
+    "leg": 8,
+    "aim": 9,
+    "arc": 0,
+    "all": 98.3,
+    "flick": 98.8,
+    "right": 96.5,
+    "left": 98.3,
+    "back": 99.5,
+    "curlToFlick": 0.9,
+    "ending": 97.8,
+    "endingAsCaret": 0.4
+   },
+   {
+    "leg": 8,
+    "aim": 12,
+    "arc": 0,
+    "all": 90.8,
+    "flick": 93.5,
+    "right": 90,
+    "left": 86.3,
+    "back": 93.5,
+    "curlToFlick": 2.1,
+    "ending": 91,
+    "endingAsCaret": 2.6
+   },
+   {
+    "leg": 4.5,
+    "aim": 9,
+    "arc": -25,
+    "all": 94.6,
+    "flick": 98.3,
+    "right": 88,
+    "left": 93,
+    "back": 99,
+    "curlToFlick": 3.3,
+    "ending": 97,
+    "endingAsCaret": 1.2
+   },
+   {
+    "leg": 4.5,
+    "aim": 9,
+    "arc": 25,
+    "all": 95,
+    "flick": 99.5,
+    "right": 92.5,
+    "left": 91.3,
+    "back": 96.8,
+    "curlToFlick": 2.9,
+    "ending": 95.4,
+    "endingAsCaret": 1
    }
-  },
-  "1.5": {
-   "accuracy": 81.73,
-   "shapes": {
-    "flick": 89.9,
-    "cw": 76.6,
-    "ccw": 77.3,
-    "back": 83.2
-   }
-  }
+  ]
  }
 };

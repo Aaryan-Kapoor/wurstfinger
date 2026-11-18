@@ -2,132 +2,180 @@
 // In the app these are settings screens; here they sit beside the phone.
 
 import results from '../eval.generated.js';
-import { KEYS, DIRS, DIR_ARROW, strokeId, isStrokeId, LETTER_SLOTS } from '../layout.js';
-import { labelOf } from '../packs.js';
-import { glyph, describe, letterStroke } from './glyph.js';
+import { KEYS, DIRS, DIR_ARROW, strokeId } from '../layout.js';
+import { labelOf, isStrokeOutline, validateEntry } from '../packs.js';
+import { glyph, describe } from './glyph.js';
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const PLAY = '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 2.5v11l9-5.5z"/></svg>';
 
 const LESSONS = [
-  { id: 'flicks', title: '1 · Words on a flick', blurb: 'Every word here is one flick, on the key of its first letter. “I” is just the letter.', text: 'I think you are right about that.' },
-  { id: 'flicks2', title: '2 · More flicks', blurb: 'Nothing but flicks again. Notice you never touch the space bar.', text: 'What is it like in here?' },
-  { id: 'hooks', title: '3 · Curl for a relative', blurb: 'Flick, then turn a corner. “that” curled right is “that’s”; “to” has today, tonight and tomorrow.', text: "Thanks, that's good. See you tomorrow." },
-  { id: 'endings', title: '4 · Finish a word on the space bar', blurb: 'Flick the space bar instead of tapping it: up for -s, up-right for -ing, up-left for the past.', text: 'He wants to keep working on it.' },
-  { id: 'spell', title: '5 · Spell the rest, and stop early', blurb: 'Anything else you spell as always. When the ribbon shows the whole word, you can stop: the next stroke finishes it.', text: 'Probably because everything is different.' },
-  { id: 'shell', title: '6 · A shell, with its own dictionary', context: 'terminal', blurb: 'In a field that wants no capitals the Shell dictionary takes over: gc is a commit with the caret inside the quotes.', strokes: ['O-sw', 'O-w', 'SP', 'S-nw', 'I', 'I-sw', 'SP', 'T', 'T-ne', 'O-ne', 'O'], expect: 'git commit -m "fix typo"' },
+  { id: 'flicks', title: 'Words on a flick', blurb: 'Every word here is one flick from the key of its first letter. You never touch the space bar.', text: 'I think you are right about that.' },
+  { id: 'flicks2', title: 'More flicks', blurb: 'Seven strokes for twenty-four characters.', text: 'What is it like in here?' },
+  { id: 'hooks', title: 'Curl for another word', blurb: 'Flick, then turn a corner without lifting. “that” curled right is “that’s”; “to” curled right is “tomorrow”.', text: "Thanks, that's good. See you tomorrow." },
+  { id: 'endings', title: 'End a word on the space bar', blurb: 'Flick the space bar up for -s, up-right for -ing, up-left for the past. It works on any word, stroked or spelled.', text: 'He wants to keep working on it.' },
+  { id: 'spell', title: 'Spell the rest, take the offer', blurb: 'Any other word you spell. When the grey letters show the whole word, pull the space bar down and it is finished.', text: 'We stopped at the restaurant together.' },
+  { id: 'shell', title: 'A terminal, with its own dictionaries', context: 'terminal', blurb: 'No English here: every character is exact. g, c and a pull on the space bar is a commit with the caret inside the quotes.', strokes: ['O-sw', 'O-w', 'SP-s', 'S-nw', 'I', 'I-sw', 'SP', 'T', 'T-ne', 'O-ne', 'O'], expect: 'git commit -m "fix typo"' },
 ];
 
 export function mountPanel(api) {
-  const { engine, kb, packs, theory, settings } = api;
+  const { engine, kb, packs, stacks, theory, settings, state } = api;
   const $ = id => document.getElementById(id);
 
   // ------------------------------------------------------------------ tabs
-  $('tabs').addEventListener('click', e => {
-    const b = e.target.closest('button'); if (!b) return;
-    for (const t of $('tabs').children) t.setAttribute('aria-selected', t === b);
-    for (const name of ['learn', 'lookup', 'packs', 'numbers', 'settings']) $('pane-' + name).hidden = name !== b.dataset.tab;
-    if (b.dataset.tab === 'packs') renderPacks();
-    if (b.dataset.tab === 'lookup') renderKeyMap();
-  });
+  const TABS = ['learn', 'lookup', 'packs', 'numbers', 'settings'];
+  function openTab(name) {
+    for (const t of $('tabs').children) t.setAttribute('aria-selected', t.dataset.tab === name);
+    for (const n of TABS) $('pane-' + n).hidden = n !== name;
+    if (name === 'packs') renderPacks();
+    if (name === 'lookup') { lookup(); renderKeyMap(); }
+  }
+  $('tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) openTab(b.dataset.tab); });
+  // On a phone the panel is a sheet over the keyboard.
+  $('sheetOpen').addEventListener('click', () => document.body.classList.add('sheet'));
+  $('sheetClose').addEventListener('click', () => document.body.classList.remove('sheet'));
 
-  // ----------------------------------------------------------------- learn
-  let active = null;                    // the lesson being tried
+  // --------------------------------------------------------------- lessons
+  let active = null;
 
-  const lessonScript = l => l.strokes ? l.strokes.map(id => ({ id })) : api.scriptFor(l.text, 'all');
+  const lessonStrokes = l => l.strokes ? l.strokes.map(id => ({ id })) : (api.scriptFor(l.text, 'all') || []);
 
-  /** The lesson's words with the strokes that write them underneath. */
+  /** The lesson's words, each with the strokes that write it. */
   function lessonWords(l) {
     if (l.strokes) return [{ text: l.expect, parts: l.strokes.map(id => ({ stroke: id })) }];
-    const out = [];
-    let script = api.scriptFor(l.text, 'all') || [];
+    const script = api.scriptFor(l.text, 'all') || [];
     const tokens = l.text.match(/[A-Za-z]+(?:'[A-Za-z]+)*|[^\sA-Za-z]/g) || [];
+    const out = [];
     let i = 0;
     for (const tok of tokens) {
-      if (!/^[A-Za-z]/.test(tok)) { out.push({ text: tok, punct: true, parts: [] }); while (script[i] && script[i].kind === 'mark') { i++; break; } continue; }
       const parts = [];
-      while (script[i] && (script[i].kind === 'space' || script[i].kind === 'shift')) i++;
       let letters = '';
-      while (script[i] && script[i].word === tok) {
-        const s = script[i++];
-        if (['flick', 'hook', 'ending'].includes(s.kind)) { if (letters) { parts.push({ letters }); letters = ''; } parts.push({ stroke: s.id }); }
-        else letters += labelOf(engine.lookup(s.id));
+      const flush = () => { if (letters) { parts.push({ letters }); letters = ''; } };
+      if (!/^[A-Za-z]/.test(tok)) {
+        if (script[i]?.kind === 'mark') { parts.push({ stroke: script[i].id }); i++; }
+        out.push({ text: tok, punct: true, parts });
+        continue;
       }
-      if (letters) parts.push({ letters });
-      out.push({ text: tok, parts });
+      while (script[i] && (script[i].kind === 'space' || script[i].kind === 'shift')) { if (script[i].kind === 'space') parts.push({ stroke: script[i].id }); i++; }
+      while (script[i] && script[i].word && script[i].word.split(' ')[0] === tok) {
+        const s = script[i++];
+        if (['spell', 'completion'].includes(s.kind)) letters += labelOf(engine.lookup(s.id));
+        else { flush(); parts.push({ stroke: s.id }); }
+        if (s.kind === 'phrase') { out.push({ text: s.word, parts }); break; }
+      }
+      flush();
+      if (!out.length || out.at(-1).parts !== parts) out.push({ text: tok, parts });
     }
-    return out;
+    // A phrase stroke covers the words after it too.
+    return out.filter((w, k) => !(k > 0 && out[k - 1].text.includes(' ') && out[k - 1].text.split(' ').slice(1).includes(w.text) && !w.parts.length));
   }
+
+  const wordsHtml = (l, size) => lessonWords(l).map((w, i) => `<span class="w${w.punct ? ' punct' : ''}" data-i="${i}"><span class="t">${esc(w.text)}</span><span class="strokes">${api.partsHtml(w.parts, size)}</span></span>`).join('');
 
   function renderLearn() {
     const rules = [
-      { ids: ['T-n'], title: 'A flick is a word', text: 'Letters and the six everyday marks keep their directions. Every other direction on a key now types <b>a word that starts with one of that key’s letters</b>, with its space.' },
-      { ids: ['T-n-back'], title: 'A curl is its relative', text: 'Finish the flick with a corner: <b>right</b> for is/are/am, <b>left</b> for not/will, <b>back</b> for have, then the words that begin the same way.' },
-      { ids: ['SP-ne'], title: 'The space bar ends a word', text: 'Tap it for a space when you need one. Flick it to end the word with <b>-s, -ing, -ed, -ly, -er or ’s</b>; the spelling follows.' },
-      { ids: ['T', 'O', 'R-w', 'O'], title: 'Everything else is spelled', text: 'Letters still work, so no word is ever out of reach. Common long words finish themselves after a few letters, and <b>one undo takes back a whole stroke</b>.' },
+      { demo: ['T-n'], glyphs: ['T-n'], title: 'A flick is a word', text: 'Letters are where they always were: tap a key for its big letter, flick toward a small one for that. The blue words work the same way: <b>flick toward one and it is typed, with its space</b>. Each sits on the key of its first letter.' },
+      { demo: ['T-n-ccw'], glyphs: ['T-n-ccw'], title: 'A curl is another word from that key', text: 'Finish a flick with a corner, without lifting, for a second word: the flicked word’s contraction (<b>right is ’s / ’re / ’m, left is n’t / ’ll, back is ’ve</b>), a word that begins with it, or another word with the same first letter.' },
+      { demo: ['T-nw', 'SP-ne'], glyphs: ['SP-ne'], title: 'The space bar ends a word', text: 'Flick it instead of tapping it: <b>-s, -ing, -ed</b> along the top, <b>n’t</b> and <b>’s</b> below, on any word, with the spelling English uses. Tapping it is always safe: a word already has its space.' },
+      { demo: ['R', 'E', 'S', 'T', 'A', 'O-n', 'SP-s'], glyphs: ['SP-s'], title: 'Spell anything; take an offer if you like', text: 'No word is out of reach, because letters never stop working. When what you have spelled can only be one word, the rest appears in grey: <b>pull the space bar down</b> to take it. Nothing is ever changed for you.' },
+      { demo: ['T-n-cw', 'UT-e'], glyphs: ['UT'], corner: true, title: 'One key undoes, sends and fixes', text: 'The corner key: <b>tap to take back a whole stroke</b>, flick right to turn a misread curl into its neighbour, flick up to send, hold and drag left to delete letter by letter.' },
     ];
-    const pane = $('pane-learn');
-    pane.innerHTML = `<h2>Four rules</h2>` + rules.map((r, i) => `
+    $('pane-learn').innerHTML = `
+      <h2>How it works</h2>` + rules.map((r, i) => `
       <div class="card rule">
-        <button class="demo" data-rule="${i}" title="Show me">${glyph(r.ids[0], 44)}</button>
+        <button class="demo" data-rule="${i}" title="Show me on the keyboard">${r.corner ? '<span class="corner-demo">⌫</span>' : glyph(r.glyphs[0], 46)}</button>
         <div><h3>${r.title}</h3><p>${r.text}</p></div>
-      </div>`).join('')
-      + `<h2>Try it</h2>` + LESSONS.map(l => `
+      </div>`).join('') + `
+      <h2>Try it</h2>
+      <p>Watch a sentence being written, then write it yourself. Drag with a mouse, or use a thumb on a phone.</p>` + LESSONS.map((l, i) => `
       <div class="card lesson" data-lesson="${l.id}">
-        <h3>${esc(l.title)}</h3>
+        <h3><span class="num">${i + 1}</span>${esc(l.title)}</h3>
         <p>${esc(l.blurb)}</p>
-        <div class="target">${lessonWords(l).map((w, i) => `<span class="w${w.punct ? ' punct' : ''}" data-i="${i}"><span>${esc(w.text)}</span><span class="strokes">${api.partsHtml(w.parts, 40)}</span></span>`).join('')}</div>
+        <div class="target">${wordsHtml(l, 36)}</div>
         <div class="row"><button class="btn" data-watch="${l.id}">${PLAY} Watch</button><button class="btn quiet" data-try="${l.id}">Try it yourself</button><span class="meta" data-meta="${l.id}"></span></div>
-      </div>`).join('')
-      + `<p class="note">The words under each key and every stroke above were assigned by a program from 4.3 million words of conversation and real text messages. “Numbers” has the method and what it buys.</p>`;
+      </div>`).join('') + `
+      <p class="note">Every word and stroke here was assigned by a program from ${(Object.values(theory.meta.corpora).reduce((s, c) => s + c.trainingTokens, 0) / 1e6).toFixed(1)} million words of conversation and real text messages. “Numbers” has the method and what it buys.</p>`;
     for (const l of LESSONS) {
-      const n = (lessonScript(l) || []).length, letters = (l.expect || l.text).length;
-      pane.querySelector(`[data-meta="${l.id}"]`).textContent = `${n} strokes · ${letters} letter by letter`;
+      const n = lessonStrokes(l).length, letters = (l.expect || l.text).length;
+      $('pane-learn').querySelector(`[data-meta="${l.id}"]`).textContent = `${n} strokes, ${letters} letter by letter`;
     }
+    $('pane-learn').dataset.demos = JSON.stringify(rules.map(r => r.demo));
   }
 
   $('pane-learn').addEventListener('click', async e => {
     const rule = e.target.closest('[data-rule]');
     if (rule) {
-      const demos = [['T-n'], ['T-n-back'], ['T-nw', 'SP-ne'], ['T', 'O', 'R-w', 'O']];
-      api.setContextIfNeeded('messages');
-      api.playStrokes(demos[+rule.dataset.rule], { dry: true, speed: 0.4, hold: 520, gap: 420 });
+      const demo = JSON.parse($('pane-learn').dataset.demos)[+rule.dataset.rule];
+      if (state.context !== 'messages') api.setContext('messages');
+      document.body.classList.remove('sheet');
+      endLesson();
+      engine.reset('');
+      // The corner key's demo types a word and then changes it.
+      if (demo.includes('UT-e')) { await api.playStrokes(['T-n-cw'], { teach: true, speed: 0.45 }); await api.playStrokes(['UT-e'], { teach: true, speed: 0.45 }); return; }
+      await api.playStrokes(demo, { teach: true, speed: 0.45, gap: 380 });
       return;
     }
     const watch = e.target.closest('[data-watch]'), tryIt = e.target.closest('[data-try]');
-    const id = (watch || tryIt)?.dataset.watch || (watch || tryIt)?.dataset.try;
+    const id = watch?.dataset.watch || tryIt?.dataset.try;
     if (!id) return;
-    const l = LESSONS.find(x => x.id === id);
-    api.setContextIfNeeded(l.context || 'messages');
-    engine.reset('');
-    active = { lesson: l, startSeq: engine.seq };
-    progress();
-    if (watch) await api.playStrokes(lessonScript(l).map(s => s.id), { speed: 0.5, hold: 300, gap: 260 });
+    startLesson(LESSONS.find(x => x.id === id), !!watch);
   });
 
-  /** Marks the words of the active lesson as they appear in the field. */
-  function progress() {
-    for (const card of $('pane-learn').querySelectorAll('.lesson')) {
-      const mine = active && card.dataset.lesson === active.lesson.id;
-      for (const w of card.querySelectorAll('.w')) w.classList.remove('done', 'next');
-      if (!mine) continue;
-      const l = active.lesson;
-      const words = lessonWords(l);
-      const typed = engine.text.toLowerCase().trim();
-      const target = (l.expect || l.text).toLowerCase();
-      let upTo = 0, done = 0;
-      if (l.strokes) done = typed === target ? 1 : 0;
-      else for (const [i, w] of words.entries()) {
-        const at = target.indexOf(w.text.toLowerCase(), upTo);
-        const end = at + w.text.length;
-        if (typed.length >= end && typed.slice(0, end) === target.slice(0, end)) { done = i + 1; upTo = end; } else break;
-      }
-      const els = card.querySelectorAll('.w');
-      els.forEach((w, i) => { w.classList.toggle('done', i < done); w.classList.toggle('next', i === done); });
-      const meta = card.querySelector('[data-meta]');
-      const used = engine.seq - active.startSeq;
-      if (done === words.length) meta.textContent = `Done in ${used} strokes · ${(l.expect || l.text).length} letter by letter`;
+  async function startLesson(l, watch) {
+    api.stopPlaying();
+    if (state.context !== (l.context || 'messages')) api.setContext(l.context || 'messages');
+    if (kb.mode !== 'steno') kb.setMode('steno');
+    document.body.classList.remove('sheet');
+    engine.reset('');
+    active = { lesson: l, startSeq: engine.seq, watching: watch };
+    renderLessonCard();
+    progress();
+    if (watch) {
+      await api.playStrokes(lessonStrokes(l).map(s => s.id), { teach: true, speed: 0.5, gap: 260 });
+      if (active?.lesson === l) { active.watching = false; progress(); }
     }
+  }
+  function endLesson() { active = null; $('lessonCard').hidden = true; for (const w of document.querySelectorAll('.lesson .w')) w.classList.remove('done', 'next', 'off'); }
+
+  /** The lesson rides along in the phone, so it is in view while you type. */
+  function renderLessonCard() {
+    const card = $('lessonCard');
+    if (!active) { card.hidden = true; return; }
+    const l = active.lesson;
+    card.hidden = false;
+    card.innerHTML = `<div class="head"><span>${esc(l.title)}</span><button id="lessonAgain" class="mini">${PLAY} Watch</button><button id="lessonClose" class="mini" aria-label="Close">×</button></div>
+      <div class="target" data-lesson="${l.id}">${wordsHtml(l, 34)}</div><div class="status" id="lessonStatus"></div>`;
+    $('lessonClose').addEventListener('click', endLesson);
+    $('lessonAgain').addEventListener('click', () => startLesson(l, true));
+  }
+
+  /** Marks the words of the active lesson as they appear in the field, and says so when a stroke went astray. */
+  function progress() {
+    if (!active) return;
+    const l = active.lesson;
+    const words = lessonWords(l);
+    const typed = engine.clean.toLowerCase();
+    const target = (l.expect || l.text).toLowerCase();
+    let done = 0, upTo = 0;
+    if (l.strokes) done = typed === target ? 1 : 0;
+    else for (const [i, w] of words.entries()) {
+      const at = target.indexOf(w.text.toLowerCase(), upTo), end = at + w.text.length;
+      if (typed.length >= end && typed.slice(0, end) === target.slice(0, end)) { done = i + 1; upTo = end; } else break;
+    }
+    const astray = !target.startsWith(typed.replace(/\s+$/, '')) && !target.startsWith(typed);
+    for (const scope of document.querySelectorAll(`[data-lesson="${l.id}"]`)) {
+      scope.querySelectorAll('.w').forEach((w, i) => {
+        w.classList.toggle('done', i < done);
+        w.classList.toggle('next', i === done && !astray);
+        w.classList.toggle('off', i === done && astray);
+      });
+    }
+    const status = $('lessonStatus');
+    if (!status) return;
+    const used = engine.seq - active.startSeq;
+    if (done === words.length) status.innerHTML = `<b>Done</b> in ${used} strokes. Letter by letter it is ${(l.expect || l.text).length}.`;
+    else if (astray && !active.watching) status.innerHTML = 'That was a different stroke. <b>Tap the corner key</b> to take it back.';
+    else status.textContent = active.watching ? 'Watch the finger; the strokes are under each word.' : 'Your turn. The strokes are under each word.';
   }
   engine.on(progress);
 
@@ -135,72 +183,96 @@ export function mountPanel(api) {
   function renderLookup() {
     $('pane-lookup').innerHTML = `
       <h2>How do I write…</h2>
-      <div class="lookup"><input id="lookupWord" type="text" placeholder="a word, such as because or thinking" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+      <div class="lookup"><input id="lookupWord" type="text" placeholder="a word, a phrase or a command" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
       <div class="plan" id="lookupPlan"></div>
       <h2>What is on each key</h2>
-      <p>The flick word in each free direction, then its curls. Letters keep their own two curls.</p>
+      <p id="keymapNote"></p>
       <div class="keymap" id="keymap"></div>`;
     $('lookupWord').addEventListener('input', lookup);
-    lookup();
   }
 
   function lookup() {
-    const raw = $('lookupWord').value.trim().toLowerCase();
+    const input = $('lookupWord'); if (!input) return;
+    const raw = input.value.trim();
     const out = $('lookupPlan');
-    if (!raw) { out.innerHTML = '<span class="how">Type a word to see its one stroke. Every word has exactly one.</span>'; return; }
-    if (!/^[a-z']+$/.test(raw)) { out.innerHTML = '<span class="how">Letters only, please.</span>'; return; }
-    const plan = api.planner().plan(raw);
-    const s = api.planStrokes(plan);
-    if (!s) {
-      out.innerHTML = `<div class="strokes"><span class="spell" style="font:700 13px var(--rounded)">${esc(raw)}</span></div><span class="how">Spelled letter by letter: <b>${raw.length} taps and flicks</b>. No stroke is assigned; add one under Dictionaries.</span>`;
+    const planner = api.planner();
+    const where = state.context === 'terminal' ? 'the terminal' : 'messages';
+    if (!raw) { out.innerHTML = `<span class="how">Type something to see how it is written with the dictionaries ${where} uses. A word has exactly one way.</span>`; return; }
+    const show = (parts, how) => {
+      out.innerHTML = `<div class="strokes">${api.partsHtml(parts, 38)}</div><span class="how">${how}</span><button class="btn quiet" id="lookupShow">${PLAY} Show me</button>`;
+      $('lookupShow').addEventListener('click', () => { document.body.classList.remove('sheet'); api.demonstrate(parts); });
+    };
+    // Anything an entry types as a whole: a phrase, an abbreviation's expansion, a command.
+    const outlines = planner.producing(raw).filter(o => !o.includes('/'));
+    const word = raw.toLowerCase();
+    const plan = /^[a-z']+$/.test(word) ? planner.plan(word) : null;
+    const s = plan && api.planStrokes(plan);
+    if (s) {
+      const how = plan.kind === 'flick' ? `One stroke: ${describe(plan.strokes[0])}.`
+        : plan.kind === 'hook' ? `One stroke: ${describe(plan.strokes[0])}.`
+        : plan.kind === 'completion' ? `Spell <b>${esc(plan.outline)}</b>, then pull the space bar down: ${s.gestures} strokes instead of ${word.length + 1}.`
+        : `${esc(plan.base.word)}, then ${describe(plan.strokes.at(-1))}: ${s.gestures} ${s.gestures === 1 ? 'stroke' : 'strokes'} instead of ${word.length + 1}.`;
+      show(s.parts, how);
       return;
     }
-    const how = plan.kind === 'flick' ? `one flick: ${describe(plan.strokes[0])}`
-      : plan.kind === 'hook' ? `${describe(plan.strokes[0])}`
-      : plan.kind === 'brief' ? `spell <b>${esc(plan.outline)}</b>; the next stroke or space finishes it`
-      : `${esc(plan.base.word)}, then ${describe(plan.strokes.at(-1))}`;
-    out.innerHTML = `<div class="strokes">${api.partsHtml(s.parts, 36)}</div><span class="how"><b>${s.gestures} ${s.gestures === 1 ? 'stroke' : 'strokes'}</b> instead of ${raw.length + 1}. ${how[0].toUpperCase() + how.slice(1)}.</span><button class="btn quiet" id="lookupShow">${PLAY} Show me</button>`;
-    $('lookupShow').addEventListener('click', () => api.demonstrate(s.parts));
+    if (outlines.length) {
+      const o = outlines.sort((a, b) => a.length - b.length)[0];
+      const stroke = isStrokeOutline(o);
+      const parts = stroke ? [{ stroke: o }] : [{ letters: o }, ...(planner.completeStroke ? [{ stroke: planner.completeStroke }] : [])];
+      show(parts, stroke ? `One stroke: ${describe(o)}.` : `Spell <b>${esc(o)}</b>, then pull the space bar down.`);
+      return;
+    }
+    if (plan) { out.innerHTML = `<div class="strokes"><span class="spell">${esc(word)}</span></div><span class="how">In ${where}: spelled letter by letter, ${word.length} strokes. To give it a stroke of its own, add one under Dictionaries.</span>`; return; }
+    out.innerHTML = `<span class="how">Nothing in the dictionaries ${where} uses types exactly that. Spell it, or add an entry under Dictionaries.</span>`;
   }
 
   function renderKeyMap() {
     const map = $('keymap'); if (!map) return;
+    $('keymapNote').textContent = state.context === 'terminal'
+      ? 'In the terminal each flick is the symbol it always was; these are the forms on its curls.'
+      : 'Each flick word, then its curls: right, left, back.';
     map.innerHTML = KEYS.map(key => {
       let html = `<div class="k"><b>${key.toLowerCase()}</b>`;
       for (const dir of DIRS) {
         const base = engine.lookup(strokeId(key, dir));
         if (base === undefined) continue;
-        const label = labelOf(base);
         const curls = ['cw', 'ccw', 'back'].map(t => labelOf(engine.lookup(strokeId(key, dir, t)))).filter(l => l && !/^[A-Z]$/.test(l));
-        if (/^\{&/.test(base) && !curls.length) continue;
-        html += `<div><span>${DIR_ARROW[dir]} ${esc(label)}</span>${curls.length ? `<span style="color:var(--ink-3);font-weight:500">${esc(curls.join(' · '))}</span>` : ''}</div>`;
+        if (!curls.length && /^\{&/.test(base)) continue;
+        html += `<div><span>${DIR_ARROW[dir]} ${esc(labelOf(base))}</span>${curls.length ? `<span class="curls">${esc(curls.join(' · '))}</span>` : ''}</div>`;
       }
       return html + '</div>';
     }).join('');
   }
 
-  // ----------------------------------------------------------------- packs
-  let openPack = 'mine';
+  // ----------------------------------------------------------- dictionaries
+  let openPack = null;
   let filter = '';
+  let pendingOverride = null;
+
+  const stack = () => stacks[state.context];
+  const defaultOpen = () => state.context === 'terminal' ? 'commands' : 'mine';
 
   function renderPacks() {
+    if (!openPack || !packs.some(p => p.id === openPack)) openPack = defaultOpen();
     const pane = $('pane-packs');
     const pack = packs.find(p => p.id === openPack);
+    const on = id => stack().includes(id);
     const entries = Object.entries(pack.entries).filter(([o, t]) => !filter || o.toLowerCase().includes(filter) || t.toLowerCase().includes(filter));
-    const shadowed = engine.shadowed.filter(s => s.pack === openPack);
+    const shadowed = on(pack.id) ? engine.shadowed.filter(s => s.pack === pack.id) : [];
+    const ctxName = state.context === 'terminal' ? 'the terminal' : 'messages';
     pane.innerHTML = `
-      <h2>Dictionaries</h2>
-      <p>Everything steno mode types comes from these, letters included. They are stacked: <b>the first one that knows a stroke wins</b>. Switch one on for a job, or put your own strokes on top.</p>
+      <h2>Dictionaries for ${ctxName}</h2>
+      <p>Everything the keyboard types comes from these, letters included. They are stacked, and <b>the first one that knows a stroke wins</b>. Each context has its own stack: switch the app at the top of the phone to see the other.</p>
       ${packs.map(p => `
-        <div class="card pack" data-pack="${p.id}" style="${p.id === openPack ? 'box-shadow: inset 0 0 0 1.5px var(--accent)' : 'cursor:pointer'}">
-          <button class="switch" role="switch" aria-checked="${p.enabled}" data-toggle="${p.id}" aria-label="Use ${esc(p.name)}"></button>
+        <div class="card pack${p.id === openPack ? ' open' : ''}${on(p.id) ? '' : ' off'}" data-pack="${p.id}">
+          <button class="switch" role="switch" aria-checked="${on(p.id)}" data-toggle="${p.id}" ${p.locked ? 'disabled' : ''} aria-label="Use ${esc(p.name)} in ${ctxName}"></button>
           <div><div class="name">${esc(p.name)}</div><div class="desc">${esc(p.description)}</div></div>
           <div class="count">${Object.keys(p.entries).length}</div>
         </div>`).join('')}
-      <h2>${esc(pack.name)}</h2>
+      <h2>${esc(pack.name)}${on(pack.id) ? '' : ' <span class="tag">not used in ' + ctxName + '</span>'}</h2>
       <div class="lookup"><input id="packFilter" type="text" placeholder="Filter ${Object.keys(pack.entries).length} entries" value="${esc(filter)}" autocomplete="off" spellcheck="false"></div>
       <div class="entries">${entries.slice(0, 150).map(([o, t]) => `
-        <div class="e"><span>${isStrokeId(o) ? glyph(o, 26) : ''}</span><code>${esc(o)}</code><span class="t">${esc(t)}</span>${pack.editable ? `<button class="x" data-del="${esc(o)}" aria-label="Remove">×</button>` : '<span></span>'}</div>`).join('') || '<div class="e"><span></span><code></code><span class="t" style="color:var(--ink-3)">Nothing here yet.</span><span></span></div>'}
+        <div class="e"><span>${isStrokeOutline(o) && !o.includes('/') ? glyph(o, 28) : ''}</span><code>${esc(o)}</code><span class="t">${esc(t)}</span>${pack.editable ? `<button class="x" data-del="${esc(o)}" aria-label="Remove ${esc(o)}">×</button>` : '<span></span>'}</div>`).join('') || '<div class="e empty">Nothing here yet.</div>'}
       </div>
       ${entries.length > 150 ? `<div class="note">Showing 150 of ${entries.length}. Filter to narrow it.</div>` : ''}
       ${pack.editable ? `
@@ -209,89 +281,141 @@ export function mountPanel(api) {
           <input id="newText" type="text" placeholder="what it types" autocomplete="off" spellcheck="false">
           <button class="btn" id="addBtn">Add</button>
         </div>
-        <div class="note" id="entryNote">A stroke is written <code>T-n</code>, <code>T-n-cw</code>, <code>SP-ne</code>; letters such as <code>omw</code> expand when the word ends. Or press Record and make the stroke on the keyboard.</div>` : `<div class="note">This dictionary is generated and read-only. To change one of its strokes, add the same stroke to “My strokes”: it wins.</div>`}
-      ${shadowed.length ? `<div class="note warn">${shadowed.length} ${shadowed.length === 1 ? 'entry here is' : 'entries here are'} overridden by a dictionary above: ${shadowed.slice(0, 6).map(s => `<code>${esc(s.outline)}</code>`).join(' ')}</div>` : ''}
-      <h2>Text format</h2>
-      <p>Plain JSON, the same shape as a Plover dictionary, with the operators <code>{^ing}</code> <code>{pre^}</code> <code>{&amp;x}</code> <code>{.}</code> <code>{-|}</code> <code>{#Return}</code> and <code>{|}</code> for where the caret lands.</p>
-      <textarea id="packJson" rows="6" spellcheck="false" style="font:500 12px var(--mono)" ${pack.editable ? '' : 'readonly'}>${esc(JSON.stringify(pack.editable ? pack.entries : Object.fromEntries(Object.entries(pack.entries).slice(0, 40)), null, 1))}</textarea>
-      ${pack.editable ? '<div class="row" style="margin-top:6px"><button class="btn quiet" id="applyJson">Apply JSON</button><span class="note" id="jsonNote" style="margin:0"></span></div>' : '<div class="note">First 40 entries shown.</div>'}`;
+        <div class="note" id="entryNote">Press <b>Record</b> and make a stroke on the keyboard, or type letters such as <code>omw</code> (spelled, then pulled down on the space bar). Then say what it types.</div>`
+    : `<div class="note">This dictionary is generated and read-only. To change one of its strokes, add the same stroke to a dictionary above it: the higher one wins.</div>`}
+      ${shadowed.length ? `<div class="note warn">${shadowed.length} ${shadowed.length === 1 ? 'entry here is' : 'entries here are'} overridden by a dictionary above: ${shadowed.slice(0, 8).map(s => `<code>${esc(s.outline)}</code>`).join(' ')}</div>` : ''}
+      <h2>As text</h2>
+      <p>A dictionary is plain JSON in the shape Plover uses, <code>"outline": "translation"</code>. Operators: <code>{^ing}</code> <code>{un^}</code> <code>{^}</code> attach; <code>{&amp;x}</code> a glued character; <code>{.}</code> <code>{,}</code> prose marks; <code>{-|}</code> capital next; <code>{|}</code> where the caret lands; <code>{#Tab}</code> <code>{#Escape}</code> <code>{#Up}</code> <code>{#Control(c)}</code> keys; <code>\\{</code> a literal brace.</p>
+      <textarea id="packJson" rows="7" spellcheck="false" ${pack.editable ? '' : 'readonly'}>${esc(JSON.stringify(pack.editable ? pack.entries : Object.fromEntries(Object.entries(pack.entries).slice(0, 40)), null, 1))}</textarea>
+      ${pack.editable ? '<div class="row" style="margin-top:6px"><button class="btn quiet" id="mergeJson">Add these</button><button class="btn quiet" id="replaceJson">Replace all with these</button><button class="btn quiet" id="copyJson">Copy</button><span class="note" id="jsonNote" style="margin:0"></span></div>' : '<div class="note">The first 40 entries are shown.</div>'}`;
     $('packFilter').addEventListener('input', e => { filter = e.target.value.toLowerCase(); const pos = e.target.selectionStart; renderPacks(); const f = $('packFilter'); f.focus(); f.setSelectionRange(pos, pos); });
     $('addBtn')?.addEventListener('click', addEntry);
     $('newText')?.addEventListener('keydown', e => { if (e.key === 'Enter') addEntry(); });
+    $('newOutline')?.addEventListener('input', () => { pendingOverride = null; describeOutline(); });
     $('recBtn')?.addEventListener('click', record);
-    $('applyJson')?.addEventListener('click', applyJson);
+    $('mergeJson')?.addEventListener('click', () => applyJson(false));
+    $('replaceJson')?.addEventListener('click', () => applyJson(true));
+    $('copyJson')?.addEventListener('click', () => { navigator.clipboard?.writeText($('packJson').value); $('jsonNote').textContent = 'Copied.'; });
+  }
+
+  const note = (html, warn) => { const n = $('entryNote'); if (n) { n.innerHTML = html; n.classList.toggle('warn', !!warn); } };
+
+  /** Says what the outline in the box is, and what adding it would replace. */
+  function describeOutline() {
+    const outline = $('newOutline').value.trim();
+    if (!outline) return;
+    const error = validateEntry(outline, 'x');
+    if (error) { note(esc(error), true); return false; }
+    const was = engine.lookup(outline);
+    const what = isStrokeOutline(outline) ? outline.split('/').map(describe).join(', then ') : `spell ${outline}, then pull the space bar down`;
+    if (was !== undefined) note(`<b>${esc(what)}</b> now types <b>${esc(labelOf(was) || was)}</b> (from ${esc(packs.find(p => p.id === engine.source[outline])?.name || 'another dictionary')}). Adding it here replaces that.`, true);
+    else note(`<b>${esc(what[0].toUpperCase() + what.slice(1))}</b> is free.`);
+    return true;
   }
 
   async function record() {
     const btn = $('recBtn');
     if (btn.classList.contains('on')) { api.cancelRecording(); btn.classList.remove('on'); btn.textContent = 'Record'; return; }
-    btn.classList.add('on'); btn.textContent = 'Stroke now';
+    btn.classList.add('on'); btn.textContent = 'Make the stroke';
     if (kb.mode !== 'steno') kb.setMode('steno');
+    document.body.classList.remove('sheet');
     const id = await api.startRecording();
+    document.body.classList.add('sheet');
     const input = $('newOutline');
-    if (input) { input.value = id; $('recBtn').classList.remove('on'); $('recBtn').textContent = 'Record'; $('newText').focus(); note(`Recorded ${id}: ${describe(id)}.`); }
+    if (!input) return;
+    // A second recorded stroke extends the outline.
+    input.value = input.value.trim() && isStrokeOutline(input.value.trim()) && btn.dataset.extend ? `${input.value.trim()}/${id}` : id;
+    $('recBtn').classList.remove('on'); $('recBtn').textContent = 'Record';
+    pendingOverride = null;
+    describeOutline();
+    $('newText').focus();
   }
-
-  const note = (text, warn) => { const n = $('entryNote'); if (n) { n.textContent = text; n.classList.toggle('warn', !!warn); } };
 
   function addEntry() {
     const outline = $('newOutline').value.trim(), text = $('newText').value;
-    if (!outline || !text) { note('Give both a stroke (or letters) and what it types.', true); return; }
-    const valid = outline.split('/').every(isStrokeId) || /^[a-z0-9'.\-]+$/.test(outline);
-    if (!valid) { note('That is neither a stroke such as T-n-cw nor lowercase letters.', true); return; }
+    const error = validateEntry(outline, text);
+    if (error) { note(esc(error), true); return; }
     const pack = packs.find(p => p.id === openPack);
     const was = engine.lookup(outline);
+    // Replacing something that already works takes a second press.
+    if (was !== undefined && was !== text && pendingOverride !== outline) {
+      pendingOverride = outline;
+      note(`This replaces <b>${esc(labelOf(was) || was)}</b> on that stroke. Press Add again to go ahead.`, true);
+      return;
+    }
+    pendingOverride = null;
     pack.entries[outline] = text;
-    if (!pack.enabled) pack.enabled = true;
+    if (!stack().includes(pack.id)) toggle(pack.id);
     api.packsChanged();
     renderPacks();
-    note(was !== undefined && was !== text ? `Added. It now overrides “${labelOf(was)}”.` : 'Added.');
+    note(`Added. ${isStrokeOutline(outline) ? 'Try the stroke.' : `Spell ${esc(outline)} and pull the space bar down.`}`);
   }
 
-  function applyJson() {
+  function applyJson(replace) {
     const pack = packs.find(p => p.id === openPack);
-    try {
-      const parsed = JSON.parse($('packJson').value);
-      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('expected an object of outline: translation');
-      for (const [o, t] of Object.entries(parsed)) if (typeof t !== 'string') throw new Error(`"${o}" must map to text`);
-      pack.entries = parsed;
-      api.packsChanged();
-      renderPacks();
-      $('jsonNote').textContent = `Applied ${Object.keys(parsed).length} entries.`;
-    } catch (err) { $('jsonNote').textContent = `Not applied: ${err.message}`; $('jsonNote').classList.add('warn'); }
+    const say = (text, warn) => { const n = $('jsonNote'); n.textContent = text; n.classList.toggle('warn', !!warn); };
+    let parsed;
+    try { parsed = JSON.parse($('packJson').value); } catch (err) { say(`Not applied: that is not JSON (${err.message}).`, true); return; }
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) { say('Not applied: expected an object of "outline": "translation".', true); return; }
+    for (const [o, t] of Object.entries(parsed)) {
+      const error = validateEntry(o, t);
+      if (error) { say(`Not applied: "${o}": ${error}`, true); return; }
+    }
+    pack.entries = replace ? parsed : { ...pack.entries, ...parsed };
+    api.packsChanged();
+    renderPacks();
+    $('jsonNote').textContent = `${replace ? 'Replaced with' : 'Added'} ${Object.keys(parsed).length} entries.`;
+  }
+
+  function toggle(id) {
+    const s = stack();
+    if (s.includes(id)) s.splice(s.indexOf(id), 1);
+    else {
+      // Keep the stack in the dictionaries' own order, which is their priority.
+      s.push(id);
+      s.sort((a, b) => packs.findIndex(p => p.id === a) - packs.findIndex(p => p.id === b));
+    }
   }
 
   $('pane-packs').addEventListener('click', e => {
-    const toggle = e.target.closest('[data-toggle]');
-    if (toggle) { const p = packs.find(x => x.id === toggle.dataset.toggle); p.enabled = !p.enabled; api.packsChanged(); renderPacks(); return; }
+    const t = e.target.closest('[data-toggle]');
+    if (t) { if (!t.disabled) { toggle(t.dataset.toggle); api.packsChanged(); renderPacks(); } return; }
     const del = e.target.closest('[data-del]');
     if (del) { delete packs.find(p => p.id === openPack).entries[del.dataset.del]; api.packsChanged(); renderPacks(); return; }
     const card = e.target.closest('[data-pack]');
     if (card && card.dataset.pack !== openPack) { openPack = card.dataset.pack; filter = ''; renderPacks(); }
   });
-  document.addEventListener('wf-context', () => { if (!$('pane-packs').hidden) renderPacks(); });
+  document.addEventListener('wf-context', () => {
+    openPack = defaultOpen();
+    if (!$('pane-packs').hidden) renderPacks();
+    if (!$('pane-lookup').hidden) { lookup(); renderKeyMap(); }
+    if (active && (active.lesson.context || 'messages') !== state.context) endLesson();
+  });
 
   // --------------------------------------------------------------- numbers
   function renderNumbers(corpus = 'daily') {
     const r = results.evaluation[corpus];
-    const names = { daily: 'Everyday dialogue', movie: 'Film dialogue', sms: 'Real SMS (Singapore)' };
-    const max = Math.max(...r.stages.map(s => s.wpm));
+    const names = { daily: 'Everyday dialogue', movie: 'Film dialogue', sms: 'Real SMS' };
+    const max = r.letterStrokesPerWord;
+    const tokens = Object.values(theory.meta.corpora).reduce((s, c) => s + c.trainingTokens, 0);
     $('pane-numbers').innerHTML = `
       <h2>What it buys, on text it never saw</h2>
-      <p>A tenth of each corpus was held out before the strokes were assigned. A model typist then typed it: <b>${r.messages.toLocaleString()} messages, ${r.chars.toLocaleString()} characters</b>. Each row adds what a learner would pick up next.</p>
+      <p>A tenth of each corpus was set aside before any stroke was assigned. A model typist then typed it: <b>${r.messages.toLocaleString()} messages, ${r.chars.toLocaleString()} characters</b>. Each row adds what a learner would pick up next. The letter keyboard takes <b>${r.letterStrokesPerWord} strokes a word</b>.</p>
       <div class="seg" id="corpusSeg">${Object.keys(results.evaluation).map(c => `<button data-corpus="${c}" aria-pressed="${c === corpus}">${names[c]}</button>`).join('')}</div>
-      <table class="t"><tr><th>You know</th><th>Strokes per word</th><th>Fewer strokes</th><th>Model WPM</th><th>Pessimistic</th></tr>
-        ${r.stages.map(s => `<tr><td>${esc(s.stage)}</td><td>${s.gesturesPerWord.toFixed(2)}</td><td>${s.saving.toFixed(0)} %</td><td>${s.wpm.toFixed(0)}</td><td>${s.wpmRecall.toFixed(0)}</td></tr>`).join('')}
+      <div class="bars">${r.stages.map(s => `<div class="bar"><span class="lbl">${esc(s.stage)}</span><div class="track"><div class="fill" style="width:${(s.strokesPerWord / max * 100).toFixed(1)}%"></div></div><span class="val">${s.strokesPerWord.toFixed(2)}</span></div>`).join('')}</div>
+      <table class="t"><tr><th>You know</th><th>Strokes a word</th><th>Fewer</th><th>WPM, bare model</th><th>cautious</th><th>pessimistic</th></tr>
+        <tr><td>the letter keyboard</td><td>${r.letterStrokesPerWord}</td><td></td><td>${r.letterWpm.model}</td><td>${r.letterWpm.cautious}</td><td>${r.letterWpm.pessimistic}</td></tr>
+        ${r.stages.map(s => `<tr><td>${esc(s.stage)}</td><td>${s.strokesPerWord.toFixed(2)}</td><td>${s.saving.toFixed(0)} %</td><td>${s.wpm.model}</td><td>${s.wpm.cautious}</td><td>${s.wpm.pessimistic}</td></tr>`).join('')}
       </table>
-      <div class="bars">${r.stages.map(s => `<div class="bar"><span class="lbl">${esc(s.stage)}</span><div class="track"><div class="fill" style="width:${(s.wpm / max * 100).toFixed(1)}%"></div></div><span class="val">${s.gesturesPerWord.toFixed(2)} / word</span></div>`).join('')}</div>
-      <p class="note">Stroke counts are exact. Words per minute are a model: a one-thumb expert at 262 ms per letter, 300 ms per word flick, 702 ms per curl (sources in <code>src/model.js</code>). “Pessimistic” makes curls 922 ms and adds 300 ms of recall to every stroke that is not a letter. The letter keyboard is ${r.letterWpm} WPM under the same model. None of this is a measurement of people.</p>
+      <p class="note"><b>Stroke counts are exact; speeds are a model, not a measurement of people.</b> The bare model is a one-thumb expert at 262 ms a letter, 300 ms a word flick, 702 ms a curl. “Cautious” makes a curl 922 ms, adds 150 ms to recall every stroke that is not a letter, and charges for misreads at 2 % of flicks and 4 % of curls. “Pessimistic” doubles the recall and the misreads. Under it, curls stop paying for themselves and the gain is the flicks and endings alone. The constants and their sources are in <code>src/model.js</code>.</p>
       <h2>Where the words come from</h2>
-      <p>${Object.values(theory.meta.corpora).reduce((s, c) => s + c.trainingTokens, 0).toLocaleString()} words from three corpora: film dialogue, written everyday dialogue and real text messages. A word’s weight is the geometric mean of its frequency in all three, so it has to be common everywhere. The ${theory.meta.counts.flicks} flick words are ${theory.meta.share.flicks} % of all word tokens; the ${theory.meta.counts.hooks} curls another ${theory.meta.share.hooks} %.</p>
+      <p>${tokens.toLocaleString()} words from three corpora: film dialogue, written everyday dialogue and real text messages. A word’s weight is the geometric mean of its frequency in all three, so it has to be common everywhere. The ${theory.meta.counts.flicks} flick words are ${theory.meta.share.flicks} % of all word tokens; the ${theory.meta.counts.hooks} curled words another ${theory.meta.share.hooks} %.</p>
       <h2>How often a stroke is misread</h2>
-      <p>A synthetic thumb drew every shape 3,200 times at three levels of sloppiness (at 1.0: direction off by 9°, length off by a quarter, corner cut). This tests the recogniser’s margins, not human hands.</p>
-      <table class="t"><tr><th>Sloppiness</th><th>Flick</th><th>Curl right</th><th>Curl left</th><th>Back</th><th>All</th></tr>
-        ${Object.entries(results.robustness).sort((a, b) => a[0] - b[0]).map(([lvl, x]) => `<tr><td>${lvl}</td><td>${x.shapes.flick} %</td><td>${x.shapes.cw} %</td><td>${x.shapes.ccw} %</td><td>${x.shapes.back} %</td><td>${x.accuracy} %</td></tr>`).join('')}
-      </table>`;
+      <p>A synthetic thumb drew every stroke shape on a key of the real size (${results.robustness.key.mm.map(x => x.toFixed(1)).join(' × ')} mm), 1,600 times a row, with the corner cut and the length off by a fifth. Rows vary how long each leg is and how far the aim is off. This shows where the recogniser’s margins run out; it does not show how real thumbs behave.</p>
+      <table class="t"><tr><th>Leg</th><th>Aim off (sd)</th><th>Flick</th><th>Curl right</th><th>Curl left</th><th>Back</th><th>Ending</th></tr>
+        ${results.robustness.grid.filter(g => g.arc === 0).map(g => `<tr><td>${g.leg} mm</td><td>${g.aim}°</td><td>${g.flick} %</td><td>${g.right} %</td><td>${g.left} %</td><td>${g.back} %</td><td>${g.ending} %</td></tr>`).join('')}
+      </table>
+      <p class="note">A curl that is misread nearly always comes out as its own plain flick (the flicked word instead of its relative), which the corner key’s “change” puts right in one move. Curls want legs of about 4.5 mm or more.</p>`;
     $('corpusSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (b) renderNumbers(b.dataset.corpus); });
   }
 
@@ -301,17 +425,17 @@ export function mountPanel(api) {
     $('pane-settings').innerHTML = `
       <h2>Settings</h2>
       <div class="card">
-        <div class="setting"><div><div class="what">Guide</div><div class="why">The map above your finger. “Fades” shows it at once on a key you are new to and waits longer the more you use that key.</div></div>${seg('guide', [['adaptive', 'Fades'], ['always', 'Always'], ['pause', 'On pause'], ['off', 'Off']], settings.guide)}</div>
-        <div class="setting"><div><div class="what">Words on the keys</div><div class="why">Hide them once you know them; the guide still shows them.</div></div>${seg('words', [[true, 'Shown'], [false, 'Hidden']], settings.words)}</div>
+        <div class="setting"><div><div class="what">Guide</div><div class="why">The map beside your finger. “On pause” shows it only when you rest on a key or hesitate on the way, so it is there when you need it and never in the way when you do not.</div></div>${seg('guide', [['pause', 'On pause'], ['always', 'Always'], ['off', 'Off']], settings.guide)}</div>
+        <div class="setting"><div><div class="what">Words on the keys</div><div class="why">Hide them once you know them. The guide still shows them.</div></div>${seg('words', [[true, 'Shown'], [false, 'Hidden']], settings.words)}</div>
         <div class="setting"><div><div class="what">Finger trail</div><div class="why">Draws the path of each stroke.</div></div>${seg('trail', [[true, 'On'], [false, 'Off']], settings.trail)}</div>
         <div class="setting"><div><div class="what">Appearance</div></div>${seg('theme', [['dark', 'Dark'], ['light', 'Light']], settings.theme)}</div>
-        <div class="setting"><div><div class="what">Practice memory</div><div class="why">The guide remembers how often you used each key. ${Object.values(kb.usage).reduce((s, n) => s + n, 0)} word strokes so far.</div></div><button class="btn quiet" id="resetUsage">Forget</button></div>
+        <div class="setting"><div><div class="what">Start over</div><div class="why">Forget your dictionaries, stacks and settings.</div></div><button class="btn quiet" id="resetAll">Reset</button></div>
       </div>
       <h2>Getting around</h2>
       <div class="card">
-        <p><b>Switch keyboards</b> by dragging the strip above the keys sideways, by swiping the keys with two fingers, or with the corner key: up-left for numbers, up-right for letters.</p>
-        <p><b>The corner key</b> holds what the right-hand column used to: tap to undo a stroke, flick up to send, left to delete a word, and drag left to keep deleting.</p>
-        <p><b>The space bar</b> is two keys wide everywhere. Drag it sideways to move the caret.</p>
+        <p><b>Three keyboards, side by side.</b> Steno is in the middle. Drag the strip above the keys sideways, swipe the keys with two fingers, or flick the corner key up-left for numbers and up-right for plain letters. The letter page is the keyboard as it always was, with every symbol.</p>
+        <p><b>The space bar</b> is two keys wide on every page. Drag it sideways to move the caret.</p>
+        <p><b>The corner key</b> holds what the right-hand column used to hold. Rest on it to see its map.</p>
       </div>`;
     $('pane-settings').querySelectorAll('[data-setting]').forEach(s => s.addEventListener('click', e => {
       const b = e.target.closest('button'); if (!b) return;
@@ -319,9 +443,11 @@ export function mountPanel(api) {
       settings[s.dataset.setting] = v === 'true' ? true : v === 'false' ? false : v;
       api.saveSettings(); renderSettings();
     }));
-    $('resetUsage').addEventListener('click', () => { kb.usage = {}; localStorage.removeItem('wf-steno-usage'); renderSettings(); });
+    $('resetAll').addEventListener('click', () => { for (const k of ['wf-steno-settings', 'wf-steno-packs', 'wf-steno-stacks', 'wf-steno-context']) localStorage.removeItem(k); location.reload(); });
   }
 
+  document.addEventListener('wf-packs', () => { renderLearn(); if (active) { renderLessonCard(); progress(); } });
   renderLearn(); renderLookup(); renderNumbers(); renderSettings();
-  return { renderPacks, renderLearn };
+  api.openTab = openTab;
+  api.startLesson = id => startLesson(LESSONS.find(l => l.id === id), false);
 }

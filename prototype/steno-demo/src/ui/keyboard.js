@@ -1,43 +1,45 @@
 // The keyboard: three pages of nine keys over a two-cell space bar and one
-// utility key, and the touch handling that turns fingers into strokes.
+// corner key, and the touch handling that turns fingers into strokes.
 //
-// Everything is laid out in points from the constants below, so the hit map
-// and the drawing can never disagree.
+// Everything is laid out in points from src/geometry.js, so the hit map and
+// the drawing can never disagree.
 
-import { KEYS, KEY_POS, DIRS, DETAIL, NUMERIC, ENDING_DIRS, strokeId } from '../layout.js';
+import { KEYS, DIRS, DETAIL, NUMERIC, ENDING_DIRS, strokeId, parseStroke } from '../layout.js';
+import { GEO, keyRect } from '../geometry.js';
 import { classify, classifyStroke, classifySpace, SPACE_LEVEL } from '../recognizer.js';
-import { labelOf } from '../packs.js';
+import { labelOf, parseTranslation } from '../packs.js';
 
-export const GEO = { block: 349, padX: 12, padTop: 4, padBottom: 10, gap: 5, cellH: 66 };
-GEO.cellW = (GEO.block - 2 * GEO.padX - 2 * GEO.gap) / 3;
-GEO.height = GEO.padTop + 4 * GEO.cellH + 3 * GEO.gap + GEO.padBottom;
-GEO.gridHeight = GEO.padTop + 3 * GEO.cellH + 3 * GEO.gap;
-
+export { GEO, keyRect };
 export const MODES = ['detail', 'steno', 'numeric'];
 export const MODE_LABEL = { detail: 'abc', steno: 'steno', numeric: '123' };
 
-const ICON = {
+export const ICON = {
   delete: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.2 5.5h9.3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H9.2a2 2 0 0 1-1.5-.7L3 12l4.7-5.8a2 2 0 0 1 1.5-.7Z"/><path d="m11.5 9.5 5 5m0-5-5 5"/></svg>',
   ret: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 6v6a3 3 0 0 1-3 3H6"/><path d="m10 10.5-4.5 4.5 4.5 4.5"/></svg>',
   hide: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m7 10 5 5 5-5"/></svg>',
-  globe: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.6 2.4 2.6 14.6 0 17M12 3.5c-2.6 2.4-2.6 14.6 0 17"/></svg>',
   word: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12H6"/><path d="m11 7-5 5 5 5"/><path d="M3 6v12"/></svg>',
+  change: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h13l-3-3"/><path d="M20 15H7l3 3"/></svg>',
 };
 
-const rectOf = (col, row, span = 1) => ({
-  x: GEO.padX + col * (GEO.cellW + GEO.gap), y: GEO.padTop + row * (GEO.cellH + GEO.gap),
-  w: span * GEO.cellW + (span - 1) * GEO.gap, h: GEO.cellH,
-});
-export const keyRect = key => key === 'SP' ? rectOf(0, 3, 2) : key === 'UT' ? rectOf(2, 3) : rectOf(KEY_POS[key].col, KEY_POS[key].row);
+/** What the corner key does, by direction. The centre (a tap) is undo. */
+export const CORNER = {
+  n: { action: 'return', label: 'send', icon: 'ret' },
+  w: { action: 'deleteWord', label: 'word', icon: 'word' },
+  e: { action: 'change', label: 'change', icon: 'change' },
+  s: { action: 'hide', label: 'hide', icon: 'hide' },
+  nw: { action: 'numbers', label: '123' },
+  ne: { action: 'flip', label: 'abc' },
+};
 
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
-const escapeHtml = s => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+const escapeHtml = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+const isGlue = t => { try { const a = parseTranslation(t); return a.length === 1 && a[0].op?.[0] === '&'; } catch { return false; } };
 
 export class Keyboard {
   /**
    * @param root    the .keys element
    * @param engine  the translator
-   * @param hooks   { onMode, onTouch, onCandidate, onRelease, onAction, onStroke, settings }
+   * @param hooks   { onMode, onTouch, onCandidate, onRelease, onAction, onStroke, onGhost, capture }
    */
   constructor(root, engine, hooks) {
     this.root = root;
@@ -46,15 +48,14 @@ export class Keyboard {
     this.mode = 'steno';
     this.detailShift = false;
     this.touches = new Map();
-    this.keyEls = {};                    // mode -> key -> element
-    this.usage = JSON.parse(localStorage.getItem('wf-steno-usage') || '{}');
+    this.keyEls = {};
     this.build();
     root.addEventListener('pointerdown', e => this.down(e));
     root.addEventListener('pointermove', e => this.move(e));
     root.addEventListener('pointerup', e => this.up(e));
     root.addEventListener('pointercancel', e => this.cancel(e));
     root.addEventListener('contextmenu', e => e.preventDefault());
-    engine.on(() => this.refreshIfPacksChanged());
+    engine.on(() => { if (this.stamp !== this.engine.entries) { this.stamp = this.engine.entries; this.renderFaces(); } });
   }
 
   // ------------------------------------------------------------- building
@@ -71,6 +72,7 @@ export class Keyboard {
     for (const mode of MODES) {
       const page = el('div', 'page');
       page.style.width = GEO.block + 'px';
+      page.dataset.page = mode;
       this.keyEls[mode] = {};
       for (const key of KEYS) {
         const k = el('div', 'key');
@@ -92,13 +94,9 @@ export class Keyboard {
       r.appendChild(e);
     }
     this.ratchet = el('div', 'ratchet', Array.from({ length: 15 }, (_, i) => `<i class="${i === 7 ? 'mid' : ''}"></i>`).join(''));
-    this.packStamp = this.engine.entries;
+    this.stamp = this.engine.entries;
     this.renderFaces();
     this.placeStrip(false);
-  }
-
-  refreshIfPacksChanged() {
-    if (this.packStamp !== this.engine.entries) { this.packStamp = this.engine.entries; this.renderFaces(); }
   }
 
   /** What one flick slot shows in a mode: { label, cls } or null. */
@@ -108,9 +106,11 @@ export class Keyboard {
       if (t === undefined) return null;
       const label = labelOf(t);
       if (!label) return null;
-      if (/^\{&.\}$/.test(t)) return { label, cls: /[a-z]/i.test(label) ? 'letter' : 'mark' };
-      if (label.length === 1 && !/[a-z0-9]/i.test(label)) return { label, cls: 'mark' };
-      return { label, cls: 'word' + (label.length > 5 ? ' long' : '') };
+      // A mark a dictionary above the letters pack chose to keep is one people use in every message.
+      const kept = this.engine.source[strokeId(key, dir)] !== 'letters';
+      if (isGlue(t)) return { label, cls: /^[a-z]$/i.test(label) ? 'letter' : kept ? 'mark kept' : 'mark' };
+      if ([...label].length === 1 && !/[a-z0-9]/i.test(label)) return { label, cls: 'mark kept' };
+      return { label, cls: 'word' + (label.length > 4 ? ' long' : '') + (/^[^a-z]/i.test(label) ? ' token' : '') };
     }
     const b = (mode === 'numeric' ? NUMERIC : DETAIL)[key][dir];
     if (!b || !b.label) return null;
@@ -135,33 +135,62 @@ export class Keyboard {
       this.keyEls[mode][key].innerHTML = html;
     }
     this.renderBottom();
+    this.fitHints();
+  }
+
+  /**
+   * Keeps the three labels along a key's top and bottom edges from touching:
+   * the middle one sits in the middle of the room the outer two leave, and a
+   * row that is still too full is set a size smaller.
+   */
+  fitHints() {
+    const GAP = 4, EDGE = 6;
+    for (const k of this.root.querySelectorAll('.key')) {
+      const width = parseFloat(k.style.width);
+      for (const [l, m, r] of [['nw', 'n', 'ne'], ['sw', 's', 'se']]) {
+        const mid = k.querySelector(`.h.${m}`);
+        if (!mid) continue;
+        const left = k.querySelector(`.h.${l}`), right = k.querySelector(`.h.${r}`);
+        const row = [left, mid, right].filter(Boolean);
+        for (const e of row) e.classList.remove('tight');
+        const need = () => row.reduce((s, e) => s + e.offsetWidth, 0) + GAP * (row.length - 1) + 2 * EDGE;
+        if (need() > width) for (const e of row) if (e.classList.contains('word')) e.classList.add('tight');
+        const from = left ? EDGE + left.offsetWidth + GAP : EDGE, to = right ? width - EDGE - right.offsetWidth - GAP : width - EDGE;
+        const centre = Math.max(from + mid.offsetWidth / 2, Math.min(to - mid.offsetWidth / 2, width / 2));
+        mid.style.left = centre + 'px';
+      }
+    }
+  }
+
+  /** The label of a space-bar flick in the current mode, or ''. */
+  spaceLabel(dir) { return this.mode === 'steno' ? this.engine.label(strokeId('SP', dir)) : ''; }
+
+  cornerLabel(dir) {
+    if (dir === 'nw') return this.mode === 'numeric' ? 'abc' : '123';
+    if (dir === 'ne') return this.mode === 'steno' ? 'abc' : 'steno';
+    return CORNER[dir]?.label || '';
   }
 
   renderBottom() {
-    let space = '<span class="c"></span>';
-    if (this.mode === 'steno') {
-      for (const dir of ENDING_DIRS) {
-        const label = this.engine.label(strokeId('SP', dir));
-        if (label) space += `<span class="h ${dir} word" data-dir="${dir}">${escapeHtml(label)}</span>`;
-      }
+    let space = '<span class="c">space</span>';
+    for (const dir of ENDING_DIRS) {
+      const label = this.spaceLabel(dir);
+      if (label) space += `<span class="h ${dir} word${/^[^a-z'-]/i.test(label) ? ' token' : ''}" data-dir="${dir}">${escapeHtml(label)}</span>`;
     }
     this.spaceEl.innerHTML = space;
-    this.spaceEl.appendChild(this.ratchet);
-    const other = this.mode === 'numeric' ? 'abc' : '123';
-    const flip = this.mode === 'steno' ? 'abc' : 'steno';
-    this.utilEl.innerHTML = `<span class="c">${ICON.delete}</span>`
-      + `<span class="h n icon" data-dir="n">${ICON.ret}</span>`
-      + `<span class="h nw icon" data-dir="nw">${other}</span>`
-      + `<span class="h ne icon" data-dir="ne">${this.mode === 'numeric' ? 'steno' : flip}</span>`
-      + `<span class="h w icon" data-dir="w">${ICON.word}</span>`
-      + `<span class="h e icon" data-dir="e">${ICON.globe}</span>`
-      + `<span class="h s icon" data-dir="s">${ICON.hide}</span>`;
+    let util = `<span class="c">${ICON.delete}</span>`;
+    for (const [dir, c] of Object.entries(CORNER)) {
+      if (dir === 'e' && this.mode !== 'steno') continue;
+      util += `<span class="h ${dir} icon" data-dir="${dir}">${c.icon ? ICON[c.icon] : this.cornerLabel(dir)}</span>`;
+    }
+    this.utilEl.innerHTML = util;
+    this.utilEl.appendChild(this.ratchet);
   }
 
   // ----------------------------------------------------------------- modes
 
   setMode(mode, animate = true) {
-    if (mode === this.mode) return;
+    if (mode === this.mode) { this.placeStrip(animate); return; }
     this.mode = mode;
     this.detailShift = false;
     this.placeStrip(animate);
@@ -190,12 +219,7 @@ export class Keyboard {
     let next = i;
     if (dx < -GEO.block * 0.22 || velocity < -0.45) next = Math.min(MODES.length - 1, i + 1);
     if (dx > GEO.block * 0.22 || velocity > 0.45) next = Math.max(0, i - 1);
-    if (next !== i) this.setMode(MODES[next]); else this.placeStrip(true);
-  }
-
-  step(delta) {
-    const i = Math.max(0, Math.min(MODES.length - 1, MODES.indexOf(this.mode) + delta));
-    this.setMode(MODES[i]);
+    this.setMode(MODES[next]);
   }
 
   // --------------------------------------------------------------- touches
@@ -230,8 +254,8 @@ export class Keyboard {
     const key = this.hit(p);
     const rc = keyRect(key);
     const t = {
-      id, key, ghost, origin: p, at: p, path: [{ x: 0, y: 0 }], t0: now, maxD: 0, peakTime: 0,
-      rect: rc, el: this.elementFor(key), candidate: null, sliding: false, lastX: 0, consumed: false,
+      id, key, ghost, origin: p, at: p, path: [{ x: 0, y: 0 }], t0: now, maxD: 0, peakTime: 0, lastMove: now,
+      rect: rc, el: this.elementFor(key), candidate: null, sliding: false, lastX: 0,
     };
     this.touches.set(id, t);
     const ox = ((p.x - rc.x) / rc.w * 100).toFixed(1), oy = ((p.y - rc.y) / rc.h * 100).toFixed(1);
@@ -245,28 +269,27 @@ export class Keyboard {
 
   advance(id, p, now) {
     const t = this.touches.get(id);
-    if (!t || t.consumed) return;
+    if (!t) return;
     const q = { x: p.x - t.origin.x, y: p.y - t.origin.y };
+    if (Math.hypot(p.x - t.at.x, p.y - t.at.y) > 1.5) t.lastMove = now;
     t.at = p;
     t.path.push(q);
     const d = Math.hypot(q.x, q.y);
     if (d > t.maxD) { t.maxD = d; t.peakTime = (now - t.t0) / 1000; }
     if (this.pageSwipe(t)) return;
     if (t.key === 'SP') this.slideSpace(t, q);
-    else if (t.key === 'UT') this.slideDelete(t, q);
+    else if (t.key === 'UT') this.slideDelete(t, q, now);
     if (!t.sliding) this.speculate(t);
   }
 
   /** Two fingers moving sideways together turn the page instead of typing. */
-  pageSwipe(t) {
+  pageSwipe() {
     if (this.touches.size !== 2) return false;
     const [a, b] = [...this.touches.values()];
     const dx = f => f.at.x - f.origin.x, dy = f => f.at.y - f.origin.y;
     const sideways = f => Math.abs(dx(f)) > 14 && Math.abs(dx(f)) > 1.6 * Math.abs(dy(f));
     if (!a.paging && !(sideways(a) && sideways(b) && Math.sign(dx(a)) === Math.sign(dx(b)))) return false;
-    for (const f of [a, b]) {
-      if (!f.paging) { f.paging = true; this.release(f); this.hooks.onRelease?.(f, null); }
-    }
+    for (const f of [a, b]) if (!f.paging) { f.paging = true; this.release(f); this.hooks.onRelease?.(f, null); }
     this.dragStrip((dx(a) + dx(b)) / 2);
     return true;
   }
@@ -275,6 +298,7 @@ export class Keyboard {
     // Level, and far enough: the caret's. A steeper stroke is an ending.
     if (!t.sliding && Math.abs(q.x) >= 12 && Math.abs(q.y) < Math.abs(q.x) * Math.tan(SPACE_LEVEL * Math.PI / 180)) {
       t.sliding = true; t.lastX = Math.sign(q.x) * 12;
+      this.spaceEl.appendChild(this.ratchet);
       this.ratchet.classList.remove('del'); this.ratchet.classList.add('on');
       this.setCandidate(t, null);
     }
@@ -283,38 +307,44 @@ export class Keyboard {
     if (steps) { t.lastX += steps * 14; this.hooks.onAction?.('caret', steps); this.kick(); }
   }
 
-  slideDelete(t, q) {
-    if (!t.sliding && q.x <= -28 && Math.abs(q.x) > Math.abs(q.y) * 1.4 && (performance.now() - t.t0) > 160) {
-      t.sliding = true; t.lastX = -28;
-      this.spaceEl.appendChild(this.ratchet);
+  /** Dragging the corner key left, held, deletes character by character, as the delete key always did. */
+  slideDelete(t, q, now) {
+    if (!t.sliding && q.x <= -30 && Math.abs(q.x) > Math.abs(q.y) * 1.6 && now - t.t0 > 220) {
+      t.sliding = true; t.lastX = q.x;
+      this.utilEl.appendChild(this.ratchet);
       this.ratchet.classList.add('on', 'del');
       this.setCandidate(t, null);
-      this.hooks.onAction?.('delete', 1);
+      this.hooks.onAction?.('deleteChar', 1);
+      this.kick();
     }
     if (!t.sliding) return;
     const steps = Math.trunc((t.lastX - q.x) / 14);
-    if (steps > 0) { t.lastX -= steps * 14; this.hooks.onAction?.('delete', steps); this.kick(); }
+    if (steps > 0) { t.lastX -= steps * 14; this.hooks.onAction?.('deleteChar', steps); this.kick(); }
   }
 
   kick() {
     this.ratchet.animate([{ transform: 'translateX(-7px)' }, { transform: 'translateX(0)' }], { duration: 130, easing: 'cubic-bezier(.3,1.3,.5,1)' });
   }
 
-  /** What a release would do right now. */
-  resolve(t) {
+  /** What a release would do right now, or null for nothing. */
+  resolve(t, raw = false) {
     const { w, h } = t.rect;
     if (t.key === 'UT') {
       const c = classify(t.path, w, h, t.peakTime);
-      if (c.gesture === 'tap') return { action: 'undo', label: '⌫', type: 'tap' };
-      const act = { n: 'return', nw: 'numbers', ne: 'flip', w: 'deleteWord', e: 'globe', s: 'hide' }[c.dir];
-      return act ? { action: act, dir: c.dir, type: 'flick', label: '' } : null;
+      if (c.gesture === 'tap') return { action: 'undo', label: 'undo', type: 'tap' };
+      // Coming back to where the finger started calls the stroke off: nothing here is worth sending by accident.
+      const end = t.path.at(-1);
+      if (c.isReturn || Math.hypot(end.x, end.y) < c.swipeLen * 0.8) return null;
+      const spec = CORNER[c.dir];
+      if (!spec || (c.dir === 'e' && this.mode !== 'steno')) return null;
+      return { action: spec.action, dir: c.dir, type: 'flick', label: this.cornerLabel(c.dir) };
     }
     if (t.key === 'SP') {
       const c = classifySpace(t.path, h, t.peakTime);
-      if (c.type === 'tap') return this.mode === 'steno' ? { id: 'SP', type: 'tap', label: '␣' } : { literal: ' ', type: 'tap', label: '␣' };
+      if (c.type === 'tap') return this.mode === 'steno' ? { id: 'SP', type: 'tap', label: 'space' } : { literal: ' ', type: 'tap', label: 'space' };
       if (this.mode === 'steno' && ENDING_DIRS.includes(c.dir)) {
         const id = strokeId('SP', c.dir);
-        return this.engine.lookup(id) !== undefined ? { id, dir: c.dir, type: 'flick', label: this.engine.label(id) } : null;
+        return this.engine.lookup(id) !== undefined || raw ? { id, dir: c.dir, type: 'flick', label: this.engine.label(id) } : null;
       }
       if (c.dir === 'e' || c.dir === 'w') return { action: 'caret', amount: c.dir === 'e' ? 1 : -1, type: 'flick', dir: c.dir, label: '' };
       return null;
@@ -326,8 +356,9 @@ export class Keyboard {
       const flick = strokeId(t.key, c.dir);
       if (c.type === 'flick') return { id: flick, type: 'flick', dir: c.dir, label: this.engine.label(flick) };
       const hook = strokeId(t.key, c.dir, c.turn);
-      // An undefined hook is its flick: a sloppy tail never types nothing.
-      if (this.engine.lookup(hook) === undefined) return { id: flick, type: 'flick', dir: c.dir, label: this.engine.label(flick), tail: c.turn };
+      // A curl that means nothing is read as its flick, so a sloppy tail never
+      // types nothing. Recording wants the stroke as it was drawn.
+      if (this.engine.lookup(hook) === undefined && !raw) return { id: flick, type: 'flick', dir: c.dir, label: this.engine.label(flick), tail: c.turn };
       return { id: hook, type: c.type, dir: c.dir, turn: c.turn, label: this.engine.label(hook) };
     }
     const map = this.mode === 'numeric' ? NUMERIC : DETAIL;
@@ -345,15 +376,14 @@ export class Keyboard {
   }
 
   speculate(t) {
-    const c = this.resolve(t);
-    this.setCandidate(t, c && c.type !== 'tap' ? c : null, c);
+    const c = this.resolve(t, !!this.hooks.capture?.());
+    this.setCandidate(t, c && c.type !== 'tap' ? c : null);
   }
 
-  setCandidate(t, c, tapOrNull) {
+  setCandidate(t, c) {
     const prev = t.candidate;
     t.candidate = c;
-    t.resolved = c || tapOrNull || null;
-    const same = prev && c && prev.id === c.id && prev.dir === c.dir && prev.type === c.type && prev.label === c.label;
+    const same = prev && c && prev.id === c.id && prev.dir === c.dir && prev.type === c.type && prev.label === c.label && prev.action === c.action;
     if (same || (!prev && !c)) return;
     const k = t.el;
     k.classList.toggle('aiming', !!c && c.type !== 'circle');
@@ -390,20 +420,18 @@ export class Keyboard {
     this.release(t);
     this.ratchet.classList.remove('on');
     if (t.sliding) { this.hooks.onRelease?.(t, null); return; }
-    const c = this.resolve(t);
-    let result = null;
-    if (c) result = this.commit(c, t);
-    this.hooks.onRelease?.(t, c, result);
+    const capture = this.hooks.capture?.();
+    const c = this.resolve(t, !!capture);
+    let entry = null;
+    if (c && capture && c.id !== undefined) capture(c.id);
+    else if (c && !t.dry) entry = this.commit(c, t);
+    this.hooks.onRelease?.(t, c, entry);
   }
 
   /** Performs a resolved release. Returns the engine's tape entry, if any. */
   commit(c, t) {
     if (c.id !== undefined) {
       const entry = this.engine.stroke(c.id);
-      if (entry.kind !== 'undefined' && /-/.test(c.id) && !/^\{&/.test(this.engine.lookup(c.id) || '')) {
-        this.usage[c.id] = (this.usage[c.id] || 0) + 1;
-        localStorage.setItem('wf-steno-usage', JSON.stringify(this.usage));
-      }
       this.hooks.onStroke?.(c, entry, t);
       return entry;
     }
@@ -414,7 +442,6 @@ export class Keyboard {
       return entry;
     }
     switch (c.action) {
-      case 'undo': this.hooks.onAction?.('undo'); break;
       case 'shift': this.detailShift = !this.detailShift; this.renderFaces(); break;
       case 'numbers': this.setMode(this.mode === 'numeric' ? 'detail' : 'numeric'); break;
       case 'flip': this.setMode(this.mode === 'steno' ? 'detail' : 'steno'); break;
@@ -424,11 +451,16 @@ export class Keyboard {
     return null;
   }
 
-  /** How many word strokes have been made from a key: the guide fades as this grows. */
-  practice(key) {
-    let n = 0;
-    for (const [id, count] of Object.entries(this.usage)) if (id.startsWith(key + '-')) n += count;
-    return n;
+  /**
+   * The strokes that share a flick with a word stroke: the flick itself and
+   * its curls. "Change" steps through them, which is how a misread curl is
+   * put right in one move.
+   */
+  siblings(id) {
+    const s = parseStroke(id);
+    if (!s || !s.dir || s.key === 'SP') return [];
+    const base = strokeId(s.key, s.dir);
+    return [base, `${base}-cw`, `${base}-ccw`, `${base}-back`].filter(x => this.engine.lookup(x) !== undefined);
   }
 
   // --------------------------------------------------------- synthetic finger
@@ -437,25 +469,26 @@ export class Keyboard {
    * Plays a path through the same code as a real finger.
    * @param key    key to start on ('SP' and 'UT' included)
    * @param path   [{x, y, t}] from src/robot.js
-   * @param speed  playback rate; 1 is real time
    */
-  async play(key, path, { speed = 1, offset = { x: 0, y: 0 }, hold = 0 } = {}) {
+  async play(key, path, { speed = 1, offset = { x: 0, y: 0 }, hold = 0, dry = false, pause = 0 } = {}) {
     const rc = keyRect(key);
     const origin = { x: rc.x + rc.w / 2 + offset.x, y: rc.y + rc.h / 2 + offset.y };
     const id = 'ghost-' + (this.ghostSeq = (this.ghostSeq || 0) + 1);
     const wait = ms => new Promise(r => setTimeout(r, ms));
     const t = this.begin(id, origin, performance.now(), true);
+    t.dry = dry;
     this.hooks.onGhost?.('down', origin);
     if (hold) await wait(hold);
     let last = 0;
     for (const p of path.slice(1)) {
-      await wait(Math.max(0, (p.t - last) / speed));
+      // A pause at the corner lets the guide show what the curls are.
+      await wait(Math.max(0, (p.t - last) / speed) + (pause && p.t - last > 15 ? pause : 0));
       last = p.t;
       const at = { x: origin.x + p.x, y: origin.y + p.y };
       this.hooks.onGhost?.('move', at);
       this.advance(id, at, performance.now());
     }
-    await wait(40 / speed);
+    await wait(60 / speed + pause * 0.6);
     this.hooks.onGhost?.('up', t.at);
     this.finish(id, performance.now());
   }
