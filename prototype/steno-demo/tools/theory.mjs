@@ -5,20 +5,27 @@
 // Reads data/build/lexicon.json, writes src/theory.generated.js and prints the
 // resulting keyboard. The rules, in the order they are applied:
 //
-// 1. WORD FLICKS. Every flick direction that does not type a letter, one of
-//    the six everyday marks or shift is free. A free direction on a key holds
-//    a word that begins with one of that key's letters. Each key takes the
-//    words that save the most time; within a key a word prefers the direction
-//    that points at the key of its second letter, then the axes.
-// 2. HOOKS. A flick finished with a curl (clockwise, counter-clockwise) or
-//    drawn out and back types a relative of the flicked word: first its
-//    contractions, on fixed turns (clockwise = is/are/am, counter-clockwise =
-//    not/will, back = have), then the words that begin with it or belong to
-//    its family. A letter flick finished with a curl types the commonest
-//    remaining words that begin with that letter.
-// 3. ENDINGS. The six commonest endings sit on the space bar's flicks.
-// 4. SPELLED BRIEFS. Every remaining word gets the shortest spelling prefix
-//    that is not itself a word and that no commoner word has claimed.
+// 1. WORD FLICKS. Letters, the six everyday marks and shift keep their
+//    directions. Every other direction on a key holds a word of at most five
+//    letters that begins with one of that key's letters: the words that save
+//    the most. The two one-letter words, I and a, are the flick straight up on
+//    their own keys. Within a key a word prefers the direction that points at
+//    the key of its second letter, then the axes, and words that look alike
+//    are kept off neighbouring directions, where a slip would swap them unseen.
+// 2. HOOKS. A flick finished with a curl to the right or the left, or drawn
+//    out and back, types another word from the same key.
+//      a. The flicked word's own contractions, on fixed turns: right is
+//         is/are/am, left is not/will, back is have/would.
+//      b. Then, by how much each saves: a phrase that begins with the flicked
+//         word, its kin, a word that begins with it, and after those any word
+//         that begins with the same letter.
+//      c. A letter flick takes the commonest words that begin with that letter.
+//    A contraction never sits on another word's turn.
+// 3. ENDINGS are fixed, not generated: the three inflections along the top of
+//    the space bar, the two contractions that work on any word below.
+// 4. COMPLETIONS. A word with no stroke gets the shortest spelling prefix that
+//    no other word in the lexicon shares, so the offer is never ambiguous.
+//    It is typed only when the typist asks.
 //
 // A word is assigned at most once, so every word has exactly one stroke.
 
@@ -26,9 +33,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  KEYS, DIRS, FAMILY, FREE_SLOTS, LETTER_SLOTS, LETTER_HOME, ENDING_DIRS, neighbour, isCardinal, strokeId, DETAIL, stenoSlotKind,
+  KEYS, DIRS, FAMILY, LETTER_SLOTS, neighbour, isCardinal, strokeId, DETAIL, stenoSlotKind,
 } from '../src/layout.js';
-import { TIMING, spelledMs } from '../src/model.js';
+import { TIMING, spelledMs, EFFORT_MS } from '../src/model.js';
 import { ENDINGS, applyEnding, stemsFor } from '../src/orthography.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -36,32 +43,37 @@ const lexicon = JSON.parse(fs.readFileSync(path.join(here, '..', 'data', 'build'
 
 // ------------------------------------------------------------ vocabulary
 
-// Tokens that are not words anyone wants a stroke for: single letters other
-// than the two real ones, and fragments the tokeniser leaves behind.
-const NOT_WORDS = new Set(['s', 't', 'm', 'd', 'll', 've', 're', 'n', 'u', 'r', 'k', 'c', 'e', 'b', 'x', 'o',
-  'y', 'p', 'f', 'g', 'h', 'j', 'l', 'q', 'v', 'w', 'z', 'ur', 'im', 'dont', 'cant', 'wat', 'coz', 'cos', 'da',
-  'ok', 'th', 'haha', 'hahaha', 'lol', 'mr', 'mrs', 'dr', 'ya', 'em', 'ah', 'uh', 'um', 'hmm', 'huh', 'eh', 'la',
-  'wanna', 'gonna', 'gotta', 'yeah', 'yea', 'yep', 'nope', 'hey', 'hi', 'oh', 'okay', 'bye', 'wow', 'yo']);
-// Interjections people do type are kept as words; only fragments are dropped.
-for (const w of ['wanna', 'gonna', 'gotta', 'yeah', 'hey', 'hi', 'oh', 'okay', 'bye', 'wow', 'ok', 'haha', 'lol']) NOT_WORDS.delete(w);
+// Fragments the tokeniser leaves behind, dialect spellings and fillers: real
+// tokens, but not words anyone wants a stroke or a completion for.
+const NOT_WORDS = new Set(`s t m d ll ve re n u r k c e b x o y p f g h j l q v w z ur im dont cant wat coz cos da th mr mrs
+  dr ya em ah uh um hmm huh eh la didnt thats wont doesnt isnt ive youre ill hes shes theyre weve
+  nothin somethin gettin goin doin lookin talkin comin tryin sayin havin makin takin bein thinkin fuckin
+  woulda coulda shoulda kinda sorta outta lotta gotcha dunno lemme gimme`.split(/\s+/));
+const proper = new Set(lexicon.proper);
+const isWord = e => /^[a-z][a-z']*$/.test(e.w) && !NOT_WORDS.has(e.w) && !/in'$/.test(e.w);
 
-const words = lexicon.words.filter(e => !NOT_WORDS.has(e.w) && /^[a-z][a-z']*$/.test(e.w));
-const pm = new Map(words.map(e => [e.w, e.pm]));
+const everyToken = lexicon.words;                                 // what the typist might spell
+const words = lexicon.words.filter(isWord);                       // what may be offered
+const strokable = words.filter(e => !proper.has(e.w));            // what may get a stroke
+const pm = new Map(lexicon.words.map(e => [e.w, e.pm]));
 const totalPm = words.reduce((s, e) => s + e.pm, 0);
-const known = w => pm.has(w);
+const known = w => pm.has(w) && !NOT_WORDS.has(w);
 
-const flickBenefit = w => pm.get(w) * (spelledMs(w) - TIMING.flick);
-const hookBenefit = w => pm.get(w) * (spelledMs(w) - TIMING.hook);
+// What a stroke saves: time under the model, plus a small price on every
+// gesture it replaces, because a gesture is also a chance to slip.
+const saved = (w, strokeMs) => spelledMs(w) - strokeMs + EFFORT_MS * w.length;
+const flickBenefit = w => pm.get(w) * saved(w, TIMING.flick);
+const hookBenefit = w => pm.get(w) * saved(w, TIMING.hook);
 
-const assigned = new Map();            // word -> stroke id or spelled outline
-const strokes = new Map();             // stroke id -> word
+const assigned = new Map();            // word or phrase -> stroke id
+const strokes = new Map();             // stroke id -> word or phrase
 const assign = (word, stroke) => { assigned.set(word, stroke); strokes.set(stroke, word); };
 
 // ------------------------------------------------------- 1. word flicks
 
-// A word flick has to be readable in a corner of its key.
-const MAX_FLICK_LETTERS = 6;
-const slots = {};                      // key -> { dir: word }
+const MAX_FLICK_LETTERS = 5;           // has to be readable in a corner of its key
+const ONE_LETTER = { I: 'i', A: 'a' }; // the two one-letter words, straight up on their own keys
+const slots = {};
 
 function permutations(items) {
   if (items.length <= 1) return [items];
@@ -71,116 +83,123 @@ function permutations(items) {
 /** How well a word sits on a direction: it points at its second letter's key. */
 function pointsAt(word, key, dir) {
   const next = neighbour(key, dir);
-  if (!next) return 0;
-  const second = word[1];
-  if (!second) return 0;
-  if (DETAIL[next].tap === second) return 1;                 // t -> h for "the"
-  return FAMILY[next].includes(second) ? 0.35 : 0;           // a flick letter of that key
+  if (!next || !word[1]) return 0;
+  if (DETAIL[next].tap === word[1]) return 1;                 // t -> h for "the"
+  return FAMILY[next].includes(word[1]) ? 0.35 : 0;
 }
 
+const commonPrefix = (a, b) => { let i = 0; while (i < a.length && a[i] === b[i]) i++; return i; };
+/** How easily two words are mistaken for each other at a glance: you/your, he/her, it/if. */
+const alike = (a, b) => { const r = commonPrefix(a, b) / Math.max(a.length, b.length); return r >= 0.5 ? r : 0; };
+const adjacent = (d1, d2) => { const i = DIRS.indexOf(d1), j = DIRS.indexOf(d2); return (i - j + 8) % 8 === 1 || (j - i + 8) % 8 === 1; };
+
+const freeDirs = key => DIRS.filter(d => stenoSlotKind(key, d) === 'free');
+
 for (const key of KEYS) {
-  const free = FREE_SLOTS.filter(s => s.key === key).map(s => s.dir);
-  if (!free.length) { slots[key] = {}; continue; }
-  const candidates = words
-    .filter(e => e.w.length >= 2 && e.w.length <= MAX_FLICK_LETTERS && FAMILY[key].includes(e.w[0]))
+  slots[key] = {};
+  let free = freeDirs(key);
+  if (ONE_LETTER[key]) { slots[key].n = ONE_LETTER[key]; assign(ONE_LETTER[key], strokeId(key, 'n')); free = free.filter(d => d !== 'n'); }
+  if (!free.length) continue;
+  const candidates = strokable
+    .filter(e => e.w.length >= 2 && e.w.length <= MAX_FLICK_LETTERS && FAMILY[key].includes(e.w[0]) && !assigned.has(e.w))
     .sort((a, b) => flickBenefit(b.w) - flickBenefit(a.w))
     .slice(0, free.length)
     .map(e => e.w);
-  // Best direction for each chosen word: exhaustive over the key's free directions.
   let best = null;
   for (const order of permutations(free)) {
     let score = 0;
-    candidates.forEach((w, i) => {
-      const dir = order[i];
-      score += flickBenefit(w) * ((isCardinal(dir) ? 1 : 0.93) + 0.6 * pointsAt(w, key, dir));
-    });
+    candidates.forEach((w, i) => { score += flickBenefit(w) * ((isCardinal(order[i]) ? 1 : 0.93) + 0.6 * pointsAt(w, key, order[i])); });
+    // Look-alike words on neighbouring directions cost the smaller of the two, in proportion.
+    const placed = [...candidates.map((w, i) => [w, order[i]]), ...Object.entries(slots[key]).map(([d, w]) => [w, d])];
+    for (let a = 0; a < placed.length; a++) for (let b = a + 1; b < placed.length; b++) {
+      if (adjacent(placed[a][1], placed[b][1])) score -= 0.6 * alike(placed[a][0], placed[b][0]) * Math.min(flickBenefit(placed[a][0]), flickBenefit(placed[b][0]));
+    }
     if (!best || score > best.score) best = { score, order };
   }
-  slots[key] = {};
   candidates.forEach((w, i) => { slots[key][best.order[i]] = w; assign(w, strokeId(key, best.order[i])); });
 }
 
 // ------------------------------------------------------------- 2. hooks
 
 const KIN = {
-  do: ["don't", 'did', 'does', 'done', 'doing', "didn't", "doesn't"],
-  go: ['going', 'gone', 'went', 'gonna', 'goes'],
-  get: ['got', 'getting', 'gotta', 'gets'],
-  have: ['has', 'had', 'having', "haven't", "hasn't"],
-  be: ['been', 'being'], is: ["isn't"], are: ["aren't"], was: ["wasn't", 'were', "weren't"],
-  will: ["won't", 'would', "wouldn't"], can: ["can't", 'could', "couldn't", 'cannot'],
-  want: ['wanna', 'wanted', 'wants'], know: ['knew', 'known', 'knows'], think: ['thought', 'thinking'],
-  say: ['said', 'says', 'saying'], see: ['saw', 'seen', 'seeing'], come: ['came', 'coming', 'comes'],
-  take: ['took', 'taken', 'taking'], make: ['made', 'making', 'makes'], give: ['gave', 'given', 'giving'],
-  tell: ['told', 'telling'], he: ['him', 'his', "he's", "he'll", "he'd"], she: ['her', "she's", "she'll"],
-  they: ['them', 'their', "they're", "they'll", "they've"], we: ['us', 'our', "we're", "we'll", "we've"],
-  you: ['your', "you're", "you'll", "you've", 'yours', 'yourself'], me: ['my', 'mine', 'myself'],
-  "i'm": ["i'll", "i've", "i'd"],
-  it: ['its', "it's", "it'll"], this: ['these'], that: ['those', "that's"], good: ['better', 'best'],
-  not: ['no', 'never', 'nothing'], what: ["what's", 'whatever'], there: ["there's", 'their'],
-  here: ["here's"], let: ["let's"], who: ["who's", 'whose', 'whom'], how: ["how's"], where: ["where's"],
-  should: ["shouldn't"], would: ["wouldn't"], could: ["couldn't"], did: ["didn't"], does: ["doesn't"],
-  has: ["hasn't"], had: ["hadn't"], were: ["weren't"], thank: ['thanks'], thing: ['things', 'think'],
-  feel: ['felt', 'feeling'], find: ['found'], leave: ['left', 'leaving'], mean: ['meant', 'means'],
+  do: ["don't", 'did', 'does', 'done', 'doing'], go: ['going', 'gone', 'went', 'gonna', 'goes'],
+  get: ['got', 'getting', 'gotta', 'gets'], have: ['has', 'had', 'having'], be: ['been', 'being'],
+  was: ['were'], will: ['would'], can: ['could'], want: ['wanna', 'wanted', 'wants'],
+  know: ['knew', 'known', 'knows'], think: ['thought', 'thinking'], say: ['said', 'says', 'saying'],
+  see: ['saw', 'seen', 'seeing'], come: ['came', 'coming', 'comes'], take: ['took', 'taken', 'taking'],
+  make: ['made', 'making', 'makes'], give: ['gave', 'given', 'giving'], tell: ['told', 'telling'],
+  he: ['him', 'his'], she: ['her'], they: ['them', 'their'], we: ['us', 'our'],
+  you: ['your', 'yours', 'yourself'], me: ['my', 'mine', 'myself'], it: ['its'], this: ['these'],
+  that: ['those'], good: ['better', 'best'], not: ['no', 'never', 'nothing'], what: ['whatever'],
+  who: ['whose', 'whom'], thank: ['thanks'], feel: ['felt', 'feeling'], find: ['found'],
+  leave: ['left', 'leaving'], mean: ['meant', 'means'], i: ['me', 'my'], a: ['an'],
 };
 
 // Contractions take fixed turns on every word that has them, so a turn means
 // the same thing across the keyboard.
 const TURN_CLASS = [
-  { turn: 'cw', suffixes: ["'m", "'re", "'s"] },        // is / are / am
-  { turn: 'ccw', suffixes: ["n't", "'ll"] },            // not / will
-  { turn: 'back', suffixes: ["'ve", "'d"] },            // have / would
+  { turn: 'cw', name: 'is/are/am', forms: base => [applyEnding(base, "'s")] },
+  { turn: 'ccw', name: 'not/will', forms: base => [ENDINGS["n't"].apply(base), base + "'ll"] },
+  { turn: 'back', name: 'have/would', forms: base => [base + "'ve", base + "'d"] },
 ];
-const NOT_FORM = w => ENDINGS["n't"].apply(w);
 
-const hooks = {};                      // stroke id -> word
-const freeTurns = new Map();           // "KEY-dir" -> remaining turns
-const slotWord = new Map();            // "KEY-dir" -> word
+const hooks = {};
+const freeTurns = new Map();
+const slotWord = new Map();
 for (const key of KEYS) for (const [dir, w] of Object.entries(slots[key])) {
   freeTurns.set(strokeId(key, dir), ['cw', 'ccw', 'back']);
   slotWord.set(strokeId(key, dir), w);
 }
-// A letter flick keeps its return swipe for the capital, so it has two curls.
-for (const s of LETTER_SLOTS) freeTurns.set(strokeId(s.key, s.dir), ['cw', 'ccw']);
-// So does a mark: its curls are free for words of the key it sits on.
-const MARK_SLOTS = KEYS.flatMap(k => DIRS.filter(d => ['mark', 'shift'].includes(stenoSlotKind(k, d))).map(d => ({ key: k, dir: d })));
-for (const m of MARK_SLOTS) freeTurns.set(strokeId(m.key, m.dir), ['cw', 'ccw']);
+// Capitals have shift, the circle and automatic capitals, so a letter's
+// out-and-back is free for a word.
+for (const s of LETTER_SLOTS) freeTurns.set(strokeId(s.key, s.dir), ['cw', 'ccw', 'back']);
 
-function hook(parent, turn, word) {
+function hook(parent, turn, text) {
   const left = freeTurns.get(parent);
   left.splice(left.indexOf(turn), 1);
-  const id = `${parent}-${turn}`;
-  hooks[id] = word;
-  assign(word, id);
+  hooks[`${parent}-${turn}`] = text;
+  assign(text, `${parent}-${turn}`);
 }
 
-const MIN_HOOK_PM = 100;                // a hook has to be worth learning
-const worthHook = w => known(w) && !assigned.has(w) && pm.get(w) >= MIN_HOOK_PM && hookBenefit(w) > 0;
+const MIN_HOOK_PM = 100;               // a hook has to be worth learning
+const worthHook = w => known(w) && !proper.has(w) && !assigned.has(w) && pm.get(w) >= MIN_HOOK_PM && hookBenefit(w) > 0;
 
 // 2a. Contractions on their fixed turns.
 for (const [parent, base] of slotWord) {
   for (const cls of TURN_CLASS) {
-    const forms = cls.suffixes.map(sfx => sfx === "n't" ? NOT_FORM(base) : base + sfx)
-      .filter(w => w !== base && worthHook(w))
-      .sort((a, b) => pm.get(b) - pm.get(a));
-    if (forms.length && freeTurns.get(parent).includes(cls.turn)) hook(parent, cls.turn, forms[0]);
+    const forms = cls.forms(base).map(f => f.toLowerCase()).filter(w => w !== base && worthHook(w)).sort((a, b) => pm.get(b) - pm.get(a));
+    if (forms.length) hook(parent, cls.turn, forms[0]);
   }
 }
 
-// 2b. Everything else, commonest saving first. A word may hook off:
-//   - a word flick it is kin to, or begins with          (the -> they)
-//   - its first letter's own flick                       (w + curl -> want)
-//   - the flick it spells from the key's tap letter      (o, u -> out)
-//   - a word flick or a mark on its first letter's key   (same key, same family)
-// and takes the closest of those that still has a turn free.
-const related = (base, w) => (w.length > base.length && w.startsWith(base) && base.length >= 2) || (KIN[base] || []).includes(w);
-const commonPrefix = (a, b) => { let i = 0; while (i < a.length && a[i] === b[i]) i++; return i; };
-const byHookBenefit = words.map(e => e.w).filter(worthHook).sort((a, b) => hookBenefit(b) - hookBenefit(a));
-for (const w of byHookBenefit) {
-  if (assigned.has(w)) continue;
+// Phrases that begin with a flick word. What a phrase stroke saves is measured
+// against the cheapest way to write its words one by one.
+const costAlone = w => assigned.has(w) && !assigned.get(w).includes('-cw') && !assigned.get(w).includes('-ccw') && !assigned.get(w).includes('-back')
+  ? TIMING.flick : Math.min(spelledMs(w), assigned.has(w) ? TIMING.hook : Infinity);
+const phrases = lexicon.phrases
+  .map(p => ({ text: p.g, parts: p.g.split(' '), pm: p.pm }))
+  .filter(p => p.parts.length <= 3 && p.parts.every(known) && slotWord.size && [...slotWord.values()].includes(p.parts[0]))
+  .map(p => ({ ...p, benefit: p.pm * (p.parts.reduce((s, w) => s + costAlone(w), 0) - TIMING.hook + EFFORT_MS * (p.parts.length - 1)) }))
+  .filter(p => p.pm >= MIN_HOOK_PM && p.benefit > 0);
+
+// 2b and 2c. Everything else, by what it saves.
+const related = (base, w) => w.length > base.length && w.startsWith(base) && base.length >= 2;
+const candidates = [
+  ...strokable.map(e => e.w).filter(worthHook).map(w => ({ text: w, benefit: hookBenefit(w) })),
+  ...phrases.map(p => ({ text: p.text, benefit: p.benefit, phrase: p })),
+].sort((a, b) => b.benefit - a.benefit);
+
+/** Where a candidate may hook, best first. */
+function optionsFor(c) {
+  const w = c.text;
   const options = [];
+  if (c.phrase) {
+    for (const [parent, base] of slotWord) if (base === c.phrase.parts[0] && freeTurns.get(parent).length) options.push({ id: parent, rank: 6 });
+    return options;
+  }
+  const contraction = w.includes("'");
   for (const [parent, base] of slotWord) {
-    if (!freeTurns.get(parent).length) continue;
+    if (!freeTurns.get(parent).length || contraction) continue;        // a contraction never sits on another word's turn
     if ((KIN[base] || []).includes(w)) options.push({ id: parent, rank: 5 });
     else if (related(base, w)) options.push({ id: parent, rank: 4 + base.length / 10 });
     else if (base[0] === w[0]) options.push({ id: parent, rank: commonPrefix(base, w) >= 2 ? 2 : 1 });
@@ -189,72 +208,94 @@ for (const w of byHookBenefit) {
     const id = strokeId(s.key, s.dir);
     if (!freeTurns.get(id).length) continue;
     if (w[0] === s.letter) options.push({ id, rank: 3 });
-    else if (w[0] === DETAIL[s.key].tap && w[1] === s.letter) options.push({ id, rank: 2.5 });
+    else if (w[0] === DETAIL[s.key].tap && w[1] === s.letter) options.push({ id, rank: 2.5 });     // o, u: out
   }
-  for (const m of MARK_SLOTS) {
-    const id = strokeId(m.key, m.dir);
-    if (freeTurns.get(id).length && FAMILY[m.key].includes(w[0])) options.push({ id, rank: 0.5 });
-  }
-  if (!options.length) continue;
-  options.sort((a, b) => b.rank - a.rank);
-  const left = freeTurns.get(options[0].id);
-  const wanted = TURN_CLASS.find(c => c.suffixes.some(sfx => w.endsWith(sfx)))?.turn;
-  hook(options[0].id, left.includes(wanted) ? wanted : left[0], w);
+  return options.sort((x, y) => y.rank - x.rank);
+}
+
+// The turns that words beginning with one letter compete for: those of the
+// flick words that begin with it, and its own letter flick. The most valuable
+// candidates win the turns; relatedness only decides which turn each gets.
+const capacity = {};
+for (const [parent, base] of slotWord) capacity[base[0]] = (capacity[base[0]] || 0) + freeTurns.get(parent).length;
+for (const s of LETTER_SLOTS) capacity[s.letter] = (capacity[s.letter] || 0) + freeTurns.get(strokeId(s.key, s.dir)).length;
+// A word whose first letter has no turns of its own (o, on a key whose every
+// direction is a letter) competes for the flick it spells next: o, u for "out".
+const groupOf = c => {
+  const first = (c.phrase ? c.phrase.parts[0] : c.text)[0];
+  return capacity[first] || c.phrase ? first : c.text[1];
+};
+const winners = new Set();
+const taken = {};
+for (const c of candidates) {
+  const g = groupOf(c);
+  if ((taken[g] || 0) >= (capacity[g] || 0)) continue;
+  taken[g] = (taken[g] || 0) + 1;
+  winners.add(c.text);
+}
+// First the winners go to their closest relative; then everything, winners
+// first by value, takes whatever turn is left on the right key.
+for (const c of candidates) {
+  if (!winners.has(c.text) || assigned.has(c.text)) continue;
+  const options = optionsFor(c).filter(o => o.rank >= 2.5);
+  if (options.length) hook(options[0].id, freeTurns.get(options[0].id)[0], c.text);
+}
+for (const c of candidates) {
+  if (assigned.has(c.text)) continue;
+  const options = optionsFor(c);
+  if (options.length) hook(options[0].id, freeTurns.get(options[0].id)[0], c.text);
 }
 
 // ----------------------------------------------------------- 3. endings
 
-// Doubling exceptions, read off the lexicon: where the attested spelling
-// disagrees with the one-syllable rule, the lexicon wins.
-const doubling = {};
-for (const { w } of words) {
-  if (w.length < 3 || !/[^aeiou][aeiou][^aeiouwxy]$/.test(w)) continue;
-  const last = w.at(-1);
-  const doubled = ['ing', 'ed', 'er'].some(s => known(w + last + s));
-  const single = ['ing', 'ed', 'er'].some(s => known(w + s));
-  const rule = applyEnding(w, 'ing') === w + last + 'ing';
-  if (doubled && !single && !rule) doubling[w] = true;
-  if (single && !doubled && rule) doubling[w] = false;
-}
+const endings = { 'SP-nw': 'ed', 'SP-n': 's', 'SP-ne': 'ing', 'SP-sw': "n't", 'SP-se': "'s" };
+const liveEndings = new Set(Object.values(endings));
 
-// Mass of each ending: tokens of words that are some commoner base plus that ending.
-const endingMass = {};
-const endingOf = new Map();            // derived word -> { base, ending }
+// Which words are a commoner word plus an ending. The planner writes them that way.
+const derived = new Map();
 for (const { w } of words) {
   if (assigned.has(w)) continue;
   for (const ending of Object.keys(ENDINGS)) {
     for (const base of stemsFor(w, ending)) {
-      if (!known(base) || base === w || pm.get(base) < pm.get(w) * 0.2) continue;
-      if (applyEnding(base, ending, doubling) !== w) continue;
-      const better = endingOf.get(w);
-      if (!better || pm.get(base) > pm.get(better.base)) endingOf.set(w, { base, ending });
+      // The base has to be a real word in its own right: at least three letters
+      // (or a pronoun or auxiliary taking a contraction) and not much rarer than
+      // what it is said to make. "thing" is not "the" with an ending.
+      const contraction = ending.includes("'");
+      if (!known(base) || base === w || base.length < (contraction ? 1 : 3) || pm.get(base) < pm.get(w) * 0.3) continue;
+      if (applyEnding(base, ending) !== w) continue;
+      const have = derived.get(w);
+      if (!have || pm.get(base) > pm.get(have.base)) derived.set(w, { base, ending });
     }
   }
 }
-for (const [w, { ending }] of endingOf) endingMass[ending] = (endingMass[ending] || 0) + pm.get(w);
+const endingMass = {};
+for (const [w, { ending }] of derived) endingMass[ending] = (endingMass[ending] || 0) + pm.get(w);
 
-const endingOrder = Object.entries(endingMass).sort((a, b) => b[1] - a[1]).map(([e]) => e);
-const endings = {};
-ENDING_DIRS.forEach((dir, i) => { if (endingOrder[i]) endings[strokeId('SP', dir)] = endingOrder[i]; });
-const liveEndings = new Set(Object.values(endings));
+// --------------------------------------------------------- 4. completions
 
-// ---------------------------------------------------- 4. spelled briefs
-
-// A prefix is a brief only when nobody would type it as itself.
-const TAKEN = new Set([...words.map(e => e.w), ...lexicon.words.map(e => e.w), ...lexicon.smsOnly.map(e => e.w)]);
-const briefs = {};
-const MIN_BRIEF_PM = 3;
+// A prefix completes to a word only if the typist could mean nothing else by
+// it: no other token in the lexicon begins with it, apart from the word's own
+// inflections, and it is not a token itself.
+const MIN_COMPLETION_PM = 5;
 const MIN_PREFIX = 3;
-const MIN_SAVED = 2;
-const viaEnding = w => { const d = endingOf.get(w); return d && liveEndings.has(d.ending) ? d : null; };
-
-for (const { w } of [...words].sort((a, b) => b.pm - a.pm)) {
-  if (assigned.has(w) || pm.get(w) < MIN_BRIEF_PM || w.includes("'")) continue;
-  if (viaEnding(w)) continue;                         // base + ending is already its one stroke
+const MIN_SAVED = 3;                   // letters saved; the complete stroke costs one back
+const byPrefix = new Map();            // prefix -> tokens that begin with it
+for (const { w } of everyToken) for (let n = MIN_PREFIX; n <= w.length; n++) {
+  const p = w.slice(0, n);
+  if (!byPrefix.has(p)) byPrefix.set(p, []);
+  byPrefix.get(p).push(w);
+}
+const family = (w, other) => other === w || (other.startsWith(w) && other.length <= w.length + 3) || derived.get(other)?.base === w;
+const completions = {};
+for (const { w } of strokable) {
+  if (assigned.has(w) || pm.get(w) < MIN_COMPLETION_PM || w.includes("'")) continue;
+  const d = derived.get(w);
+  if (d && liveEndings.has(d.ending)) continue;       // base + ending is already its one stroke
   for (let n = MIN_PREFIX; n <= w.length - MIN_SAVED; n++) {
     const prefix = w.slice(0, n);
-    if (TAKEN.has(prefix) || prefix in briefs) continue;
-    briefs[prefix] = w;
+    if (pm.has(prefix) || prefix in completions) continue;
+    if (!byPrefix.get(prefix).every(other => family(w, other))) continue;
+    completions[prefix] = w;
     assigned.set(w, prefix);
     break;
   }
@@ -262,43 +303,50 @@ for (const { w } of [...words].sort((a, b) => b.pm - a.pm)) {
 
 // --------------------------------------------------------------- report
 
-const share = list => (list.reduce((s, w) => s + (pm.get(w) || 0), 0) / totalPm * 100);
+const share = list => list.reduce((s, w) => s + (pm.get(w) || 0), 0) / totalPm * 100;
 const flickWords = KEYS.flatMap(k => Object.values(slots[k]));
-const hookWords = Object.values(hooks);
-const endingWords = [...endingOf].filter(([w, d]) => liveEndings.has(d.ending) && !assigned.has(w)).map(([w]) => w);
-const briefWords = Object.values(briefs);
+const hookTexts = Object.values(hooks);
+const hookWords = hookTexts.filter(t => !t.includes(' '));
+const hookPhrases = hookTexts.filter(t => t.includes(' '));
+const viaEnding = [...derived].filter(([w, d]) => liveEndings.has(d.ending) && !assigned.has(w)).map(([w]) => w);
+const completionWords = Object.values(completions);
+const phrasePm = new Map(lexicon.phrases.map(p => [p.g, p.pm]));
+
+// What the marks that lost their direction would have saved, against the word that took it.
+const markTable = Object.entries(lexicon.marks).map(([m, perMillion]) => ({ mark: m, perMillion }));
 
 const theory = {
   meta: {
     generated: 'tools/theory.mjs',
     corpora: lexicon.corpora,
     timing: TIMING,
-    counts: { flicks: flickWords.length, hooks: hookWords.length, endings: Object.keys(endings).length, briefs: briefWords.length },
+    counts: { flicks: flickWords.length, hooks: hookWords.length, phrases: hookPhrases.length, endings: Object.keys(endings).length, completions: completionWords.length },
     share: {
       flicks: +share(flickWords).toFixed(2), hooks: +share(hookWords).toFixed(2),
-      endings: +share(endingWords).toFixed(2), briefs: +share(briefWords).toFixed(2),
+      endings: +share(viaEnding).toFixed(2), completions: +share(completionWords).toFixed(2),
     },
     endingMass: Object.fromEntries(Object.entries(endingMass).sort((a, b) => b[1] - a[1]).map(([e, m]) => [e, +(m / totalPm * 100).toFixed(2)])),
+    marks: Object.fromEntries(markTable.map(m => [m.mark, m.perMillion])),
   },
   slots: Object.fromEntries(KEYS.flatMap(k => Object.entries(slots[k]).map(([d, w]) => [strokeId(k, d), w]))),
   hooks,
   endings,
-  briefs,
-  doubling,
-  // Every word of at least three per million, commonest first: what the planner
-  // accepts as the base of an ending, and what the coach treats as a real word.
+  completions,
+  // word -> "base ending" for the words the planner writes as a base and an ending
+  derived: Object.fromEntries([...derived].filter(([w, d]) => liveEndings.has(d.ending) && pm.get(w) >= 1.5).map(([w, d]) => [w, `${d.base} ${d.ending}`])),
+  // Every word of at least three per million, commonest first: what the coach treats as a real word.
   lexicon: words.filter(e => e.pm >= 3).map(e => e.w).join(' '),
-  // Per-million weight of every word the theory knows a stroke for, for the coach.
-  weight: Object.fromEntries([...flickWords, ...hookWords, ...briefWords].map(w => [w, Math.round(pm.get(w))])),
+  // Per-million weight of everything the theory knows a stroke for.
+  weight: Object.fromEntries([...flickWords, ...hookWords, ...completionWords].map(w => [w, Math.round(pm.get(w))])
+    .concat(hookPhrases.map(p => [p, Math.round(phrasePm.get(p) || 0)]))),
 };
 
 fs.writeFileSync(path.join(here, '..', 'src', 'theory.generated.js'),
   `// Generated by tools/theory.mjs from data/build/lexicon.json. Do not edit.\nexport default ${JSON.stringify(theory, null, 1)};\n`);
 
 const grid = [['A', 'N', 'I'], ['H', 'O', 'R'], ['T', 'E', 'S']];
-console.log(`flicks ${flickWords.length} (${share(flickWords).toFixed(1)} % of tokens)  hooks ${hookWords.length} (${share(hookWords).toFixed(1)} %)  via endings ${share(endingWords).toFixed(1)} %  briefs ${briefWords.length} (${share(briefWords).toFixed(1)} %)`);
-console.log('ending mass %:', theory.meta.endingMass);
-console.log('endings:', endings);
+console.log(`flicks ${flickWords.length} (${share(flickWords).toFixed(1)} % of tokens)  hook words ${hookWords.length} (${share(hookWords).toFixed(1)} %)  phrases ${hookPhrases.length}  via endings ${share(viaEnding).toFixed(1)} %  completions ${completionWords.length} (${share(completionWords).toFixed(1)} %)`);
+console.log('ending mass %:', JSON.stringify(theory.meta.endingMass));
 for (const row of grid) for (const key of row) {
   console.log(`\n[${key}] family ${FAMILY[key].join('')}`);
   for (const dir of DIRS) {
@@ -306,8 +354,11 @@ for (const row of grid) for (const key of row) {
     const head = slots[key][dir] ? `"${slots[key][dir]}"` : (LETTER_SLOTS.find(s => s.key === key && s.dir === dir)?.letter || DETAIL[key][dir]?.label);
     if (!head) continue;
     const hs = ['cw', 'ccw', 'back'].map(t => hooks[`${id}-${t}`] ? `${t}:${hooks[`${id}-${t}`]}` : null).filter(Boolean).join('  ');
-    console.log(`  ${dir.padEnd(2)} ${String(head).padEnd(12)} ${hs}`);
+    console.log(`  ${dir.padEnd(2)} ${String(head).padEnd(10)} ${hs}`);
   }
 }
-console.log('\nleft without a single stroke:', words.map(e => e.w).filter(w => !strokes.has(assigned.get(w)) && w.length > 2).slice(0, 70).join(' '));
-console.log('\nfirst briefs:', Object.entries(briefs).slice(0, 80).map(([p, w]) => `${p}→${w}`).join('  '));
+const top = words.slice(0, 100).map(e => e.w);
+console.log('\ntop 100 without a single stroke:', top.filter(w => !strokes.has(assigned.get(w))).join(' '));
+console.log('top 101-300 without a single stroke:', words.slice(100, 300).map(e => e.w).filter(w => !strokes.has(assigned.get(w)) && !(derived.get(w) && liveEndings.has(derived.get(w).ending))).join(' '));
+console.log('\nfree turns left:', [...freeTurns].filter(([, t]) => t.length).map(([id, t]) => `${id}:${t.join('/')}`).join(' '));
+console.log('\nfirst completions:', Object.entries(completions).slice(0, 70).map(([p, w]) => `${p}→${w}`).join('  '));

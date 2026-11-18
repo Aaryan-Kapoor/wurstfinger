@@ -5,6 +5,7 @@
 // engine and checks the text comes out exactly.
 
 import { LETTER_HOME, strokeId } from './layout.js';
+import { labelOf } from './packs.js';
 
 const letterStroke = ch => { const h = LETTER_HOME[ch]; return h ? strokeId(h.key, h.dir) : null; };
 
@@ -13,14 +14,18 @@ const letterStroke = ch => { const h = LETTER_HOME[ch]; return h ? strokeId(h.ke
  * @param planner  from makePlanner
  * @param entries  the resolved dictionary, to find the stroke for each mark
  * @param level    which strokes the typist uses: 'letters', 'flicks' or 'all'
- * @returns [{ id, word?, kind }] or null when the text needs a character steno mode does not have
+ * @returns [{ id, word?, kind }] or null when the text needs something steno mode's page does not have
  */
 export function scriptFor(text, planner, entries, level = 'all') {
+  // The stroke for each mark: the cheapest single stroke whose entry is that mark.
   const markStroke = {};
   for (const [outline, translation] of Object.entries(entries)) {
+    if (!/^[A-Z]/.test(outline) || outline.includes('/')) continue;
     const m = /^\{([.,?!:;])\}$/.exec(translation) || /^\{&(')\}$/.exec(translation) || /^\{\^\}(-)\{\^\}$/.exec(translation);
-    if (m && /^[A-Z]/.test(outline) && !(m[1] in markStroke)) markStroke[m[1]] = outline;
+    if (m && (!(m[1] in markStroke) || outline.length < markStroke[m[1]].length)) markStroke[m[1]] = outline;
   }
+  const shift = Object.keys(entries).find(o => entries[o] === '{-|}' && /^[A-Z]-[a-z]+$/.test(o));
+  const space = Object.keys(entries).find(o => entries[o] === '{^ ^}');
   const out = [];
   const tokens = text.match(/[A-Za-z]+(?:'[A-Za-z]+)*|\s+|[^\sA-Za-z]/g) || [];
   let owesSpace = false;               // the last thing written ended in letters
@@ -29,52 +34,75 @@ export function scriptFor(text, planner, entries, level = 'all') {
 
   const spell = (letters, word, kind) => {
     for (const ch of letters) {
-      const lower = ch.toLowerCase();
-      const id = lower === "'" ? markStroke["'"] : letterStroke(lower);
+      const id = ch === "'" ? markStroke["'"] : letterStroke(ch);
       if (!id) return false;
       out.push({ id, word, kind });
     }
     return true;
   };
+  const cased = (tok, expectCapital) => {
+    const isCapital = tok[0] !== tok[0].toLowerCase();
+    if (tok.slice(1) !== tok.slice(1).toLowerCase()) return null;         // mixed case: not for this script
+    if (isCapital === expectCapital) return [];
+    return isCapital && shift ? [{ id: shift, word: tok, kind: 'shift' }] : null;
+  };
 
-  for (const tok of tokens) {
-    if (/^\s+$/.test(tok)) {
-      if (tok.includes('\n')) return null;
+  for (let i = 0; i < tokens.length; i++) {
+    const tok = tokens[i];
+    if (/^\s+$/.test(tok)) { if (tok.includes('\n')) return null; continue; }
+    if (!/^[A-Za-z]/.test(tok)) {
+      const id = markStroke[tok];
+      if (!id) return null;
+      out.push({ id, kind: 'mark' });
+      owesSpace = false;
+      glued = tok === '-';
+      if (/[.?!]/.test(tok)) sentenceStart = true;
       continue;
     }
-    if (/^[A-Za-z]/.test(tok)) {
-      const lower = tok.toLowerCase();
-      const expectCapital = sentenceStart || /^i($|')/.test(lower);
-      const isCapital = tok[0] !== tok[0].toLowerCase();
-      if (tok.slice(1) !== tok.slice(1).toLowerCase()) return null;        // mixed case: not for this script
-      let plan = planner.plan(lower);
-      if (level === 'letters' || (level === 'flicks' && plan.kind !== 'flick')) plan = { kind: 'spell', outline: lower, spelled: true };
-      // Spelling a word that is also somebody's abbreviation would expand it into something else.
-      if (plan.kind === 'spell' && entries[lower] !== undefined && entries[lower].toLowerCase() !== lower) return null;
-      if (isCapital !== expectCapital) {
-        if (!isCapital) return null;                                       // a lowercase sentence start
-        out.push({ id: 'R-n', word: tok, kind: 'shift' });
+    const lower = tok.toLowerCase();
+
+    // A phrase stroke, if the next words are one and the typist knows hooks.
+    if (level === 'all' && planner.longestPhrase > 1) {
+      let used = 0;
+      for (let n = planner.longestPhrase; n >= 2 && !used; n--) {
+        const run = [];
+        let j = i;
+        while (run.length < n && j < tokens.length) {
+          if (/^[A-Za-z]/.test(tokens[j])) run.push(tokens[j]); else if (!/^ $/.test(tokens[j])) break;
+          j++;
+        }
+        if (run.length < n) continue;
+        const stroke = planner.phrase(run.map(w => w.toLowerCase()));
+        if (!stroke) continue;
+        const label = labelOf(entries[stroke]).split(' ');
+        const shifts = cased(run[0], sentenceStart || label[0] !== label[0].toLowerCase());
+        if (!shifts || run.slice(1).some((w, k) => w !== label[k + 1])) continue;
+        out.push(...shifts, { id: stroke, word: run.join(' '), kind: 'phrase', words: n });
+        used = j - i;
       }
-      const startsSpelled = plan.kind === 'spell' || plan.kind === 'brief' || (plan.kind === 'ending' && plan.base.spelled);
-      if (startsSpelled && owesSpace && !glued) out.push({ id: 'SP', kind: 'space' });
-      if (plan.kind === 'flick' || plan.kind === 'hook') out.push({ id: plan.strokes[0], word: tok, kind: plan.kind });
-      else if (plan.kind === 'ending') {
-        if (plan.base.strokes) out.push({ id: plan.base.strokes[0], word: tok, kind: plan.base.kind });
-        else if (!spell(plan.base.outline, tok, plan.base.kind)) return null;
-        out.push({ id: plan.strokes.at(-1), word: tok, kind: 'ending' });
-      } else if (!spell(plan.outline, tok, plan.kind)) return null;
-      owesSpace = plan.spelled;
-      sentenceStart = false; glued = false;
-      continue;
+      if (used) { i += used - 1; owesSpace = false; sentenceStart = false; glued = false; continue; }
     }
-    const id = markStroke[tok];
-    if (!id) return null;
-    out.push({ id, kind: 'mark' });
-    owesSpace = false;
-    glued = tok === '-';
-    if (/[.?!]/.test(tok)) sentenceStart = true;
+
+    let plan = planner.plan(lower);
+    if (level === 'letters' || (level === 'flicks' && plan.kind !== 'flick')) plan = { kind: 'spell', outline: lower, spelled: true };
+    const startsSpelled = plan.kind === 'spell' || plan.kind === 'completion' || (plan.kind === 'ending' && !plan.base.strokes?.length) || (plan.kind === 'ending' && plan.base.kind === 'completion');
+    // A stroke that types the pronoun types it capital; spelled, the translator capitalises it at the word's end.
+    const pronoun = /^i($|')/.test(lower);
+    const shifts = cased(tok, sentenceStart || pronoun);
+    if (!shifts) return null;
+    if (startsSpelled && owesSpace && !glued) { if (!space) return null; out.push({ id: space, kind: 'space' }); }
+    out.push(...shifts);
+    const write = p => {
+      if (p.kind === 'flick' || p.kind === 'hook') { out.push({ id: p.strokes[0], word: tok, kind: p.kind }); return true; }
+      if (p.kind === 'completion') return spell(p.outline, tok, 'completion') && !!out.push({ id: p.strokes[0], word: tok, kind: 'complete' });
+      return spell(p.outline, tok, 'spell');
+    };
+    if (plan.kind === 'ending') {
+      if (!write(plan.base)) return null;
+      out.push({ id: plan.strokes.at(-1), word: tok, kind: 'ending' });
+    } else if (!write(plan)) return null;
+    owesSpace = plan.spelled;
+    sentenceStart = false; glued = false;
   }
-  // A brief at the very end still needs its boundary.
-  if (owesSpace && out.length && ['brief'].includes(out.at(-1).kind)) out.push({ id: 'SP', kind: 'space' });
   return out;
 }

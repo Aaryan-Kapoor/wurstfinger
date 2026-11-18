@@ -1,167 +1,199 @@
 // The translator: strokes in, text out. No DOM, no timers, no randomness.
 //
-// It borrows Plover's model whole. Every stroke is looked up in a stack of
+// It borrows Plover's model. Every stroke is looked up in a stack of
 // dictionaries; the longest run of strokes that has an entry wins and may
 // rewrite what the shorter run typed; spaces and capitals are the
-// translator's job, not the typist's; and one undo takes back one stroke,
-// however much text that stroke wrote.
+// translator's job; and one undo takes back one stroke, however much text
+// that stroke wrote.
 //
 // Letters are strokes too. A letter's translation is `{&x}`, which glues to
-// the letters round it, so spelling a word is fingerspelling, and the run of
-// letters you have spelled is itself an outline: when the word ends, the
-// dictionaries are asked about it once more ("tmrw" -> "tomorrow").
+// what is round it, so spelling a word is fingerspelling. The run of letters
+// being spelled is itself an outline, but nothing ever rewrites it behind the
+// typist's back: an entry for a spelled outline ("proba", "omw", "gs") is
+// only offered, and typed when the typist asks with the complete stroke.
+//
+// Spacing, in a prose stack: a word arrives with its space after it. That
+// space is the translator's and it takes it back when a mark, an ending or an
+// apostrophe turns up; tapping the space bar on top of it changes nothing, so
+// tapping space after every word out of habit is harmless. Letters never add
+// a space. In a literal stack (a shell) nothing is added or taken back.
 
 import { applyEnding, ENDINGS } from './orthography.js';
-import { resolvePacks, labelOf } from './packs.js';
-import { isStrokeId } from './layout.js';
+import { resolvePacks, labelOf, parseTranslation, isStrokeOutline } from './packs.js';
 
-const OPENERS = /[(\[{<\n\t /]$/;
-const WORD_TAIL = /([A-Za-z][A-Za-z']*)$/;
 const MAX_HISTORY = 200;
 const MAX_OUTLINE_STROKES = 4;
+const WORD_CHAR = /[A-Za-z0-9'_]/;
+const WORD_TAIL = /([A-Za-z][A-Za-z']*)$/;
+const TOKEN_TAIL = /[A-Za-z0-9'_-]*$/;
+const CLOSERS = /^[\s.,?!:;)\]}]/;
+const OPENERS = /[\s(\[{<\/]$/;
+const KEYS = {
+  Return: '\n', Tab: '\t', Escape: '\x1b', Up: '\x1b[A', Down: '\x1b[B', Right: '\x1b[C', Left: '\x1b[D',
+};
 
 const capitalise = s => s.replace(/[A-Za-z]/, c => c.toUpperCase());
+const sentenceStart = text => /^\s*$/.test(text) || /[.?!]["')\]]*\s+$/.test(text) || /\n\s*$/.test(text);
 
 export class Engine {
   /**
-   * @param theory  generated theory (doubling exceptions)
-   * @param packs   dictionary stack, highest priority first
+   * @param packs  every dictionary the user has, in priority order
+   * @param stack  ids of the packs in use, or null for all that are enabled
    */
-  constructor(theory, packs) {
-    this.theory = theory;
+  constructor(packs, stack = null) {
     this.listeners = new Set();
-    this.setPacks(packs);
+    this.setPacks(packs, stack);
     this.reset('');
   }
 
   // ------------------------------------------------------------ dictionaries
 
-  setPacks(packs) {
+  setPacks(packs, stack = null) {
     this.packs = packs;
-    const { entries, source, shadowed, options } = resolvePacks(packs);
+    this.stack = stack;
+    const { entries, source, shadowed, options } = resolvePacks(packs, stack);
     this.entries = entries;
     this.source = source;
     this.shadowed = shadowed;
     this.options = options;
-    // Outlines of several strokes, indexed by their last stroke for the longest-match scan.
     this.multi = new Set(Object.keys(entries).filter(o => o.includes('/')));
-    if (this.state && !this.state.text) this.state.capNext = options.autoCapitalize;
     this.emit();
   }
 
   lookup(outline) { return this.entries[outline]; }
   /** What a stroke would type, as a short label, or '' when it is undefined. */
   label(outline) { return labelOf(this.entries[outline]); }
+  get prose() { return this.options.spacing === 'auto'; }
 
   // ------------------------------------------------------------------ state
 
   reset(text = '') {
     this.state = {
       text, after: '',
-      capNext: this.options.autoCapitalize && !/\S/.test(text.split(/[.?!\n]/).pop() || ''),
-      lowerNext: false, attachNext: false,
-      pending: null,                  // { start } while a word is being spelled
+      capNext: false, lowerNext: false,    // an explicit shift, waiting for the next letter or word
+      attachNext: false,                   // the next word goes straight on, no space before it
+      autoSpace: false,                    // the text ends in a space the translator added
+      swallowed: false,                    // ...and the space bar has already been tapped on it once
+      pending: null,                       // { start } while a word is being spelled
     };
-    this.history = [];                // undo records, oldest first
-    this.tape = [];                   // what the ribbon shows
+    this.history = [];
+    this.tape = [];
     this.seq = 0;
+    this.lastEvent = null;
     this.emit();
   }
 
   get text() { return this.state.text + this.state.after; }
-  get caret() { return this.state.text.length; }
+  /** The text as it would be sent: without the space the translator is still holding. */
+  get clean() { return (this.state.autoSpace ? this.state.text.slice(0, -1) : this.state.text) + this.state.after; }
 
   on(fn) { this.listeners.add(fn); return () => this.listeners.delete(fn); }
   emit() { for (const fn of this.listeners) fn(this); }
 
-  /** The letters spelled since the last boundary, and what they will become. */
+  /** The letters being spelled, and the entry the complete stroke would turn them into. */
   pendingOutline() {
+    const tail = this.spelled();
+    if (!tail) return null;
+    const entry = this.completionFor(tail.typed);
+    return { typed: tail.typed, expansion: entry ? labelOf(entry) : null };
+  }
+
+  /** The run of letters the caret is at the end of: the part of the token after any hyphen. */
+  spelled() {
     const p = this.state.pending;
     if (!p) return null;
-    const typed = this.state.text.slice(p.start);
-    const expansion = p.literal ? undefined : this.entries[typed.toLowerCase()];
-    return { typed, expansion: expansion && !isStrokeId(typed) ? labelOf(expansion) : null, literal: !!p.literal };
+    const text = this.state.text;
+    const start = Math.max(p.start, text.length - /[A-Za-z0-9']*$/.exec(text)[0].length);
+    return start < text.length ? { start, typed: text.slice(start) } : null;
+  }
+
+  completionFor(typed) {
+    const key = typed.toLowerCase();
+    if (isStrokeOutline(key) || isStrokeOutline(typed)) return null;
+    const t = this.entries[key];
+    return t !== undefined && labelOf(t).toLowerCase() !== key ? t : null;
   }
 
   // ----------------------------------------------------------------- input
 
-  /**
-   * One stroke. `id` is a stroke id (`T-n-cw`, `SP`, `T`).
-   * Returns the tape entry describing what happened.
-   */
+  /** One stroke. Returns the tape entry describing what happened. */
   stroke(id) {
     const before = this.snapshot();
     let translation = this.entries[id];
     let outline = id;
-    let consumed = 0;                 // earlier strokes this one joins
+    let joined = 0;
 
     // Longest match: does this stroke complete an outline begun by the strokes before it?
     const chain = this.chain();
     for (let k = Math.min(chain.length, MAX_OUTLINE_STROKES - 1); k >= 1; k--) {
       const candidate = [...chain.slice(-k).map(c => c.id), id].join('/');
-      if (this.multi.has(candidate)) { outline = candidate; translation = this.entries[candidate]; consumed = k; break; }
+      if (this.multi.has(candidate)) { outline = candidate; translation = this.entries[candidate]; joined = k; break; }
     }
+    if (translation === undefined) return this.record({ id, outline: id, kind: 'undefined', before, label: '' });
 
-    if (translation === undefined) {
-      return this.record({ id, outline: id, kind: 'undefined', before, label: '', out: '' });
+    // A longer outline rewrites what its earlier strokes typed. Undo still
+    // takes back only this stroke: it restores `before`, the shorter outline's text.
+    if (joined) this.restore(chain.at(-joined).before);
+    let kind;
+    try { kind = this.apply(translation); } catch (err) {
+      this.restore(before);
+      return this.record({ id, outline, kind: 'invalid', before, label: String(err.message || err) });
     }
-
-    let base = before;
-    if (consumed) {                   // rewrite: take back the strokes this outline swallows
-      const swallowed = this.history.splice(-consumed, consumed);
-      base = swallowed[0].before;
-      this.restore(base);
-      this.tape.splice(-consumed, consumed);
-    }
-    const kind = this.apply(translation);
-    return this.record({ id, outline, kind, before: base, label: labelOf(translation), strokes: consumed + 1 });
-  }
-
-  /** Text typed outside the dictionaries (detail and number modes). */
-  literal(str) {
-    const before = this.snapshot();
-    const s = this.state;
-    let out = str;
-    if (s.capNext && /[a-z]/i.test(str) && this.options.autoCapitalizeLiteral) out = capitalise(str);
-    s.text += out;
-    s.pending = null; s.attachNext = false; s.capNext = false;
-    return this.record({ id: null, outline: str, kind: 'literal', before, label: str });
+    return this.record({ id, outline, kind, before, label: labelOf(translation), strokes: joined + 1 });
   }
 
   /**
-   * The undo key. Takes back the last stroke whole; when there is nothing of
-   * ours to take back, deletes one character.
+   * Text from the letter and number pages, which type exactly what they show.
+   * It joins the token it lands in; only the translator's own space gives way
+   * to a closing mark.
    */
+  literal(str) {
+    const before = this.snapshot();
+    const s = this.state;
+    if (str === ' ') {
+      s.pending = null;
+      this.space();
+      return this.record({ id: null, outline: ' ', kind: 'space', before, label: '␣' });
+    }
+    if (s.autoSpace && CLOSERS.test(str)) this.takeBackSpace();
+    const cap = s.capNext && /^[a-z]/.test(str);
+    s.text += cap ? capitalise(str) : str;
+    if (cap || /[A-Za-z]/.test(str)) { s.capNext = false; s.lowerNext = false; }
+    s.autoSpace = false; s.swallowed = false; s.attachNext = false;
+    if (WORD_CHAR.test(str.at(-1))) { if (!s.pending) s.pending = { start: s.text.length - TOKEN_TAIL.exec(s.text)[0].length }; } else s.pending = null;
+    return this.record({ id: null, outline: str, kind: 'literal', before, label: str });
+  }
+
+  /** The undo key: takes back the last stroke whole, or failing that one character. */
   backspace() {
     const last = this.history.pop();
     if (last) {
       this.restore(last.before);
-      if (last.expanded && this.state.pending) this.state.pending.literal = true;
       this.tape.pop();
-      const entry = { seq: ++this.seq, kind: 'undo', id: '*', outline: '*', label: last.label, out: '', removed: last.out || '' };
-      this.lastEvent = entry;
-      this.emit();
-      return entry;
+      return this.note({ kind: 'undo', id: '*', outline: '*', label: last.label, out: '', removed: last.out || '' });
     }
+    return this.deleteChar();
+  }
+
+  /** Deletes one character before the caret: an edit, not an undo. */
+  deleteChar() {
     const s = this.state;
     if (!s.text) return null;
     const removed = [...s.text].pop();
     s.text = s.text.slice(0, -removed.length);
-    this.afterExternalEdit();
-    const entry = { seq: ++this.seq, kind: 'delete', id: '*', outline: '*', label: '⌫', out: '', removed };
-    this.lastEvent = entry;
-    this.emit();
-    return entry;
+    this.afterEdit();
+    return this.note({ kind: 'delete', id: '*', outline: '*', label: '⌫', out: '', removed });
   }
 
-  /** Deletes the word before the caret. Not undoable: it is an edit, not a stroke. */
+  /** Deletes the word before the caret, with the space after it. */
   deleteWord() {
     const s = this.state;
     const m = /\S+\s*$/.exec(s.text);
-    if (!m) return;
+    if (!m) return null;
+    const removed = s.text.slice(m.index);
     s.text = s.text.slice(0, m.index);
-    this.afterExternalEdit();
-    this.emit();
+    this.afterEdit();
+    return this.note({ kind: 'delete', id: '*', outline: '*', label: '⌫', out: '', removed });
   }
 
   moveCaret(delta) {
@@ -170,164 +202,226 @@ export class Engine {
     const at = Math.max(0, Math.min(all.length, s.text.length + delta));
     if (at === s.text.length) return false;
     s.text = all.slice(0, at); s.after = all.slice(at);
-    this.afterExternalEdit();
+    this.afterEdit();
     this.emit();
     return true;
   }
 
   /** The text changed under us: what we remember about our own strokes no longer applies. */
-  afterExternalEdit() {
+  afterEdit() {
     const s = this.state;
     this.history = [];
-    s.pending = null; s.attachNext = false; s.lowerNext = false;
-    const tail = s.text.split(/[.?!\n]/).pop() || '';
-    s.capNext = this.options.autoCapitalize && !/\S/.test(tail) && (s.text === '' || /[.?!\n]\s*$/.test(s.text));
+    Object.assign(s, { pending: null, attachNext: false, lowerNext: false, capNext: false, autoSpace: false, swallowed: false });
+  }
+
+  note(entry) {
+    entry.seq = ++this.seq;
+    this.lastEvent = entry;
+    this.emit();
+    return entry;
   }
 
   // ------------------------------------------------------------ translation
 
-  /** Applies one translation to the text. Returns the kind of thing it was. */
+  /** Applies one translation. Returns the kind of thing it was. */
   apply(translation) {
     const s = this.state;
-    const atoms = translation.split(/(\{[^}]*\})/).filter(a => a !== '');
+    const atoms = parseTranslation(translation);
     let kind = 'word';
     let caretMark = null;
-    let attachPrev = false;
+    let attached = false;                // this translation has already started writing
+    let attachPrev = false;              // a leading {^}: join what comes before
 
     for (let i = 0; i < atoms.length; i++) {
-      const atom = atoms[i];
-      if (atom[0] !== '{') {                                    // plain text
-        const text = i === 0 ? atom.replace(/^\s+/, '') : atom;
-        if (!text) continue;
-        this.word(text, attachPrev);
-        attachPrev = true;                                       // the rest of this translation is contiguous
+      const a = atoms[i];
+      const last = i === atoms.length - 1;
+      if (a.text !== undefined) {
+        this.word(a.text, attachPrev || attached, last);
+        attached = true; attachPrev = false;
         continue;
       }
-      const body = atom.slice(1, -1);
-      if (body === '|') { caretMark = s.text.length; continue; }
-      if (body === '') { s.attachNext = false; s.capNext = false; continue; }
-      if (body[0] === '&') { this.glue(body.slice(1)); kind = 'letter'; continue; }
-      if (body === '^') {                                        // bare attach
-        if (i === 0) { this.boundary(); attachPrev = true; } else s.attachNext = true;
+      const op = a.op;
+      if (op === '|') { caretMark = s.text.length; continue; }
+      if (op === '') { Object.assign(s, { attachNext: false, capNext: false, lowerNext: false }); kind = 'shift'; continue; }
+      if (op[0] === '&') { this.glue(op.slice(1)); kind = 'letter'; attached = true; continue; }
+      if (op === '^') {
+        if (!attached) { this.boundary(); this.takeBackSpace(); attachPrev = true; if (kind === 'word') kind = 'join'; }
+        if (attached || last) { this.takeBackSpace(); s.attachNext = true; }
         continue;
       }
-      if (body === '^ ^') {
-        // A brief that leaves the caret somewhere, or asks to attach, has already said what follows it.
-        if (this.boundary() === 'placed') { kind = 'word'; continue; }
-        s.text += ' '; s.attachNext = false; kind = 'space'; continue;
-      }
-      if (body === '-|') { s.capNext = true; s.lowerNext = false; kind = 'shift'; continue; }
-      if (body === '>') { s.lowerNext = true; s.capNext = false; kind = 'shift'; continue; }
-      if (/^[.?!]$/.test(body)) { this.mark(body, true); kind = 'mark'; attachPrev = false; continue; }
-      if (/^[,:;]$/.test(body)) { this.mark(body, false); kind = 'mark'; attachPrev = false; continue; }
-      if (body[0] === '#') { this.key(body.slice(1)); kind = 'key'; continue; }
-      const open = body.startsWith('^'), close = body.endsWith('^') && body.length > 1;
-      const inner = body.slice(open ? 1 : 0, close ? -1 : undefined);
-      if (open && !close && ENDINGS[inner] && i === 0) { this.ending(inner); kind = 'ending'; attachPrev = true; continue; }
-      if (open) { this.boundary(); this.trimSpace(); }
-      this.word(inner, open || attachPrev);
-      if (close) s.attachNext = true;
-      attachPrev = true;
-      if (open && i === 0) kind = 'ending';
+      if (op === '^ ^') { this.boundary(); this.space(); kind = 'space'; continue; }
+      if (op === '=') { kind = this.complete(); continue; }
+      if (op === '-|') { s.capNext = true; s.lowerNext = false; if (kind === 'word') kind = 'shift'; continue; }
+      if (op === '>') { s.lowerNext = true; s.capNext = false; if (kind === 'word') kind = 'shift'; continue; }
+      if (/^[.?!,:;]$/.test(op)) { this.mark(op); kind = 'mark'; attached = true; continue; }
+      if (op === '"') { this.quote(); kind = 'mark'; attached = true; continue; }
+      if (op[0] === '#') { this.key(op.slice(1)); kind = 'key'; attached = true; continue; }
+      const open = op.startsWith('^'), close = op.endsWith('^') && op.length > 1;
+      const inner = op.slice(open ? 1 : 0, close ? -1 : undefined);
+      if (open && !close && ENDINGS[inner] && !attached) { this.ending(inner); kind = 'ending'; attached = true; continue; }
+      if (open && !attached) { this.boundary(); this.takeBackSpace(); if (kind === 'word') kind = 'ending'; }
+      this.word(inner, open || attached || attachPrev, !close && last);
+      if (close) { this.takeBackSpace(); s.attachNext = true; }
+      attached = true; attachPrev = false;
     }
     if (caretMark !== null) {
+      this.takeBackSpace();
       s.after = s.text.slice(caretMark) + s.after;
       s.text = s.text.slice(0, caretMark);
-      s.attachNext = true;                                       // what is typed next goes exactly where the caret was put
+      Object.assign(s, { attachNext: true, autoSpace: false, swallowed: false });
     }
     return kind;
   }
 
-  /** Ends the word being spelled, expanding it if the dictionaries know it as an outline. */
+  /** Ends the word being spelled. */
   boundary() {
     const s = this.state;
     const p = s.pending;
-    if (!p) return false;
+    if (!p) return;
     s.pending = null;
-    if (p.literal) return false;
-    const typed = s.text.slice(p.start);
-    const translation = this.entries[typed.toLowerCase()];
-    if (translation === undefined || isStrokeId(typed)) return false;
-    const wasCapital = /^[A-Z]/.test(typed);
-    s.text = s.text.slice(0, p.start);
-    s.attachNext = true;                                         // spacing was settled when the first letter went in
-    const owed = { cap: s.capNext, lower: s.lowerNext };           // a shift already asked for the word after this one
-    s.capNext = wasCapital; s.lowerNext = false;
-    const afterBefore = s.after;
-    this.apply(translation);
-    s.capNext = s.capNext || owed.cap; s.lowerNext = s.lowerNext || owed.lower;
-    this.expandedNow = true;
-    return (s.after !== afterBefore || s.attachNext) ? 'placed' : true;
+    // English writes the pronoun with a capital, however it was typed.
+    if (this.options.pronounI) {
+      const typed = s.text.slice(p.start);
+      if (/^i('(m|ll|ve|d))?$/.test(typed)) s.text = s.text.slice(0, p.start) + 'I' + typed.slice(1);
+    }
   }
 
-  needsSpace() {
+  takeBackSpace() {
     const s = this.state;
-    return s.text.length > 0 && !s.attachNext && !OPENERS.test(s.text);
+    if (s.autoSpace && s.text.endsWith(' ')) s.text = s.text.slice(0, -1);
+    s.autoSpace = false; s.swallowed = false;
+  }
+
+  /** Whether a word written now needs a space put before it. */
+  needsLead() {
+    const s = this.state;
+    return this.prose && s.text.length > 0 && !s.attachNext && !OPENERS.test(s.text);
+  }
+
+  /** Adds the translator's own space after a finished word, unless what follows already separates it. */
+  trail() {
+    const s = this.state;
+    if (!this.prose || s.attachNext || CLOSERS.test(s.after)) return;
+    s.text += ' ';
+    s.autoSpace = true; s.swallowed = false;
   }
 
   cased(text) {
     const s = this.state;
     let out = text;
-    if (s.capNext) out = capitalise(out);
+    if (s.capNext || (!s.lowerNext && this.options.autoCapitalize && sentenceStart(s.text))) out = capitalise(out);
     else if (s.lowerNext) out = out.replace(/[A-Za-z]/, c => c.toLowerCase());
     s.capNext = false; s.lowerNext = false;
     return out;
   }
 
-  word(text, attach) {
+  /**
+   * Writes text as a word.
+   * @param attach   join what is before it: no space is put in front
+   * @param finished whether the translator's space should follow
+   */
+  word(text, attach, finished = true) {
     const s = this.state;
     if (!attach) this.boundary();
-    s.text += (!attach && this.needsSpace() ? ' ' : '') + this.cased(text);
-    s.attachNext = false;
+    if (!attach && this.needsLead()) s.text += ' ';
+    s.text += this.cased(text);
+    s.attachNext = false; s.autoSpace = false; s.swallowed = false;
+    if (finished) this.trail();
   }
 
-  glue(letter) {
+  glue(ch) {
     const s = this.state;
-    if (s.pending) { s.text += letter; return; }                 // inside a spelled word
-    if (/^[A-Za-z]$/.test(letter) || s.text === '' || !WORD_TAIL.test(s.text)) {
-      const space = this.needsSpace() ? ' ' : '';
-      s.text += space;
-      s.pending = { start: s.text.length };
-      s.text += /^[A-Za-z]$/.test(letter) ? this.cased(letter) : letter;
-      s.attachNext = false;
-    } else {
-      s.text += letter;                                          // an apostrophe after a finished word: Mom's
+    const wordy = WORD_CHAR.test(ch);
+    if (!s.pending) {
+      // An apostrophe or a hyphen joins the word before it: can + 't, well + -known.
+      if ((ch === "'" || ch === '-') && this.prose) this.takeBackSpace();
+      if (wordy || ch === '-') s.pending = { start: s.text.length - TOKEN_TAIL.exec(s.text)[0].length };
     }
+    s.text += /^[A-Za-z]$/.test(ch) ? this.cased(ch) : ch;
+    if (!wordy && ch !== '-') s.pending = null;
+    s.attachNext = false; s.autoSpace = false; s.swallowed = false;
   }
 
-  trimSpace() { this.state.text = this.state.text.replace(/ +$/, ''); }
+  space() {
+    const s = this.state;
+    // The translator already put a space here; the first tap on top of it is the same space.
+    if (s.autoSpace && !s.swallowed) { s.swallowed = true; return; }
+    s.text += ' ';
+    s.autoSpace = false; s.swallowed = false; s.attachNext = false;
+  }
 
-  mark(ch, stop) {
+  mark(ch) {
     const s = this.state;
     this.boundary();
-    this.trimSpace();
+    if (s.autoSpace) this.takeBackSpace();
+    else if (this.prose && /\S $/.test(s.text)) s.text = s.text.slice(0, -1);
     s.text += ch;
     s.attachNext = false;
-    if (stop) s.capNext = this.options.autoCapitalize;
+    this.trail();
+  }
+
+  /** A double quote that knows whether it opens or closes. */
+  quote() {
+    const s = this.state;
+    this.boundary();
+    const opening = (s.text.match(/"/g) || []).length % 2 === 0;
+    if (opening) {
+      s.text += (this.needsLead() ? ' ' : '') + '"';
+      Object.assign(s, { attachNext: true, autoSpace: false, swallowed: false });
+    } else {
+      this.takeBackSpace();
+      s.text += '"';
+      s.attachNext = false;
+      this.trail();
+    }
   }
 
   ending(name) {
     const s = this.state;
     this.boundary();
-    this.trimSpace();
+    this.takeBackSpace();
     const m = WORD_TAIL.exec(s.text);
-    if (!m) { s.text += ENDINGS[name].label.replace(/^-/, ''); return; }
-    s.text = s.text.slice(0, m.index) + applyEnding(m[1], name, this.theory.doubling);
+    // An ending with no word before it is not typed at all.
+    if (!m) throw new Error('no word to end');
+    s.text = s.text.slice(0, m.index) + applyEnding(m[1], name);
     s.attachNext = false;
+    this.trail();
+  }
+
+  /**
+   * The complete stroke. If the letters being spelled are an entry, they
+   * become it. Otherwise it closes the gap after the last word, so that what
+   * is typed next joins it: thank, close, f-u-l is "thankful".
+   */
+  complete() {
+    const s = this.state;
+    const p = this.spelled();
+    if (s.pending) {
+      const translation = p ? this.completionFor(p.typed) : null;
+      if (translation === null) return 'join';
+      const wasCapital = /^[A-Z]/.test(p.typed);
+      s.text = s.text.slice(0, p.start);
+      s.pending = null;
+      // Where the letters stood is where the entry goes; no new space in front.
+      s.attachNext = true;
+      if (wasCapital) s.capNext = true;
+      this.apply(translation);
+      return 'completion';
+    }
+    if (s.autoSpace) { this.takeBackSpace(); s.attachNext = true; return 'join'; }
+    throw new Error('nothing to finish');
   }
 
   key(name) {
     const s = this.state;
     this.boundary();
-    switch (name) {
-      case 'Return': s.text += '\n'; s.capNext = this.options.autoCapitalize; break;
-      case 'Tab': s.text += '\t'; break;
-      case 'BackSpace': s.text = s.text.slice(0, -1); break;
-      case 'Left': if (s.text) { s.after = s.text.slice(-1) + s.after; s.text = s.text.slice(0, -1); } break;
-      case 'Right': if (s.after) { s.text += s.after[0]; s.after = s.after.slice(1); } break;
-      default: break;
-    }
-    s.attachNext = false;
+    if (name === 'BackSpace') { s.text = s.text.slice(0, -1); return; }
+    const control = /^Control\((.)\)$/.exec(name);
+    const out = control ? String.fromCharCode(control[1].toUpperCase().charCodeAt(0) & 31) : KEYS[name];
+    if (out === undefined) throw new Error(`unknown key ${name}`);
+    if (name === 'Return') this.takeBackSpace();
+    s.text += out;
+    Object.assign(s, { attachNext: false, autoSpace: false, swallowed: false });
   }
 
   // --------------------------------------------------------------- history
@@ -339,34 +433,26 @@ export class Engine {
   chain() {
     const out = [];
     for (let i = this.history.length - 1; i >= 0 && out.length < MAX_OUTLINE_STROKES; i--) {
-      const h = this.history[i];
-      if (!h.id || h.strokes > 1) break;
-      out.unshift(h);
+      if (!this.history[i].id) break;
+      out.unshift(this.history[i]);
     }
     return out;
   }
 
   record({ id, outline, kind, before, label, strokes = 1 }) {
-    // What changed, as "removed" and "added" after the common prefix.
+    // What changed, as "removed" and "added" round the common prefix and suffix.
     const was = before.text + before.after, now = this.state.text + this.state.after;
     let i = 0;
     while (i < was.length && i < now.length && was[i] === now[i]) i++;
     let j = 0;
     while (j < was.length - i && j < now.length - i && was[was.length - 1 - j] === now[now.length - 1 - j]) j++;
-    const entry = {
-      seq: ++this.seq, id, outline, kind, label,
-      out: now.slice(i, now.length - j), removed: was.slice(i, was.length - j),
-      expanded: !!this.expandedNow, strokes,
-    };
-    this.expandedNow = false;
-    if (kind !== 'undefined') {
-      this.history.push({ id, before, label, out: entry.out, expanded: entry.expanded, strokes });
+    const entry = { id, outline, kind, label, out: now.slice(i, now.length - j), removed: was.slice(i, was.length - j), strokes };
+    if (kind !== 'undefined' && kind !== 'invalid') {
+      this.history.push({ id, before, label, out: entry.out });
       if (this.history.length > MAX_HISTORY) this.history.shift();
     }
     this.tape.push(entry);
     if (this.tape.length > 40) this.tape.shift();
-    this.lastEvent = entry;
-    this.emit();
-    return entry;
+    return this.note(entry);
   }
 }

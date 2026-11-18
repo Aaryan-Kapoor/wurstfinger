@@ -22,7 +22,33 @@ export const TIMING = {
   ending: 280,
   space: 262,
   mark: 300,
+  // Turning to the letter or number page for one character, each way.
+  pageSwitch: 400,
 };
+
+// Three sets of assumptions the evaluation is run under. "model" is the bare
+// motor model. "cautious" makes a hook as slow as a thumb that draws 1.5x
+// slower than a pen, adds 150 ms to recall every stroke that is not a letter,
+// and charges for misreads: the recogniser's error rate at sloppiness 1
+// (tools/robustness.mjs) times the cost of noticing, undoing and redoing.
+// "pessimistic" doubles the recall and the error rates.
+const noticeAndRedo = strokeMs => 400 + TIMING.letter + strokeMs;
+export const COSTS = {
+  model: { hook: TIMING.hook, recall: 0, letterError: 0, flickError: 0, hookError: 0 },
+  cautious: {
+    hook: TIMING.hookSlow, recall: 150, letterError: 0.015 * noticeAndRedo(TIMING.letter),
+    flickError: 0.02 * noticeAndRedo(TIMING.flick), hookError: 0.04 * noticeAndRedo(TIMING.hookSlow),
+  },
+  pessimistic: {
+    hook: TIMING.hookSlow, recall: 300, letterError: 0.015 * noticeAndRedo(TIMING.letter),
+    flickError: 0.04 * noticeAndRedo(TIMING.flick), hookError: 0.08 * noticeAndRedo(TIMING.hookSlow),
+  },
+};
+
+// What the generator charges, on top of time, for each gesture a stroke
+// replaces: every gesture is a chance to slip, and fewer of them is less work
+// even where the clock says it is a wash.
+export const EFFORT_MS = 60;
 
 /** Milliseconds to type a word letter by letter, followed by a space. */
 export const spelledMs = w => (w.length + 1) * TIMING.letter;

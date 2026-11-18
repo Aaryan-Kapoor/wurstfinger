@@ -73,6 +73,8 @@ const MAX_HELDOUT = 4000;
 for (const [name, utterances] of Object.entries(corpora)) {
   const uni = new Map();
   const grams = new Map();
+  const marks = new Map();             // punctuation and symbols, per character
+  const capital = new Map();           // word -> times written with a capital away from a sentence start
   let tokens = 0;
   let trainUtterances = 0;
   heldout[name] = [];
@@ -83,6 +85,12 @@ for (const [name, utterances] of Object.entries(corpora)) {
       return;
     }
     trainUtterances++;
+    for (const ch of normalise(u)) if (/[^\sA-Za-z0-9]/.test(ch)) marks.set(ch, (marks.get(ch) || 0) + 1);
+    // Capitals that are not the first word of a sentence mark names and other proper nouns.
+    for (const m of normalise(u).matchAll(/[a-z,;] ([A-Z][a-z]+(?:'[a-z]+)?)\b/g)) {
+      const w = m[1].toLowerCase();
+      capital.set(w, (capital.get(w) || 0) + 1);
+    }
     for (const s of sentences(u)) {
       tokens += s.length;
       for (let i = 0; i < s.length; i++) {
@@ -94,7 +102,7 @@ for (const [name, utterances] of Object.entries(corpora)) {
       }
     }
   });
-  stats[name] = { uni, grams, tokens, utterances: utterances.length, trainUtterances };
+  stats[name] = { uni, grams, marks, capital, tokens, utterances: utterances.length, trainUtterances };
   console.log(`${name}: ${utterances.length} utterances, ${tokens} training tokens, ${uni.size} types, ${heldout[name].length} held out`);
 }
 
@@ -145,19 +153,35 @@ const smsOnly = [...stats.sms.uni].filter(([w, c]) => c >= 25)
   .slice(0, 400)
   .map(e => ({ w: e.w, smsPm: Math.round(e.sms) }));
 
+// Marks, blended the same way, per million word tokens.
+const allMarks = new Set();
+for (const n of names) for (const [m] of stats[n].marks) allMarks.add(m);
+const marks = Object.fromEntries([...allMarks].map(m => [m, Math.round(blend(m, 'marks').pm)]).filter(([, pm]) => pm >= 20).sort((a, b) => b[1] - a[1]));
+
+// Proper nouns: words that the two cased corpora write with a capital in mid-sentence
+// at least half the time (the SMS corpus's casing is too irregular to count).
+const proper = [];
+for (const e of words) {
+  let caps = 0, all = 0;
+  for (const n of ['movie', 'daily']) { caps += stats[n].capital.get(e.w) || 0; all += stats[n].uni.get(e.w) || 0; }
+  if (all >= 5 && caps / all >= 0.5 && !/^i($|')/.test(e.w)) proper.push(e.w);
+}
+
 const total = words.reduce((s, e) => s + e.pm, 0);
 fs.writeFileSync(path.join(out, 'lexicon.json'), JSON.stringify({
   generated: 'tools/corpus.mjs',
   corpora: Object.fromEntries(names.map(n => [n, { utterances: stats[n].utterances, trainingTokens: stats[n].tokens, types: stats[n].uni.size }])),
   totalPm: Math.round(total),
-  words, phrases, smsOnly,
+  words, phrases, smsOnly, marks, proper,
 }));
 fs.writeFileSync(path.join(out, 'heldout.json'), JSON.stringify(heldout));
 
 console.log(`lexicon: ${words.length} words, ${phrases.length} phrases, blended mass ${Math.round(total)} per million`);
 console.log('top 60:', words.slice(0, 60).map(e => e.w).join(' '));
 let acc = 0;
-const marks = [10, 26, 50, 100, 200, 300, 500, 1000, 2000];
-words.forEach((e, i) => { acc += e.pm; if (marks.includes(i + 1)) console.log(`top ${i + 1}: ${(acc / total * 100).toFixed(1)} % of blended tokens`); });
+const checkpoints = [10, 26, 50, 100, 200, 300, 500, 1000, 2000];
+words.forEach((e, i) => { acc += e.pm; if (checkpoints.includes(i + 1)) console.log(`top ${i + 1}: ${(acc / total * 100).toFixed(1)} % of blended tokens`); });
 console.log('top phrases:', phrases.slice(0, 40).map(e => e.g).join(' | '));
 console.log('sms-only:', smsOnly.slice(0, 60).map(e => e.w).join(' '));
+console.log('marks per million words:', JSON.stringify(marks));
+console.log(`proper nouns: ${proper.length}:`, proper.slice(0, 50).join(' '));
