@@ -223,7 +223,7 @@ export function mountPanel(api) {
     const map = $('keymap'); if (!map) return;
     $('keymapNote').textContent = state.dict === 'terminal'
       ? 'In the terminal each flick is the symbol it always was; these are the forms on its curls.'
-      : 'Each flick word, then its curls: right, left, back.';
+      : 'Each piece a key flicks to, then the words on its curls: right, left, back.';
     map.innerHTML = KEYS.map(key => {
       let html = `<div class="k"><b>${key.toLowerCase()}</b>`;
       for (const dir of DIRS) {
@@ -403,7 +403,7 @@ export function mountPanel(api) {
         <tr><td>the letter keyboard</td><td>${r.letterStrokesPerWord}</td><td></td><td>${r.letterWpm.bare}</td><td>${r.letterWpm.careful}</td><td>${r.letterWpm.hurried}</td></tr>
         ${r.stages.map(s => `<tr><td>${esc(s.stage)}</td><td>${s.strokesPerWord.toFixed(2)}</td><td>${s.chordsPerWord.toFixed(2)}</td><td>${s.wpm.bare}</td><td>${s.wpm.careful}</td><td>${s.wpm.hurried}</td></tr>`).join('')}
       </table>
-      <p class="note"><b>Stroke counts are exact; speeds are a model, not a measurement of people.</b> The bare model has no mistakes and no recall time. The careful thumb makes 6 mm strokes and aims within 6°; the hurried one makes 4.5 mm strokes and aims within 9°. Both pay to notice and redo every mistake, at the rates in the table below, and to recall each stroke that is not a letter. The word flicks pay under every assumption. The curls pay only for the careful thumb.</p>
+      <p class="note"><b>Stroke counts are exact; speeds are a model, not a measurement of people.</b> The bare model has no mistakes and no recall time. The careful thumb makes 6 mm strokes and aims within 6°; the hurried one makes 4.5 mm strokes and aims within 9°. Both pay to notice and redo every mistake, at the rates in the table below, and to recall each stroke that is not a letter. Writing by pieces pays under every assumption. The curls pay only for the careful thumb.</p>
       <h2>Where the words come from</h2>
       <p>${tokens.toLocaleString()} words from three corpora: film dialogue, written everyday dialogue and real text messages. A word’s weight is the geometric mean of its frequency in all three, so it has to be common everywhere. Written by its pieces a word takes ${theory.meta.piecesPerWord} strokes on average where its letters take ${theory.meta.lettersPerWord}; the ${theory.meta.counts.curls} curled words are ${theory.meta.share.curls} % of all word tokens.</p>
       <h2>How often a stroke types the wrong thing</h2>

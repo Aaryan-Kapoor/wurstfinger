@@ -153,8 +153,9 @@ export class Keyboard {
    */
   fitHints() {
     const GAP = 4, EDGE = 6;
-    for (const k of this.root.querySelectorAll('.key')) {
-      const width = parseFloat(k.style.width);
+    // Each half of the space bar is fitted on its own, like a key.
+    for (const k of this.root.querySelectorAll('.key:not(.space), .key.space .half')) {
+      const width = parseFloat(k.style.width) || k.offsetWidth;
       for (const [l, m, r] of [['nw', 'n', 'ne'], ['sw', 's', 'se']]) {
         const mid = k.querySelector(`.h.${m}`);
         if (!mid) continue;
