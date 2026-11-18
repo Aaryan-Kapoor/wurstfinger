@@ -36,7 +36,7 @@ import {
   KEYS, DIRS, FAMILY, LETTER_SLOTS, neighbour, isCardinal, strokeId, DETAIL, stenoSlotKind,
 } from '../src/layout.js';
 import { TIMING, spelledMs, EFFORT_MS } from '../src/model.js';
-import { ENDINGS, applyEnding, stemsFor } from '../src/orthography.js';
+import { ENDINGS, applyEnding, stemsFor, canEnd } from '../src/orthography.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const lexicon = JSON.parse(fs.readFileSync(path.join(here, '..', 'data', 'build', 'lexicon.json'), 'utf8'));
@@ -95,13 +95,25 @@ const adjacent = (d1, d2) => { const i = DIRS.indexOf(d1), j = DIRS.indexOf(d2);
 
 const freeDirs = key => DIRS.filter(d => stenoSlotKind(key, d) === 'free');
 
+// Where a word may sit. A word belongs on the key of its first letter. The
+// middle key has nine letters and no free direction, so a word that begins
+// with one of them sits on the key of its second letter instead: "of" on S
+// with f, "on" on N, "be" on E, "can" on A.
+const MIDDLE = 'O';
+const keysWith = letter => KEYS.filter(k => FAMILY[k].includes(letter));
+function homeKeys(word) {
+  const first = keysWith(word[0]);
+  if (!first.includes(MIDDLE)) return first;
+  return word.length > 1 ? keysWith(word[1]).filter(k => k !== MIDDLE) : [];
+}
+
 for (const key of KEYS) {
   slots[key] = {};
   let free = freeDirs(key);
   if (ONE_LETTER[key]) { slots[key].n = ONE_LETTER[key]; assign(ONE_LETTER[key], strokeId(key, 'n')); free = free.filter(d => d !== 'n'); }
   if (!free.length) continue;
   const candidates = strokable
-    .filter(e => e.w.length >= 2 && e.w.length <= MAX_FLICK_LETTERS && FAMILY[key].includes(e.w[0]) && !assigned.has(e.w))
+    .filter(e => e.w.length >= 2 && e.w.length <= MAX_FLICK_LETTERS && !e.w.includes("'") && homeKeys(e.w).includes(key) && !assigned.has(e.w))
     .sort((a, b) => flickBenefit(b.w) - flickBenefit(a.w))
     .slice(0, free.length)
     .map(e => e.w);
@@ -150,9 +162,9 @@ for (const key of KEYS) for (const [dir, w] of Object.entries(slots[key])) {
   freeTurns.set(strokeId(key, dir), ['cw', 'ccw', 'back']);
   slotWord.set(strokeId(key, dir), w);
 }
-// Capitals have shift, the circle and automatic capitals, so a letter's
-// out-and-back is free for a word.
-for (const s of LETTER_SLOTS) freeTurns.set(strokeId(s.key, s.dir), ['cw', 'ccw', 'back']);
+// A letter's out-and-back stays its capital, as on the letter page, so a
+// letter flick has two turns.
+for (const s of LETTER_SLOTS) freeTurns.set(strokeId(s.key, s.dir), ['cw', 'ccw']);
 
 function hook(parent, turn, text) {
   const left = freeTurns.get(parent);
@@ -180,7 +192,7 @@ const phrases = lexicon.phrases
   .map(p => ({ text: p.g, parts: p.g.split(' '), pm: p.pm }))
   .filter(p => p.parts.length <= 3 && p.parts.every(known) && slotWord.size && [...slotWord.values()].includes(p.parts[0]))
   .map(p => ({ ...p, benefit: p.pm * (p.parts.reduce((s, w) => s + costAlone(w), 0) - TIMING.hook + EFFORT_MS * (p.parts.length - 1)) }))
-  .filter(p => p.pm >= MIN_HOOK_PM && p.benefit > 0);
+  .filter(p => p.pm >= 3 * MIN_HOOK_PM && p.benefit > 0);
 
 // 2b and 2c. Everything else, by what it saves.
 const related = (base, w) => w.length > base.length && w.startsWith(base) && base.length >= 2;
@@ -188,6 +200,8 @@ const candidates = [
   ...strokable.map(e => e.w).filter(worthHook).map(w => ({ text: w, benefit: hookBenefit(w) })),
   ...phrases.map(p => ({ text: p.text, benefit: p.benefit, phrase: p })),
 ].sort((a, b) => b.benefit - a.benefit);
+// Contractions are placed first among the winners, so each finds its own turn free.
+const contractionsFirst = list => [...list.filter(c => c.text.includes("'") && !c.phrase), ...list.filter(c => !c.text.includes("'") || c.phrase)];
 
 /** Where a candidate may hook, best first. */
 function optionsFor(c) {
@@ -235,21 +249,43 @@ for (const c of candidates) {
 }
 // First the winners go to their closest relative; then everything, winners
 // first by value, takes whatever turn is left on the right key.
-for (const c of candidates) {
+// A contraction keeps its turn wherever it lands: is/are/am to the right, not/will to the left.
+const turnFor = (id, text) => {
+  const left = freeTurns.get(id);
+  const cls = /n't$|'ll$/.test(text) ? 'ccw' : /'(m|re|s)$/.test(text) ? 'cw' : /'(ve|d)$/.test(text) ? 'back' : null;
+  return cls && left.includes(cls) ? cls : left[0];
+};
+for (const c of contractionsFirst(candidates)) {
   if (!winners.has(c.text) || assigned.has(c.text)) continue;
   const options = optionsFor(c).filter(o => o.rank >= 2.5);
-  if (options.length) hook(options[0].id, freeTurns.get(options[0].id)[0], c.text);
+  if (options.length) hook(options[0].id, turnFor(options[0].id, c.text), c.text);
 }
 for (const c of candidates) {
   if (assigned.has(c.text)) continue;
   const options = optionsFor(c);
-  if (options.length) hook(options[0].id, freeTurns.get(options[0].id)[0], c.text);
+  if (options.length) hook(options[0].id, turnFor(options[0].id, c.text), c.text);
 }
 
 // ----------------------------------------------------------- 3. endings
 
-const endings = { 'SP-nw': 'ed', 'SP-n': 's', 'SP-ne': 'ing', 'SP-sw': "n't", 'SP-se': "'s" };
+// Along the top, the inflections. Below, the contractions, laid out as the
+// curls are: "not" and "will" to the left, "is" and "have" to the right. A
+// curl on a lower flick is the second contraction of that side.
+const endings = {
+  'SP-nw': 'ed', 'SP-n': 's', 'SP-ne': 'ing',
+  'SP-sw': "n't", 'SP-sw-cw': "'ll", 'SP-sw-ccw': "'ll",
+  'SP-se': "'s", 'SP-se-ccw': "'ve", 'SP-se-cw': "'d",
+};
 const liveEndings = new Set(Object.values(endings));
+
+// Words that look like a base plus an ending and are not.
+const FALSE_FRIENDS = new Set(`evening news shed herring wing king thing during morning nothing something anything
+  everything bring spring string ring sing bed red need feed speed seed weed hundred united less class glass pass
+  across always perhaps towards besides sometimes series species lens means earnings clothes glasses jeans pants
+  shorts scissors thanks congratulations regards customs goods odds sales savings stairs surroundings wed bled fed
+  sled bring cling sting swing wring ceiling darling sibling pudding wedding building feeling meeting being
+  better butter letter matter number paper water under over other mother father brother sister never ever
+  family early only holy july reply apply supply fly ally belly bully jelly lily rally silly ugly folly`.split(/\s+/));
 
 // Which words are a commoner word plus an ending. The planner writes them that way.
 const derived = new Map();
@@ -262,7 +298,9 @@ for (const { w } of words) {
       // what it is said to make. "thing" is not "the" with an ending.
       const contraction = ending.includes("'");
       if (!known(base) || base === w || base.length < (contraction ? 1 : 3) || pm.get(base) < pm.get(w) * 0.3) continue;
-      if (applyEnding(base, ending) !== w) continue;
+      // The keyboard has to agree that the base takes the ending, and the result
+      // must not be a word of its own that only looks like one (evening, news).
+      if (!canEnd(base, ending) || FALSE_FRIENDS.has(w) || applyEnding(base, ending) !== w) continue;
       const have = derived.get(w);
       if (!have || pm.get(base) > pm.get(have.base)) derived.set(w, { base, ending });
     }
@@ -273,29 +311,37 @@ for (const [w, { ending }] of derived) endingMass[ending] = (endingMass[ending] 
 
 // --------------------------------------------------------- 4. completions
 
-// A prefix completes to a word only if the typist could mean nothing else by
-// it: no other token in the lexicon begins with it, apart from the word's own
-// inflections, and it is not a token itself.
+// A prefix completes to a word when the typist could hardly mean anything else
+// by it: the word and its own inflections are at least nine tenths of
+// everything in the lexicon that begins that way, and the prefix is not a
+// token itself. Names and other proper nouns complete to their capital form.
 const MIN_COMPLETION_PM = 5;
 const MIN_PREFIX = 3;
-const MIN_SAVED = 3;                   // letters saved; the complete stroke costs one back
-const byPrefix = new Map();            // prefix -> tokens that begin with it
-for (const { w } of everyToken) for (let n = MIN_PREFIX; n <= w.length; n++) {
+const MIN_SAVED = 2;                   // letters saved; the complete stroke costs one back and saves the space
+const DOMINANCE = 0.9;
+const prefixMass = new Map();          // prefix -> total weight of tokens that begin with it
+for (const { w, pm: weight } of everyToken) for (let n = MIN_PREFIX; n <= w.length; n++) {
   const p = w.slice(0, n);
-  if (!byPrefix.has(p)) byPrefix.set(p, []);
-  byPrefix.get(p).push(w);
+  prefixMass.set(p, (prefixMass.get(p) || 0) + weight);
 }
-const family = (w, other) => other === w || (other.startsWith(w) && other.length <= w.length + 3) || derived.get(other)?.base === w;
+const familyOf = new Map();            // word -> the tokens that are that word or an inflection of it
+for (const { w } of everyToken) {
+  const base = derived.get(w)?.base;
+  for (const head of [w, base].filter(Boolean)) { if (!familyOf.has(head)) familyOf.set(head, []); familyOf.get(head).push(w); }
+}
 const completions = {};
-for (const { w } of strokable) {
+const properCase = w => w[0].toUpperCase() + w.slice(1);
+for (const { w } of words) {
   if (assigned.has(w) || pm.get(w) < MIN_COMPLETION_PM || w.includes("'")) continue;
   const d = derived.get(w);
   if (d && liveEndings.has(d.ending)) continue;       // base + ending is already its one stroke
+  const family = familyOf.get(w) || [w];
   for (let n = MIN_PREFIX; n <= w.length - MIN_SAVED; n++) {
     const prefix = w.slice(0, n);
     if (pm.has(prefix) || prefix in completions) continue;
-    if (!byPrefix.get(prefix).every(other => family(w, other))) continue;
-    completions[prefix] = w;
+    const mine = family.filter(f => f.startsWith(prefix)).reduce((s, f) => s + pm.get(f), 0);
+    if (mine < DOMINANCE * prefixMass.get(prefix)) continue;
+    completions[prefix] = proper.has(w) ? properCase(w) : w;
     assigned.set(w, prefix);
     break;
   }
@@ -309,7 +355,7 @@ const hookTexts = Object.values(hooks);
 const hookWords = hookTexts.filter(t => !t.includes(' '));
 const hookPhrases = hookTexts.filter(t => t.includes(' '));
 const viaEnding = [...derived].filter(([w, d]) => liveEndings.has(d.ending) && !assigned.has(w)).map(([w]) => w);
-const completionWords = Object.values(completions);
+const completionWords = Object.values(completions).map(w => w.toLowerCase());
 const phrasePm = new Map(lexicon.phrases.map(p => [p.g, p.pm]));
 
 // What the marks that lost their direction would have saved, against the word that took it.

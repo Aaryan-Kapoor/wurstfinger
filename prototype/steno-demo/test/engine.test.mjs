@@ -2,12 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import theory from '../src/theory.generated.js';
 import { Engine } from '../src/engine.js';
-import { defaultPacks, DEFAULT_STACKS, validateEntry, labelOf } from '../src/packs.js';
+import { defaultPacks, DEFAULT_CONTEXTS, validateEntry, labelOf } from '../src/packs.js';
 import { LETTER_HOME, strokeId, DETAIL, DIRS, KEYS } from '../src/layout.js';
 import { makePlanner } from '../src/planner.js';
 
-const prose = (edit) => { const packs = defaultPacks(theory); edit?.(packs); return new Engine(packs, DEFAULT_STACKS.messages); };
-const shell = (edit) => { const packs = defaultPacks(theory); edit?.(packs); return new Engine(packs, DEFAULT_STACKS.terminal); };
+const make = (ctx, edit, stack) => { const packs = defaultPacks(theory); edit?.(packs); return new Engine(packs, stack || DEFAULT_CONTEXTS[ctx].stack, DEFAULT_CONTEXTS[ctx].options); };
+const prose = edit => make('messages', edit);
+const shell = edit => make('terminal', edit);
 const letter = ch => { const h = LETTER_HOME[ch.toLowerCase()]; return strokeId(h.key, h.dir); };
 // Any character the letter page can type, as the stroke that types it.
 const symbolStroke = ch => { for (const k of KEYS) for (const d of DIRS) if (DETAIL[k][d]?.label === ch) return strokeId(k, d); return null; };
@@ -201,10 +202,50 @@ test('shell: commands are spelled entries, typed on the complete stroke, with th
   assert.equal(e.text, 'echo ${home}');
 });
 
-test('shell: the terminal keys are text a terminal understands', () => {
+test('shell: terminal keys go to the host when it takes them, and are control characters when it does not', () => {
   const e = shell();
-  e.stroke('SP-ne'); e.stroke('SP-se'); e.stroke('SP-n');
+  e.stroke('T-se'); e.stroke('A-n'); e.stroke('I-n');
   assert.equal(e.text, '\t\x03\x1b[A');
+  const f = shell();
+  const seen = [];
+  f.host = { key: name => { seen.push(name); return name !== 'Tab'; } };
+  type(f, 'ls'); f.stroke('T-se'); f.stroke('A-n'); f.stroke('I-n');
+  assert.deepEqual(seen, ['Tab', 'Control(c)', 'Up']);
+  assert.equal(f.text, 'ls\t');
+});
+
+test('shell: digits on circles, nothing but ASCII, and prose endings do nothing', () => {
+  const e = shell();
+  type(e, 'port'); e.stroke('I-s'); e.stroke('E-circle'); e.stroke('SP-n'); e.stroke('E-circle'); e.stroke('SP-n');
+  assert.equal(e.text, 'port=8080');
+  for (const [outline, t] of Object.entries(e.entries)) {
+    if (!/^[A-Z]/.test(outline)) continue;
+    e.reset(''); e.stroke(outline);
+    assert.ok(!/[^\x00-\x7f]/.test(e.text), `${outline} types ${JSON.stringify(e.text)}`);
+  }
+  e.reset(''); type(e, 'it');
+  for (const s of ['SP-se', 'SP-sw', 'SP-ne', 'SP-nw']) assert.equal(e.stroke(s).kind, 'undefined');
+  assert.equal(e.text, 'it');
+});
+
+test('shell: a space is never doubled, closers are stepped over, a command expands after a quote', () => {
+  const e = shell();
+  type(e, 'ls '); e.stroke('R-nw-cw'); type(e, 'wc');
+  assert.equal(e.text, 'ls | wc');
+  e.reset(''); type(e, 'dk'); e.stroke('SP-s'); e.stroke('SP'); type(e, 'ps');
+  assert.equal(e.text, 'docker ps');
+  e.reset(''); type(e, 'echo '); e.stroke('E-nw-cw'); type(e, 'hi there'); e.stroke('E-nw'); type(e, ' x');
+  assert.equal(e.text, 'echo "hi there" x');
+  e.reset(''); type(e, 'echo '); e.stroke('A-sw-cw'); type(e, 'pwd'); e.stroke('R-e');
+  assert.equal(e.text, 'echo $(pwd)');
+  e.reset(''); type(e, "bash -c '"); type(e, 'gs'); e.stroke('SP-s');
+  assert.equal(e.text, "bash -c 'git status");
+});
+
+test('turning the shell pack on in messages does not change how messages are written', () => {
+  const e = make('messages', null, ['mine', 'shell', 'texting', 'english', 'letters']);
+  write(e, 'i', 'think', 'you', 'are', 'right'); e.stroke('E-s');
+  assert.equal(e.clean, 'I think you are right.');
 });
 
 test('entries are validated, and braces can be written', () => {
@@ -237,7 +278,73 @@ test('every word has exactly one plan', () => {
   const planner = makePlanner(e.entries, theory);
   assert.equal(planner.plan('the').kind, 'flick');
   assert.equal(planner.plan('thinking').kind, 'ending');
-  assert.equal(planner.plan('thing').kind, 'spell', 'thing is not the + ing');
-  assert.equal(planner.plan('only').kind, 'spell', 'only is not on + ly');
+  for (const w of ['thing', 'evening', 'news', 'shed', 'herring', 'only', 'besides']) assert.notEqual(planner.plan(w).kind, 'ending', `${w} is not a base and an ending`);
   assert.equal(planner.plan('zebra').kind, 'spell');
+});
+
+test('what is sent keeps the space after a word put into the middle of a message', () => {
+  const e = prose();
+  e.reset('I am happy'); e.moveCaret(-5);
+  write(e, 'really');
+  assert.equal(e.text, 'I am really happy');
+  assert.equal(e.clean, 'I am really happy');
+});
+
+test('a sentence that opens with a quote or a bracket still starts with a capital', () => {
+  const e = prose();
+  e.stroke('E-ne-cw'); write(e, 'no'); e.stroke('E-sw'); e.stroke('E-ne-cw'); write(e, 'she'); type(e, 'said'); e.stroke('E-s');
+  assert.equal(e.clean, '"No," she said.');
+  e.reset(''); write(e, 'the'); e.stroke('E-s'); e.stroke('A-e-cw'); write(e, 'you'); e.stroke('A-e-ccw');
+  assert.equal(e.clean, 'The. (You)');
+  e.reset(''); type(e, 'she said '); e.literal('"'); write(e, 'not'); type(e, 'today'); e.literal('"');
+  assert.equal(e.clean, 'She said "not today"');
+});
+
+test('a habitual space after a word is not a stroke: undo and the tape skip it', () => {
+  const e = prose();
+  write(e, 'the'); e.stroke('SP');
+  assert.equal(e.history.length, 1);
+  e.backspace();
+  assert.equal(e.text, '');
+  write(e, 'you', 'think'); e.stroke('E-s');
+  assert.equal(e.stroke('SP-ne').kind, 'invalid');
+  e.backspace(); e.backspace();
+  assert.equal(e.text, 'You ');
+  assert.deepEqual(e.tape.map(t => t.label), ['you']);
+});
+
+test('endings that would not make a word are refused, and contractions take the right form', () => {
+  const e = prose();
+  for (const [word, end] of [['and', 'ing'], ['you', 'ing'], ['the', 's'], ['i', 'ed']]) {
+    e.reset(''); write(e, word);
+    assert.equal(e.stroke(ending(end)).kind, 'invalid', `${word} + ${end}`);
+  }
+  e.reset(''); write(e, 'i'); e.stroke(ending("'s"));
+  assert.equal(e.stroke(ending('ing')).kind, 'invalid');
+  assert.equal(e.clean, "I'm");
+  e.reset(''); type(e, 'kids'); e.stroke(ending("'s"));
+  assert.equal(e.clean, "Kids'");
+  e.reset(''); write(e, 'we'.length ? 'you' : ''); e.stroke('SP-sw-cw'); write(e, 'i'); e.stroke('SP-se-ccw'); write(e, 'he'); e.stroke('SP-se-cw');
+  assert.equal(e.clean, "You'll I've he'd");
+  e.reset(''); type(e, 'happy'); assert.equal(e.stroke(ending("n't")).kind, 'invalid');
+});
+
+test('a suffix of the user\'s own follows the spelling rules', () => {
+  const e = prose(packs => Object.assign(packs.find(p => p.id === 'mine').entries, { 'T-n-cw': '{^ness}', 'T-n-ccw': '{^ful}', 'T-n-back': '{^ish}', 'T-e-cw': '{^able}' }));
+  type(e, 'happy'); e.stroke('T-n-cw'); type(e, 'beauty'); e.stroke('T-n-ccw'); type(e, 'red'); e.stroke('T-n-back'); type(e, 'love'); e.stroke('T-e-cw');
+  assert.equal(e.clean, 'Happiness beautiful reddish lovable');
+});
+
+test('retro operators change the word just written', () => {
+  const e = prose(packs => Object.assign(packs.find(p => p.id === 'mine').entries, { 'T-n-cw': '{*-|}', 'T-n-ccw': '{*!}' }));
+  write(e, 'the'); type(e, 'sarah'); e.stroke('T-n-cw'); type(e, ' note book'); e.stroke('T-n-ccw');
+  assert.equal(e.clean, 'The Sarah notebook');
+});
+
+test('entries that could never fire are refused', () => {
+  assert.match(validateEntry('SP-e', 'x'), /not a stroke the space bar/);
+  assert.match(validateEntry('SP-n-cw', 'x'), /not a stroke the space bar/);
+  assert.match(validateEntry('T-n/T-n/T-n/T-n/T-n', 'x'), /at most 4/);
+  assert.match(validateEntry('ab', 'a{|}b{|}c'), /once/);
+  assert.equal(validateEntry('SP-sw-cw', "{^'ll}"), null);
 });

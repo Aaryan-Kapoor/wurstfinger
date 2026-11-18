@@ -85,6 +85,9 @@ export function scriptFor(text, planner, entries, level = 'all') {
 
     let plan = planner.plan(lower);
     if (level === 'letters' || (level === 'flicks' && plan.kind !== 'flick')) plan = { kind: 'spell', outline: lower, spelled: true };
+    // A completion that would give a capital the text does not have (Friday for friday) is not the way to write it.
+    const completes = p => p.kind === 'completion' && /^[A-Z]/.test(labelOf(entries[p.outline])) && tok[0] === lower[0];
+    if (completes(plan) || (plan.kind === 'ending' && completes(plan.base))) plan = { kind: 'spell', outline: lower, spelled: true };
     const startsSpelled = plan.kind === 'spell' || plan.kind === 'completion' || (plan.kind === 'ending' && !plan.base.strokes?.length) || (plan.kind === 'ending' && plan.base.kind === 'completion');
     // A stroke that types the pronoun types it capital; spelled, the translator capitalises it at the word's end.
     const pronoun = /^i($|')/.test(lower);

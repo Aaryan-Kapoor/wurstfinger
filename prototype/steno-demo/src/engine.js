@@ -18,45 +18,53 @@
 // tapping space after every word out of habit is harmless. Letters never add
 // a space. In a literal stack (a shell) nothing is added or taken back.
 
-import { applyEnding, ENDINGS } from './orthography.js';
+import { applyEnding, attachSuffix, canEnd, ENDINGS } from './orthography.js';
 import { resolvePacks, labelOf, parseTranslation, isStrokeOutline } from './packs.js';
 
 const MAX_HISTORY = 200;
 const MAX_OUTLINE_STROKES = 4;
-const WORD_CHAR = /[A-Za-z0-9'_]/;
 const WORD_TAIL = /([A-Za-z][A-Za-z']*)$/;
 const TOKEN_TAIL = /[A-Za-z0-9'_-]*$/;
 const CLOSERS = /^[\s.,?!:;)\]}]/;
 const OPENERS = /[\s(\[{<\/]$/;
+const OPEN_QUOTE = /(^|[\s(\[{])["'“‘]$/;                    // a quote that has just opened
+const OVERTYPE = new Set(['"', "'", ')', ']', '}', '`']);     // typed again in front of itself, it is stepped over
 const KEYS = {
   Return: '\n', Tab: '\t', Escape: '\x1b', Up: '\x1b[A', Down: '\x1b[B', Right: '\x1b[C', Left: '\x1b[D',
 };
 
 const capitalise = s => s.replace(/[A-Za-z]/, c => c.toUpperCase());
-const sentenceStart = text => /^\s*$/.test(text) || /[.?!]["')\]]*\s+$/.test(text) || /\n\s*$/.test(text);
+// A sentence starts at the start, after a stop and a space, or after a new
+// line, and an opening quote or bracket in between does not change that.
+const sentenceStart = text => /^[\s"'“‘(\[]*$/.test(text) || /[.?!]["'”’)\]]*\s+["'“‘(\[]*$/.test(text) || /\n[\s"'“‘(\[]*$/.test(text);
 
 export class Engine {
   /**
    * @param packs  every dictionary the user has, in priority order
    * @param stack  ids of the packs in use, or null for all that are enabled
    */
-  constructor(packs, stack = null) {
+  constructor(packs, stack = null, options = null) {
     this.listeners = new Set();
-    this.setPacks(packs, stack);
+    this.host = null;                    // { key(name) -> handled } for keys the host app acts on
+    this.setPacks(packs, stack, options);
     this.reset('');
   }
 
   // ------------------------------------------------------------ dictionaries
 
-  setPacks(packs, stack = null) {
+  /**
+   * @param options  how the context writes: { spacing: 'auto' | 'literal', autoCapitalize, pronounI }.
+   *                 It belongs to the context, not to a pack, so switching a pack on never changes it.
+   */
+  setPacks(packs, stack = null, options = null) {
     this.packs = packs;
     this.stack = stack;
-    const { entries, source, shadowed, options } = resolvePacks(packs, stack);
-    this.entries = entries;
-    this.source = source;
-    this.shadowed = shadowed;
-    this.options = options;
-    this.multi = new Set(Object.keys(entries).filter(o => o.includes('/')));
+    const resolved = resolvePacks(packs, stack);
+    this.entries = resolved.entries;
+    this.source = resolved.source;
+    this.shadowed = resolved.shadowed;
+    this.options = options || resolved.options;
+    this.multi = new Set(Object.keys(this.entries).filter(o => o.includes("/")));
     this.emit();
   }
 
@@ -85,7 +93,12 @@ export class Engine {
 
   get text() { return this.state.text + this.state.after; }
   /** The text as it would be sent: without the space the translator is still holding. */
-  get clean() { return (this.state.autoSpace ? this.state.text.slice(0, -1) : this.state.text) + this.state.after; }
+  get clean() {
+    const s = this.state;
+    return (s.autoSpace && !s.after && s.text.endsWith(' ') ? s.text.slice(0, -1) : s.text) + s.after;
+  }
+  /** Letters, digits and, in prose, the apostrophe make up a word. */
+  wordy(ch) { return this.prose ? /[A-Za-z0-9'_]/.test(ch) : /[A-Za-z0-9_]/.test(ch); }
 
   on(fn) { this.listeners.add(fn); return () => this.listeners.delete(fn); }
   emit() { for (const fn of this.listeners) fn(this); }
@@ -103,7 +116,7 @@ export class Engine {
     const p = this.state.pending;
     if (!p) return null;
     const text = this.state.text;
-    const start = Math.max(p.start, text.length - /[A-Za-z0-9']*$/.exec(text)[0].length);
+    const start = Math.max(p.start, text.length - (this.prose ? /[A-Za-z0-9']*$/ : /[A-Za-z0-9]*$/).exec(text)[0].length);
     return start < text.length ? { start, typed: text.slice(start) } : null;
   }
 
@@ -155,12 +168,13 @@ export class Engine {
       this.space();
       return this.record({ id: null, outline: ' ', kind: 'space', before, label: '␣' });
     }
-    if (s.autoSpace && CLOSERS.test(str)) this.takeBackSpace();
+    if (this.overtype(str)) return this.record({ id: null, outline: str, kind: 'literal', before, label: str });
+    if (this.prose && s.autoSpace && CLOSERS.test(str)) this.takeBackSpace();
     const cap = s.capNext && /^[a-z]/.test(str);
     s.text += cap ? capitalise(str) : str;
     if (cap || /[A-Za-z]/.test(str)) { s.capNext = false; s.lowerNext = false; }
     s.autoSpace = false; s.swallowed = false; s.attachNext = false;
-    if (WORD_CHAR.test(str.at(-1))) { if (!s.pending) s.pending = { start: s.text.length - TOKEN_TAIL.exec(s.text)[0].length }; } else s.pending = null;
+    if (this.wordy(str.at(-1))) { if (!s.pending) s.pending = { start: s.text.length - TOKEN_TAIL.exec(s.text)[0].length }; } else s.pending = null;
     return this.record({ id: null, outline: str, kind: 'literal', before, label: str });
   }
 
@@ -169,7 +183,9 @@ export class Engine {
     const last = this.history.pop();
     if (last) {
       this.restore(last.before);
-      this.tape.pop();
+      // Take the stroke off the tape too, along with anything refused since.
+      const at = this.tape.findLastIndex(e => e.undoable);
+      if (at >= 0) this.tape.length = at;
       return this.note({ kind: 'undo', id: '*', outline: '*', label: last.label, out: '', removed: last.out || '' });
     }
     return this.deleteChar();
@@ -251,6 +267,8 @@ export class Engine {
       }
       if (op === '^ ^') { this.boundary(); this.space(); kind = 'space'; continue; }
       if (op === '=') { kind = this.complete(); continue; }
+      if (op === '*-|' || op === '*>') { this.retroCase(op === '*-|'); kind = 'retro'; continue; }
+      if (op === '*!') { this.retroJoin(); kind = 'retro'; continue; }
       if (op === '-|') { s.capNext = true; s.lowerNext = false; if (kind === 'word') kind = 'shift'; continue; }
       if (op === '>') { s.lowerNext = true; s.capNext = false; if (kind === 'word') kind = 'shift'; continue; }
       if (/^[.?!,:;]$/.test(op)) { this.mark(op); kind = 'mark'; attached = true; continue; }
@@ -259,7 +277,19 @@ export class Engine {
       const open = op.startsWith('^'), close = op.endsWith('^') && op.length > 1;
       const inner = op.slice(open ? 1 : 0, close ? -1 : undefined);
       if (open && !close && ENDINGS[inner] && !attached) { this.ending(inner); kind = 'ending'; attached = true; continue; }
-      if (open && !attached) { this.boundary(); this.takeBackSpace(); if (kind === 'word') kind = 'ending'; }
+      if (open && !attached) {
+        this.boundary(); this.takeBackSpace();
+        if (kind === 'word') kind = 'ending';
+        // A suffix of the user's own follows the same spelling rules as the built-in endings.
+        const m = !close && /^[a-z]+$/.test(inner) ? WORD_TAIL.exec(s.text) : null;
+        if (m && !m[1].includes("'")) {
+          s.text = s.text.slice(0, m.index) + attachSuffix(m[1], inner);
+          s.attachNext = false;
+          if (last) this.trail();
+          attached = true;
+          continue;
+        }
+      }
       this.word(inner, open || attached || attachPrev, !close && last);
       if (close) { this.takeBackSpace(); s.attachNext = true; }
       attached = true; attachPrev = false;
@@ -295,7 +325,7 @@ export class Engine {
   /** Whether a word written now needs a space put before it. */
   needsLead() {
     const s = this.state;
-    return this.prose && s.text.length > 0 && !s.attachNext && !OPENERS.test(s.text);
+    return this.prose && s.text.length > 0 && !s.attachNext && !OPENERS.test(s.text) && !OPEN_QUOTE.test(s.text);
   }
 
   /** Adds the translator's own space after a finished word, unless what follows already separates it. */
@@ -324,14 +354,19 @@ export class Engine {
     const s = this.state;
     if (!attach) this.boundary();
     if (!attach && this.needsLead()) s.text += ' ';
+    // In a literal stack an entry that begins with a space does not double one that is already there,
+    // and one that ends with a space has supplied it: a space tapped next is the same space.
+    if (!this.prose && text.startsWith(' ') && / $/.test(s.text)) text = text.slice(1);
     s.text += this.cased(text);
     s.attachNext = false; s.autoSpace = false; s.swallowed = false;
     if (finished) this.trail();
+    if (!this.prose && / $/.test(text)) s.autoSpace = true;
   }
 
   glue(ch) {
     const s = this.state;
-    const wordy = WORD_CHAR.test(ch);
+    if (this.overtype(ch)) return;
+    const wordy = this.wordy(ch);
     if (!s.pending) {
       // An apostrophe or a hyphen joins the word before it: can + 't, well + -known.
       if ((ch === "'" || ch === '-') && this.prose) this.takeBackSpace();
@@ -340,6 +375,15 @@ export class Engine {
     s.text += /^[A-Za-z]$/.test(ch) ? this.cased(ch) : ch;
     if (!wordy && ch !== '-') s.pending = null;
     s.attachNext = false; s.autoSpace = false; s.swallowed = false;
+  }
+
+  /** A closing quote or bracket typed where one already stands steps over it instead of doubling it. */
+  overtype(ch) {
+    const s = this.state;
+    if (!OVERTYPE.has(ch) || !s.after.startsWith(ch)) return false;
+    s.text += ch; s.after = s.after.slice(ch.length);
+    Object.assign(s, { pending: null, autoSpace: false, swallowed: false, attachNext: false });
+    return true;
   }
 
   space() {
@@ -381,8 +425,9 @@ export class Engine {
     this.boundary();
     this.takeBackSpace();
     const m = WORD_TAIL.exec(s.text);
-    // An ending with no word before it is not typed at all.
+    // An ending with no word before it, or on a word that cannot take it, is not typed at all.
     if (!m) throw new Error('no word to end');
+    if (!canEnd(m[1], name)) throw new Error(`${m[1]} takes no ${ENDINGS[name].label}`);
     s.text = s.text.slice(0, m.index) + applyEnding(m[1], name);
     s.attachNext = false;
     this.trail();
@@ -412,10 +457,38 @@ export class Engine {
     throw new Error('nothing to finish');
   }
 
+  /** Capitalises or lowercases the word before the caret, after the fact. */
+  retroCase(upper) {
+    const s = this.state;
+    this.boundary();
+    const m = /([A-Za-z][A-Za-z']*)(\s*)$/.exec(s.text);
+    if (!m) throw new Error('no word to change');
+    const word = upper ? capitalise(m[1]) : m[1][0].toLowerCase() + m[1].slice(1);
+    s.text = s.text.slice(0, m.index) + word + m[2];
+  }
+
+  /** Closes the gap before the word before the caret: "note book" becomes "notebook". */
+  retroJoin() {
+    const s = this.state;
+    this.boundary();
+    const m = /(\S) (\S+\s*)$/.exec(s.text);
+    if (!m) throw new Error('no gap to close');
+    s.text = s.text.slice(0, m.index) + m[1] + m[2];
+  }
+
   key(name) {
     const s = this.state;
     this.boundary();
     if (name === 'BackSpace') { s.text = s.text.slice(0, -1); return; }
+    if (name === 'Left' || name === 'Right') {
+      const all = s.text + s.after, at = Math.max(0, Math.min(all.length, s.text.length + (name === 'Left' ? -1 : 1)));
+      s.text = all.slice(0, at); s.after = all.slice(at);
+      Object.assign(s, { pending: null, attachNext: false, autoSpace: false, swallowed: false });
+      return;
+    }
+    // A key the host acts on (history, completion, interrupt) changes the line
+    // behind the translator's back, so what it remembers is dropped.
+    if (this.host?.key?.(name)) { this.history = []; return; }
     const control = /^Control\((.)\)$/.exec(name);
     const out = control ? String.fromCharCode(control[1].toUpperCase().charCodeAt(0) & 31) : KEYS[name];
     if (out === undefined) throw new Error(`unknown key ${name}`);
@@ -447,12 +520,16 @@ export class Engine {
     let j = 0;
     while (j < was.length - i && j < now.length - i && was[was.length - 1 - j] === now[now.length - 1 - j]) j++;
     const entry = { id, outline, kind, label, out: now.slice(i, now.length - j), removed: was.slice(i, was.length - j), strokes };
+    // A space tapped on top of the translator's own space changed nothing: it
+    // is not a stroke to undo and it does not go on the tape.
+    if (kind === 'space' && entry.out === '' && entry.removed === '') return this.note(entry);
     if (kind !== 'undefined' && kind !== 'invalid') {
       this.history.push({ id, before, label, out: entry.out });
       if (this.history.length > MAX_HISTORY) this.history.shift();
+      entry.undoable = true;
     }
     this.tape.push(entry);
-    if (this.tape.length > 40) this.tape.shift();
+    if (this.tape.length > 200) this.tape.shift();
     return this.note(entry);
   }
 }

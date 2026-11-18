@@ -7,18 +7,34 @@
 // `classifyStroke` is what steno mode adds on top: it looks for one corner in
 // the path and reports the stroke as a flick (no corner), a hook (the path
 // turns about a quarter, clockwise or counter-clockwise) or a back stroke (it
-// turns round). The four outcomes own equal 90 degree sectors of turn angle,
-// so the decision never depends on how long the stroke was.
+// turns round). The four outcomes own equal 90 degree sectors of turn angle.
 //
 // Paths are lists of {x, y} translations from the touch-down point, in
 // points, y pointing down.
 
-import { DIRS } from './layout.js';
-
 const D = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
-const SECTORS = ['swipeRight', 'swipeDownRight', 'swipeDown', 'swipeDownLeft', 'swipeLeft', 'swipeUpLeft', 'swipeUp', 'swipeUpRight'];
-const sectorIndex = a => Math.floor((((a * 180 / Math.PI) % 360 + 360) % 360 + 22.5) / 45) % 8;
-export const dirOfAngle = a => DIRS[sectorIndex(a)];
+const GESTURE = { e: 'swipeRight', se: 'swipeDownRight', s: 'swipeDown', sw: 'swipeDownLeft', w: 'swipeLeft', nw: 'swipeUpLeft', n: 'swipeUp', ne: 'swipeUpRight' };
+
+/**
+ * The angle, from level, at which a key's diagonal labels sit: 45 degrees on
+ * a square key, less on a wide one. People aim at the label, so the sectors
+ * are built round where the labels are.
+ */
+export const diagonalOf = (keyW, keyH) => Math.min(55, Math.max(35, Math.atan2(keyH, keyW) * 180 / Math.PI));
+
+/**
+ * The direction of an angle (radians, y down) on a key of this shape. Each
+ * boundary is the bisector between two neighbouring labels, so on a 94 x 70
+ * key level owns 37 degrees, a diagonal 45 and upright 53.
+ */
+export function dirOfAngle(angle, keyW = 1, keyH = 1) {
+  const x = Math.cos(angle), y = Math.sin(angle);
+  const level = Math.atan2(Math.abs(y), Math.abs(x)) * 180 / Math.PI;      // 0 = level, 90 = upright
+  const diagonal = diagonalOf(keyW, keyH);
+  if (level < diagonal / 2) return x >= 0 ? 'e' : 'w';
+  if (level >= (diagonal + 90) / 2) return y < 0 ? 'n' : 's';
+  return (y < 0 ? 'n' : 's') + (x >= 0 ? 'e' : 'w');
+}
 
 /**
  * Jitter filter and Savitzky-Golay smoothing (spec §6.2).
@@ -75,16 +91,18 @@ export function classify(raw, keyW, keyH, peakTime = 0) {
   const radii = p.map(q => D(q, c)), mean = radii.reduce((s, r) => s + r, 0) / n;
   const circularity = mean > 0
     ? Math.max(0, Math.min(1, 1 - Math.sqrt(radii.reduce((s, r) => s + (r - mean) ** 2, 0) / n) / mean)) : 0;
+  let angle = farAngle;
+  if (n >= 3 && far >= 2) { const r = robustDirection(p, far); if (r !== null) angle = r; }
+  const dir = dirOfAngle(angle, keyW, keyH);
+  const shape = { dir, isReturn: outBack, path: p, far, len, chord, swipeLen, keyW, keyH };
   if (len > 2 * swipeLen && circularity > 0.3 && Math.abs(span) > 255 * Math.PI / 180
       && turnConsistency(p, len) > 0.8 && compactness(p, farAngle) > 0.45
       && (Math.abs(span) >= 3 * Math.PI || circleFitResidual(p, c) <= 0.3)) {
-    return { gesture: span > 0 ? 'circularClockwise' : 'circularCounterclockwise', isReturn: false, path: p };
+    return { ...shape, gesture: span > 0 ? 'circularClockwise' : 'circularCounterclockwise', isReturn: false };
   }
 
   if (maxD < swipeLen && !fast) return { gesture: 'tap', isReturn: false, path: p };
-  let angle = farAngle;
-  if (n >= 3 && far >= 2) { const r = robustDirection(p, far); if (r !== null) angle = r; }
-  return { gesture: SECTORS[sectorIndex(angle)], dir: dirOfAngle(angle), isReturn: outBack, path: p, far, len, chord, swipeLen };
+  return { ...shape, gesture: GESTURE[dir] };
 }
 
 function turnConsistency(p, len) {
@@ -179,32 +197,40 @@ function robustDirection(p, f) {
 
 // ------------------------------------------------------------------ hooks
 
-// Second-leg thresholds, as fractions. A hook has to be drawn on purpose: the
-// tail a hurried flick leaves behind is short and shallow, and stays a flick.
+// A hook has to be drawn on purpose. The second leg must be a real leg: at
+// least 3 mm, and at least half as long as the first. The tail a thumb leaves
+// as it lifts off is neither, and stays the flick it was.
 export const HOOK = {
-  minFirst: 0.7,        // first leg, in swipe lengths (20 pt on a 58 pt key)
-  minSecond: 0.6,       // second leg, in swipe lengths
-  minRatio: 0.4,        // second leg at least this fraction of the first
+  minFirst: 0.7,        // first leg, in swipe lengths (20 pt)
+  minSecond: 0.95,      // second leg, in swipe lengths: 19 pt, 3 mm
+  minRatio: 0.5,        // second leg at least this fraction of the first
   minBackRatio: 0.33,   // a back stroke has to come at least a third of the way home
   minTurn: 45,          // degrees: below this the stroke is a plain flick
   backTurn: 135,        // degrees: above this it is a back stroke
+  minCircle: 300,       // degrees of heading change before a path is a circle and not a sharp hook
 };
 
-/**
- * Steno classification of one path.
- * Returns { type: 'tap' | 'flick' | 'hook' | 'back' | 'circle', dir, turn, corner }.
- * `corner` is the index of the turning point in the processed path (hooks and back strokes).
- */
-export function classifyStroke(raw, keyW, keyH, peakTime = 0) {
-  const base = classify(raw, keyW, keyH, peakTime);
-  if (base.gesture === 'tap') return { type: 'tap' };
-  if (base.gesture.startsWith('circular')) return { type: 'circle', turn: base.gesture === 'circularClockwise' ? 'cw' : 'ccw' };
+/** Total change of heading along a path, in degrees: about 90 for a hook, 360 for a circle. */
+function headingChange(p) {
+  let total = 0, prev = null;
+  for (let i = 1; i < p.length; i++) {
+    const dx = p[i].x - p[i - 1].x, dy = p[i].y - p[i - 1].y;
+    if (Math.hypot(dx, dy) < 2) continue;
+    const a = Math.atan2(dy, dx);
+    if (prev !== null) { let d = a - prev; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; total += Math.abs(d); }
+    prev = a;
+  }
+  return total * 180 / Math.PI;
+}
 
+/**
+ * The path as one or two legs: { straight } or { a, b, la, lb, turnDeg, cw, corner }.
+ * The corner is the point farthest from the line start to end; for a stroke
+ * that comes back on itself that line is too short to mean anything, so it is
+ * the point farthest from the start.
+ */
+function legs(base) {
   const p = base.path, n = p.length, o = p[0], e = p[n - 1];
-  const swipeLen = base.swipeLen;
-  // The corner: the point farthest from the straight line start to end; for a
-  // stroke that comes back on itself that line is too short to mean anything,
-  // so take the point farthest from the start.
   let corner = base.far;
   if (base.chord >= 0.5 * base.len) {
     let best = 0;
@@ -213,40 +239,69 @@ export function classifyStroke(raw, keyW, keyH, peakTime = 0) {
       const h = Math.abs((p[i].x - o.x) * uy - (p[i].y - o.y) * ux);
       if (h > best) { best = h; corner = i; }
     }
-    if (best < 0.16 * base.len) return { type: 'flick', dir: base.dir };          // straight enough
+    if (best < 0.16 * base.len) return { straight: true };
   }
   const c = p[corner];
   const a = { x: c.x - o.x, y: c.y - o.y }, b = { x: e.x - c.x, y: e.y - c.y };
-  const la = Math.hypot(a.x, a.y), lb = Math.hypot(b.x, b.y);
   const cross = a.x * b.y - a.y * b.x, dot = a.x * b.x + a.y * b.y;
-  const turnDeg = Math.abs(Math.atan2(cross, dot)) * 180 / Math.PI;
-  const dir = dirOfAngle(Math.atan2(a.y, a.x));
-  if (la < HOOK.minFirst * swipeLen || turnDeg < HOOK.minTurn) return { type: 'flick', dir: base.dir };
-  if (turnDeg > HOOK.backTurn) {
-    return lb >= HOOK.minBackRatio * la ? { type: 'back', dir, turn: 'back', corner } : { type: 'flick', dir: base.dir };
+  return {
+    a, b, la: Math.hypot(a.x, a.y), lb: Math.hypot(b.x, b.y), corner,
+    turnDeg: Math.abs(Math.atan2(cross, dot)) * 180 / Math.PI,
+    cw: cross > 0,                       // y points down, so a positive cross product turns clockwise on screen
+  };
+}
+
+/**
+ * Steno classification of one path.
+ * Returns { type: 'tap' | 'flick' | 'hook' | 'back' | 'circle', dir, turn }.
+ *
+ * A stroke that turns but is not a hook is the flick of its FIRST leg: a curl
+ * that falls short types the word that was flicked, never a neighbour's.
+ */
+export function classifyStroke(raw, keyW, keyH, peakTime = 0) {
+  const base = classify(raw, keyW, keyH, peakTime);
+  if (base.gesture === 'tap') return { type: 'tap' };
+  if (base.gesture.startsWith('circular') && headingChange(base.path) >= HOOK.minCircle) {
+    return { type: 'circle', turn: base.gesture === 'circularClockwise' ? 'cw' : 'ccw' };
   }
-  if (lb < HOOK.minSecond * swipeLen || lb < HOOK.minRatio * la) return { type: 'flick', dir: base.dir };
-  // y points down, so a positive cross product is a clockwise turn on screen.
-  return { type: 'hook', dir, turn: cross > 0 ? 'cw' : 'ccw', corner };
+  const L = legs(base);
+  if (L.straight) return { type: 'flick', dir: base.dir };
+  const swipeLen = base.swipeLen;
+  if (L.la < HOOK.minFirst * swipeLen || L.turnDeg < HOOK.minTurn) return { type: 'flick', dir: base.dir };
+  const dir = dirOfAngle(Math.atan2(L.a.y, L.a.x), keyW, keyH);
+  if (L.turnDeg > HOOK.backTurn) {
+    return L.lb >= HOOK.minBackRatio * L.la ? { type: 'back', dir, turn: 'back', corner: L.corner } : { type: 'flick', dir, fell: 'back' };
+  }
+  if (L.lb < HOOK.minSecond * swipeLen || L.lb < HOOK.minRatio * L.la) return { type: 'flick', dir, fell: L.cw ? 'cw' : 'ccw' };
+  return { type: 'hook', dir, turn: L.cw ? 'cw' : 'ccw', corner: L.corner };
 }
 
 // ---------------------------------------------------------------- space bar
 
 // The space bar is a wide key that also slides the caret, so it reads its
-// flicks by their real angle on the glass: within 25 degrees of level is the
-// caret's, and the rest of the circle is split into up-left, up, up-right and
-// the same three downward.
+// strokes by their real angle on the glass: within 25 degrees of level is the
+// caret's; above 70 degrees is straight up or down; between is a diagonal.
 export const SPACE_LEVEL = 25;
+export const SPACE_UPRIGHT = 70;
 
-/** { type: 'tap' } or { type: 'flick', dir } for a release on the space bar. */
-export function classifySpace(raw, keyH, peakTime = 0) {
-  const base = classify(raw, keyH, keyH, peakTime);           // square: no aspect correction
-  if (base.gesture === 'tap') return { type: 'tap' };
-  const p = base.path, far = p[base.far ?? p.length - 1] || p.at(-1);
-  const x = far.x - p[0].x, y = far.y - p[0].y;
-  const level = Math.atan2(Math.abs(y), Math.abs(x)) * 180 / Math.PI;      // 0 = level, 90 = vertical
-  if (level < SPACE_LEVEL) return { type: 'flick', dir: x > 0 ? 'e' : 'w' };
+function spaceDir(x, y) {
+  const level = Math.atan2(Math.abs(y), Math.abs(x)) * 180 / Math.PI;
+  if (level < SPACE_LEVEL) return x > 0 ? 'e' : 'w';
   const vertical = y < 0 ? 'n' : 's';
-  if (level > 62) return { type: 'flick', dir: vertical };
-  return { type: 'flick', dir: vertical + (x > 0 ? 'e' : 'w') };
+  return level > SPACE_UPRIGHT ? vertical : vertical + (x > 0 ? 'e' : 'w');
+}
+
+/** { type: 'tap' }, { type: 'flick', dir } or { type: 'hook', dir, turn } for a release on the space bar. */
+export function classifySpace(raw, keyH, peakTime = 0) {
+  const base = classify(raw, keyH, keyH, peakTime);
+  if (base.gesture === 'tap') return { type: 'tap' };
+  const p = base.path;
+  const L = legs(base);
+  if (!L.straight && L.la >= HOOK.minFirst * base.swipeLen && L.turnDeg >= HOOK.minTurn) {
+    const dir = spaceDir(L.a.x, L.a.y);
+    const hook = L.turnDeg <= HOOK.backTurn && L.lb >= HOOK.minSecond * base.swipeLen && L.lb >= HOOK.minRatio * L.la;
+    return hook ? { type: 'hook', dir, turn: L.cw ? 'cw' : 'ccw' } : { type: 'flick', dir };
+  }
+  const far = p[base.far ?? p.length - 1] || p.at(-1);
+  return { type: 'flick', dir: spaceDir(far.x - p[0].x, far.y - p[0].y) };
 }

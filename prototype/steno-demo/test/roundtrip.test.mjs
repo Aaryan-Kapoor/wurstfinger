@@ -12,13 +12,13 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import theory from '../src/theory.generated.js';
 import { Engine } from '../src/engine.js';
-import { defaultPacks, DEFAULT_STACKS } from '../src/packs.js';
+import { defaultPacks, DEFAULT_CONTEXTS } from '../src/packs.js';
 import { makePlanner } from '../src/planner.js';
 import { scriptFor } from '../src/script.js';
 
 // The texting pack only acts on the complete stroke, which the script never
 // sends for a word the corpus spells out, so it stays in the stack.
-const engine = new Engine(defaultPacks(theory), DEFAULT_STACKS.messages);
+const engine = new Engine(defaultPacks(theory), DEFAULT_CONTEXTS.messages.stack, DEFAULT_CONTEXTS.messages.options);
 const planner = makePlanner(engine.entries, theory);
 
 const run = (text, level) => {

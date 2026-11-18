@@ -159,12 +159,12 @@ for (const n of names) for (const [m] of stats[n].marks) allMarks.add(m);
 const marks = Object.fromEntries([...allMarks].map(m => [m, Math.round(blend(m, 'marks').pm)]).filter(([, pm]) => pm >= 20).sort((a, b) => b[1] - a[1]));
 
 // Proper nouns: words that the two cased corpora write with a capital in mid-sentence
-// at least half the time (the SMS corpus's casing is too irregular to count).
+// at least four times in five (the SMS corpus's casing is too irregular to count).
 const proper = [];
 for (const e of words) {
   let caps = 0, all = 0;
   for (const n of ['movie', 'daily']) { caps += stats[n].capital.get(e.w) || 0; all += stats[n].uni.get(e.w) || 0; }
-  if (all >= 5 && caps / all >= 0.5 && !/^i($|')/.test(e.w)) proper.push(e.w);
+  if (all >= 2 && caps / all >= 0.8 && !/^i($|')/.test(e.w)) proper.push(e.w);
 }
 
 const total = words.reduce((s, e) => s + e.pm, 0);

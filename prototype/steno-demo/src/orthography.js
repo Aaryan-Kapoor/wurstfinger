@@ -138,7 +138,7 @@ export const ENDINGS = {
   ly:    { label: '-ly',  name: 'manner', apply: addLy },
   er:    { label: '-er',  name: 'more', apply: addEr },
   "n't": { label: "n't",  name: 'not', apply: w => NOT[w] || w + "n't" },
-  "'s":  { label: "'s",   name: 'is, are, am, or belonging to', apply: w => BE[w] || w + "'s" },
+  "'s":  { label: "'s",   name: 'is, are, am, or belonging to', apply: w => BE[w] || (w.endsWith('s') ? w + "'" : w + "'s") },
   "'ll": { label: "'ll",  name: 'will', apply: w => w + "'ll" },
   "'ve": { label: "'ve",  name: 'have', apply: w => w + "'ve" },
   "'d":  { label: "'d",   name: 'would or had', apply: w => w + "'d" },
@@ -161,6 +161,47 @@ export function applyEnding(word, ending) {
   }
   if (word[0] !== lower[0]) return result[0].toUpperCase() + result.slice(1);
   return result;
+}
+
+// Words that take no -s, -ing or -ed: pronouns, determiners, prepositions,
+// conjunctions, the forms of "be" and the little adverbs. "anding" is not a word.
+const CLOSED_CLASS = new Set(`a an the and or but nor if of to in on at by for with from as into onto than then so
+  i you he she it we they me him her us them my your his its our their mine yours hers ours theirs this that these
+  those is am are was were been not no yes very too also just here there when where why how what who whom which
+  whose because although though while until unless since about above across after against along among around
+  before behind below beneath beside between beyond during except inside outside over through toward under upon
+  within without each every either neither both all any some many much most more less few such only even ever
+  never always often again already still yet soon now maybe perhaps okay ok oh hey hi yeah`.split(/\s+/));
+
+/**
+ * Whether an ending makes sense on a word. An ending that does not is not
+ * typed at all, so a slip on the space bar cannot leave "youing" behind.
+ */
+export function canEnd(word, ending) {
+  const w = word.toLowerCase();
+  if (!ENDINGS[ending] || !/^[a-z][a-z']*$/.test(w)) return false;
+  if (w.includes("'")) return false;                         // I'm, don't: already contracted
+  if (ending === "n't") return w in NOT;
+  if (ending.startsWith("'")) return true;                   // 's, 'll, 've, 'd go on any word
+  if (ending === 's' && w in PLURAL) return true;            // this -> these, that -> those
+  return !CLOSED_CLASS.has(w) || (w === 'be' && ending === 'ing');
+}
+
+/**
+ * Joins a suffix that is not one of the endings above (-ness, -ful, -able,
+ * -ish) with the ordinary spelling changes: happy + ness is happiness, red +
+ * ish is reddish, love + able is lovable.
+ */
+export function attachSuffix(word, suffix) {
+  const w = word.toLowerCase();
+  if (!/^[a-z]+$/.test(suffix) || !/^[a-z]+$/.test(w) || w.length < 2) return word + suffix;
+  const vowelFirst = 'aeiouy'.includes(suffix[0]);
+  let stem = word;
+  if (/[^aeiou]y$/.test(w) && suffix[0] !== 'i') stem = word.slice(0, -1) + 'i';
+  else if (vowelFirst && /[^aeiou]e$/.test(w) && !(/[cg]e$/.test(w) && 'ao'.includes(suffix[0]))) stem = word.slice(0, -1);
+  else if (vowelFirst && endsCk(w)) stem = word + 'k';
+  else if (vowelFirst && doublesFinal(w)) stem = word + word.at(-1);
+  return stem + suffix;
 }
 
 /** Candidate bases a word might be `base + ending` of. Cheap and generous; verify with applyEnding. */
