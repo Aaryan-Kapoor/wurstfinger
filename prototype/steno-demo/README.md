@@ -5,7 +5,7 @@ It has no dependencies beyond Node 20.
 
 ```bash
 node serve.mjs            # http://127.0.0.1:5273/
-HOST=0.0.0.0 node serve.mjs   # to open it on a phone on the same network
+HOST=0.0.0.0 node serve.mjs   # on every address, to open it from a phone or another machine
 ```
 
 Drag on the keyboard with a mouse, or use thumbs on a touch screen. The panel beside the phone has
