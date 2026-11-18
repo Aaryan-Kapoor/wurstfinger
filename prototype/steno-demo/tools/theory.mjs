@@ -59,7 +59,8 @@ const assign = (word, stroke) => { assigned.set(word, stroke); strokes.set(strok
 
 // ------------------------------------------------------- 1. word flicks
 
-const keyOfLetter = l => LETTER_HOME[l]?.key;
+// A word flick has to be readable in a corner of its key.
+const MAX_FLICK_LETTERS = 6;
 const slots = {};                      // key -> { dir: word }
 
 function permutations(items) {
@@ -81,7 +82,7 @@ for (const key of KEYS) {
   const free = FREE_SLOTS.filter(s => s.key === key).map(s => s.dir);
   if (!free.length) { slots[key] = {}; continue; }
   const candidates = words
-    .filter(e => e.w.length >= 2 && FAMILY[key].includes(e.w[0]))
+    .filter(e => e.w.length >= 2 && e.w.length <= MAX_FLICK_LETTERS && FAMILY[key].includes(e.w[0]))
     .sort((a, b) => flickBenefit(b.w) - flickBenefit(a.w))
     .slice(0, free.length)
     .map(e => e.w);
