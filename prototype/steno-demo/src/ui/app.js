@@ -3,7 +3,7 @@
 
 import theory from '../theory.generated.js';
 import { Engine } from '../engine.js';
-import { defaultPacks, DEFAULT_STACKS, isStrokeOutline } from '../packs.js';
+import { defaultPacks, DEFAULT_CONTEXTS, isStrokeOutline, parseTranslation } from '../packs.js';
 import { makePlanner } from '../planner.js';
 import { scriptFor } from '../script.js';
 import { pathFor } from '../robot.js';
@@ -33,52 +33,121 @@ function saveSettings() {
 
 // ------------------------------------------------------------ dictionaries
 
+// What ships, untouched, so that a user's changes can be kept as changes: a
+// later version of a shipped dictionary still reaches someone who edited it.
+const shipped = Object.fromEntries(defaultPacks(theory).map(p => [p.id, p.entries]));
 const packs = defaultPacks(theory);
 {
-  // What the user changed survives a reload: the entries of every editable pack, and each context's stack.
-  const saved = store.get('wf-steno-packs', {});
-  for (const p of packs) if (p.editable && saved[p.id] && typeof saved[p.id] === 'object') p.entries = saved[p.id];
+  const saved = store.get('wf-steno-edits', {});
+  for (const p of packs) {
+    const edit = saved[p.id];
+    if (!p.editable || !edit) continue;
+    for (const o of edit.removed || []) delete p.entries[o];
+    Object.assign(p.entries, edit.set || {});
+  }
+  // Dictionaries the user made, whole.
+  for (const u of store.get('wf-steno-own', [])) {
+    if (u && typeof u.id === 'string' && u.entries && !packs.some(p => p.id === u.id)) packs.unshift({ id: u.id, name: String(u.name || 'Untitled'), description: 'Yours.', editable: true, own: true, entries: u.entries });
+  }
 }
-const stacks = { ...DEFAULT_STACKS, ...store.get('wf-steno-stacks', {}) };
-for (const ctx of Object.keys(stacks)) {
-  stacks[ctx] = stacks[ctx].filter(id => packs.some(p => p.id === id));
-  if (!stacks[ctx].includes('letters')) stacks[ctx].push('letters');
+const contexts = JSON.parse(JSON.stringify(DEFAULT_CONTEXTS));
+{
+  const saved = store.get('wf-steno-stacks', {});
+  for (const [id, ctx] of Object.entries(contexts)) {
+    if (Array.isArray(saved[id])) ctx.stack = saved[id].filter(p => packs.some(x => x.id === p));
+    if (!ctx.stack.includes('letters')) ctx.stack.push('letters');
+  }
 }
-const state = { context: store.get('wf-steno-context', 'messages'), coach: null, spelled: 0, word: '', capture: null, playing: false, cancel: false };
-if (!stacks[state.context]) state.context = 'messages';
 
-const engine = new Engine(packs, stacks[state.context]);
+function savePacks() {
+  const edits = {};
+  for (const p of packs) {
+    if (!p.editable || p.own) continue;
+    const base = shipped[p.id] || {};
+    const set = Object.fromEntries(Object.entries(p.entries).filter(([o, t]) => base[o] !== t));
+    const removed = Object.keys(base).filter(o => !(o in p.entries));
+    if (Object.keys(set).length || removed.length) edits[p.id] = { set, removed };
+  }
+  store.set('wf-steno-edits', edits);
+  store.set('wf-steno-own', packs.filter(p => p.own).map(p => ({ id: p.id, name: p.name, entries: p.entries })));
+  store.set('wf-steno-stacks', Object.fromEntries(Object.entries(contexts).map(([id, c]) => [id, c.stack])));
+}
+
+// `app` is the app on the phone. `dict` is whose dictionaries the keyboard is
+// using, which follows the app but can be switched by a stroke.
+const state = {
+  app: store.get('wf-steno-context', 'messages'), dict: null, drafts: {},
+  coach: null, spelled: 0, word: '', capture: null, playing: false, cancel: false, history: [], historyAt: 0,
+};
+if (!contexts[state.app]) state.app = 'messages';
+state.dict = state.app;
+
+const engine = new Engine(packs, contexts[state.dict].stack, contexts[state.dict].options);
 let planner = makePlanner(engine.entries, theory);
 
 function packsChanged() {
-  store.set('wf-steno-packs', Object.fromEntries(packs.filter(p => p.editable).map(p => [p.id, p.entries])));
-  store.set('wf-steno-stacks', stacks);
-  engine.setPacks(packs, stacks[state.context]);
+  savePacks();
+  engine.setPacks(packs, contexts[state.dict].stack, contexts[state.dict].options);
   planner = makePlanner(engine.entries, theory);
   state.coach = null;
+  kb.renderFaces();
+  renderPager();
   renderRibbon();
   document.dispatchEvent(new CustomEvent('wf-packs'));
 }
 
+// Keys a terminal acts on. The translator hands them over and forgets the line, because the shell now owns it.
+engine.host = {
+  key(name) {
+    if (state.app !== 'terminal') return ['Escape', 'Up', 'Down'].includes(name) || /^Control/.test(name);   // nothing to do in a message
+    switch (name) {
+      case 'Return': submit(); return true;
+      case 'Up': case 'Down': {
+        if (!state.history.length) return true;
+        state.historyAt = Math.max(0, Math.min(state.history.length, state.historyAt + (name === 'Up' ? -1 : 1)));
+        setTimeout(() => engine.reset(state.history[state.historyAt] || ''), 0);
+        return true;
+      }
+      case 'Control(c)': setTimeout(() => { terminalLine('cmd', engine.text + '^C'); engine.reset(''); }, 0); return true;
+      case 'Control(l)': $('terminal').innerHTML = ''; return true;
+      case 'Tab': toast('Tab: the shell would complete this'); return true;
+      case 'Escape': return true;
+      default: if (/^Control/.test(name)) { toast(`${name.replace('Control(', 'Ctrl-').replace(')', '').toUpperCase().replace('CTRL', 'Ctrl')} sent`); return true; }
+    }
+    return false;
+  },
+};
+
 // ---------------------------------------------------------------- keyboard
 
 const overlay = $('overlay');
+const SHORT = { messages: 'words', terminal: 'shell' };
+const otherContext = () => Object.keys(contexts).find(id => id !== state.dict);
 const kb = new Keyboard($('keys'), engine, {
   onMode: () => { renderPager(); renderRibbon(); },
   onTouch: t => { guide.show(t); trailStart(t); $('field').classList.add('busy'); },
   onCandidate: t => guide.update(t),
   onRelease: (t, c, entry) => {
-    const typed = c && !(entry && (entry.kind === 'undefined' || entry.kind === 'invalid'));
-    guide.hide(t, typed ? c : null);
+    const typed = c && c.type !== 'tap' && !(entry && (entry.kind === 'undefined' || entry.kind === 'invalid'));
+    guide.hide(t, typed ? liftText(c, entry) : null);
     trailEnd(t);
     $('field').classList.remove('busy');
   },
-  onStroke: (c, entry) => noteStroke(entry),
+  onStroke: (c, entry) => noteStroke(entry, c),
   onAction: (action, amount) => act(action, amount),
   onGhost: (phase, p) => ghost(phase, p),
   capture: () => state.capture,
+  stackLabel: () => SHORT[state.dict] || 'steno',
+  otherStackLabel: () => SHORT[otherContext()] || '',
 });
 const guide = new Guide(overlay, kb, engine, settings);
+
+/** What lifts off the guide when a stroke is released: what it wrote, not what it is called. */
+function liftText(c, entry) {
+  if (!entry) return c.label;
+  if (entry.kind === 'completion' || entry.kind === 'ending') return (/\S+\s*$/.exec(entry.out) || [c.label])[0].trim();
+  return c.label;
+}
 
 function act(action, amount) {
   switch (action) {
@@ -88,7 +157,7 @@ function act(action, amount) {
     case 'caret': engine.moveCaret(amount); resync(); break;
     case 'return': submit(); break;
     case 'change': change(); break;
-    case 'hide': toast('The keyboard would slide away here'); break;
+    case 'stack': setDict(otherContext()); break;
     default: break;
   }
 }
@@ -102,11 +171,17 @@ function resync() {
   renderRibbon();
 }
 
+const isWordStroke = id => {
+  const s = id && parseStroke(id);
+  if (!s || !s.dir || s.key === 'SP') return false;
+  try { return !parseTranslation(engine.lookup(id) || '').some(a => a.op?.[0] === '&'); } catch { return false; }
+};
+
 /** Steps the last word stroke to the next stroke on the same flick: the flick, then each curl. */
 function change() {
   const last = engine.history.at(-1);
-  const family = last?.id ? kb.siblings(last.id) : [];
-  if (family.length < 2) { toast('Nothing to change'); return; }
+  const family = last && isWordStroke(last.id) ? kb.siblings(last.id).filter(isWordStroke) : [];
+  if (family.length < 2) { toast('Change works on the word you just stroked'); return; }
   const next = family[(family.indexOf(last.id) + 1) % family.length];
   engine.backspace();
   engine.stroke(next);
@@ -117,7 +192,7 @@ function toast(text) {
   const t = document.createElement('div');
   t.className = 'toast'; t.textContent = text;
   $('keyboard').appendChild(t);
-  setTimeout(() => t.remove(), 1500);
+  setTimeout(() => t.remove(), 1600);
 }
 
 // ------------------------------------------------------------------- coach
@@ -126,15 +201,19 @@ function toast(text) {
  * Watches how words get written. When a word was spelled that has a shorter
  * way, the strip shows that way once. It never changes the text.
  */
-function noteStroke(entry) {
+function noteStroke(entry, c) {
   if (!entry) return;
+  entry.guessed = !!(c && c.tail);       // a curl that means nothing was read as its flick
   const letter = entry.kind === 'letter' || (entry.kind === 'literal' && /^[A-Za-z']$/.test(entry.outline));
   if (letter) {
     state.spelled++;
     state.word = engine.pendingOutline()?.typed || '';
   } else if (!['undefined', 'invalid', 'shift'].includes(entry.kind)) {
     const finishedSpelled = state.spelled > 0 && ['word', 'space', 'mark', 'key', 'ending'].includes(entry.kind);
-    state.coach = finishedSpelled && kb.mode === 'steno' ? coachFor(state.word.toLowerCase(), state.spelled, entry.kind === 'ending' ? entry : null) : null;
+    const word = state.word.toLowerCase();
+    state.coach = finishedSpelled && kb.mode === 'steno' ? coachFor(word, state.spelled) : null;
+    if (finishedSpelled) document.dispatchEvent(new CustomEvent('wf-spelled', { detail: { word } }));
+    if (['word', 'ending', 'completion'].includes(entry.kind) && entry.id) document.dispatchEvent(new CustomEvent('wf-stroked', { detail: { id: entry.id, text: entry.label } }));
     state.spelled = 0; state.word = '';
   }
   renderRibbon();
@@ -155,7 +234,8 @@ function planStrokes(plan) {
   if (plan.kind === 'completion') return { parts: [{ letters: plan.outline }, { stroke: plan.strokes[0] }], gestures: plan.gestures, why: `${plan.outline}, then pull space down` };
   if (plan.kind === 'ending') {
     const base = planStrokes(plan.base)?.parts || [{ letters: plan.base.outline }];
-    return { parts: [...base, { stroke: plan.strokes.at(-1) }], gestures: plan.gestures, why: `${plan.base.word} and -${plan.ending.replace(/^'/, "'")}`.replace("-'", "'").replace('-n', 'n') };
+    const ending = plan.ending.startsWith("'") || plan.ending === "n't" ? plan.ending : `-${plan.ending}`;
+    return { parts: [...base, { stroke: plan.strokes.at(-1) }], gestures: plan.gestures, why: `${plan.base.word}, then ${ending}` };
   }
   return null;
 }
@@ -167,12 +247,16 @@ const partsHtml = (parts, size = 28) => parts.map(p => p.stroke ? glyph(p.stroke
 function renderPager() {
   const pager = $('pager');
   if (!pager.children.length) {
-    pager.innerHTML = '<div class="thumb"></div>' + MODES.map(m => `<button role="tab" data-mode="${m}">${MODE_LABEL[m]}</button>`).join('');
+    pager.innerHTML = '<div class="thumb"></div>' + MODES.map(m => `<button role="tab" data-mode="${m}"></button>`).join('');
     pager.addEventListener('click', e => { const b = e.target.closest('button'); if (b) kb.setMode(b.dataset.mode); });
   }
   const i = MODES.indexOf(kb.mode);
   pager.querySelector('.thumb').style.transform = `translateX(${i * 44}px)`;
-  for (const b of pager.querySelectorAll('button')) b.setAttribute('aria-pressed', b.dataset.mode === kb.mode);
+  for (const b of pager.querySelectorAll('button')) {
+    b.setAttribute('aria-pressed', b.dataset.mode === kb.mode);
+    // The middle page is named for the dictionaries it is using.
+    b.textContent = b.dataset.mode === 'steno' ? (SHORT[state.dict] || MODE_LABEL.steno) : MODE_LABEL[b.dataset.mode];
+  }
 }
 
 let ribbonKey = '';
@@ -188,8 +272,9 @@ function renderRibbon() {
     const old = fresh ? '' : ' old';
     if (e.kind === 'undefined') { if (fresh) chips.push(`<span class="chip raw" data-seq="${e.seq}">${glyph(e.id, 30)}<span>nothing on this stroke</span></span>`); continue; }
     if (e.kind === 'invalid') { if (fresh) chips.push(`<span class="chip raw" data-seq="${e.seq}">${glyph(e.id, 30)}<span>${esc(e.label)}</span></span>`); continue; }
-    const text = e.kind === 'ending' ? (/\S+\s*$/.exec(e.out) || [e.label])[0].trim() : e.label;
-    chips.push(`<span class="chip${old}" data-seq="${e.seq}">${isStrokeOutline(e.id) ? glyph(e.id, 30) : ''}<span>${esc(text)}</span></span>`);
+    // What the stroke wrote: the finished word for an ending or a completion, the entry's text otherwise.
+    const text = e.kind === 'word' ? e.label : (/\S+\s*$/.exec(e.out) || [e.label])[0].trim();
+    chips.push(`<span class="chip${old}${e.guessed ? ' guessed' : ''}" data-seq="${e.seq}"${e.guessed ? ' title="No curl there: read as the flick"' : ''}>${isStrokeOutline(e.id) ? glyph(e.id, 30) : ''}<span>${esc(text)}</span></span>`);
   }
   if (last?.kind === 'undo') chips.push(`<span class="chip undo" data-seq="u${last.seq}"><span>${esc(last.removed.trim() || last.label)}</span></span>`);
   if (pending) {
@@ -246,7 +331,7 @@ function renderField() {
   const last = engine.lastEvent;
   let html;
   if (!s.text && !s.after) {
-    html = `<span class="caret"></span><span class="placeholder">${state.context === 'terminal' ? '' : 'Message'}</span>`;
+    html = `<span class="caret"></span><span class="placeholder">${state.app === 'terminal' ? '' : 'Message'}</span>`;
   } else if (pending && s.text.endsWith(pending.typed)) {
     const exp = pending.expansion;
     const rest = exp && exp.toLowerCase().startsWith(pending.typed.toLowerCase()) ? exp.slice(pending.typed.length) : '';
@@ -279,15 +364,22 @@ function addBubble(text, side) {
   while (thread.children.length > 9) thread.firstChild.remove();
 }
 
+function terminalLine(cls, text) {
+  if (!text) return;
+  const term = $('terminal');
+  const l = document.createElement('div');
+  l.className = 'ln ' + cls; l.innerHTML = visible(text);
+  term.appendChild(l);
+  while (term.children.length > 14) term.firstChild.remove();
+}
+
 function submit() {
   const text = engine.clean.trim();
   if (!text) return;
-  if (state.context === 'terminal') {
-    const term = $('terminal');
-    const add = (cls, t) => { if (!t) return; const l = document.createElement('div'); l.className = 'ln ' + cls; l.innerHTML = visible(t); term.appendChild(l); };
-    add('cmd', text);
-    add('', fakeOutput(text));
-    while (term.children.length > 14) term.firstChild.remove();
+  if (state.app === 'terminal') {
+    terminalLine('cmd', text);
+    terminalLine('', fakeOutput(text));
+    state.history.push(text); state.historyAt = state.history.length;
   } else {
     addBubble(text, 'out');
     if (!state.playing) setTimeout(() => addBubble(REPLIES[replyIndex++ % REPLIES.length], 'in'), 1100);
@@ -307,24 +399,48 @@ function fakeOutput(cmd) {
 
 $('send').addEventListener('click', submit);
 
-function setContext(context) {
-  if (!stacks[context]) return;
-  state.context = context;
-  store.set('wf-steno-context', context);
-  const terminal = context === 'terminal';
+/** Whose dictionaries the keyboard uses. The text stays; only how it is written from here on changes. */
+function setDict(id) {
+  if (!contexts[id]) return;
+  state.dict = id;
+  $('keys').dataset.context = id;
+  engine.boundary();
+  packsChanged();
+  document.dispatchEvent(new CustomEvent('wf-context'));
+}
+
+/** Which app is on the phone. Each app keeps its own unfinished text. */
+function setContext(app) {
+  if (!contexts[app]) return;
+  state.drafts[state.app] = { text: engine.state.text, after: engine.state.after };
+  state.app = app;
+  store.set('wf-steno-context', app);
+  const terminal = app === 'terminal';
   $('ctxMessages').setAttribute('aria-pressed', !terminal);
   $('ctxTerminal').setAttribute('aria-pressed', terminal);
   $('thread').hidden = terminal; $('terminal').hidden = !terminal;
   $('who').textContent = terminal ? 'zsh' : 'Maya';
   $('whoSub').textContent = terminal ? '~/wurstfinger' : 'Messages';
   $('field').classList.toggle('mono', terminal);
-  $('screen').dataset.context = context;
-  $('keys').dataset.context = context;
-  engine.reset('');
-  state.spelled = 0; state.word = '';
-  packsChanged();
-  document.dispatchEvent(new CustomEvent('wf-context'));
+  $('screen').dataset.context = app;
+  setDict(app);
+  restoreDraft(state.drafts[app]);
 }
+
+function restoreDraft(draft) {
+  engine.reset(draft?.text || '');
+  if (draft?.after) { engine.state.after = draft.after; engine.emit(); }
+  state.coach = null; state.spelled = 0; state.word = '';
+  renderRibbon();
+}
+
+/** Runs something that types (a demonstration, a lesson) and puts the user's own text back afterwards. */
+async function sandbox(run) {
+  const draft = { text: engine.state.text, after: engine.state.after };
+  engine.reset('');
+  try { return await run(); } finally { restoreDraft(draft); }
+}
+
 $('ctxMessages').addEventListener('click', () => setContext('messages'));
 $('ctxTerminal').addEventListener('click', () => setContext('terminal'));
 
@@ -447,8 +563,8 @@ function scale() { return parseFloat(getComputedStyle($('phoneWrap')).getPropert
 function fit() {
   const narrow = window.innerWidth <= 900;
   document.body.classList.toggle('narrow', narrow);
-  // On a phone the demo's phone is the screen: no bezel, full width.
-  const s = narrow ? window.innerWidth / 393 : Math.min(1.1, (window.innerHeight - 40) / 876, (window.innerWidth * 0.5) / 417);
+  // On a phone the demo's phone is the screen: no bezel, as wide as the window, but never taller than it.
+  const s = narrow ? Math.min(window.innerWidth / 393, window.innerHeight / 640) : Math.min(1.1, (window.innerHeight - 40) / 876, (window.innerWidth * 0.5) / 417);
   $('phoneWrap').style.setProperty('--scale', Math.max(0.5, s).toFixed(4));
   sizeTrail();
 }
@@ -462,13 +578,14 @@ saveSettings();
 renderPager();
 fit();
 const api = {
-  engine, kb, packs, stacks, theory, settings, state, saveSettings, packsChanged, typeSentence, demonstrate, playStrokes, stopPlaying,
-  startRecording, cancelRecording, planStrokes, partsHtml, setContext, toast,
+  engine, kb, packs, contexts, theory, settings, state, saveSettings, packsChanged, typeSentence, demonstrate, playStrokes, stopPlaying,
+  startRecording, cancelRecording, planStrokes, partsHtml, setContext, setDict, toast, sandbox, restoreDraft, isWordStroke, shipped,
   planner: () => planner,
   scriptFor: (text, level) => scriptFor(text, planner, engine.entries, level),
+  get stacks() { return Object.fromEntries(Object.entries(contexts).map(([id, c]) => [id, c.stack])); },
 };
 mountPanel(api);
-setContext(state.context);
+setContext(state.app);
 document.fonts?.ready.then(() => { fit(); kb.fitHints(); });
 
 // For the screenshot and review scripts.

@@ -19,7 +19,7 @@ const LESSONS = [
 ];
 
 export function mountPanel(api) {
-  const { engine, kb, packs, stacks, theory, settings, state } = api;
+  const { engine, kb, packs, contexts, theory, settings, state } = api;
   const $ = id => document.getElementById(id);
 
   // ------------------------------------------------------------------ tabs
@@ -37,6 +37,7 @@ export function mountPanel(api) {
 
   // --------------------------------------------------------------- lessons
   let active = null;
+  let draft = null;                     // what was in the field before a lesson took it over
 
   const lessonStrokes = l => l.strokes ? l.strokes.map(id => ({ id })) : (api.scriptFor(l.text, 'all') || []);
 
@@ -78,7 +79,7 @@ export function mountPanel(api) {
       { demo: ['T-n-ccw'], glyphs: ['T-n-ccw'], title: 'A curl is another word from that key', text: 'Finish a flick with a corner, without lifting, for a second word: the flicked word’s contraction (<b>right is ’s / ’re / ’m, left is n’t / ’ll, back is ’ve</b>), a word that begins with it, or another word with the same first letter.' },
       { demo: ['T-nw', 'SP-ne'], glyphs: ['SP-ne'], title: 'The space bar ends a word', text: 'Flick it instead of tapping it: <b>-s, -ing, -ed</b> along the top, <b>n’t</b> and <b>’s</b> below, on any word, with the spelling English uses. Tapping it is always safe: a word already has its space.' },
       { demo: ['R', 'E', 'S', 'T', 'A', 'O-n', 'SP-s'], glyphs: ['SP-s'], title: 'Spell anything; take an offer if you like', text: 'No word is out of reach, because letters never stop working. When what you have spelled can only be one word, the rest appears in grey: <b>pull the space bar down</b> to take it. Nothing is ever changed for you.' },
-      { demo: ['T-n-cw', 'UT-e'], glyphs: ['UT'], corner: true, title: 'One key undoes, sends and fixes', text: 'The corner key: <b>tap to take back a whole stroke</b>, flick right to turn a misread curl into its neighbour, flick up to send, hold and drag left to delete letter by letter.' },
+      { demo: ['T-n-cw', 'UT-e', 'UT'], glyphs: ['UT'], corner: true, title: 'One key undoes, sends and fixes', text: 'The corner key: <b>tap to take back a whole stroke</b>, flick right to turn a misread curl into its neighbour, flick up to send, hold and drag left to delete letter by letter.' },
     ];
     $('pane-learn').innerHTML = `
       <h2>How it works</h2>` + rules.map((r, i) => `
@@ -106,13 +107,11 @@ export function mountPanel(api) {
     const rule = e.target.closest('[data-rule]');
     if (rule) {
       const demo = JSON.parse($('pane-learn').dataset.demos)[+rule.dataset.rule];
-      if (state.context !== 'messages') api.setContext('messages');
+      if (state.app !== 'messages') api.setContext('messages');
       document.body.classList.remove('sheet');
       endLesson();
-      engine.reset('');
-      // The corner key's demo types a word and then changes it.
-      if (demo.includes('UT-e')) { await api.playStrokes(['T-n-cw'], { teach: true, speed: 0.45 }); await api.playStrokes(['UT-e'], { teach: true, speed: 0.45 }); return; }
-      await api.playStrokes(demo, { teach: true, speed: 0.45, gap: 380 });
+      // A demonstration types in a sandbox: whatever was in the field comes back afterwards.
+      await api.sandbox(() => api.playStrokes(demo, { teach: true, speed: 0.45, gap: 380 }));
       return;
     }
     const watch = e.target.closest('[data-watch]'), tryIt = e.target.closest('[data-try]');
@@ -123,9 +122,10 @@ export function mountPanel(api) {
 
   async function startLesson(l, watch) {
     api.stopPlaying();
-    if (state.context !== (l.context || 'messages')) api.setContext(l.context || 'messages');
+    if (state.app !== (l.context || 'messages')) api.setContext(l.context || 'messages');
     if (kb.mode !== 'steno') kb.setMode('steno');
     document.body.classList.remove('sheet');
+    if (!active) draft = { text: engine.state.text, after: engine.state.after };
     engine.reset('');
     active = { lesson: l, startSeq: engine.seq, watching: watch };
     renderLessonCard();
@@ -135,7 +135,7 @@ export function mountPanel(api) {
       if (active?.lesson === l) { active.watching = false; progress(); }
     }
   }
-  function endLesson() { active = null; $('lessonCard').hidden = true; for (const w of document.querySelectorAll('.lesson .w')) w.classList.remove('done', 'next', 'off'); }
+  function endLesson() { if (active && draft) { api.restoreDraft(draft); draft = null; } active = null; $('lessonCard').hidden = true; for (const w of document.querySelectorAll('.lesson .w')) w.classList.remove('done', 'next', 'off'); }
 
   /** The lesson rides along in the phone, so it is in view while you type. */
   function renderLessonCard() {
@@ -144,7 +144,7 @@ export function mountPanel(api) {
     const l = active.lesson;
     card.hidden = false;
     card.innerHTML = `<div class="head"><span>${esc(l.title)}</span><button id="lessonAgain" class="mini">${PLAY} Watch</button><button id="lessonClose" class="mini" aria-label="Close">×</button></div>
-      <div class="target" data-lesson="${l.id}">${wordsHtml(l, 34)}</div><div class="status" id="lessonStatus"></div>`;
+      <div class="target" data-lesson="${l.id}">${wordsHtml(l, 34)}</div><div class="lesson-status" id="lessonStatus"></div>`;
     $('lessonClose').addEventListener('click', endLesson);
     $('lessonAgain').addEventListener('click', () => startLesson(l, true));
   }
@@ -196,7 +196,7 @@ export function mountPanel(api) {
     const raw = input.value.trim();
     const out = $('lookupPlan');
     const planner = api.planner();
-    const where = state.context === 'terminal' ? 'the terminal' : 'messages';
+    const where = state.dict === 'terminal' ? 'the terminal' : 'messages';
     if (!raw) { out.innerHTML = `<span class="how">Type something to see how it is written with the dictionaries ${where} uses. A word has exactly one way.</span>`; return; }
     const show = (parts, how) => {
       out.innerHTML = `<div class="strokes">${api.partsHtml(parts, 38)}</div><span class="how">${how}</span><button class="btn quiet" id="lookupShow">${PLAY} Show me</button>`;
@@ -228,7 +228,7 @@ export function mountPanel(api) {
 
   function renderKeyMap() {
     const map = $('keymap'); if (!map) return;
-    $('keymapNote').textContent = state.context === 'terminal'
+    $('keymapNote').textContent = state.dict === 'terminal'
       ? 'In the terminal each flick is the symbol it always was; these are the forms on its curls.'
       : 'Each flick word, then its curls: right, left, back.';
     map.innerHTML = KEYS.map(key => {
@@ -249,8 +249,8 @@ export function mountPanel(api) {
   let filter = '';
   let pendingOverride = null;
 
-  const stack = () => stacks[state.context];
-  const defaultOpen = () => state.context === 'terminal' ? 'commands' : 'mine';
+  const stack = () => contexts[state.dict].stack;
+  const defaultOpen = () => state.dict === 'terminal' ? 'commands' : 'mine';
 
   function renderPacks() {
     if (!openPack || !packs.some(p => p.id === openPack)) openPack = defaultOpen();
@@ -259,7 +259,7 @@ export function mountPanel(api) {
     const on = id => stack().includes(id);
     const entries = Object.entries(pack.entries).filter(([o, t]) => !filter || o.toLowerCase().includes(filter) || t.toLowerCase().includes(filter));
     const shadowed = on(pack.id) ? engine.shadowed.filter(s => s.pack === pack.id) : [];
-    const ctxName = state.context === 'terminal' ? 'the terminal' : 'messages';
+    const ctxName = state.dict === 'terminal' ? 'the terminal' : 'messages';
     pane.innerHTML = `
       <h2>Dictionaries for ${ctxName}</h2>
       <p>Everything the keyboard types comes from these, letters included. They are stacked, and <b>the first one that knows a stroke wins</b>. Each context has its own stack: switch the app at the top of the phone to see the other.</p>
@@ -345,10 +345,11 @@ export function mountPanel(api) {
     }
     pendingOverride = null;
     pack.entries[outline] = text;
-    if (!stack().includes(pack.id)) toggle(pack.id);
     api.packsChanged();
     renderPacks();
-    note(`Added. ${isStrokeOutline(outline) ? 'Try the stroke.' : `Spell ${esc(outline)} and pull the space bar down.`}`);
+    note(stack().includes(pack.id)
+      ? `Added. ${isStrokeOutline(outline) ? 'Try the stroke.' : `Spell ${esc(outline)} and pull the space bar down.`}`
+      : 'Added, but this dictionary is switched off here, so it does nothing until you switch it on.', !stack().includes(pack.id));
   }
 
   function applyJson(replace) {
@@ -389,7 +390,7 @@ export function mountPanel(api) {
     openPack = defaultOpen();
     if (!$('pane-packs').hidden) renderPacks();
     if (!$('pane-lookup').hidden) { lookup(); renderKeyMap(); }
-    if (active && (active.lesson.context || 'messages') !== state.context) endLesson();
+    if (active && (active.lesson.context || 'messages') !== state.app) endLesson();
   });
 
   // --------------------------------------------------------------- numbers
@@ -398,24 +399,26 @@ export function mountPanel(api) {
     const names = { daily: 'Everyday dialogue', movie: 'Film dialogue', sms: 'Real SMS' };
     const max = r.letterStrokesPerWord;
     const tokens = Object.values(theory.meta.corpora).reduce((s, c) => s + c.trainingTokens, 0);
+    const pct = x => (x * 100).toFixed(1);
+    const rows = [...results.robustness.grid];
     $('pane-numbers').innerHTML = `
       <h2>What it buys, on text it never saw</h2>
       <p>A tenth of each corpus was set aside before any stroke was assigned. A model typist then typed it: <b>${r.messages.toLocaleString()} messages, ${r.chars.toLocaleString()} characters</b>. Each row adds what a learner would pick up next. The letter keyboard takes <b>${r.letterStrokesPerWord} strokes a word</b>.</p>
       <div class="seg" id="corpusSeg">${Object.keys(results.evaluation).map(c => `<button data-corpus="${c}" aria-pressed="${c === corpus}">${names[c]}</button>`).join('')}</div>
       <div class="bars">${r.stages.map(s => `<div class="bar"><span class="lbl">${esc(s.stage)}</span><div class="track"><div class="fill" style="width:${(s.strokesPerWord / max * 100).toFixed(1)}%"></div></div><span class="val">${s.strokesPerWord.toFixed(2)}</span></div>`).join('')}</div>
-      <table class="t"><tr><th>You know</th><th>Strokes a word</th><th>Fewer</th><th>WPM, bare model</th><th>cautious</th><th>pessimistic</th></tr>
-        <tr><td>the letter keyboard</td><td>${r.letterStrokesPerWord}</td><td></td><td>${r.letterWpm.model}</td><td>${r.letterWpm.cautious}</td><td>${r.letterWpm.pessimistic}</td></tr>
-        ${r.stages.map(s => `<tr><td>${esc(s.stage)}</td><td>${s.strokesPerWord.toFixed(2)}</td><td>${s.saving.toFixed(0)} %</td><td>${s.wpm.model}</td><td>${s.wpm.cautious}</td><td>${s.wpm.pessimistic}</td></tr>`).join('')}
+      <table class="t"><tr><th>You know</th><th>Strokes a word</th><th>Fewer</th><th>WPM, bare model</th><th>careful thumb</th><th>hurried thumb</th></tr>
+        <tr><td>the letter keyboard</td><td>${r.letterStrokesPerWord}</td><td></td><td>${r.letterWpm.bare}</td><td>${r.letterWpm.careful}</td><td>${r.letterWpm.hurried}</td></tr>
+        ${r.stages.map(s => `<tr><td>${esc(s.stage)}</td><td>${s.strokesPerWord.toFixed(2)}</td><td>${s.saving.toFixed(0)} %</td><td>${s.wpm.bare}</td><td>${s.wpm.careful}</td><td>${s.wpm.hurried}</td></tr>`).join('')}
       </table>
-      <p class="note"><b>Stroke counts are exact; speeds are a model, not a measurement of people.</b> The bare model is a one-thumb expert at 262 ms a letter, 300 ms a word flick, 702 ms a curl. “Cautious” makes a curl 922 ms, adds 150 ms to recall every stroke that is not a letter, and charges for misreads at 2 % of flicks and 4 % of curls. “Pessimistic” doubles the recall and the misreads. Under it, curls stop paying for themselves and the gain is the flicks and endings alone. The constants and their sources are in <code>src/model.js</code>.</p>
+      <p class="note"><b>Stroke counts are exact; speeds are a model, not a measurement of people.</b> The bare model has no mistakes and no recall time. The careful thumb makes 6 mm strokes and aims within 6°; the hurried one makes 4.5 mm strokes and aims within 9°. Both pay to notice and redo every mistake, at the rates in the table below, and to recall each stroke that is not a letter. The word flicks pay under every assumption. The curls pay only for the careful thumb.</p>
       <h2>Where the words come from</h2>
       <p>${tokens.toLocaleString()} words from three corpora: film dialogue, written everyday dialogue and real text messages. A word’s weight is the geometric mean of its frequency in all three, so it has to be common everywhere. The ${theory.meta.counts.flicks} flick words are ${theory.meta.share.flicks} % of all word tokens; the ${theory.meta.counts.hooks} curled words another ${theory.meta.share.hooks} %.</p>
-      <h2>How often a stroke is misread</h2>
-      <p>A synthetic thumb drew every stroke shape on a key of the real size (${results.robustness.key.mm.map(x => x.toFixed(1)).join(' × ')} mm), 1,600 times a row, with the corner cut and the length off by a fifth. Rows vary how long each leg is and how far the aim is off. This shows where the recogniser’s margins run out; it does not show how real thumbs behave.</p>
-      <table class="t"><tr><th>Leg</th><th>Aim off (sd)</th><th>Flick</th><th>Curl right</th><th>Curl left</th><th>Back</th><th>Ending</th></tr>
-        ${results.robustness.grid.filter(g => g.arc === 0).map(g => `<tr><td>${g.leg} mm</td><td>${g.aim}°</td><td>${g.flick} %</td><td>${g.right} %</td><td>${g.left} %</td><td>${g.back} %</td><td>${g.ending} %</td></tr>`).join('')}
+      <h2>How often a stroke types the wrong thing</h2>
+      <p>A population of synthetic thumbs wrote with the real dictionary on keys of the real size (${results.robustness.key.mm.map(x => x.toFixed(1)).join(' × ')} mm), each with its own bias, stroke length, bowed path, cut corner and, a third of the time, a tail as it lifts. Strokes are weighted by how often they are used. This is a model of error, not a measurement of people.</p>
+      <table class="t"><tr><th>Stroke length, aim</th><th>Word flick right</th><th>wrong word</th><th>Curl right</th><th>its own flick</th><th>wrong word</th></tr>
+        ${rows.map(g => `<tr><td>${g.leg} mm, ${g.aim}°</td><td>${pct(g.kinds['word flick'].right)} %</td><td>${pct(g.kinds['word flick']['another word'])} %</td><td>${pct(g.kinds.curl.right)} %</td><td>${pct(g.kinds.curl['own flick'])} %</td><td>${pct(g.kinds.curl['another word'])} %</td></tr>`).join('')}
       </table>
-      <p class="note">A curl that is misread nearly always comes out as its own plain flick (the flicked word instead of its relative), which the corner key’s “change” puts right in one move. Curls want legs of about 4.5 mm or more.</p>`;
+      <p class="note">A curl that falls short types the word that was flicked, which the corner key’s “change” puts right in one move. Curls want legs of about 6 mm; shorter ones are unreliable in this model, and that is the first thing a study with real thumbs should measure.</p>`;
     $('corpusSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (b) renderNumbers(b.dataset.corpus); });
   }
 
@@ -433,7 +436,7 @@ export function mountPanel(api) {
       </div>
       <h2>Getting around</h2>
       <div class="card">
-        <p><b>Three keyboards, side by side.</b> Steno is in the middle. Drag the strip above the keys sideways, swipe the keys with two fingers, or flick the corner key up-left for numbers and up-right for plain letters. The letter page is the keyboard as it always was, with every symbol.</p>
+        <p><b>Three keyboards, side by side.</b> Steno is in the middle. Drag the strip above the keys sideways, swipe the keys with two fingers, or flick the corner key down for numbers and down-left for plain letters. Down-right switches between your word and shell dictionaries without leaving the app. The letter page is the keyboard as it always was, with every symbol.</p>
         <p><b>The space bar</b> is two keys wide on every page. Drag it sideways to move the caret.</p>
         <p><b>The corner key</b> holds what the right-hand column used to hold. Rest on it to see its map.</p>
       </div>`;
@@ -443,7 +446,7 @@ export function mountPanel(api) {
       settings[s.dataset.setting] = v === 'true' ? true : v === 'false' ? false : v;
       api.saveSettings(); renderSettings();
     }));
-    $('resetAll').addEventListener('click', () => { for (const k of ['wf-steno-settings', 'wf-steno-packs', 'wf-steno-stacks', 'wf-steno-context']) localStorage.removeItem(k); location.reload(); });
+    $('resetAll').addEventListener('click', () => { for (const k of ['wf-steno-settings', 'wf-steno-edits', 'wf-steno-own', 'wf-steno-stacks', 'wf-steno-context']) localStorage.removeItem(k); location.reload(); });
   }
 
   document.addEventListener('wf-packs', () => { renderLearn(); if (active) { renderLessonCard(); progress(); } });

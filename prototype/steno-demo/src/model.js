@@ -13,11 +13,10 @@ export const TIMING = {
   // short directed stroke. Costed slightly above the mean letter because it is
   // always a flick, never a tap.
   flick: 300,
-  // A hook: one acquisition plus two stroke segments (CLC line times for a
-  // 10 mm and a 14 mm segment, Cao & Zhai 2007).
+  // A hook as the generator prices it: one acquisition plus two stroke
+  // segments (CLC line times for a 10 mm and a 14 mm segment, Cao & Zhai 2007).
+  // That is long for legs of 5 mm, so the evaluation also runs a faster figure.
   hook: 702,
-  // The pessimistic variant: a thumb draws 1.5x slower than a pen.
-  hookSlow: 922,
   // An ending is a flick on the space bar, which is two cells wide.
   ending: 280,
   space: 262,
@@ -26,24 +25,39 @@ export const TIMING = {
   pageSwitch: 400,
 };
 
-// Three sets of assumptions the evaluation is run under. "model" is the bare
-// motor model. "cautious" makes a hook as slow as a thumb that draws 1.5x
-// slower than a pen, adds 150 ms to recall every stroke that is not a letter,
-// and charges for misreads: the recogniser's error rate at sloppiness 1
-// (tools/robustness.mjs) times the cost of noticing, undoing and redoing.
-// "pessimistic" doubles the recall and the error rates.
-const noticeAndRedo = strokeMs => 400 + TIMING.letter + strokeMs;
-export const COSTS = {
-  model: { hook: TIMING.hook, recall: 0, letterError: 0, flickError: 0, hookError: 0 },
-  cautious: {
-    hook: TIMING.hookSlow, recall: 150, letterError: 0.015 * noticeAndRedo(TIMING.letter),
-    flickError: 0.02 * noticeAndRedo(TIMING.flick), hookError: 0.04 * noticeAndRedo(TIMING.hookSlow),
-  },
-  pessimistic: {
-    hook: TIMING.hookSlow, recall: 300, letterError: 0.015 * noticeAndRedo(TIMING.letter),
-    flickError: 0.04 * noticeAndRedo(TIMING.flick), hookError: 0.08 * noticeAndRedo(TIMING.hookSlow),
-  },
+// Three sets of assumptions the evaluation is run under.
+//
+//   bare      the motor model alone: no recall, no mistakes; a hook is a flick
+//             with a corner and a second short leg.
+//   careful   a thumb that makes 6 mm strokes and aims within 6 degrees.
+//   hurried   a thumb that makes 4.5 mm strokes and aims within 9 degrees.
+//
+// The last two take their mistake rates from tools/robustness.mjs, which
+// draws the real dictionary's strokes with that kind of thumb. A mistake
+// costs the time to notice it, take it back and write it again; a curl that
+// came out as its own flick costs noticing and one "change" stroke. They also
+// charge for recalling a stroke that is not a letter, and price a hook more
+// slowly.
+export const SCENARIOS = {
+  bare: { hook: 560, recall: 0, hand: null },
+  careful: { hook: 702, recall: 150, hand: 'careful' },
+  hurried: { hook: 922, recall: 300, hand: 'hurried' },
 };
+const NOTICE = 400;
+
+/** Per-stroke costs for a scenario, given the mistake rates measured for its thumb. */
+export function costsFor(scenario, rates) {
+  const s = SCENARIOS[scenario];
+  if (!rates) return { hook: s.hook, recall: 0, letterError: 0, flickError: 0, hookError: 0, endingError: 0 };
+  const redo = ms => NOTICE + TIMING.letter + ms;            // notice, undo, write again
+  return {
+    hook: s.hook, recall: s.recall,
+    letterError: rates.letter.wrong * redo(TIMING.letter),
+    flickError: rates.flick.wrong * redo(TIMING.flick),
+    hookError: rates.curl.wrong * redo(s.hook) + rates.curl.ownFlick * (NOTICE + TIMING.flick),
+    endingError: rates.ending.wrong * redo(TIMING.ending),
+  };
+}
 
 // What the generator charges, on top of time, for each gesture a stroke
 // replaces: every gesture is a chance to slip, and fewer of them is less work

@@ -155,8 +155,8 @@ button { font: inherit; color: inherit; }
 .lesson-card .mini { border: 0; background: var(--key-pressed); color: var(--app-ink); border-radius: 8px; height: 24px; padding: 0 8px; font: 700 11.5px var(--rounded); cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
 .lesson-card .mini svg { width: 10px; height: 10px; }
 .lesson-card .target { font-size: 15px; line-height: 1.2; gap: 0 5px; margin: 0; }
-.lesson-card .status { font-size: 12px; color: var(--app-ink-2); margin-top: 3px; min-height: 17px; }
-.lesson-card .status b { color: var(--app-ink); }
+.lesson-status { font-size: 12px; color: var(--app-ink-2); margin-top: 3px; min-height: 17px; }
+.lesson-status b { color: var(--app-ink); }
 
 .composer { flex: none; display: flex; align-items: flex-end; gap: 8px; padding: 7px 12px 9px; }
 .field {
@@ -228,6 +228,9 @@ button { font: inherit; color: inherit; }
 .key .h.word { font-weight: 650; font-size: 12px; letter-spacing: -.15px; color: var(--hint-word); }
 .key .h.word.long { font-size: 11.5px; letter-spacing: -.3px; }
 .key .h.word.tight { font-size: 10.5px; letter-spacing: -.35px; }
+.key .h.word { max-width: 46px; overflow: hidden; text-overflow: ellipsis; }
+.key.space .h.word { max-width: 70px; }
+.chip.guessed { box-shadow: inset 0 0 0 1px var(--warn); }
 .key .h.word.token { color: var(--hint-token); font-family: var(--mono); font-size: 10.5px; font-weight: 600; letter-spacing: -.4px; }
 .key .h.nw { left: 6px; top: 6px; transform-origin: 0 0; }
 .key .h.n { left: 50%; top: 6px; transform: translateX(-50%); transform-origin: 50% 0; }
@@ -281,7 +284,14 @@ button { font: inherit; color: inherit; }
 .guide .lit svg { width: 16px; height: 16px; flex: none; }
 .guide .lit.on { opacity: 1; transform: scale(1); }
 .guide .lit.on.dim { background: color-mix(in srgb, var(--accent) 26%, var(--guide)); color: var(--label); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 70%, transparent); }
-.guide .lit.warn { background: var(--good); }
+.guide .lit.send { background: var(--good); }
+.guide .list { position: absolute; display: none; flex-direction: column; justify-content: center; gap: 1px; padding: 5px 6px; }
+.guide.listing .list { display: flex; }
+.guide.listing .card { opacity: 1; transform: none; }
+.guide.listing .cell { opacity: 0 !important; }
+.guide .item { display: flex; align-items: center; gap: 3px; height: 22px; padding: 0 8px 0 0; border-radius: 8px; font-weight: 700; font-size: 14px; color: var(--label); white-space: nowrap; }
+.guide .item.sel { background: var(--accent); color: #fff; }
+.guide .item.sel .glyph .g-line { stroke: #fff; }
 .guide .hook { position: absolute; height: 26px; border-radius: 9px; padding: 0 8px 0 4px; display: inline-flex; align-items: center; gap: 2px; font-weight: 700; font-size: 13.5px; white-space: nowrap; background: var(--guide); color: var(--label); box-shadow: 0 3px 12px rgba(0, 0, 0, .3), inset 0 0 0 .5px var(--line); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); opacity: 0; transform: scale(.7); pointer-events: none; transition: opacity .14s, transform .18s cubic-bezier(.3, 1.3, .5, 1), background-color .1s, color .1s; }
 .guide .hook.on { opacity: 1; transform: scale(1); }
 .guide .hook.sel { background: var(--accent); color: #fff; }

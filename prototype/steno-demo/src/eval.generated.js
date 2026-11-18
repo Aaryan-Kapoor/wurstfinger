@@ -6,9 +6,9 @@ export default {
    "chars": 196496,
    "letterStrokesPerWord": 5.22,
    "letterWpm": {
-    "model": 45.8,
-    "cautious": 43.5,
-    "pessimistic": 43.5
+    "bare": 45.8,
+    "careful": 44.8,
+    "hurried": 42.2
    },
    "stages": [
     {
@@ -16,9 +16,9 @@ export default {
      "strokesPerWord": 5.08,
      "saving": 2.7,
      "wpm": {
-      "model": 46.6,
-      "cautious": 44.4,
-      "pessimistic": 44.4
+      "bare": 46.6,
+      "careful": 45.6,
+      "hurried": 43.1
      },
      "share": {
       "flick": 0,
@@ -31,20 +31,20 @@ export default {
     },
     {
      "stage": "12 word flicks",
-     "strokesPerWord": 4.47,
-     "saving": 14.4,
+     "strokesPerWord": 4.45,
+     "saving": 14.7,
      "wpm": {
-      "model": 52.5,
-      "cautious": 48.7,
-      "pessimistic": 47.3
+      "bare": 52.7,
+      "careful": 50.1,
+      "hurried": 46.1
      },
      "share": {
-      "flick": 22.5,
+      "flick": 23,
       "hook": 0,
       "phrase": 0,
       "ending": 0,
       "completion": 0,
-      "spell": 77.5
+      "spell": 77
      }
     },
     {
@@ -52,17 +52,17 @@ export default {
      "strokesPerWord": 4.18,
      "saving": 19.9,
      "wpm": {
-      "model": 55.9,
-      "cautious": 51.2,
-      "pessimistic": 49.1
+      "bare": 55.9,
+      "careful": 52.5,
+      "hurried": 47.8
      },
      "share": {
-      "flick": 30.6,
+      "flick": 31,
       "hook": 0,
       "phrase": 0,
       "ending": 0,
       "completion": 0,
-      "spell": 69.4
+      "spell": 69
      }
     },
     {
@@ -70,89 +70,89 @@ export default {
      "strokesPerWord": 3.9,
      "saving": 25.2,
      "wpm": {
-      "model": 59.6,
-      "cautious": 53.9,
-      "pessimistic": 51.1
+      "bare": 59.7,
+      "careful": 55.3,
+      "hurried": 49.7
      },
      "share": {
-      "flick": 38.3,
+      "flick": 39,
       "hook": 0,
       "phrase": 0,
       "ending": 0,
       "completion": 0,
-      "spell": 61.7
+      "spell": 61
      }
     },
     {
      "stage": "and the five endings",
-     "strokesPerWord": 3.84,
-     "saving": 26.4,
+     "strokesPerWord": 3.83,
+     "saving": 26.6,
      "wpm": {
-      "model": 60.5,
-      "cautious": 54.4,
-      "pessimistic": 51.1
+      "bare": 60.6,
+      "careful": 55.8,
+      "hurried": 49.8
      },
      "share": {
-      "flick": 38.3,
+      "flick": 39,
       "hook": 0,
       "phrase": 0,
       "ending": 4.5,
       "completion": 0,
-      "spell": 57.3
+      "spell": 56.5
      }
     },
     {
      "stage": "and 40 hooks",
      "strokesPerWord": 3.37,
-     "saving": 35.3,
+     "saving": 35.4,
      "wpm": {
-      "model": 64.4,
-      "cautious": 54.9,
-      "pessimistic": 50.3
+      "bare": 65.7,
+      "careful": 57.3,
+      "hurried": 48
      },
      "share": {
-      "flick": 37.9,
-      "hook": 11.9,
-      "phrase": 0.6,
-      "ending": 5.7,
+      "flick": 39,
+      "hook": 13,
+      "phrase": 0,
+      "ending": 5.6,
       "completion": 0,
-      "spell": 43.8
+      "spell": 42.4
      }
     },
     {
      "stage": "and every hook",
-     "strokesPerWord": 2.93,
-     "saving": 43.9,
+     "strokesPerWord": 2.89,
+     "saving": 44.7,
      "wpm": {
-      "model": 69.7,
-      "cautious": 56.9,
-      "pessimistic": 51.1
+      "bare": 72.9,
+      "careful": 60.6,
+      "hurried": 48.2
      },
      "share": {
-      "flick": 37.7,
-      "hook": 20.7,
-      "phrase": 1.1,
-      "ending": 6.3,
+      "flick": 38.9,
+      "hook": 22.8,
+      "phrase": 0.3,
+      "ending": 6.2,
       "completion": 0,
-      "spell": 34.1
+      "spell": 31.9
      }
     },
     {
      "stage": "and completions",
-     "strokesPerWord": 2.9,
-     "saving": 44.5,
+     "strokesPerWord": 2.8,
+     "saving": 46.3,
      "wpm": {
-      "model": 70.4,
-      "cautious": 57.2,
-      "pessimistic": 51.2
+      "bare": 74.8,
+      "careful": 61.5,
+      "hurried": 48.4
      },
      "share": {
-      "flick": 37.7,
-      "hook": 20.7,
-      "phrase": 1.1,
-      "ending": 6.4,
-      "completion": 1.1,
-      "spell": 32.9
+      "flick": 38.9,
+      "hook": 22.8,
+      "phrase": 0.3,
+      "ending": 6.7,
+      "completion": 4.2,
+      "spell": 27.2
      }
     }
    ]
@@ -162,9 +162,9 @@ export default {
    "chars": 222104,
    "letterStrokesPerWord": 5.14,
    "letterWpm": {
-    "model": 45.8,
-    "cautious": 43.5,
-    "pessimistic": 43.5
+    "bare": 45.8,
+    "careful": 44.8,
+    "hurried": 42.2
    },
    "stages": [
     {
@@ -172,9 +172,9 @@ export default {
      "strokesPerWord": 5.04,
      "saving": 1.9,
      "wpm": {
-      "model": 46.4,
-      "cautious": 44.1,
-      "pessimistic": 44.1
+      "bare": 46.4,
+      "careful": 45.4,
+      "hurried": 42.9
      },
      "share": {
       "flick": 0,
@@ -187,128 +187,128 @@ export default {
     },
     {
      "stage": "12 word flicks",
-     "strokesPerWord": 4.39,
-     "saving": 14.7,
+     "strokesPerWord": 4.37,
+     "saving": 14.9,
      "wpm": {
-      "model": 52.8,
-      "cautious": 48.8,
-      "pessimistic": 47.3
+      "bare": 52.9,
+      "careful": 50.2,
+      "hurried": 46.1
      },
      "share": {
-      "flick": 23.8,
+      "flick": 24.2,
       "hook": 0,
       "phrase": 0,
       "ending": 0,
       "completion": 0,
-      "spell": 76.2
+      "spell": 75.8
      }
     },
     {
      "stage": "24 word flicks",
-     "strokesPerWord": 4.1,
-     "saving": 20.3,
+     "strokesPerWord": 4.09,
+     "saving": 20.5,
      "wpm": {
-      "model": 56.3,
-      "cautious": 51.4,
-      "pessimistic": 49.2
+      "bare": 56.4,
+      "careful": 52.8,
+      "hurried": 47.9
      },
      "share": {
-      "flick": 32,
+      "flick": 32.8,
       "hook": 0,
       "phrase": 0,
       "ending": 0,
       "completion": 0,
-      "spell": 68
+      "spell": 67.2
      }
     },
     {
      "stage": "all 48 word flicks",
-     "strokesPerWord": 3.81,
-     "saving": 25.9,
+     "strokesPerWord": 3.8,
+     "saving": 26,
      "wpm": {
-      "model": 60.3,
-      "cautious": 54.4,
-      "pessimistic": 51.3
+      "bare": 60.4,
+      "careful": 55.8,
+      "hurried": 50
      },
      "share": {
-      "flick": 39.8,
+      "flick": 40.7,
       "hook": 0,
       "phrase": 0,
       "ending": 0,
       "completion": 0,
-      "spell": 60.2
+      "spell": 59.3
      }
     },
     {
      "stage": "and the five endings",
      "strokesPerWord": 3.74,
-     "saving": 27.2,
+     "saving": 27.3,
      "wpm": {
-      "model": 61.3,
-      "cautious": 54.8,
-      "pessimistic": 51.3
+      "bare": 61.4,
+      "careful": 56.2,
+      "hurried": 49.9
      },
      "share": {
-      "flick": 39.8,
+      "flick": 40.7,
       "hook": 0,
       "phrase": 0,
       "ending": 4.8,
       "completion": 0,
-      "spell": 55.4
+      "spell": 54.5
      }
     },
     {
      "stage": "and 40 hooks",
-     "strokesPerWord": 3.28,
-     "saving": 36.1,
+     "strokesPerWord": 3.27,
+     "saving": 36.4,
      "wpm": {
-      "model": 65.2,
-      "cautious": 55.2,
-      "pessimistic": 50.4
+      "bare": 66.6,
+      "careful": 57.8,
+      "hurried": 48.1
      },
      "share": {
-      "flick": 39.6,
-      "hook": 12.4,
-      "phrase": 0.5,
-      "ending": 5.7,
+      "flick": 40.7,
+      "hook": 13.7,
+      "phrase": 0,
+      "ending": 5.4,
       "completion": 0,
-      "spell": 41.8
+      "spell": 40.2
      }
     },
     {
      "stage": "and every hook",
-     "strokesPerWord": 2.79,
-     "saving": 45.7,
+     "strokesPerWord": 2.77,
+     "saving": 46.1,
      "wpm": {
-      "model": 71.5,
-      "cautious": 57.5,
-      "pessimistic": 51.3
+      "bare": 74.5,
+      "careful": 61.3,
+      "hurried": 48.3
      },
      "share": {
-      "flick": 39.2,
-      "hook": 22,
-      "phrase": 1.3,
-      "ending": 6.4,
+      "flick": 40.5,
+      "hook": 23.9,
+      "phrase": 0.3,
+      "ending": 6.1,
       "completion": 0,
-      "spell": 31.1
+      "spell": 29.2
      }
     },
     {
      "stage": "and completions",
-     "strokesPerWord": 2.75,
-     "saving": 46.6,
+     "strokesPerWord": 2.65,
+     "saving": 48.4,
      "wpm": {
-      "model": 72.4,
-      "cautious": 58,
-      "pessimistic": 51.6
+      "bare": 77.3,
+      "careful": 62.6,
+      "hurried": 48.6
      },
      "share": {
-      "flick": 39.2,
-      "hook": 22,
-      "phrase": 1.3,
-      "ending": 6.6,
-      "completion": 1.5,
-      "spell": 29.5
+      "flick": 40.5,
+      "hook": 23.9,
+      "phrase": 0.3,
+      "ending": 6.7,
+      "completion": 5.5,
+      "spell": 23
      }
     }
    ]
@@ -318,9 +318,9 @@ export default {
    "chars": 193032,
    "letterStrokesPerWord": 4.99,
    "letterWpm": {
-    "model": 45.8,
-    "cautious": 43.5,
-    "pessimistic": 43.5
+    "bare": 45.8,
+    "careful": 44.8,
+    "hurried": 42.2
    },
    "stages": [
     {
@@ -328,9 +328,9 @@ export default {
      "strokesPerWord": 4.96,
      "saving": 0.5,
      "wpm": {
-      "model": 44.8,
-      "cautious": 42.7,
-      "pessimistic": 42.7
+      "bare": 44.9,
+      "careful": 43.9,
+      "hurried": 41.5
      },
      "share": {
       "flick": 0,
@@ -344,127 +344,127 @@ export default {
     {
      "stage": "12 word flicks",
      "strokesPerWord": 4.58,
-     "saving": 8.2,
+     "saving": 8.1,
      "wpm": {
-      "model": 48.3,
-      "cautious": 45.2,
-      "pessimistic": 44.4
+      "bare": 48.3,
+      "careful": 46.4,
+      "hurried": 43.2
      },
      "share": {
-      "flick": 14.4,
+      "flick": 14.2,
       "hook": 0,
       "phrase": 0,
       "ending": 0,
       "completion": 0,
-      "spell": 85.6
+      "spell": 85.8
      }
     },
     {
      "stage": "24 word flicks",
-     "strokesPerWord": 4.4,
-     "saving": 11.8,
+     "strokesPerWord": 4.39,
+     "saving": 12,
      "wpm": {
-      "model": 50.1,
-      "cautious": 46.5,
-      "pessimistic": 45.4
+      "bare": 50.3,
+      "careful": 48,
+      "hurried": 44.3
      },
      "share": {
-      "flick": 19.8,
+      "flick": 20.3,
       "hook": 0,
       "phrase": 0,
       "ending": 0,
       "completion": 0,
-      "spell": 80.2
+      "spell": 79.7
      }
     },
     {
      "stage": "all 48 word flicks",
-     "strokesPerWord": 4.21,
-     "saving": 15.5,
+     "strokesPerWord": 4.18,
+     "saving": 16.2,
      "wpm": {
-      "model": 52.1,
-      "cautious": 48.1,
-      "pessimistic": 46.5
+      "bare": 52.6,
+      "careful": 49.7,
+      "hurried": 45.6
      },
      "share": {
-      "flick": 24.7,
+      "flick": 26,
       "hook": 0,
       "phrase": 0,
       "ending": 0,
       "completion": 0,
-      "spell": 75.3
+      "spell": 74
      }
     },
     {
      "stage": "and the five endings",
-     "strokesPerWord": 4.16,
-     "saving": 16.5,
+     "strokesPerWord": 4.13,
+     "saving": 17.1,
      "wpm": {
-      "model": 52.7,
-      "cautious": 48.4,
-      "pessimistic": 46.6
+      "bare": 53.2,
+      "careful": 50,
+      "hurried": 45.6
      },
      "share": {
-      "flick": 24.7,
+      "flick": 26,
       "hook": 0,
       "phrase": 0,
-      "ending": 3.4,
+      "ending": 3.2,
       "completion": 0,
-      "spell": 71.8
+      "spell": 70.8
      }
     },
     {
      "stage": "and 40 hooks",
-     "strokesPerWord": 3.84,
-     "saving": 23,
+     "strokesPerWord": 3.81,
+     "saving": 23.6,
      "wpm": {
-      "model": 54.8,
-      "cautious": 48.8,
-      "pessimistic": 46.2
+      "bare": 56,
+      "careful": 51.1,
+      "hurried": 44.7
      },
      "share": {
-      "flick": 24.7,
-      "hook": 8.5,
-      "phrase": 0.1,
-      "ending": 3.9,
+      "flick": 26,
+      "hook": 9.1,
+      "phrase": 0,
+      "ending": 3.5,
       "completion": 0,
-      "spell": 62.8
+      "spell": 61.4
      }
     },
     {
      "stage": "and every hook",
-     "strokesPerWord": 3.39,
-     "saving": 32,
+     "strokesPerWord": 3.36,
+     "saving": 32.7,
      "wpm": {
-      "model": 58.8,
-      "cautious": 50.4,
-      "pessimistic": 46.9
+      "bare": 60.9,
+      "careful": 53.5,
+      "hurried": 44.7
      },
      "share": {
-      "flick": 24.6,
-      "hook": 17.7,
-      "phrase": 0.3,
-      "ending": 4.4,
+      "flick": 26,
+      "hook": 18.9,
+      "phrase": 0,
+      "ending": 4,
       "completion": 0,
-      "spell": 53
+      "spell": 51.1
      }
     },
     {
      "stage": "and completions",
-     "strokesPerWord": 3.37,
-     "saving": 32.4,
+     "strokesPerWord": 3.29,
+     "saving": 34.1,
      "wpm": {
-      "model": 59.1,
-      "cautious": 50.6,
-      "pessimistic": 47
+      "bare": 62.1,
+      "careful": 54,
+      "hurried": 44.8
      },
      "share": {
-      "flick": 24.6,
-      "hook": 17.7,
-      "phrase": 0.3,
-      "ending": 4.5,
-      "completion": 0.7,
-      "spell": 52.3
+      "flick": 26,
+      "hook": 18.9,
+      "phrase": 0,
+      "ending": 4.3,
+      "completion": 3.7,
+      "spell": 47
      }
     }
    ]
@@ -483,184 +483,371 @@ export default {
    {
     "leg": 3.5,
     "aim": 6,
-    "arc": 0,
-    "all": 87.3,
-    "flick": 99.5,
-    "right": 80,
-    "left": 78.3,
-    "back": 91.3,
-    "curlToFlick": 20.3,
-    "ending": 99,
-    "endingAsCaret": 0
+    "kinds": {
+     "word flick": {
+      "right": 0.96,
+      "own flick": 0,
+      "another word": 0.026,
+      "a letter": 0.014,
+      "nothing": 0
+     },
+     "curl": {
+      "right": 0.46,
+      "own flick": 0.31,
+      "another word": 0.097,
+      "a letter": 0.133,
+      "nothing": 0
+     },
+     "ending": {
+      "right": 0.918,
+      "own flick": 0.011,
+      "another word": 0.062,
+      "a letter": 0,
+      "nothing": 0.009
+     },
+     "letter tap": {
+      "right": 1,
+      "own flick": 0,
+      "another word": 0,
+      "a letter": 0,
+      "nothing": 0
+     },
+     "letter flick": {
+      "right": 0.953,
+      "own flick": 0,
+      "another word": 0.023,
+      "a letter": 0.023,
+      "nothing": 0
+     }
+    }
    },
    {
     "leg": 3.5,
     "aim": 9,
-    "arc": 0,
-    "all": 84.2,
-    "flick": 97.3,
-    "right": 72,
-    "left": 75,
-    "back": 92.5,
-    "curlToFlick": 24.4,
-    "ending": 95.8,
-    "endingAsCaret": 1.2
+    "kinds": {
+     "word flick": {
+      "right": 0.911,
+      "own flick": 0,
+      "another word": 0.056,
+      "a letter": 0.033,
+      "nothing": 0
+     },
+     "curl": {
+      "right": 0.438,
+      "own flick": 0.299,
+      "another word": 0.123,
+      "a letter": 0.141,
+      "nothing": 0
+     },
+     "ending": {
+      "right": 0.858,
+      "own flick": 0.011,
+      "another word": 0.101,
+      "a letter": 0,
+      "nothing": 0.029
+     },
+     "letter tap": {
+      "right": 1,
+      "own flick": 0,
+      "another word": 0,
+      "a letter": 0,
+      "nothing": 0
+     },
+     "letter flick": {
+      "right": 0.92,
+      "own flick": 0,
+      "another word": 0.043,
+      "a letter": 0.037,
+      "nothing": 0
+     }
+    }
    },
    {
     "leg": 3.5,
     "aim": 12,
-    "arc": 0,
-    "all": 80.4,
-    "flick": 91.8,
-    "right": 71.5,
-    "left": 70.5,
-    "back": 88,
-    "curlToFlick": 21.6,
-    "ending": 88.2,
-    "endingAsCaret": 4.2
+    "kinds": {
+     "word flick": {
+      "right": 0.882,
+      "own flick": 0,
+      "another word": 0.092,
+      "a letter": 0.026,
+      "nothing": 0
+     },
+     "curl": {
+      "right": 0.405,
+      "own flick": 0.281,
+      "another word": 0.166,
+      "a letter": 0.148,
+      "nothing": 0
+     },
+     "ending": {
+      "right": 0.823,
+      "own flick": 0.012,
+      "another word": 0.132,
+      "a letter": 0,
+      "nothing": 0.033
+     },
+     "letter tap": {
+      "right": 1,
+      "own flick": 0,
+      "another word": 0,
+      "a letter": 0,
+      "nothing": 0
+     },
+     "letter flick": {
+      "right": 0.873,
+      "own flick": 0,
+      "another word": 0.064,
+      "a letter": 0.063,
+      "nothing": 0
+     }
+    }
    },
    {
     "leg": 4.5,
     "aim": 6,
-    "arc": 0,
-    "all": 98.8,
-    "flick": 100,
-    "right": 99,
-    "left": 97.5,
-    "back": 98.8,
-    "curlToFlick": 1.1,
-    "ending": 99.8,
-    "endingAsCaret": 0
+    "kinds": {
+     "word flick": {
+      "right": 0.983,
+      "own flick": 0,
+      "another word": 0.013,
+      "a letter": 0.004,
+      "nothing": 0
+     },
+     "curl": {
+      "right": 0.739,
+      "own flick": 0.193,
+      "another word": 0.041,
+      "a letter": 0.027,
+      "nothing": 0
+     },
+     "ending": {
+      "right": 0.983,
+      "own flick": 0.008,
+      "another word": 0.008,
+      "a letter": 0,
+      "nothing": 0.001
+     },
+     "letter tap": {
+      "right": 1,
+      "own flick": 0,
+      "another word": 0,
+      "a letter": 0,
+      "nothing": 0
+     },
+     "letter flick": {
+      "right": 0.987,
+      "own flick": 0,
+      "another word": 0.008,
+      "a letter": 0.004,
+      "nothing": 0
+     }
+    }
    },
    {
     "leg": 4.5,
     "aim": 9,
-    "arc": 0,
-    "all": 95.7,
-    "flick": 98,
-    "right": 92.8,
-    "left": 93.5,
-    "back": 98.5,
-    "curlToFlick": 4.1,
-    "ending": 93.6,
-    "endingAsCaret": 2
+    "kinds": {
+     "word flick": {
+      "right": 0.954,
+      "own flick": 0,
+      "another word": 0.041,
+      "a letter": 0.006,
+      "nothing": 0
+     },
+     "curl": {
+      "right": 0.709,
+      "own flick": 0.184,
+      "another word": 0.076,
+      "a letter": 0.031,
+      "nothing": 0
+     },
+     "ending": {
+      "right": 0.943,
+      "own flick": 0.008,
+      "another word": 0.026,
+      "a letter": 0,
+      "nothing": 0.023
+     },
+     "letter tap": {
+      "right": 1,
+      "own flick": 0,
+      "another word": 0,
+      "a letter": 0,
+      "nothing": 0
+     },
+     "letter flick": {
+      "right": 0.95,
+      "own flick": 0,
+      "another word": 0.027,
+      "a letter": 0.023,
+      "nothing": 0
+     }
+    }
    },
    {
     "leg": 4.5,
     "aim": 12,
-    "arc": 0,
-    "all": 91.3,
-    "flick": 94.5,
-    "right": 86.8,
-    "left": 89.5,
-    "back": 94.3,
-    "curlToFlick": 5.3,
-    "ending": 90.2,
-    "endingAsCaret": 4.4
+    "kinds": {
+     "word flick": {
+      "right": 0.896,
+      "own flick": 0,
+      "another word": 0.091,
+      "a letter": 0.013,
+      "nothing": 0
+     },
+     "curl": {
+      "right": 0.655,
+      "own flick": 0.178,
+      "another word": 0.119,
+      "a letter": 0.048,
+      "nothing": 0
+     },
+     "ending": {
+      "right": 0.934,
+      "own flick": 0.007,
+      "another word": 0.029,
+      "a letter": 0,
+      "nothing": 0.03
+     },
+     "letter tap": {
+      "right": 1,
+      "own flick": 0,
+      "another word": 0,
+      "a letter": 0,
+      "nothing": 0
+     },
+     "letter flick": {
+      "right": 0.899,
+      "own flick": 0,
+      "another word": 0.055,
+      "a letter": 0.046,
+      "nothing": 0
+     }
+    }
    },
    {
     "leg": 6,
     "aim": 6,
-    "arc": 0,
-    "all": 99.8,
-    "flick": 100,
-    "right": 99.5,
-    "left": 99.8,
-    "back": 100,
-    "curlToFlick": 0.1,
-    "ending": 99.6,
-    "endingAsCaret": 0.2
+    "kinds": {
+     "word flick": {
+      "right": 0.984,
+      "own flick": 0,
+      "another word": 0.012,
+      "a letter": 0.004,
+      "nothing": 0
+     },
+     "curl": {
+      "right": 0.921,
+      "own flick": 0.053,
+      "another word": 0.022,
+      "a letter": 0.003,
+      "nothing": 0
+     },
+     "ending": {
+      "right": 0.98,
+      "own flick": 0.003,
+      "another word": 0,
+      "a letter": 0,
+      "nothing": 0.016
+     },
+     "letter tap": {
+      "right": 1,
+      "own flick": 0,
+      "another word": 0,
+      "a letter": 0,
+      "nothing": 0
+     },
+     "letter flick": {
+      "right": 0.989,
+      "own flick": 0,
+      "another word": 0.007,
+      "a letter": 0.004,
+      "nothing": 0
+     }
+    }
    },
    {
     "leg": 6,
     "aim": 9,
-    "arc": 0,
-    "all": 97.9,
-    "flick": 98.5,
-    "right": 96.5,
-    "left": 97.5,
-    "back": 99.3,
-    "curlToFlick": 0.6,
-    "ending": 97.6,
-    "endingAsCaret": 0.4
+    "kinds": {
+     "word flick": {
+      "right": 0.961,
+      "own flick": 0,
+      "another word": 0.033,
+      "a letter": 0.006,
+      "nothing": 0
+     },
+     "curl": {
+      "right": 0.882,
+      "own flick": 0.048,
+      "another word": 0.061,
+      "a letter": 0.009,
+      "nothing": 0
+     },
+     "ending": {
+      "right": 0.942,
+      "own flick": 0.002,
+      "another word": 0.03,
+      "a letter": 0,
+      "nothing": 0.026
+     },
+     "letter tap": {
+      "right": 1,
+      "own flick": 0,
+      "another word": 0,
+      "a letter": 0,
+      "nothing": 0
+     },
+     "letter flick": {
+      "right": 0.962,
+      "own flick": 0,
+      "another word": 0.015,
+      "a letter": 0.023,
+      "nothing": 0
+     }
+    }
    },
    {
     "leg": 6,
     "aim": 12,
-    "arc": 0,
-    "all": 90.6,
-    "flick": 93,
-    "right": 89.5,
-    "left": 88.5,
-    "back": 91.3,
-    "curlToFlick": 3.6,
-    "ending": 88.2,
-    "endingAsCaret": 3.4
-   },
-   {
-    "leg": 8,
-    "aim": 6,
-    "arc": 0,
-    "all": 99.9,
-    "flick": 100,
-    "right": 99.8,
-    "left": 100,
-    "back": 100,
-    "curlToFlick": 0,
-    "ending": 100,
-    "endingAsCaret": 0
-   },
-   {
-    "leg": 8,
-    "aim": 9,
-    "arc": 0,
-    "all": 98.3,
-    "flick": 98.8,
-    "right": 96.5,
-    "left": 98.3,
-    "back": 99.5,
-    "curlToFlick": 0.9,
-    "ending": 97.8,
-    "endingAsCaret": 0.4
-   },
-   {
-    "leg": 8,
-    "aim": 12,
-    "arc": 0,
-    "all": 90.8,
-    "flick": 93.5,
-    "right": 90,
-    "left": 86.3,
-    "back": 93.5,
-    "curlToFlick": 2.1,
-    "ending": 91,
-    "endingAsCaret": 2.6
-   },
-   {
-    "leg": 4.5,
-    "aim": 9,
-    "arc": -25,
-    "all": 94.6,
-    "flick": 98.3,
-    "right": 88,
-    "left": 93,
-    "back": 99,
-    "curlToFlick": 3.3,
-    "ending": 97,
-    "endingAsCaret": 1.2
-   },
-   {
-    "leg": 4.5,
-    "aim": 9,
-    "arc": 25,
-    "all": 95,
-    "flick": 99.5,
-    "right": 92.5,
-    "left": 91.3,
-    "back": 96.8,
-    "curlToFlick": 2.9,
-    "ending": 95.4,
-    "endingAsCaret": 1
+    "kinds": {
+     "word flick": {
+      "right": 0.89,
+      "own flick": 0,
+      "another word": 0.09,
+      "a letter": 0.02,
+      "nothing": 0
+     },
+     "curl": {
+      "right": 0.828,
+      "own flick": 0.045,
+      "another word": 0.109,
+      "a letter": 0.018,
+      "nothing": 0
+     },
+     "ending": {
+      "right": 0.918,
+      "own flick": 0.002,
+      "another word": 0.035,
+      "a letter": 0,
+      "nothing": 0.046
+     },
+     "letter tap": {
+      "right": 1,
+      "own flick": 0,
+      "another word": 0,
+      "a letter": 0,
+      "nothing": 0
+     },
+     "letter flick": {
+      "right": 0.886,
+      "own flick": 0,
+      "another word": 0.051,
+      "a letter": 0.062,
+      "nothing": 0
+     }
+    }
    }
   ]
  }

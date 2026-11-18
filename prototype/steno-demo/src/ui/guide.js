@@ -1,6 +1,8 @@
-// The guide: a small map beside the finger that shows what every direction
-// types, lights the one you are heading for and, when you pause on your way,
-// shows what a curl would turn it into.
+// The guide: a small card beside the finger. Resting on a key unfolds a map
+// of what every direction types. Moving lights the one being headed for.
+// Pausing on the way turns the card into the short list of what this flick
+// can still become: itself, and each of its curls, drawn as the stroke that
+// makes it.
 //
 // It is the keyboard's existing touch guide carried one level further, and it
 // follows what marking-menu research found:
@@ -8,26 +10,23 @@
 //     stroke never sees it and someone tapping letters is never interrupted;
 //   - it shows what is still reachable from where the finger is;
 //   - following it is the same movement as the stroke made without it;
-//   - it never covers the text being written.
+//   - it never covers the text being written, never leaves the screen and is
+//     never under the finger, because it is one card in one place.
 
-import { DIRS, DIR_VEC, strokeId, turned, ENDING_DIRS } from '../layout.js';
+import { DIRS, DIR_VEC, strokeId, ENDING_DIRS } from '../layout.js';
 import { labelOf } from '../packs.js';
 import { GEO, keyRect, CORNER, ICON } from './keyboard.js';
-
-const TURN_ICON = {
-  cw: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h6a3 3 0 0 1 3 3v5"/><path d="m9.5 9.5 2.5 2.7 2.5-2.7"/></svg>',
-  ccw: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13 4H7a3 3 0 0 0-3 3v5"/><path d="M6.5 9.5 4 12.2 1.5 9.5"/></svg>',
-  back: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5.5h7a3 3 0 0 1 0 6H4"/><path d="M6.5 9 4 11.5 6.5 14"/></svg>',
-};
+import { glyph } from './glyph.js';
 
 export const MAP_DELAY = 300;          // resting on a key this long unfolds its map
 export const CURL_DELAY = 250;         // pausing on the way this long shows the curls
 const RIBBON = 42;                     // the strip above the keys may be covered; the composer above it may not
 const SIDE = (393 - GEO.block) / 2;    // screen to the left and right of the key block
+const TURNS = ['cw', 'ccw', 'back'];
 
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
 const esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
-const textWidth = (s, per = 8.3, pad = 18) => pad + [...String(s)].length * per;
+const textWidth = (s, per = 9.2, pad = 18) => pad + [...String(s)].length * per;
 
 export class Guide {
   constructor(overlay, keyboard, engine, settings) {
@@ -42,10 +41,7 @@ export class Guide {
   cells(t) {
     const out = {};
     if (t.key === 'UT') {
-      for (const d of Object.keys(CORNER)) {
-        if (d === 'e' && this.kb.mode !== 'steno') continue;
-        out[d] = { label: this.kb.cornerLabel(d), cls: 'action' };
-      }
+      for (const d of Object.keys(CORNER)) if (this.kb.cornerHas(d)) out[d] = { label: this.kb.cornerLabel(d), cls: 'action' };
       out.c = { label: 'undo', cls: 'action' };
       return out;
     }
@@ -59,12 +55,15 @@ export class Guide {
     return out;
   }
 
+  /** Whether strokes on this key can have curls: the letter keys and the space bar, on the steno page. */
+  curly(t) { return this.kb.mode === 'steno' && t.key !== 'UT'; }
+
   show(t) {
     this.hide();
     const cells = this.cells(t);
     if (Object.keys(cells).length < 2) return;
-    const wide = Object.values(cells).some(c => c.cls === 'word' || c.cls === 'action');
-    const size = wide ? { w: 54, h: 29 } : { w: 30, h: 30 };
+    const wide = this.curly(t) || Object.values(cells).some(c => c.cls === 'word' || c.cls === 'action');
+    const size = wide ? { w: 56, h: 30 } : { w: 30, h: 30 };
     const pad = 6;
     const cardW = size.w * 3 + pad * 2, cardH = size.h * 3 + pad * 2;
     const rc = keyRect(t.key);
@@ -96,14 +95,16 @@ export class Guide {
     const lit = el('div', 'lit');
     lit.style.height = size.h - 2 + 'px';
     root.appendChild(lit);
-    const hooks = {};
-    for (const turn of ['cw', 'ccw', 'back']) { hooks[turn] = el('div', 'hook'); root.appendChild(hooks[turn]); }
+    // The list of what this flick can become sits in the card, in place of the map.
+    const list = el('div', 'list');
+    Object.assign(list.style, { left: x + 'px', top: y + 'px', width: cardW + 'px', height: cardH + 'px' });
+    root.appendChild(list);
     this.overlay.appendChild(root);
 
-    const g = { t, root, card, lit, hooks, pos, size, x, y, cardW, cardH, mapTimer: null, curlTimer: null, curlsFor: null, curls: false };
+    const g = { t, root, card, lit, list, pos, size, x, y, cardW, cardH, mapTimer: null, curlTimer: null, curlsFor: null, curls: false };
     const delay = this.settings.guide === 'always' ? 0 : this.settings.guide === 'off' ? Infinity : MAP_DELAY;
     if (delay === 0) root.classList.add('map');
-    else if (delay !== Infinity) g.mapTimer = setTimeout(() => { if (!t.candidate) { root.classList.add('map'); this.update(t); } }, delay);
+    else if (delay !== Infinity) g.mapTimer = setTimeout(() => { if (!t.candidate && !t.sliding) { root.classList.add('map'); this.update(t); } }, delay);
     this.active = g;
     this.update(t);
   }
@@ -111,72 +112,49 @@ export class Guide {
   update(t) {
     const g = this.active;
     if (!g || g.t !== t) return;
+    // A slide (the caret, or deleting) has its own indicator; the map gets out of the way.
+    if (t.sliding) { clearTimeout(g.mapTimer); g.root.classList.remove('map', 'listing', 'aimed'); g.lit.classList.remove('on'); return; }
     const c = t.candidate;
     g.root.classList.toggle('aimed', !!c && !!c.dir);
     if (!c || !c.dir) {
       g.lit.classList.remove('on');
-      this.hideCurls(g);
+      g.root.classList.remove('listing');
+      g.curlsFor = null;
       if (c && c.type === 'circle') this.light(g, 'c', c.label);
       return;
     }
     clearTimeout(g.mapTimer);
-    const steno = this.kb.mode === 'steno' && t.key !== 'UT' && t.key !== 'SP';
-    const baseLabel = steno ? this.engine.label(strokeId(t.key, c.dir)) : c.label;
-    this.light(g, c.dir, c.turn ? baseLabel : c.label, !!c.turn);
-    if (!steno) return;
-
-    // The curls: where the stroke can still go from here. They show once the
-    // finger pauses on its way, or at once if a curl is already being drawn.
-    const base = strokeId(t.key, c.dir);
+    const base = this.curly(t) ? strokeId(t.key, c.dir) : null;
+    const options = base ? TURNS.map(turn => ({ turn, id: `${base}-${turn}`, label: labelOf(this.engine.lookup(`${base}-${turn}`)) })).filter(o => o.label) : [];
+    if (!options.length) {
+      g.root.classList.remove('listing');
+      this.light(g, c.dir, c.label);
+      return;
+    }
+    // The curls show once the finger pauses on its way, or at once when a curl
+    // is already being drawn or the map was already open.
     if (g.curlsFor !== base) {
       g.curlsFor = base; g.curls = false;
       clearTimeout(g.curlTimer);
-      this.hideCurls(g);
       if (this.settings.guide === 'always' || g.root.classList.contains('map')) g.curls = true;
       else if (this.settings.guide !== 'off') g.curlTimer = setTimeout(() => { g.curls = true; this.update(t); }, CURL_DELAY);
     }
-    if (c.turn) g.curls = true;
-    if (!g.curls) return;
-    this.layoutCurls(g, t, c);
-  }
+    if (c.turn && this.settings.guide !== 'off') g.curls = true;
+    if (!g.curls) { g.root.classList.remove('listing'); this.light(g, c.dir, this.engine.label(base)); return; }
 
-  layoutCurls(g, t, c) {
-    const first = g.pos(c.dir);
-    const centre = { x: first.x + g.size.w / 2, y: first.y + g.size.h / 2 };
-    const litBox = { x: parseFloat(g.lit.style.left), y: first.y, w: parseFloat(g.lit.style.width), h: g.size.h };
-    const placed = [litBox];
-    const minX = -SIDE + 5, maxX = GEO.block + SIDE - 5;
-    for (const turn of ['cw', 'ccw', 'back']) {
-      const h = g.hooks[turn];
-      const label = labelOf(this.engine.lookup(strokeId(t.key, c.dir, turn)));
-      if (!label) { h.classList.remove('on', 'sel'); continue; }
-      h.innerHTML = TURN_ICON[turn] + `<span>${esc(label)}</span>`;
-      const w = textWidth(label, 7.9, 30);
-      // Each curl sits where the finger would go to make it.
-      const v = DIR_VEC[turned(c.dir, turn)], n = Math.hypot(v[0], v[1]);
-      const box = {
-        x: centre.x + v[0] / n * (litBox.w / 2 + w / 2 + 5) - w / 2,
-        y: centre.y + v[1] / n * (g.size.h + 4) - 13,
-        w, h: 26,
-      };
-      if (v[0] === 0) box.x = centre.x - w / 2;
-      box.x = Math.max(minX, Math.min(maxX - w, box.x));
-      box.y = Math.max(-RIBBON + 3, box.y);
-      // Never on top of the lit cell or another curl: step away from the lit cell's row until clear.
-      const overlaps = b => placed.some(p => b.x < p.x + p.w + 3 && b.x + b.w + 3 > p.x && b.y < p.y + p.h + 3 && b.y + b.h + 3 > p.y);
-      const step = (v[1] < 0 || (v[1] === 0 && centre.y > g.y + g.cardH / 2)) ? -1 : 1;
-      for (let tries = 0; tries < 6 && overlaps(box); tries++) box.y += step * 29;
-      placed.push(box);
-      Object.assign(h.style, { left: box.x + 'px', top: box.y + 'px', width: w + 'px' });
-      h.classList.add('on');
-      h.classList.toggle('sel', c.turn === turn);
+    const rows = [{ turn: null, id: base, label: this.engine.label(base) }, ...options];
+    const key = rows.map(r => r.id).join(' ');
+    if (g.list.dataset.key !== key) {
+      g.list.dataset.key = key;
+      g.list.innerHTML = rows.map(r => `<div class="item" data-turn="${r.turn || ''}">${glyph(r.id, 26)}<span>${esc(r.label)}</span></div>`).join('');
     }
-    this.selected = c.turn ? g.hooks[c.turn] : g.lit;
+    for (const item of g.list.children) item.classList.toggle('sel', (item.dataset.turn || null) === (c.turn || null));
+    g.root.classList.add('listing');
+    g.lit.classList.remove('on');
+    this.selected = [...g.list.children].find(i => i.classList.contains('sel'));
   }
 
-  hideCurls(g) { for (const h of Object.values(g.hooks)) h.classList.remove('on', 'sel'); }
-
-  light(g, d, label, dim) {
+  light(g, d, label) {
     const p = g.pos(d);
     const icon = g.t.key === 'UT' && CORNER[d]?.icon ? ICON[CORNER[d].icon] : '';
     const w = Math.max(g.size.w, textWidth(label, 9.2, icon ? 40 : 18));
@@ -184,27 +162,32 @@ export class Guide {
     const left = Math.max(-SIDE + 5, Math.min(GEO.block + SIDE - 5 - w, p.x + g.size.w / 2 - w / 2));
     Object.assign(g.lit.style, { left: left + 'px', top: p.y + 1 + 'px', width: w + 'px' });
     g.lit.classList.add('on');
-    g.lit.classList.toggle('dim', !!dim);
-    g.lit.classList.toggle('warn', g.t.key === 'UT' && d === 'n');
+    g.lit.classList.toggle('send', g.t.key === 'UT' && d === 'n');
     this.selected = g.lit;
   }
 
-  /** The finger lifted. If it typed something by moving, a copy of the lit label lifts off. */
-  hide(t, committed) {
+  /**
+   * The finger lifted. If it typed something by moving, what it typed lifts
+   * off from where the guide showed it.
+   * @param typed  the text to show lifting off, or null for nothing
+   */
+  hide(t, typed) {
     const g = this.active;
     if (!g || (t && g.t !== t)) return;
     clearTimeout(g.mapTimer); clearTimeout(g.curlTimer);
-    if (committed && committed.type !== 'tap' && committed.label && this.selected && g.lit.classList.contains('on')) {
-      const s = this.selected;
-      const pop = el('div', 'pop', esc(committed.label));
-      Object.assign(pop.style, { left: s.style.left, top: s.style.top, minWidth: s.style.width, height: (g.size.h - 2) + 'px' });
+    const from = this.selected;
+    if (typed && from && (g.lit.classList.contains('on') || g.root.classList.contains('listing'))) {
+      const box = from === g.lit
+        ? { left: parseFloat(from.style.left), top: parseFloat(from.style.top), width: parseFloat(from.style.width), height: g.size.h - 2 }
+        : { left: g.x + 6, top: g.y + from.offsetTop, width: g.cardW - 12, height: from.offsetHeight };
+      const pop = el('div', 'pop', esc(typed));
+      Object.assign(pop.style, { left: box.left + 'px', top: box.top + 'px', minWidth: box.width + 'px', height: box.height + 'px' });
       this.overlay.appendChild(pop);
       setTimeout(() => pop.remove(), 320);
     }
-    const root = g.root;
-    root.style.transition = 'opacity .1s ease-out';
-    root.style.opacity = '0';
-    setTimeout(() => root.remove(), 120);
+    // The card goes at once, so the word lifting off is the only thing left to look at.
+    g.root.remove();
     this.active = null;
+    this.selected = null;
   }
 }

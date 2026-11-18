@@ -5,6 +5,7 @@
 // variant to measure how often the recogniser reads a sloppy stroke wrong.
 
 import { DIR_VEC, parseStroke, turned } from './layout.js';
+import { diagonalOf } from './recognizer.js';
 
 /** Mulberry32: a small deterministic random generator, so tests repeat. */
 export function rng(seed) {
@@ -29,7 +30,10 @@ const gauss = r => Math.sqrt(-2 * Math.log(1 - r())) * Math.cos(2 * Math.PI * r(
  *                { aim: degrees of direction error (sd), reach: fraction of length error (sd),
  *                  leg: length of a leg in points, corner: how much the corner is cut (0..1),
  *                  arc: degrees the path bows, as a thumb pivoting at its base does,
- *                  jitter: points of sensor noise (sd) }
+ *                  jitter: points of sensor noise (sd),
+ *                  bias: degrees every stroke of this hand is turned by (a habit, not noise),
+ *                  tail: points of stray movement at right angles as the thumb lifts,
+ *                  second: length of a hook's second leg as a fraction of its first }
  *                A number n is shorthand for a hurried thumb scaled by n.
  * @param random  random source in [0, 1)
  */
@@ -38,8 +42,8 @@ export function pathFor(id, keyW, keyH, hand = 0, random = Math.random) {
   const circle = id.endsWith('-circle');
   const unit = Math.min(keyW, keyH);
   const h = typeof hand === 'number'
-    ? { aim: 9 * hand, reach: 0.25 * hand, leg: 0, corner: hand ? 0.35 : 0, arc: 0, jitter: hand }
-    : { aim: 0, reach: 0, leg: 0, corner: 0, arc: 0, jitter: 0, ...hand };
+    ? { aim: 9 * hand, reach: 0.25 * hand, leg: 0, corner: hand ? 0.35 : 0, arc: 0, jitter: hand, bias: 0, tail: 0, second: 0.9 }
+    : { aim: 0, reach: 0, leg: 0, corner: 0, arc: 0, jitter: 0, bias: 0, tail: 0, second: 0.9, ...hand };
   const noisy = h.aim || h.reach || h.jitter;
   const g = () => noisy ? gauss(random) : 0;
   const pts = [{ x: 0, y: 0, t: 0 }];
@@ -57,9 +61,12 @@ export function pathFor(id, keyW, keyH, hand = 0, random = Math.random) {
 
   const legLength = h.leg || unit * 0.5;
   const reach = () => Math.exp(g() * h.reach);
+  // A diagonal is aimed where the key's diagonal labels are: 45 degrees on a square key, less on a wide one.
+  const diagonal = (s.key === 'SP' ? 45 : diagonalOf(keyW, keyH)) * Math.PI / 180;
   const leg = (dir, length, offDeg) => {
     const v = DIR_VEC[dir];
-    const a = Math.atan2(v[1], v[0]) + offDeg * Math.PI / 180;
+    const ideal = v[0] && v[1] ? Math.atan2(Math.sign(v[1]) * Math.sin(diagonal), Math.sign(v[0]) * Math.cos(diagonal)) : Math.atan2(v[1], v[0]);
+    const a = ideal + (offDeg + h.bias) * Math.PI / 180;
     return { x: Math.cos(a) * length, y: Math.sin(a) * length, a };
   };
   // A leg drawn as an arc that bows by `arc` degrees from end to end.
@@ -75,7 +82,14 @@ export function pathFor(id, keyW, keyH, hand = 0, random = Math.random) {
   const steps = 9;
   const first = leg(s.dir, legLength * reach(), g() * h.aim);
   const corner = draw({ x: 0, y: 0 }, first, 0, steps);
-  if (!s.turn) return pts;
+  if (!s.turn) {
+    // The thumb does not lift straight up: it drags a little sideways as it goes.
+    if (h.tail) {
+      const side = random() < 0.5 ? 1 : -1, a = first.a + side * (Math.PI / 2) * (0.7 + 0.6 * random());
+      for (let i = 1; i <= 3; i++) push(corner.x + Math.cos(a) * h.tail * i / 3, corner.y + Math.sin(a) * h.tail * i / 3, steps * 9 + i * 8);
+    }
+    return pts;
+  }
 
   const tA = steps * 9;
   if (s.turn === 'back') {
@@ -88,7 +102,7 @@ export function pathFor(id, keyW, keyH, hand = 0, random = Math.random) {
     }
     return pts;
   }
-  const second = leg(turned(s.dir, s.turn), legLength * 0.9 * reach(), g() * h.aim * 1.3);
+  const second = leg(turned(s.dir, s.turn), legLength * h.second * reach(), g() * h.aim * 1.3);
   // A hurried corner is cut: the finger starts turning before the first leg is done.
   const cut = h.corner ? h.corner * (0.6 + 0.8 * random()) : 0;
   if (cut) {

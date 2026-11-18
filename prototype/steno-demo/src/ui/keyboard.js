@@ -16,19 +16,22 @@ export const MODE_LABEL = { detail: 'abc', steno: 'steno', numeric: '123' };
 export const ICON = {
   delete: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.2 5.5h9.3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H9.2a2 2 0 0 1-1.5-.7L3 12l4.7-5.8a2 2 0 0 1 1.5-.7Z"/><path d="m11.5 9.5 5 5m0-5-5 5"/></svg>',
   ret: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 6v6a3 3 0 0 1-3 3H6"/><path d="m10 10.5-4.5 4.5 4.5 4.5"/></svg>',
-  hide: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m7 10 5 5 5-5"/></svg>',
   word: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12H6"/><path d="m11 7-5 5 5 5"/><path d="M3 6v12"/></svg>',
   change: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h13l-3-3"/><path d="M20 15H7l3 3"/></svg>',
 };
 
-/** What the corner key does, by direction. The centre (a tap) is undo. */
+/**
+ * What the corner key does, by direction. The centre (a tap) is undo.
+ * Sending sits alone at the top: the directions either side of it are empty,
+ * so no slip of aim on another stroke can send a message.
+ */
 export const CORNER = {
   n: { action: 'return', label: 'send', icon: 'ret' },
   w: { action: 'deleteWord', label: 'word', icon: 'word' },
   e: { action: 'change', label: 'change', icon: 'change' },
-  s: { action: 'hide', label: 'hide', icon: 'hide' },
-  nw: { action: 'numbers', label: '123' },
-  ne: { action: 'flip', label: 'abc' },
+  s: { action: 'numbers', label: '123' },
+  sw: { action: 'flip', label: 'abc' },
+  se: { action: 'stack', label: 'shell' },
 };
 
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -166,9 +169,17 @@ export class Keyboard {
   spaceLabel(dir) { return this.mode === 'steno' ? this.engine.label(strokeId('SP', dir)) : ''; }
 
   cornerLabel(dir) {
-    if (dir === 'nw') return this.mode === 'numeric' ? 'abc' : '123';
-    if (dir === 'ne') return this.mode === 'steno' ? 'abc' : 'steno';
+    if (dir === 's') return this.mode === 'numeric' ? 'abc' : '123';
+    if (dir === 'sw') return this.mode === 'steno' ? 'abc' : this.hooks.stackLabel?.() || 'steno';
+    if (dir === 'se') return this.hooks.otherStackLabel?.() || '';
     return CORNER[dir]?.label || '';
+  }
+
+  /** Whether the corner key has something on a direction right now. */
+  cornerHas(dir) {
+    if (!CORNER[dir]) return false;
+    if (dir === 'e' || dir === 'se') return this.mode === 'steno' && (dir === 'e' || !!this.cornerLabel('se'));
+    return true;
   }
 
   renderBottom() {
@@ -180,7 +191,7 @@ export class Keyboard {
     this.spaceEl.innerHTML = space;
     let util = `<span class="c">${ICON.delete}</span>`;
     for (const [dir, c] of Object.entries(CORNER)) {
-      if (dir === 'e' && this.mode !== 'steno') continue;
+      if (!this.cornerHas(dir)) continue;
       util += `<span class="h ${dir} icon" data-dir="${dir}">${c.icon ? ICON[c.icon] : this.cornerLabel(dir)}</span>`;
     }
     this.utilEl.innerHTML = util;
@@ -191,6 +202,7 @@ export class Keyboard {
 
   setMode(mode, animate = true) {
     if (mode === this.mode) { this.placeStrip(animate); return; }
+    if (mode === 'numeric') this.before = this.mode;         // the number page hands back to where it was called from
     this.mode = mode;
     this.detailShift = false;
     this.placeStrip(animate);
@@ -309,7 +321,8 @@ export class Keyboard {
 
   /** Dragging the corner key left, held, deletes character by character, as the delete key always did. */
   slideDelete(t, q, now) {
-    if (!t.sliding && q.x <= -30 && Math.abs(q.x) > Math.abs(q.y) * 1.6 && now - t.t0 > 220) {
+    // Within twenty degrees of level, and held: nothing else on this key is that flat and that slow.
+    if (!t.sliding && q.x <= -30 && Math.abs(q.x) > Math.abs(q.y) * 2.75 && now - t.t0 > 220) {
       t.sliding = true; t.lastX = q.x;
       this.utilEl.appendChild(this.ratchet);
       this.ratchet.classList.add('on', 'del');
@@ -335,16 +348,17 @@ export class Keyboard {
       // Coming back to where the finger started calls the stroke off: nothing here is worth sending by accident.
       const end = t.path.at(-1);
       if (c.isReturn || Math.hypot(end.x, end.y) < c.swipeLen * 0.8) return null;
-      const spec = CORNER[c.dir];
-      if (!spec || (c.dir === 'e' && this.mode !== 'steno')) return null;
-      return { action: spec.action, dir: c.dir, type: 'flick', label: this.cornerLabel(c.dir) };
+      if (!this.cornerHas(c.dir)) return null;
+      return { action: CORNER[c.dir].action, dir: c.dir, type: 'flick', label: this.cornerLabel(c.dir) };
     }
     if (t.key === 'SP') {
       const c = classifySpace(t.path, h, t.peakTime);
       if (c.type === 'tap') return this.mode === 'steno' ? { id: 'SP', type: 'tap', label: 'space' } : { literal: ' ', type: 'tap', label: 'space' };
       if (this.mode === 'steno' && ENDING_DIRS.includes(c.dir)) {
-        const id = strokeId('SP', c.dir);
-        return this.engine.lookup(id) !== undefined || raw ? { id, dir: c.dir, type: 'flick', label: this.engine.label(id) } : null;
+        const flick = strokeId('SP', c.dir);
+        const hook = c.type === 'hook' ? strokeId('SP', c.dir, c.turn) : null;
+        if (hook && (this.engine.lookup(hook) !== undefined || raw)) return { id: hook, dir: c.dir, turn: c.turn, type: 'hook', label: this.engine.label(hook) };
+        return this.engine.lookup(flick) !== undefined || raw ? { id: flick, dir: c.dir, type: 'flick', label: this.engine.label(flick), tail: hook ? c.turn : undefined } : null;
       }
       if (c.dir === 'e' || c.dir === 'w') return { action: 'caret', amount: c.dir === 'e' ? 1 : -1, type: 'flick', dir: c.dir, label: '' };
       return null;
@@ -419,13 +433,27 @@ export class Keyboard {
     }
     this.release(t);
     this.ratchet.classList.remove('on');
-    if (t.sliding) { this.hooks.onRelease?.(t, null); return; }
+    // Whatever was waiting on this finger goes out right after it.
+    const flush = () => { for (const q of t.after || []) if (!q.done) { q.done = true; q.land(); } };
+    if (t.sliding) { this.hooks.onRelease?.(t, null); flush(); return; }
+    setTimeout(flush, 0);
     const capture = this.hooks.capture?.();
     const c = this.resolve(t, !!capture);
-    let entry = null;
-    if (c && capture && c.id !== undefined) capture(c.id);
-    else if (c && !t.dry) entry = this.commit(c, t);
-    this.hooks.onRelease?.(t, c, entry);
+    const land = () => {
+      let entry = null;
+      if (c && capture && c.id !== undefined) capture(c.id);
+      else if (c && !t.dry) entry = this.commit(c, t);
+      this.hooks.onRelease?.(t, c, entry);
+    };
+    // Two thumbs overlap: what was pressed first is typed first, even if it is
+    // lifted second. A finger that went down earlier and has not decided yet is
+    // waited for, for at most a quarter of a second after it went down.
+    const earlier = [...this.touches.values()].filter(f => f.t0 < t.t0 && !f.sliding && !f.paging);
+    const wait = Math.max(0, ...earlier.map(f => f.t0 + 250 - now));
+    if (!earlier.length || wait <= 0) { land(); return; }
+    const queued = { land, done: false };
+    for (const f of earlier) (f.after ||= []).push(queued);
+    setTimeout(() => { if (!queued.done) { queued.done = true; land(); } }, wait);
   }
 
   /** Performs a resolved release. Returns the engine's tape entry, if any. */
@@ -443,7 +471,7 @@ export class Keyboard {
     }
     switch (c.action) {
       case 'shift': this.detailShift = !this.detailShift; this.renderFaces(); break;
-      case 'numbers': this.setMode(this.mode === 'numeric' ? 'detail' : 'numeric'); break;
+      case 'numbers': this.setMode(this.mode === 'numeric' ? this.before || 'steno' : 'numeric'); break;
       case 'flip': this.setMode(this.mode === 'steno' ? 'detail' : 'steno'); break;
       case 'caret': this.hooks.onAction?.('caret', c.amount); break;
       default: this.hooks.onAction?.(c.action);

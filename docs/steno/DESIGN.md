@@ -1,5 +1,8 @@
 # Steno mode: design
 
+> This document describes the second iteration. The third is summarised in `STATUS.md`, which also
+> records the review scores and what is still open. Where the two disagree, `STATUS.md` is current.
+
 This document describes a second keyboard mode for Wurstfinger that brings the working parts of
 machine stenography to thumb typing, and the prototype that demonstrates it. The prototype lives
 in `prototype/steno-demo/` and runs in a browser; nothing in the Swift app has changed yet. The

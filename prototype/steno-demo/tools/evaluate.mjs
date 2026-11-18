@@ -14,7 +14,8 @@ import { fileURLToPath } from 'node:url';
 import theory from '../src/theory.generated.js';
 import { defaultPacks, DEFAULT_STACKS, resolvePacks } from '../src/packs.js';
 import { makePlanner } from '../src/planner.js';
-import { TIMING, COSTS, wpm } from '../src/model.js';
+import { TIMING, SCENARIOS, costsFor, wpm } from '../src/model.js';
+import { errorRates, HANDS } from './robustness.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const heldout = JSON.parse(fs.readFileSync(path.join(here, '..', 'data', 'build', 'heldout.json'), 'utf8'));
@@ -103,10 +104,14 @@ function stenoCount(text, knows) {
   return n;
 }
 
+// Mistake rates for each scenario's thumb, measured once on the real dictionary.
+const RATES = Object.fromEntries(Object.entries(HANDS).map(([name, hand]) => [name, errorRates(hand)]));
+const COSTS = Object.fromEntries(Object.keys(SCENARIOS).map(name => [name, costsFor(name, SCENARIOS[name].hand ? RATES[SCENARIOS[name].hand] : null)]));
+
 const gesturesOf = n => n.letter + n.space + n.flick + n.hook + n.ending + n.complete + n.mark + n.markHook + n.pageSwitch;
 const msOf = (n, c) => (n.letter + n.space) * (TIMING.letter + c.letterError)
   + n.flick * (TIMING.flick + c.recall + c.flickError) + n.hook * (c.hook + c.recall + c.hookError)
-  + (n.ending + n.complete) * (TIMING.ending + c.recall + c.flickError)
+  + (n.ending + n.complete) * (TIMING.ending + c.recall + c.endingError)
   + n.mark * TIMING.mark + n.markHook * c.hook + n.pageSwitch * TIMING.pageSwitch;
 
 // What a typist knows, as stages of learning. Words are learned commonest first.
@@ -155,8 +160,9 @@ for (const [corpus, messages] of Object.entries(heldout)) {
 }
 
 if (process.argv.includes('--json')) {
-  console.log(JSON.stringify(results, null, 1));
+  console.log(JSON.stringify({ results, rates: RATES }, null, 1));
 } else {
+  console.log('mistake rates by thumb:', JSON.stringify(RATES, (k, v) => typeof v === 'number' ? +v.toFixed(3) : v));
   for (const [corpus, r] of Object.entries(results)) {
     console.log(`\n== ${corpus}: ${r.messages} held-out messages, ${r.chars} characters; letter keyboard ${r.letterGesturesPerWord.toFixed(2)} strokes/word, ${Object.entries(r.letterWpm).map(([k, v]) => `${k} ${v.toFixed(1)}`).join(' / ')} WPM (model)`);
     console.log('you know'.padEnd(26), 'strokes/word', 'fewer', ...Object.keys(COSTS).map(k => k.padStart(12)), '   flick/hook/phrase/ending/completion/spelled %');

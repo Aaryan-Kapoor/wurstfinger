@@ -11,9 +11,9 @@ import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const run = script => JSON.parse(execFileSync(process.execPath, [path.join(here, script), '--json'], { maxBuffer: 1 << 26 }).toString());
-const evaluation = run('evaluate.mjs');
+const evaluation = run('evaluate.mjs').results;
 const robustness = run('robustness.mjs');
-const r1 = x => +x.toFixed(1), r2 = x => +x.toFixed(2);
+const r1 = x => +x.toFixed(1), r2 = x => +x.toFixed(2), r3 = x => +x.toFixed(3);
 
 const slim = {};
 for (const [corpus, r] of Object.entries(evaluation)) {
@@ -28,12 +28,8 @@ for (const [corpus, r] of Object.entries(evaluation)) {
   };
 }
 const grid = robustness.grid.map(g => ({
-  leg: g.leg, aim: g.aim, arc: g.arc, all: r1(g.accuracy * 100),
-  flick: r1(g.by.flick.right / g.by.flick.n * 100), right: r1(g.by.cw.right / g.by.cw.n * 100),
-  left: r1(g.by.ccw.right / g.by.ccw.n * 100), back: r1(g.by.back.right / g.by.back.n * 100),
-  // What a misread curl turns into: almost always its own plain flick.
-  curlToFlick: r1(((g.by.cw.as.flick || 0) + (g.by.ccw.as.flick || 0)) / (g.by.cw.n + g.by.ccw.n) * 100),
-  ending: r1(g.space.accuracy * 100), endingAsCaret: r1(g.space.caret * 100),
+  leg: g.leg, aim: g.aim,
+  kinds: Object.fromEntries(Object.entries(g.kinds).map(([k, o]) => [k, Object.fromEntries(Object.entries(o).map(([n, v]) => [n, r3(v)]))])),
 }));
 
 fs.writeFileSync(path.join(here, '..', 'src', 'eval.generated.js'),
