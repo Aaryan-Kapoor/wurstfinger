@@ -250,9 +250,11 @@ export class Engine {
     const wasCapital = /^[A-Z]/.test(typed);
     s.text = s.text.slice(0, p.start);
     s.attachNext = true;                                         // spacing was settled when the first letter went in
-    s.capNext = wasCapital;
+    const owed = { cap: s.capNext, lower: s.lowerNext };           // a shift already asked for the word after this one
+    s.capNext = wasCapital; s.lowerNext = false;
     const afterBefore = s.after;
     this.apply(translation);
+    s.capNext = s.capNext || owed.cap; s.lowerNext = s.lowerNext || owed.lower;
     this.expandedNow = true;
     return (s.after !== afterBefore || s.attachNext) ? 'placed' : true;
   }
